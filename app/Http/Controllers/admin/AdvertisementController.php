@@ -29,8 +29,9 @@ class AdvertisementController extends Controller
     public function create()
     {
         $products = DB::table('products')->get();
+        $categories = DB::table('marketplace_categories')->get();
 
-        return view('admin.advertisements.create', compact('products'));
+        return view('admin.advertisements.create', compact('products', 'categories'));
     }
 
     /**
@@ -97,8 +98,9 @@ class AdvertisementController extends Controller
         $ad = Advertisement::with('media')->findOrFail($id);
 
         $products = DB::table('products')->get();
+        $categories = DB::table('marketplace_categories')->get();
 
-        return view('admin.advertisements.edit', compact('ad','products'));
+        return view('admin.advertisements.edit', compact('ad', 'products', 'categories'));
     }
 
     /**
