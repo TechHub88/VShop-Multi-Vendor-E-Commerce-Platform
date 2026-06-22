@@ -287,13 +287,13 @@ $attributes = is_string($item->main_product_attributes)
                     <div class="wishlist-bottom">
                         <div class="recommended-product-wrapper owl-carousel">
                             @foreach($recommendedProducts as $product)
-                                <div class="other-product-box item position-relative">
-                                    @if(isset($product->recommendation_type))
-                                        <span class="badge bg-info text-white position-absolute top-0 start-0 m-2" style="z-index:1; font-size:10px; text-transform:uppercase; letter-spacing:0.5px;">
-                                            {{ str_replace('_', ' ', $product->recommendation_type) }}
-                                        </span>
-                                    @endif
-                                    <div class="product-box">
+                                <div class="other-product-box item">
+                                    <div class="product-box position-relative">
+                                        @if(isset($product->recommendation_type))
+                                            <span class="badge bg-info text-white position-absolute top-0 start-50 translate-middle-x mt-2" style="z-index:2; font-size:10px; text-transform:uppercase; letter-spacing:0.5px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); white-space: nowrap;">
+                                                {{ str_replace('_', ' ', $product->recommendation_type) }}
+                                            </span>
+                                        @endif
                                         <div class="product-box-img">
                                            <a href="{{ route('productmanage.show', $product->id ?? 0) }}">
                                                 <img src="{{ asset($product->thumbnail ?? 'images/banner-pic-main.webp') }}" alt="{{ $product->name ?? '' }}">
@@ -656,12 +656,13 @@ $(document).ready(function(){
     if ($(".recommended-product-wrapper").length) {
         var recItemCount = $(".recommended-product-wrapper .item").length;
         $(".recommended-product-wrapper").owlCarousel({
-            loop: recItemCount > 4 ? true : false,
+            loop: true,
             margin: 20,
             nav: false,
             dots: false,
-            autoplay: recItemCount > 4 ? true : false,
+            autoplay: true,
             autoplayTimeout: 3000,
+            autoplayHoverPause: true,
             responsive: {
                 0: { items: 1 },
                 600: { items: 2 },
