@@ -500,7 +500,7 @@
             items:1,
             loop:true,
             autoplay:true,
-            autoplayTimeout:3000, 
+            autoplayTimeout:2000, 
             autoplayHoverPause:true,
             nav:false,
             dots:true
