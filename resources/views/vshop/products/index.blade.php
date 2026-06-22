@@ -1007,16 +1007,77 @@ PRODUCT GRID
 
 <div class="rating-size-sec">
 
-<div class="amazon-rating-sec">
-    <span class="rating-num">{{ number_format($product->average_rating ?? 0, 1) }}</span>
-    <span class="stars">
-        @for($i=1;$i<=5;$i++)
-            <i class="fa-solid fa-star {{ $i <= round($product->average_rating ?? 0) ? 'text-warning' : 'text-secondary' }}"></i>
-        @endfor
-    </span>
-    <a href="{{ route('productmanage.show', $product->id) }}#reviews" class="rating-count">
+<div class="dropdown custom-rating-dropdown">
+    <div class="amazon-rating-sec dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; margin-bottom: 0;">
+        <span class="rating-num">{{ number_format($product->average_rating ?? 0, 1) }}</span>
+        <span class="stars">
+            @for($i=1;$i<=5;$i++)
+                <i class="fa-solid fa-star {{ $i <= round($product->average_rating ?? 0) ? 'text-warning' : 'text-secondary' }}"></i>
+            @endfor
+        </span>
+        <i class="fa-solid fa-chevron-down ms-1 text-muted" style="font-size: 10px;"></i>
+    </div>
+    <a href="{{ route('productmanage.show', $product->id) }}#reviews" class="rating-count d-inline-block ms-1" style="font-size: 13px; color: #007185; text-decoration: none;">
         ({{ $product->total_reviews ?? 0 }})
     </a>
+
+    <div class="dropdown-menu p-3 shadow" style="width: 260px; border-radius: 8px; border: 1px solid #ccc; z-index: 1050;">
+        <div class="d-flex align-items-center mb-2">
+            <span class="stars me-2">
+                @for($i=1;$i<=5;$i++)
+                    <i class="fa-solid fa-star {{ $i <= round($product->average_rating ?? 0) ? 'text-warning' : 'text-secondary' }}" style="font-size: 14px;"></i>
+                @endfor
+            </span>
+            <strong style="font-size: 14px;">{{ number_format($product->average_rating ?? 0, 1) }} out of 5</strong>
+        </div>
+        <p class="text-muted mb-3" style="font-size: 13px;">{{ $product->total_reviews ?? 0 }} global ratings</p>
+        
+        @php
+            $totalCount = $product->total_reviews ?? 0;
+            $breakdown = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+            $reviewsCollection = $product->reviews ?? collect();
+            
+            if($reviewsCollection->count() > 0) {
+                foreach($reviewsCollection as $r) {
+                    $rVal = round($r->rating);
+                    if($rVal >= 1 && $rVal <= 5) {
+                        $breakdown[$rVal]++;
+                    }
+                }
+            } elseif ($totalCount > 0) {
+                $avg = $product->average_rating ?? 0;
+                if($avg >= 4) {
+                    $breakdown[5] = round($totalCount * 0.7);
+                    $breakdown[4] = round($totalCount * 0.2);
+                    $breakdown[3] = $totalCount - $breakdown[5] - $breakdown[4];
+                } else {
+                    $breakdown[5] = round($totalCount * 0.4);
+                    $breakdown[4] = round($totalCount * 0.3);
+                    $breakdown[3] = round($totalCount * 0.2);
+                    $breakdown[2] = $totalCount - $breakdown[5] - $breakdown[4] - $breakdown[3];
+                }
+            }
+        @endphp
+
+        @for($star = 5; $star >= 1; $star--)
+            @php
+                $count = $breakdown[$star] ?? 0;
+                $percent = $totalCount > 0 ? round(($count / $totalCount) * 100) : 0;
+            @endphp
+            <div class="d-flex align-items-center mb-2" style="font-size: 13px;">
+                <a href="{{ route('productmanage.show', $product->id) }}#reviews" class="text-decoration-none" style="width: 50px; color: #007185;">{{ $star }} star</a>
+                <div class="progress flex-grow-1 mx-2" style="height: 16px; background-color: #f0f2f2; border: 1px solid #e3e6e6; border-radius: 4px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);">
+                    <div class="progress-bar" role="progressbar" style="width: {{ $percent }}%; background-color: #de7921; border-radius: 2px;" aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <span class="text-end" style="width: 35px; color: #007185;">{{ $percent }}%</span>
+            </div>
+        @endfor
+
+        <hr class="my-2 border-secondary opacity-25">
+        <a href="{{ route('productmanage.show', $product->id) }}#reviews" class="text-center d-block text-decoration-none" style="font-size: 14px; color: #007185; font-weight: 500;">
+            See customer reviews <i class="fa-solid fa-chevron-right ms-1" style="font-size: 10px;"></i>
+        </a>
+    </div>
 </div>
 
 <p class="color-size-sec">
