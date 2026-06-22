@@ -1449,8 +1449,9 @@ Route::get('/advertisements', [AdvertisementController::class, 'index'])->name('
 Route::post('/advertisements/store', [AdvertisementController::class, 'store'])->name('ads.store');
 Route::get('/advertisements/create', [AdvertisementController::class, 'create'])->name('ads.create');
 Route::get('/advertisements/edit/{id}', [AdvertisementController::class, 'edit'])->name('ads.edit');
-Route::post('/advertisements/update/{id}', [AdvertisementController::class, 'update'])->name('ads.update');
+Route::match(['post', 'put'], '/advertisements/update/{id}', [AdvertisementController::class, 'update'])->name('ads.update');
 Route::delete('/advertisements/delete/{id}', [AdvertisementController::class, 'destroy'])->name('ads.delete');
+Route::delete('/advertisements/media/{id}', [AdvertisementController::class, 'deleteMedia'])->name('ads.delete.media');
 
 //dynamic page creation
 Route::get('/pages', [PageController::class,'index'])->name('pages.index');
