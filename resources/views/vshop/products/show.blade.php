@@ -170,6 +170,114 @@
         color: #c7511f;
         text-decoration: underline;
     }
+
+    /* Product Card Styling for Related Products */
+    .product-box {
+        background: #fff;
+        border-radius: 0px;
+        border: 1px solid #f0f0f0;
+        transition: all 0.3s ease;
+        overflow: hidden;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .product-box:hover {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transform: translateY(-4px);
+    }
+    .product-box-img {
+        height: 160px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fafafa;
+        overflow: hidden;
+        padding: 8px;
+    }
+    .product-box-img img {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain;
+        transition: 0.3s;
+    }
+    .product-box:hover .product-box-img img {
+        transform: scale(1.05);
+    }
+    .product-bottom {
+        padding: 10px 12px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .product-bottom h3 {
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.4;
+        height: 36px;
+        overflow: hidden;
+        margin-bottom: 6px;
+    }
+    .product-bottom h3 a {
+        color: #212121;
+        text-decoration: none;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+    .product-bottom h3 a:hover {
+        color: #2874f0;
+    }
+    .off-sec {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .old-rupess {
+        text-decoration: line-through;
+        color: #878787;
+        font-size: 13px;
+        margin: 0;
+    }
+    .off-box {
+        color: #2874f0;
+        font-weight: 600;
+        font-size: 12px;
+        margin: 0;
+    }
+    .product-bottom-sec {
+        margin-top: auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .new-rupess {
+        font-size: 15px;
+        font-weight: 600;
+        color: #212121;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: right;
+    }
+    .add-cart-btn {
+        background: #004392;
+        color: #fff;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 30px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: 0.2s;
+        white-space: nowrap;
+    }
+    .add-cart-btn:hover {
+        background: #003377;
+    }
 </style>
 
 @section('title', $product->name . ' - Product Details')
@@ -1268,7 +1376,7 @@
                                             <a href="javascript:void(0);" class="share-btn" data-url="{{ route('productmanage.show', $relatedProduct->id) }}" data-title="{{ $relatedProduct->name }}"><i class="fa-solid fa-share-nodes"></i></a>
                                             <a href="#" class="wishlist-btn related-wishlist" data-product-id="{{ $relatedProduct->id }}"><i class="fa-solid fa-heart"></i></a>
                                         </div>
-                                        <div class="product-box-img"><a href="{{ route('productmanage.show', $relatedProduct->id) }}"><img src="{{ asset($relatedProduct->thumbnail) }}" alt="{{ $relatedProduct->name }}" style="width: 100%; height: 160px; object-fit: cover; border-radius: 6px;"></a></div>
+                                        <div class="product-box-img"><a href="{{ route('productmanage.show', $relatedProduct->id) }}"><img src="{{ asset($relatedProduct->thumbnail) }}" alt="{{ $relatedProduct->name }}"></a></div>
                                         <div class="product-bottom">
                                             <h3><a href="{{ route('productmanage.show', $relatedProduct->id) }}">{{ $relatedProduct->name }}</a></h3>
                                             <div class="off-sec">
@@ -2328,6 +2436,8 @@ form.style.display="none";
 
         let value = this.getAttribute('data-value');
 
+
+
         // set hidden input
         document.getElementById('ratingValue').value = value;
 
@@ -2508,4 +2618,27 @@ document.addEventListener("DOMContentLoaded", function () {
     font-size: 14px !important;
 }
 </style>
+
+<script>
+    function changeMainImage(element) {
+        document.getElementById('mainImage').src = element.src;
+    }
+</script>
+
+<script>
+    $(document).ready(function(){
+        $(".other-product-wrapper").owlCarousel({
+            loop: false,
+            margin: 20,
+            nav: true,
+            dots: false,
+            responsive: {
+                0: { items: 1 },
+                600: { items: 2 },
+                1000: { items: 4 }
+            }
+        });
+    });
+</script>
+
 @endsection
