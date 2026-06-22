@@ -170,12 +170,6 @@
         color: #c7511f;
         text-decoration: underline;
     }
-
-    /* Custom Rating Dropdown Hover */
-    .custom-rating-dropdown:hover .dropdown-menu {
-        display: block;
-        margin-top: 0;
-    }
 </style>
 
 @section('title', $product->name . ' - Product Details')
@@ -278,7 +272,7 @@
 
                                             <div class="rating-sec" style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
                                                 <div class="dropdown custom-rating-dropdown position-relative">
-                                                    <div class="amazon-rating-sec text-decoration-none" style="cursor: pointer; margin-bottom: 0; color: inherit; display: inline-flex; border: none; background: transparent; padding: 0;">
+                                                    <button type="button" class="amazon-rating-sec dropdown-toggle text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; margin-bottom: 0; color: inherit; display: inline-flex; border: none; background: transparent; padding: 0;">
                                                         <span class="rating-num">{{ number_format($averageRating ?? 0, 1) }}</span>
                                                         <span class="stars">
                                                             @for($i=1;$i<=5;$i++)
@@ -286,7 +280,7 @@
                                                             @endfor
                                                         </span>
                                                         <i class="fa-solid fa-chevron-down ms-1 text-muted" style="font-size: 10px;"></i>
-                                                    </div>
+                                                    </button>
                                                     <a href="#reviews" class="rating-count d-inline-block ms-1" style="font-size: 13px; color: #007185; text-decoration: none;">
                                                         ({{ $totalReviews ?? 0 }})
                                                     </a>
