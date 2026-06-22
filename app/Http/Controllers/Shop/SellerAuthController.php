@@ -110,7 +110,7 @@ class SellerAuthController extends Controller
         }
 
         // ✅ OTP verified — create seller
-        Seller::create([
+        $seller = Seller::create([
             'name'     => $registerData['name'],
             'mobile'   => $registerData['mobile'],
             'email'    => $registerData['email'],
@@ -121,10 +121,27 @@ class SellerAuthController extends Controller
         // Clear session
         session()->forget(['seller_register_data', 'seller_register_otp', 'seller_register_otp_at']);
 
+        // ✅ Login automatically after verification
+        Auth::guard('seller')->login($seller);
+        auth()->shouldUse('seller');
+
+        session([
+            'login_type' => 'seller',
+            'seller_id'  => $seller->id
+        ]);
+
+        session()->forget([
+            'selected_panels',
+            'seller_panel',
+            'login_otp_seller_id'
+        ]);
+
+        session()->save();
+
         return response()->json([
             'status'   => true,
-            'message'  => 'Registration successful! Please login.',
-            'redirect' => route('seller.login'),
+            'message'  => 'Registration successful!',
+            'redirect' => route('seller.panel.select'),
         ]);
     }
 

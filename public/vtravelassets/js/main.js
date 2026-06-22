@@ -35,9 +35,11 @@ $(function () {
     loop: true,
     nav: false,
     dots: true,
-    // autoplay: true,
+    autoplay: true,
     margin: 15,
-    //autoplayTimeout: 3000,
+    autoplayTimeout: 2000,
+    smartSpeed: 800,
+    autoplayHoverPause: true,
   });
 });
 

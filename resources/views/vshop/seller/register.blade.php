@@ -1,297 +1,324 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Dashboard')</title>
-    
-    {{-- CSS --}}
-    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    {{-- Owl Carousel --}}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.carousel.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/assets/owl.theme.default.min.css">
-    
-    {{-- Slick Slider --}}
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/slick-carousel@1.8.1/slick/slick.css"/>
-    
-    {{-- Font Awesome --}}
-    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v7.1.0/css/all.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    
-    {{-- LOCAL CSS --}}
-    <link rel="stylesheet" href="{{ asset('vtravelassets/css/rs-spacing-min.css') }}">
-    <link rel="stylesheet" href="{{ asset('vtravelassets/css/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('vtravelassets/css/responsive.css') }}">
-    
-    @stack('styles')
-    
-    <style>
-        .dashboardPagesContentonner {
-            width: 100%;
-            height: 100vh;
-            background-image: url(https://kidzz.in/vtravel/public/vtravelassets/images/login-big-bg-img.jpg);
-            background-size: cover;
-            background-repeat: no-repeat;
-            position: relative;
-        }
-        .dashboardPagesContentonner::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #0043929e;
-        } 
-        .dashboardPagesContentonner {
-            width: 100%;
-        }
-        
-        .dashboardPosPagesLeftContentonner {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-        
-        .dashboardDtlsArea {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .dashboardDtlsAreaBody {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .seller-card h2 {
-            text-align: center;
-            color: #004392;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 21px;
-        }
-        
-        .verify-btn {
-            background: #004392 !important;
-            border-color: #004392 !important;
-            color: #fff;
-        }
-    </style>
-</head>
-<body>
-    
-<div class="dashboardPagesContentonner dashboardPosPagesLeftContent">
-<div class="dashboardPosPagesLeftContentonner">
-<div class="dashboardDtlsArea">
-<div class="dashboardDtlsAreaBody">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seller Register</title>
 
-<div class="seller-auth-wrapper">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-    {{-- LOGO --}}
-    <!--<div class="seller-logo">-->
-    <!--    <img src="{{ asset('vtravelassets/images/logo.png') }}" alt="logo">-->
-    <!--    <p>Seller Central India</p>-->
-    <!--</div>-->
-
-    {{-- CARD --}}
-    <div class="seller-card">
-
-        <h2>Create Account</h2>
-
-    <form method="POST" action="{{ route('seller.register.store') }}" id="registerForm">
-    @csrf
-
-    {{-- NAME --}}
-    <div class="form-group">
-        <label>Your name</label>
-        <input type="text" name="name" placeholder="First and last name" required minlength="3">
-    </div>
-
-    {{-- EMAIL (NEW ADDED) --}}
-    <div class="form-group">
-        <label>Email address</label>
-        <input 
-            type="email" 
-            name="email" 
-            placeholder="Enter your email"
-            required
-        >
-    </div>
-
-    {{-- MOBILE --}}
-    <div class="form-group mobile-group">
-        <label>Mobile number</label>
-        <div class="mobile-row">
-
-            <select name="country_code" required>
-                <option value="+91">🇮🇳 +91</option>
-                <option value="+1">🇺🇸 +1</option>
-                <option value="+44">🇬🇧 +44</option>
-                <option value="+61">🇦🇺 +61</option>
-                <option value="+971">🇦🇪 +971</option>
-            </select>
-
-            <input 
-                type="tel" 
-                name="mobile" 
-                id="mobile"
-                placeholder="Enter 10 digit number"
-                required
-                maxlength="10"
-                inputmode="numeric"
-                pattern="[0-9]{10}"
-                oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-            >
-        </div>
-        <small>Example: 9876543210</small>
-    </div>
-
-    {{-- PASSWORD --}}
-    <div class="form-group">
-        <label>Password</label>
-        <input 
-            type="password" 
-            name="password" 
-            id="password"
-            placeholder="At least 6 characters" 
-            required 
-            minlength="6"
-        >
-        <small>Password must be at least 6 characters.</small>
-    </div>
-
-   
-    {{-- SUBMIT --}}
-    <button type="submit" class="verify-btn">
-        Create Account
-    </button>
-
-</form>
-        <div class="signin-link">
-            Already have an account?
-            <a href="{{ route('seller.login') }}">Sign in</a>
-        </div>
-
-    </div>
-</div>
-
-</div>
-</div>
-</div>
-</div>
 <style>
-/* ===== SELLER AUTH UI ===== */
-.seller-auth-wrapper{
-    max-width:420px;
-    margin:40px auto;
-    text-align:center;
+body {
+    height: 100vh;
+    background: linear-gradient(135deg, #004392, #0d6efd);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', sans-serif;
 }
 
-.seller-logo img{
-    height:40px;
-}
-.seller-logo p{
-    font-size:13px;
-    margin-top:5px;
-    color:#555;
-}
-
-.seller-card{
-    border:1px solid #ddd;
-    padding:25px;
-    border-radius:8px;
-    background:#fff;
-    text-align:left;
-    margin-top:15px;
+.seller-card {
+    width: 100%;
+    max-width: 420px;
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
 }
 
-.seller-card h2{
-    font-size:24px;
-    margin-bottom:20px;
+.seller-card h3 {
+    font-weight: 600;
+    color: #003a80;
 }
 
-.form-group{
-    margin-bottom:15px;
+.verify-btn {
+    width: 100%;
+    background: #004392;
+    color: #fff;
+    padding: 12px;
+    border-radius: 30px;
+    border: none;
+    margin-top: 10px;
 }
 
-.form-group label{
-    font-weight:600;
-    display:block;
-    margin-bottom:5px;
+.verify-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
-.form-group input,
-.form-group select{
-    width:100%;
-    padding:10px;
-    border:1px solid #ccc;
-    border-radius:6px;
+.form-label {
+    font-size: 13px;
+    margin-bottom: 3px;
+    font-weight: 500;
 }
 
-.mobile-row{
-    display:flex;
-    gap:10px;
+.form-control, .form-select {
+    border-radius: 10px;
 }
 
-.mobile-row select{
-    width:90px;
+.divider {
+    text-align: center;
+    margin: 15px 0;
+    font-size: 13px;
+    color: #777;
 }
 
-.form-group small{
-    font-size:12px;
-    color:#555;
+.otp-info {
+    background: #e8f4fd;
+    border-left: 4px solid #004392;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #003a80;
 }
 
-.verify-btn{
-    width:100%;
-    background:#ffd814;
-    border:1px solid #fcd200;
-    padding:12px;
-    border-radius:25px;
-    font-weight:600;
-    cursor:pointer;
-    margin-top:10px;
+.resend-link {
+    font-size: 13px;
+    cursor: pointer;
+    color: #004392;
+    text-decoration: underline;
+    border: none;
+    background: none;
+    margin-top: 8px;
 }
 
-.verify-btn:hover{
-    background:#f7ca00;
-}
-
-.signin-link{
-    text-align:center;
-    margin-top:15px;
-    font-size:14px;
+.alert-msg {
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-top: 10px;
+    display: none;
 }
 </style>
-</body>
-</html>
+</head>
+
+<body>
+
+<div class="seller-card">
+
+    <h3 class="text-center mb-4">Create Account</h3>
+
+    <!-- ================= REGISTER FORM ================= -->
+    <div id="registerSection">
+        <form id="registerForm">
+            <div class="mb-3">
+                <label class="form-label">Your Name</label>
+                <input type="text" id="regName" name="name" class="form-control" placeholder="First and last name" required minlength="3">
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email Address</label>
+                <input type="email" id="regEmail" name="email" class="form-control" placeholder="Enter your email" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Mobile Number</label>
+                <div class="d-flex gap-2">
+                    <select name="country_code" class="form-select w-auto" required>
+                        <option value="+91">🇮🇳 +91</option>
+                    </select>
+                    <input type="tel" id="regMobile" name="mobile" class="form-control" placeholder="Enter 10 digit number" required maxlength="10" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" id="regPassword" name="password" class="form-control" placeholder="At least 6 characters" required minlength="6">
+            </div>
+
+            <button type="submit" class="verify-btn" id="submitRegisterBtn">Create Account</button>
+        </form>
+
+        <div class="alert-msg" id="registerAlert"></div>
+
+        <div class="divider">OR</div>
+
+        <div class="text-center">
+            <span style="font-size: 14px;">Already have an account? </span>
+            <a href="{{ route('seller.login') }}" style="font-weight: 600; text-decoration: none; color:#004392;">Sign in</a>
+        </div>
+    </div>
+
+    <!-- ================= OTP VERIFICATION SECTION ================= -->
+    <div id="otpSection" style="display:none;">
+
+        <div class="otp-info">
+            <i class="bi bi-envelope-check"></i>
+            OTP has been sent to your email. Please verify.
+        </div>
+
+        <div class="mb-2 mt-3">
+            <label class="form-label">Enter OTP</label>
+            <input 
+                type="text" 
+                id="registerOtp" 
+                class="form-control" 
+                placeholder="Enter 4-digit OTP"
+                maxlength="4"
+                inputmode="numeric"
+            >
+        </div>
+
+        <button class="verify-btn" id="verifyOtpBtn">Verify OTP</button>
+
+        <div class="text-center mt-2">
+            <button class="resend-link" id="resendRegisterOtp" disabled>
+                Resend OTP <span id="resendTimer">(30s)</span>
+            </button>
+        </div>
+
+        <div class="text-center mt-2">
+            <a href="javascript:void(0)" id="backToRegister" style="font-size:13px; color:#004392;">← Back to Register</a>
+        </div>
+
+        <div class="alert-msg" id="otpAlert"></div>
+
+    </div>
+
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-document.getElementById('registerForm').addEventListener('submit', function(e) {
+function showAlert(el, msg, type) {
+    $(el).text(msg)
+         .removeClass('alert-success alert-danger')
+         .addClass(type === 'success' ? 'alert alert-success alert-msg' : 'alert alert-danger alert-msg')
+         .show();
+}
 
-    let mobile = document.getElementById('mobile').value;
+// REGISTER SUBMIT
+$('#registerForm').submit(function(e){
+    e.preventDefault();
 
-    // Strict Indian mobile validation
+    let name = $('#regName').val().trim();
+    let email = $('#regEmail').val().trim();
+    let mobile = $('#regMobile').val().trim();
+    let password = $('#regPassword').val();
+
     let regex = /^[6-9]\d{9}$/;
-
     if (!regex.test(mobile)) {
-        e.preventDefault();
-        alert("Enter valid 10-digit mobile number starting with 6-9");
+        showAlert('#registerAlert', 'Enter valid 10-digit mobile number starting with 6-9', 'error');
         return false;
     }
 
+    let btn = $('#submitRegisterBtn');
+    let originalText = btn.text();
+    btn.prop('disabled', true).text('Processing...');
+    $('#registerAlert').hide();
+
+    $.post("{{ route('seller.register.store') }}", {
+        _token: "{{ csrf_token() }}",
+        name: name,
+        email: email,
+        mobile: mobile,
+        password: password
+    }, function(res){
+        
+        if(res.status) {
+            $('.otp-info').html('<i class="bi bi-info-circle"></i> ' + res.message);
+            $('#registerSection').slideUp(300, function(){
+                $('#otpSection').slideDown(300);
+            });
+            startResendTimer();
+        }
+
+    }).fail(function(err){
+        let errorMsg = 'Registration failed';
+        if (err.responseJSON && err.responseJSON.message) {
+            errorMsg = err.responseJSON.message;
+        }
+        showAlert('#registerAlert', errorMsg, 'error');
+        btn.prop('disabled', false).text(originalText);
+    });
+
 });
+
+// VERIFY OTP
+$('#verifyOtpBtn').click(function(){
+
+    let otp = $('#registerOtp').val().trim();
+
+    if(otp.length !== 4){
+        showAlert('#otpAlert', 'Enter valid 4-digit OTP', 'error');
+        return;
+    }
+
+    let btn = $(this);
+    btn.prop('disabled', true).text('Verifying...');
+
+    $.post("{{ route('seller.register.verify') }}", {
+        _token: "{{ csrf_token() }}",
+        otp: otp
+    }, function(res){
+
+        if(res.redirect) {
+            // Automatically redirect to dashboard
+            showAlert('#otpAlert', res.message, 'success');
+            setTimeout(() => {
+                window.location.href = res.redirect;
+            }, 1000);
+        }
+
+    }).fail(function(err){
+        showAlert('#otpAlert', err.responseJSON?.message || 'Verification failed', 'error');
+        btn.prop('disabled', false).text('Verify OTP');
+    });
+
+});
+
+// RESEND OTP
+$('#resendRegisterOtp').click(function(){
+
+    let btn = $(this);
+    btn.prop('disabled', true);
+
+    $.post("{{ route('seller.register.resend') }}", {
+        _token: "{{ csrf_token() }}"
+    }, function(res){
+        showAlert('#otpAlert', res.message || 'OTP resent successfully', 'success');
+        startResendTimer();
+    }).fail(function(err){
+        showAlert('#otpAlert', err.responseJSON?.message || 'Resend failed', 'error');
+        btn.prop('disabled', false);
+    });
+
+});
+
+// BACK TO REGISTER
+$('#backToRegister').click(function(){
+    $('#otpSection').slideUp(300, function(){
+        $('#registerSection').slideDown(300);
+        $('#submitRegisterBtn').prop('disabled', false).text('Create Account');
+        $('#registerAlert').hide();
+    });
+});
+
+// RESEND TIMER
+function startResendTimer() {
+    let seconds = 30;
+    let btn = $('#resendRegisterOtp');
+    let timerSpan = $('#resendTimer');
+    
+    btn.prop('disabled', true);
+    timerSpan.text('(' + seconds + 's)');
+
+    let interval = setInterval(function(){
+        seconds--;
+        timerSpan.text('(' + seconds + 's)');
+
+        if(seconds <= 0) {
+            clearInterval(interval);
+            btn.prop('disabled', false);
+            timerSpan.text('');
+        }
+    }, 1000);
+}
+
 </script>
 
-
-
-
-
-
-
-
-
+</body>
+</html>

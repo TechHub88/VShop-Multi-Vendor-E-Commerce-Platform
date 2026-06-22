@@ -491,6 +491,7 @@
 </div>
 </div>
 
+
 @push('scripts')
 <script>
    $(document).ready(function(){
@@ -500,7 +501,8 @@
             items:1,
             loop:true,
             autoplay:true,
-            autoplayTimeout:2000, 
+            autoplayTimeout:2000,
+            smartSpeed: 800, 
             autoplayHoverPause:true,
             nav:false,
             dots:true
@@ -612,6 +614,7 @@
     });
 </script>
 @endpush
+
 
 
 
