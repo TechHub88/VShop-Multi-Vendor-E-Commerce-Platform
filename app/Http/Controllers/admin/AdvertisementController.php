@@ -169,4 +169,16 @@ class AdvertisementController extends Controller
 
         return back()->with('success', 'Advertisement Deleted Successfully');
     }
+
+    /**
+     * TOGGLE STATUS
+     */
+    public function toggleStatus(Request $request)
+    {
+        $ad = Advertisement::findOrFail($request->id);
+        $ad->is_active = $request->status;
+        $ad->save();
+
+        return response()->json(['success' => true, 'message' => 'Status updated successfully']);
+    }
 }

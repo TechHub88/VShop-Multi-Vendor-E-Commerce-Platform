@@ -1452,6 +1452,7 @@ Route::get('/advertisements/edit/{id}', [AdvertisementController::class, 'edit']
 Route::match(['post', 'put'], '/advertisements/update/{id}', [AdvertisementController::class, 'update'])->name('ads.update');
 Route::delete('/advertisements/delete/{id}', [AdvertisementController::class, 'destroy'])->name('ads.delete');
 Route::delete('/advertisements/media/{id}', [AdvertisementController::class, 'deleteMedia'])->name('ads.delete.media');
+Route::post('/advertisements/toggle-status', [AdvertisementController::class, 'toggleStatus'])->name('ads.toggle-status');
 
 //dynamic page creation
 Route::get('/pages', [PageController::class,'index'])->name('pages.index');
