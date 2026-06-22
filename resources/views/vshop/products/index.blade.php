@@ -519,10 +519,16 @@
     text-decoration: none;
     margin-left: 2px;
 }
-.amazon-rating-sec .rating-count:hover {
-    color: #c7511f;
-    text-decoration: underline;
-}
+    .amazon-rating-sec .rating-count:hover {
+        color: #c7511f;
+        text-decoration: underline;
+    }
+
+    /* Custom Rating Dropdown Hover */
+    .custom-rating-dropdown:hover .dropdown-menu {
+        display: block;
+        margin-top: 0;
+    }
 
 </style>
 
@@ -1008,7 +1014,7 @@ PRODUCT GRID
 <div class="rating-size-sec">
 
 <div class="dropdown custom-rating-dropdown position-relative">
-    <a href="#" class="amazon-rating-sec dropdown-toggle text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; margin-bottom: 0; color: inherit; display: inline-flex; border: none; background: transparent; padding: 0;">
+    <div class="amazon-rating-sec text-decoration-none" style="cursor: pointer; margin-bottom: 0; color: inherit; display: inline-flex; border: none; background: transparent; padding: 0;">
         <span class="rating-num">{{ number_format($product->average_rating ?? 0, 1) }}</span>
         <span class="stars">
             @for($i=1;$i<=5;$i++)
@@ -1016,7 +1022,7 @@ PRODUCT GRID
             @endfor
         </span>
         <i class="fa-solid fa-chevron-down ms-1 text-muted" style="font-size: 10px;"></i>
-    </a>
+    </div>
     <a href="{{ route('productmanage.show', $product->id) }}#reviews" class="rating-count d-inline-block ms-1" style="font-size: 13px; color: #007185; text-decoration: none;">
         ({{ $product->total_reviews ?? 0 }})
     </a>
