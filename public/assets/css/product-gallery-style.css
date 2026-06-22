@@ -1,0 +1,173 @@
+.product-gallery {display: flex; gap: 12px;}   
+.product-gallery .thumbs-wrapper {
+width: 70px;
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 10px;
+position:relative;
+}
+.product-gallery .thumbs-swiper {
+height: 420px;
+width: 100%;
+}
+.product-gallery .thumbs-swiper .swiper-slide {
+height: auto !important;
+opacity: 0.5;
+cursor: pointer;
+border-radius: 12px;
+overflow: hidden;
+border: 2px solid transparent;
+transition: 0.2s;
+}
+.product-gallery .thumbs-swiper .swiper-slide-thumb-active {
+opacity: 1;
+border-color: #111827;
+}
+.product-gallery .thumbs-swiper img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+display: block;
+}
+.product-gallery .thumbs-more-btn {
+width: 32px;
+height: 32px;
+border-radius: 999px;
+border: 1px solid #d1d5db;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+background: #f9fafb;
+font-size: 14px;
+}
+.product-gallery .thumbs-wrapper .swiper-button-next, .product-gallery .thumbs-wrapper .swiper-button-prev{
+position: absolute;
+top: 50%;		
+transform: translateY(-50%);
+width: 24px;
+height: 24px;
+border-radius: 999px;
+background: #ffffff;
+color:#000;
+box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+z-index: 10;
+border: none;
+}
+.product-gallery .thumbs-wrapper .swiper-button-next {}
+.product-gallery .thumbs-wrapper .swiper-button-next:after{display:none;}
+.product-gallery .thumbs-wrapper .swiper-button-next i{}
+.product-gallery .thumbs-wrapper .swiper-button-prev {}
+.product-gallery .thumbs-wrapper .swiper-button-prev:after{display:none;}
+.product-gallery .thumbs-wrapper .swiper-button-prev{}
+@media (min-width: 768px) {     
+.product-gallery .thumbs-wrapper .swiper-button-next {top: inherit; bottom: 13%;left: 20px;transform: translateY(-13%);}	
+.product-gallery .thumbs-wrapper .swiper-button-next i{rotate: -90deg;}
+.product-gallery .thumbs-wrapper .swiper-button-prev {top: 2%;left: 20px;transform: translateY(2%);}	
+.product-gallery .thumbs-wrapper .swiper-button-prev i{rotate: -90deg;}
+}
+.product-gallery .main-wrapper {
+/*flex: 1;*/
+position: relative;
+width:70%;
+}
+.product-gallery .fit-pill {
+position: absolute;
+top: 16px;
+left: 16px;
+z-index: 10;
+padding: 5px 10px;
+border-radius: 999px;
+border: 1px solid #111827;
+background: #ffffff;
+font-size: 11px;
+font-weight: 600;
+letter-spacing: 0.05em;
+}
+.product-gallery .main-swiper {
+width: 100%;
+height: 520px;
+border-radius: 18px;
+overflow: hidden;
+}
+.product-gallery .main-swiper img {
+width: 100%;
+height: 100%;
+object-fit: cover;
+display: block;
+}    
+.product-gallery .swiper-button-next-custom,
+.product-gallery .swiper-button-prev-custom {
+position: absolute;
+top: 50%;
+transform: translateY(-50%);
+width: 38px;
+height: 38px;
+border-radius: 999px;
+background: #ffffff;
+box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+z-index: 10;
+border: none;
+}
+.product-gallery .swiper-button-next-custom {
+right: 18px;
+}
+.product-gallery .swiper-button-prev-custom {
+left: 18px;
+}
+.product-gallery .swiper-button-next-custom::after,
+.product-gallery .swiper-button-prev-custom::after {
+content: "";
+}
+.product-gallery .arrow-icon {
+border: solid #111827;
+border-width: 0 2px 2px 0;
+display: inline-block;
+padding: 4px;
+}
+.product-gallery .arrow-right {
+transform: rotate(-45deg);
+}
+.product-gallery .arrow-left {
+transform: rotate(135deg);
+}    
+@media (max-width: 767px) {  
+.product-gallery {
+flex-direction: column;
+max-width: 100%;
+margin: 0 0px;
+}
+.product-gallery .thumbs-wrapper {
+order: 2;
+width: 100%;
+}
+.product-gallery .thumbs-swiper {
+height: 110px;
+width: 100%;
+}
+.product-gallery .main-wrapper {
+order: 1;
+width: 100%;
+}
+.product-gallery .thumbs-wrapper .swiper-button-next, .product-gallery .thumbs-wrapper .swiper-button-prev{
+top: 70%;
+transform: translateY(-70%);
+width: 24px;
+height: 24px;
+font-size: 14px;
+}
+.product-gallery .swiper-button-next-custom, .product-gallery .swiper-button-prev-custom {}
+.product-gallery .thumbs-wrapper .swiper-button-next{}
+.product-gallery .thumbs-wrapper .swiper-button-next i{rotate: 180deg;}
+.product-gallery .thumbs-wrapper .swiper-button-prev{}
+.product-gallery .thumbs-wrapper .swiper-button-prev i{rotate: 180deg;}	  
+}

@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Booking Details — Arvi Scrub Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  :root{
+    --navy:#0B1D3A;--navy2:#102244;--navy3:#1a3160;
+    --gold:#F0C040;--gold2:#e6a800;
+    --white:#fff;--bg:#EEF4FB;
+    --text:#1a2a45;--muted:#7a90aa;--border:#DDE8F5;
+    --green:#1AA350;--green-lt:#E8F7EE;
+    --orange:#F57C00;--orange-lt:#FFF3E0;
+    --red:#D32F2F;--red-lt:#FFEBEE;
+    --blue:#1A73E8;--blue-lt:#E8F1FC;
+    --purple:#7B1FA2;--purple-lt:#F3E8FF;
+    --card:#fff;--shadow:0 2px 14px rgba(11,29,58,0.09);
+  }
+  html,body{
+    height:100%;background:#c8d8e8;
+    font-family:'Nunito',sans-serif;
+    display:flex;justify-content:center;align-items:center;
+  }
+
+  /* ── Phone Shell ── */
+  .phone{
+    width:390px;height:844px;
+    background:var(--bg);border-radius:44px;overflow:hidden;
+    box-shadow:0 30px 80px rgba(0,0,0,0.35),0 0 0 10px #1a1a1a,0 0 0 12px #333;
+    position:relative;display:flex;flex-direction:column;
+  }
+  .notch{
+    position:absolute;top:0;left:50%;transform:translateX(-50%);
+    width:126px;height:34px;background:#1a1a1a;
+    border-radius:0 0 20px 20px;z-index:999;
+  }
+
+  /* ── VIEWS ── */
+  .view{display:none;flex:1;flex-direction:column;overflow:hidden;padding-top:34px;}
+  .view.active{display:flex;}
+
+  /* ══════════════════════════════════════════
+     VIEW 1 — BOOKING DETAILS (Pre-accept)
+  ══════════════════════════════════════════ */
+  /* Topbar */
+  .topbar{
+    background:linear-gradient(160deg,var(--navy) 0%,var(--navy3) 100%);
+    padding:14px 18px 16px;
+    display:flex;align-items:center;gap:12px;
+    flex-shrink:0;
+  }
+  .back-btn{
+    width:36px;height:36px;border-radius:50%;
+    background:rgba(255,255,255,0.12);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:white;font-size:18px;flex-shrink:0;
+  }
+  .topbar-center{flex:1;}
+  .topbar-title{font-size:16px;font-weight:800;color:white;}
+  .topbar-sub{font-size:11px;color:#A8C8F0;font-weight:600;margin-top:1px;}
+  .topbar-badge{
+    background:rgba(240,192,64,0.2);border:1px solid rgba(240,192,64,0.5);
+    color:var(--gold);font-size:10px;font-weight:800;
+    padding:4px 10px;border-radius:20px;white-space:nowrap;
+  }
+
+  /* Scrollable content */
+  .scroll-body{
+    flex:1;overflow-y:auto;padding:14px 14px 100px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .scroll-body::-webkit-scrollbar{display:none;}
+
+  /* Status Banner */
+  .status-banner{
+    border-radius:14px;padding:14px 16px;
+    display:flex;align-items:center;gap:12px;
+    margin-bottom:14px;
+    box-shadow:var(--shadow);
+  }
+  .sb-icon{
+    width:46px;height:46px;border-radius:13px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;flex-shrink:0;
+  }
+  .sb-title{font-size:14px;font-weight:800;margin-bottom:2px;}
+  .sb-sub{font-size:11.5px;font-weight:600;}
+  .banner-new{background:linear-gradient(135deg,#E3F2FD,#BBDEFB);}
+  .banner-new .sb-icon{background:#1A73E8;}
+  .banner-new .sb-title{color:#0D47A1;}
+  .banner-new .sb-sub{color:#1565C0;}
+  .banner-ongoing{background:linear-gradient(135deg,#E8F5E9,#C8E6C9);}
+  .banner-ongoing .sb-icon{background:var(--green);}
+  .banner-ongoing .sb-title{color:#1B5E20;}
+  .banner-ongoing .sb-sub{color:#2E7D32;}
+
+  /* Card base */
+  .card{
+    background:var(--card);border-radius:16px;
+    padding:16px;margin-bottom:12px;
+    box-shadow:var(--shadow);
+    position:relative;overflow:hidden;
+  }
+  .card-header{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:13px;
+  }
+  .card-title{
+    font-size:13px;font-weight:800;color:var(--muted);
+    text-transform:uppercase;letter-spacing:0.06em;
+    display:flex;align-items:center;gap:6px;
+  }
+  .card-title .ct-icon{font-size:15px;}
+
+  /* Service Info */
+  .service-main{
+    display:flex;align-items:flex-start;gap:13px;
+    padding-bottom:13px;border-bottom:1px solid var(--border);
+    margin-bottom:13px;
+  }
+  .service-icon-wrap{
+    width:52px;height:52px;border-radius:14px;
+    background:linear-gradient(135deg,var(--navy),var(--navy3));
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;flex-shrink:0;
+    box-shadow:0 4px 12px rgba(11,29,58,0.25);
+  }
+  .service-info h3{font-size:16px;font-weight:900;color:var(--text);margin-bottom:4px;}
+  .service-info .booking-id{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;}
+  .service-tags{display:flex;gap:6px;flex-wrap:wrap;}
+  .stag{
+    font-size:10.5px;font-weight:700;padding:3px 9px;
+    border-radius:6px;
+  }
+  .stag-blue{background:var(--blue-lt);color:var(--blue);}
+  .stag-green{background:var(--green-lt);color:var(--green);}
+  .stag-gold{background:#FFF8E1;color:var(--gold2);}
+  .stag-purple{background:var(--purple-lt);color:var(--purple);}
+
+  /* Info rows */
+  .info-row{
+    display:flex;align-items:flex-start;gap:10px;
+    padding:9px 0;border-bottom:1px solid #f2f6fb;
+  }
+  .info-row:last-child{border-bottom:none;padding-bottom:0;}
+  .ir-icon{
+    width:32px;height:32px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;flex-shrink:0;
+  }
+  .ir-navy{background:rgba(11,29,58,0.07);}
+  .ir-blue{background:var(--blue-lt);}
+  .ir-green{background:var(--green-lt);}
+  .ir-gold{background:#FFF8E1;}
+  .ir-orange{background:var(--orange-lt);}
+  .ir-purple{background:var(--purple-lt);}
+  .ir-body{flex:1;}
+  .ir-label{font-size:10.5px;font-weight:700;color:var(--muted);margin-bottom:2px;}
+  .ir-value{font-size:13px;font-weight:700;color:var(--text);line-height:1.4;}
+  .ir-value.clickable{color:var(--blue);text-decoration:underline;cursor:pointer;}
+  .ir-action{
+    font-size:11px;font-weight:700;padding:5px 11px;
+    border-radius:8px;border:none;cursor:pointer;
+    font-family:'Nunito',sans-serif;flex-shrink:0;
+    align-self:center;
+  }
+
+  /* ── MINI MAP ── */
+  .map-box{
+    width:100%;height:150px;border-radius:12px;
+    overflow:hidden;position:relative;margin-bottom:13px;
+    box-shadow:0 3px 10px rgba(11,29,58,0.12);cursor:pointer;
+  }
+  .map-svg{width:100%;height:100%;}
+  .map-pin-wrap{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-100%);
+    display:flex;flex-direction:column;align-items:center;
+  }
+  .map-pin{
+    width:36px;height:36px;border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);
+    background:var(--red);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 14px rgba(211,47,47,0.5);
+  }
+  .map-pin-inner{transform:rotate(45deg);font-size:16px;}
+  .map-pin-shadow{
+    width:12px;height:5px;border-radius:50%;
+    background:rgba(0,0,0,0.25);margin-top:2px;
+  }
+  .map-address-tag{
+    position:absolute;bottom:10px;left:50%;transform:translateX(-50%);
+    background:white;border-radius:8px;padding:5px 12px;
+    font-size:11px;font-weight:700;color:var(--navy);
+    box-shadow:0 2px 8px rgba(0,0,0,0.15);white-space:nowrap;
+  }
+  .map-open-btn{
+    position:absolute;top:8px;right:8px;
+    background:white;border-radius:8px;padding:5px 10px;
+    font-size:10.5px;font-weight:700;color:var(--blue);
+    box-shadow:0 2px 8px rgba(0,0,0,0.12);cursor:pointer;
+  }
+
+  /* ── Quick Action Buttons ── */
+  .quick-actions{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:8px;margin-bottom:12px;
+  }
+  .qa-btn{
+    background:var(--card);border-radius:13px;
+    padding:12px 8px;
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    cursor:pointer;box-shadow:var(--shadow);
+    transition:transform 0.15s;border:none;
+    font-family:'Nunito',sans-serif;
+  }
+  .qa-btn:active{transform:scale(0.93);}
+  .qa-icon{
+    width:42px;height:42px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;
+  }
+  .qa-label{font-size:10px;font-weight:800;color:var(--muted);text-align:center;line-height:1.2;}
+  .qai-call{background:var(--green-lt);}
+  .qai-whatsapp{background:#E8F5E9;}
+  .qai-nav{background:var(--blue-lt);}
+  .qai-invoice{background:#FFF8E1;}
+
+  /* ── Items Table ── */
+  .items-table{width:100%;}
+  .items-table tr td{
+    padding:8px 0;border-bottom:1px dashed var(--border);
+    font-size:12.5px;vertical-align:top;
+  }
+  .items-table tr:last-child td{border-bottom:none;}
+  .item-name{font-weight:700;color:var(--text);}
+  .item-qty{color:var(--muted);font-weight:600;text-align:center;}
+  .item-price{font-weight:800;color:var(--text);text-align:right;}
+  .price-row td{padding-top:10px;}
+  .price-label{font-weight:600;color:var(--muted);}
+  .price-val{font-weight:800;color:var(--text);text-align:right;}
+  .total-row td{
+    font-size:14px;font-weight:900;padding-top:10px;
+    border-top:2px solid var(--border);
+  }
+  .total-row .price-val{color:var(--navy);font-size:16px;}
+
+  /* ── Accept / Decline ── */
+  .cta-wrap{
+    position:absolute;bottom:0;left:0;right:0;
+    background:white;padding:14px 14px 20px;
+    border-top:1px solid var(--border);
+    box-shadow:0 -4px 20px rgba(11,29,58,0.1);
+    z-index:50;
+  }
+  .cta-row{display:flex;gap:10px;}
+  .btn-decline{
+    flex:1;padding:14px;border-radius:13px;
+    background:var(--red-lt);color:var(--red);
+    font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;
+    border:none;cursor:pointer;transition:all 0.15s;
+  }
+  .btn-decline:active{transform:scale(0.97);}
+  .btn-accept{
+    flex:2;padding:14px;border-radius:13px;
+    background:linear-gradient(135deg,var(--green),#22C55E);
+    color:white;font-family:'Nunito',sans-serif;
+    font-size:14px;font-weight:900;border:none;cursor:pointer;
+    box-shadow:0 6px 20px rgba(26,163,80,0.35);
+    transition:all 0.15s;
+  }
+  .btn-accept:active{transform:scale(0.97);}
+
+  /* ── Start / Complete / OTP ── */
+  .btn-start{
+    width:100%;padding:14px;border-radius:13px;
+    background:linear-gradient(135deg,var(--blue),#4DA3FF);
+    color:white;font-family:'Nunito',sans-serif;
+    font-size:14px;font-weight:900;border:none;cursor:pointer;
+    box-shadow:0 6px 20px rgba(26,115,232,0.35);
+    transition:all 0.15s;margin-top:4px;
+  }
+  .btn-start:active{transform:scale(0.97);}
+  .btn-complete{
+    width:100%;padding:14px;border-radius:13px;
+    background:linear-gradient(135deg,var(--green),#22C55E);
+    color:white;font-family:'Nunito',sans-serif;
+    font-size:14px;font-weight:900;border:none;cursor:pointer;
+    box-shadow:0 6px 20px rgba(26,163,80,0.35);
+    transition:all 0.15s;margin-top:4px;
+  }
+  .btn-complete:active{transform:scale(0.97);}
+  .btn-invoice{
+    width:100%;padding:14px;border-radius:13px;
+    background:linear-gradient(135deg,var(--navy),var(--navy3));
+    color:white;font-family:'Nunito',sans-serif;
+    font-size:14px;font-weight:900;border:none;cursor:pointer;
+    box-shadow:0 6px 20px rgba(11,29,58,0.3);
+    transition:all 0.15s;margin-top:8px;
+  }
+  .btn-invoice:active{transform:scale(0.97);}
+
+  /* ── Step Progress ── */
+  .step-track{
+    display:flex;align-items:center;
+    justify-content:center;gap:0;
+    padding:4px 0 14px;
+  }
+  .step-node{
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    position:relative;z-index:1;
+  }
+  .step-circle{
+    width:30px;height:30px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:800;
+    transition:all 0.3s;
+  }
+  .sc-done{background:var(--green);color:white;box-shadow:0 2px 8px rgba(26,163,80,0.4);}
+  .sc-active{background:var(--blue);color:white;box-shadow:0 2px 8px rgba(26,115,232,0.4);}
+  .sc-idle{background:#e0e8f0;color:var(--muted);}
+  .step-label{font-size:9px;font-weight:700;color:var(--muted);text-align:center;width:60px;}
+  .step-label.done{color:var(--green);}
+  .step-label.active{color:var(--blue);}
+  .step-line{
+    width:40px;height:3px;border-radius:2px;
+    background:#e0e8f0;margin-bottom:18px;
+    transition:background 0.3s;
+  }
+  .step-line.done{background:var(--green);}
+
+  /* ══════════════════════════════════════════
+     VIEW 2 — OTP MODAL
+  ══════════════════════════════════════════ */
+  .modal-overlay{
+    position:absolute;inset:0;z-index:200;
+    background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);
+    display:none;flex-direction:column;align-items:center;justify-content:flex-end;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-sheet{
+    background:white;width:100%;border-radius:26px 26px 0 0;
+    padding:20px 20px 32px;
+  }
+  .modal-handle{
+    width:40px;height:4px;border-radius:2px;
+    background:#dde8f5;margin:0 auto 18px;
+  }
+  .modal-title{font-size:18px;font-weight:900;color:var(--text);text-align:center;margin-bottom:4px;}
+  .modal-sub{font-size:12px;font-weight:600;color:var(--muted);text-align:center;margin-bottom:20px;}
+  .otp-row{display:flex;gap:10px;justify-content:center;margin-bottom:20px;}
+  .otp-box{
+    width:54px;height:62px;border-radius:12px;
+    border:2px solid var(--border);background:#f7f9fc;
+    font-size:26px;font-weight:900;color:var(--navy);
+    text-align:center;font-family:'Nunito',sans-serif;
+    outline:none;transition:border-color 0.2s;
+  }
+  .otp-box:focus{border-color:var(--blue);}
+  .btn-verify{
+    width:100%;padding:14px;border-radius:13px;
+    background:linear-gradient(135deg,var(--navy),var(--navy3));
+    color:white;font-family:'Nunito',sans-serif;
+    font-size:15px;font-weight:900;border:none;cursor:pointer;
+  }
+  .otp-resend{
+    text-align:center;margin-top:12px;
+    font-size:12px;font-weight:600;color:var(--muted);
+  }
+  .otp-resend span{color:var(--blue);cursor:pointer;font-weight:700;}
+
+  /* ══════════════════════════════════════════
+     VIEW 3 — INVOICE
+  ══════════════════════════════════════════ */
+  .invoice-top{
+    background:linear-gradient(160deg,var(--navy) 0%,var(--navy3) 100%);
+    padding:50px 20px 30px;
+    text-align:center;position:relative;overflow:hidden;
+  }
+  .invoice-top::before{
+    content:'';position:absolute;top:-40px;right:-40px;
+    width:160px;height:160px;border-radius:50%;
+    background:rgba(255,255,255,0.04);
+  }
+  .inv-logo{
+    width:60px;height:60px;border-radius:50%;
+    background:linear-gradient(135deg,var(--gold),var(--gold2));
+    display:flex;align-items:center;justify-content:center;
+    font-size:26px;margin:0 auto 10px;
+    box-shadow:0 4px 16px rgba(240,192,64,0.4);
+    position:relative;
+  }
+  .inv-logo::before{
+    content:'';position:absolute;inset:3px;border-radius:50%;
+    background:var(--navy);
+  }
+  .inv-logo span{position:relative;z-index:1;}
+  .inv-brand{font-size:14px;font-weight:900;color:var(--gold);letter-spacing:0.1em;margin-bottom:2px;}
+  .inv-number{font-size:11px;font-weight:700;color:#A8C8F0;margin-bottom:4px;}
+  .inv-status-tag{
+    display:inline-block;background:rgba(240,192,64,0.15);
+    border:1px solid rgba(240,192,64,0.4);color:var(--gold);
+    font-size:11px;font-weight:800;padding:3px 12px;border-radius:20px;
+  }
+
+  .invoice-body{
+    flex:1;overflow-y:auto;padding:14px 14px 80px;
+    margin-top:-14px;
+  }
+  .invoice-body::-webkit-scrollbar{display:none;}
+
+  .inv-meta{
+    background:white;border-radius:14px;padding:15px;
+    margin-bottom:12px;box-shadow:var(--shadow);
+  }
+  .inv-meta-row{
+    display:flex;justify-content:space-between;
+    align-items:flex-start;padding:7px 0;
+    border-bottom:1px solid #f0f5fb;
+  }
+  .inv-meta-row:last-child{border-bottom:none;padding-bottom:0;}
+  .imr-label{font-size:11.5px;font-weight:600;color:var(--muted);}
+  .imr-val{font-size:12.5px;font-weight:700;color:var(--text);text-align:right;max-width:55%;}
+
+  .inv-items{background:white;border-radius:14px;padding:15px;margin-bottom:12px;box-shadow:var(--shadow);}
+  .inv-item-row{
+    display:flex;justify-content:space-between;
+    align-items:center;padding:9px 0;
+    border-bottom:1px dashed var(--border);
+  }
+  .inv-item-row:last-child{border-bottom:none;}
+  .inv-item-name{font-size:13px;font-weight:700;color:var(--text);flex:1;}
+  .inv-item-qty{font-size:12px;font-weight:600;color:var(--muted);margin:0 12px;}
+  .inv-item-amt{font-size:13px;font-weight:800;color:var(--text);}
+
+  .inv-totals{background:white;border-radius:14px;padding:15px;margin-bottom:12px;box-shadow:var(--shadow);}
+  .inv-total-row{display:flex;justify-content:space-between;padding:6px 0;}
+  .itl{font-size:12.5px;font-weight:600;color:var(--muted);}
+  .itv{font-size:12.5px;font-weight:700;color:var(--text);}
+  .inv-grand{
+    display:flex;justify-content:space-between;
+    padding:12px 0 0;margin-top:6px;
+    border-top:2px solid var(--navy);
+  }
+  .ig-label{font-size:15px;font-weight:900;color:var(--navy);}
+  .ig-val{font-size:18px;font-weight:900;color:var(--navy);}
+
+  .inv-note{
+    background:var(--orange-lt);border-radius:12px;padding:12px;
+    font-size:11.5px;font-weight:700;color:var(--orange);
+    text-align:center;margin-bottom:12px;
+  }
+
+  .inv-actions{
+    position:absolute;bottom:0;left:0;right:0;
+    background:white;padding:12px 14px 20px;
+    border-top:1px solid var(--border);
+    box-shadow:0 -4px 20px rgba(11,29,58,0.1);
+    z-index:50;
+    display:flex;gap:10px;
+  }
+  .btn-share{
+    flex:1;padding:13px;border-radius:12px;
+    background:var(--blue-lt);color:var(--blue);
+    font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;
+    border:none;cursor:pointer;
+  }
+  .btn-collect{
+    flex:2;padding:13px;border-radius:12px;
+    background:linear-gradient(135deg,var(--green),#22C55E);
+    color:white;font-family:'Nunito',sans-serif;
+    font-size:13px;font-weight:900;border:none;cursor:pointer;
+    box-shadow:0 4px 14px rgba(26,163,80,0.35);
+  }
+
+  /* ── Toast ── */
+  .toast{
+    position:absolute;bottom:90px;left:50%;
+    transform:translateX(-50%) translateY(8px);
+    background:var(--navy);color:white;
+    font-size:12px;font-weight:700;padding:9px 18px;
+    border-radius:22px;box-shadow:0 6px 20px rgba(0,0,0,0.3);
+    opacity:0;transition:all 0.25s;white-space:nowrap;z-index:300;
+    pointer-events:none;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ── Calling Overlay ── */
+  .call-overlay{
+    position:absolute;inset:0;z-index:250;
+    background:linear-gradient(160deg,var(--navy) 0%,var(--navy3) 100%);
+    display:none;flex-direction:column;
+    align-items:center;justify-content:center;
+    gap:0;
+  }
+  .call-overlay.open{display:flex;}
+  .call-avatar{
+    width:90px;height:90px;border-radius:50%;
+    background:rgba(255,255,255,0.15);
+    display:flex;align-items:center;justify-content:center;
+    font-size:42px;margin-bottom:16px;
+    box-shadow:0 0 0 12px rgba(255,255,255,0.07);
+  }
+  .call-name{font-size:22px;font-weight:900;color:white;margin-bottom:6px;}
+  .call-num{font-size:13px;font-weight:600;color:#A8C8F0;margin-bottom:8px;}
+  .call-status{font-size:12px;font-weight:700;color:var(--gold);margin-bottom:48px;animation:blink 1s infinite;}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.4}}
+  .call-end-btn{
+    width:68px;height:68px;border-radius:50%;
+    background:var(--red);display:flex;align-items:center;justify-content:center;
+    font-size:26px;cursor:pointer;
+    box-shadow:0 6px 20px rgba(211,47,47,0.5);
+    border:none;
+  }
+
+  /* Animations */
+  @keyframes fadeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .anim{animation:fadeIn 0.35s ease both;}
+  .anim-1{animation-delay:0.05s}
+  .anim-2{animation-delay:0.1s}
+  .anim-3{animation-delay:0.15s}
+  .anim-4{animation-delay:0.2s}
+  .anim-5{animation-delay:0.25s}
+  .anim-6{animation-delay:0.3s}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="notch"></div>
+
+  <!-- ══════════════════════════════════════════
+       VIEW 1 — PRE-ACCEPT: NEW BOOKING REQUEST
+  ══════════════════════════════════════════ -->
+  <div class="view active" id="view-preaccept">
+    <div class="topbar">
+      <div class="back-btn">‹</div>
+      <div class="topbar-center">
+        <div class="topbar-title">Booking Request</div>
+        <div class="topbar-sub">New booking assigned</div>
+      </div>
+      <div class="topbar-badge">NEW ●</div>
+    </div>
+
+    <div class="scroll-body">
+
+      <!-- Status Banner -->
+      <div class="status-banner banner-new anim anim-1">
+        <div class="sb-icon">🔔</div>
+        <div>
+          <div class="sb-title">New Booking Waiting</div>
+          <div class="sb-sub">Accept within 5 min to confirm</div>
+        </div>
+      </div>
+
+      <!-- Service Info Card -->
+      <div class="card anim anim-2">
+        <div class="service-main">
+          <div class="service-icon-wrap">🧹</div>
+          <div class="service-info">
+            <div class="booking-id">#BK-20240402</div>
+            <h3>Full Home Deep Cleaning</h3>
+            <div class="service-tags">
+              <span class="stag stag-blue">2 BHK</span>
+              <span class="stag stag-green">3–4 hrs</span>
+              <span class="stag stag-gold">Premium</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Date & Time -->
+        <div class="info-row">
+          <div class="ir-icon ir-blue">📅</div>
+          <div class="ir-body">
+            <div class="ir-label">Date & Time</div>
+            <div class="ir-value">Today, 01 Apr 2024 · 2:00 PM – 5:30 PM</div>
+          </div>
+        </div>
+
+        <!-- Duration -->
+        <div class="info-row">
+          <div class="ir-icon ir-gold">⏱</div>
+          <div class="ir-body">
+            <div class="ir-label">Estimated Duration</div>
+            <div class="ir-value">3.5 Hours</div>
+          </div>
+        </div>
+
+        <!-- Special Note -->
+        <div class="info-row">
+          <div class="ir-icon ir-purple">📝</div>
+          <div class="ir-body">
+            <div class="ir-label">Customer Note</div>
+            <div class="ir-value">Please focus on kitchen & bathrooms. Bring own equipment.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Card -->
+      <div class="card anim anim-3">
+        <div class="card-header">
+          <div class="card-title"><span class="ct-icon">👤</span> Customer Details</div>
+        </div>
+        <div class="info-row" style="padding-top:0;">
+          <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#E3F2FD,#BBDEFB);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👩</div>
+          <div class="ir-body">
+            <div class="ir-value" style="font-size:15px;font-weight:900;">Priya Banerjee</div>
+            <div class="ir-label">Customer since March 2023 · ⭐ 4.9 rating</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ir-icon ir-green">📞</div>
+          <div class="ir-body">
+            <div class="ir-label">Mobile Number</div>
+            <div class="ir-value clickable" id="preCallBtn">+91 98765 43210</div>
+          </div>
+          <button class="ir-action anim" style="background:var(--green-lt);color:var(--green);" id="callBtn1">Call</button>
+        </div>
+        <div class="info-row">
+          <div class="ir-icon ir-blue">🏠</div>
+          <div class="ir-body">
+            <div class="ir-label">Service Address</div>
+            <div class="ir-value">Flat 4B, Sunrise Apartment, New Town, Action Area II, Kolkata – 700156</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map Card -->
+      <div class="card anim anim-4" style="padding:14px;">
+        <div class="card-header" style="margin-bottom:10px;">
+          <div class="card-title"><span class="ct-icon">🗺</span> Location</div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);">3.2 km away</div>
+        </div>
+        <div class="map-box" id="mapBox1">
+          <svg class="map-svg" viewBox="0 0 362 150" xmlns="http://www.w3.org/2000/svg">
+            <!-- Map BG -->
+            <rect width="362" height="150" fill="#e8eff8"/>
+            <!-- Grid streets -->
+            <line x1="0" y1="50"  x2="362" y2="50"  stroke="#d0dae8" stroke-width="8"/>
+            <line x1="0" y1="100" x2="362" y2="100" stroke="#d0dae8" stroke-width="6"/>
+            <line x1="80"  y1="0" x2="80"  y2="150" stroke="#d0dae8" stroke-width="8"/>
+            <line x1="180" y1="0" x2="180" y2="150" stroke="#d0dae8" stroke-width="6"/>
+            <line x1="280" y1="0" x2="280" y2="150" stroke="#d0dae8" stroke-width="6"/>
+            <!-- Blocks -->
+            <rect x="5"   y="5"   width="68" height="38" rx="4" fill="#cdd8e8" opacity="0.5"/>
+            <rect x="88"  y="5"   width="84" height="38" rx="4" fill="#cdd8e8" opacity="0.5"/>
+            <rect x="188" y="5"   width="84" height="38" rx="4" fill="#b8cce0" opacity="0.6"/>
+            <rect x="5"   y="57"  width="68" height="36" rx="4" fill="#cdd8e8" opacity="0.5"/>
+            <rect x="88"  y="57"  width="84" height="36" rx="4" fill="#c8d4e4" opacity="0.5"/>
+            <rect x="188" y="57"  width="84" height="36" rx="4" fill="#cdd8e8" opacity="0.5"/>
+            <rect x="5"   y="106" width="68" height="38" rx="4" fill="#cdd8e8" opacity="0.5"/>
+            <rect x="88"  y="106" width="84" height="38" rx="4" fill="#b8cce0" opacity="0.6"/>
+            <rect x="288" y="57"  width="68" height="36" rx="4" fill="#cdd8e8" opacity="0.5"/>
+            <!-- Pulse ring -->
+            <circle cx="181" cy="75" r="28" fill="rgba(211,47,47,0.1)"/>
+            <circle cx="181" cy="75" r="18" fill="rgba(211,47,47,0.18)"/>
+          </svg>
+          <div class="map-pin-wrap">
+            <div class="map-pin"><div class="map-pin-inner">🏠</div></div>
+            <div class="map-pin-shadow"></div>
+          </div>
+          <div class="map-address-tag">New Town, Action Area II</div>
+          <div class="map-open-btn" id="openMapBtn1">Open Maps ↗</div>
+        </div>
+
+        <!-- Distance row -->
+        <div class="info-row" style="padding:0;">
+          <div class="ir-icon ir-blue">🛵</div>
+          <div class="ir-body">
+            <div class="ir-label">Distance from you</div>
+            <div class="ir-value">3.2 km · ~12 min by bike</div>
+          </div>
+          <button class="ir-action" style="background:var(--blue-lt);color:var(--blue);" id="navBtn">Navigate</button>
+        </div>
+      </div>
+
+      <!-- Price Card -->
+      <div class="card anim anim-5">
+        <div class="card-header">
+          <div class="card-title"><span class="ct-icon">💰</span> Service Price</div>
+        </div>
+        <table class="items-table" style="width:100%">
+          <tr>
+            <td class="item-name">Full Home Deep Clean (2BHK)</td>
+            <td class="item-qty">×1</td>
+            <td class="item-price">₹900</td>
+          </tr>
+          <tr>
+            <td class="item-name">Bathroom Scrubbing (2 nos)</td>
+            <td class="item-qty">×2</td>
+            <td class="item-price">₹200</td>
+          </tr>
+          <tr>
+            <td class="item-name">Kitchen Deep Clean Add-on</td>
+            <td class="item-qty">×1</td>
+            <td class="item-price">₹150</td>
+          </tr>
+          <tr class="price-row">
+            <td class="price-label">Subtotal</td><td></td>
+            <td class="price-val">₹1,250</td>
+          </tr>
+          <tr>
+            <td class="price-label">GST (18%)</td><td></td>
+            <td class="price-val">₹225</td>
+          </tr>
+          <tr class="total-row">
+            <td style="font-weight:900;color:var(--navy);">Total Payable</td><td></td>
+            <td class="price-val">₹1,475</td>
+          </tr>
+        </table>
+        <div style="margin-top:10px;background:var(--green-lt);border-radius:9px;padding:8px 12px;font-size:11.5px;font-weight:700;color:var(--green);">
+          💳 Payment: Collect Cash on Arrival
+        </div>
+      </div>
+
+      <div style="height:20px;"></div>
+    </div><!-- /scroll-body -->
+
+    <!-- Accept / Decline -->
+    <div class="cta-wrap">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-align:center;margin-bottom:10px;">
+        ⏳ <span id="timer">4:58</span> left to respond
+      </div>
+      <div class="cta-row">
+        <button class="btn-decline" id="declineBtn">✕ Decline</button>
+        <button class="btn-accept" id="acceptBtn">✓ Accept Booking</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       VIEW 2 — POST-ACCEPT: ACTIVE BOOKING
+  ══════════════════════════════════════════ -->
+  <div class="view" id="view-active">
+    <div class="topbar">
+      <div class="back-btn" id="backFromActive">‹</div>
+      <div class="topbar-center">
+        <div class="topbar-title">Booking Details</div>
+        <div class="topbar-sub">#BK-20240402 · Accepted</div>
+      </div>
+      <div class="topbar-badge" style="background:rgba(26,163,80,0.2);border-color:rgba(26,163,80,0.5);color:var(--green);">● ACTIVE</div>
+    </div>
+
+    <div class="scroll-body" id="activeScrollBody">
+
+      <!-- Status Banner -->
+      <div class="status-banner banner-ongoing anim anim-1">
+        <div class="sb-icon">✅</div>
+        <div>
+          <div class="sb-title">Booking Accepted!</div>
+          <div class="sb-sub" id="activeStatusSub">Head to customer location</div>
+        </div>
+      </div>
+
+      <!-- Progress Track -->
+      <div class="card anim anim-2" style="padding-bottom:4px;">
+        <div class="card-title" style="margin-bottom:12px;"><span class="ct-icon">📍</span> Service Progress</div>
+        <div class="step-track">
+          <div class="step-node">
+            <div class="step-circle sc-done" id="step1">✓</div>
+            <div class="step-label done">Accepted</div>
+          </div>
+          <div class="step-line" id="line1"></div>
+          <div class="step-node">
+            <div class="step-circle sc-active" id="step2">2</div>
+            <div class="step-label active">On the Way</div>
+          </div>
+          <div class="step-line" id="line2"></div>
+          <div class="step-node">
+            <div class="step-circle sc-idle" id="step3">3</div>
+            <div class="step-label">Arrived</div>
+          </div>
+          <div class="step-line" id="line3"></div>
+          <div class="step-node">
+            <div class="step-circle sc-idle" id="step4">4</div>
+            <div class="step-label">Completed</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions anim anim-3">
+        <button class="qa-btn" id="callCustomer">
+          <div class="qa-icon qai-call">📞</div>
+          <div class="qa-label">Call Customer</div>
+        </button>
+        <button class="qa-btn" id="whatsappBtn">
+          <div class="qa-icon qai-whatsapp">💬</div>
+          <div class="qa-label">WhatsApp</div>
+        </button>
+        <button class="qa-btn" id="navigateBtn">
+          <div class="qa-icon qai-nav">🗺</div>
+          <div class="qa-label">Navigate</div>
+        </button>
+        <button class="qa-btn" id="invoiceBtn">
+          <div class="qa-icon qai-invoice">🧾</div>
+          <div class="qa-label">Invoice</div>
+        </button>
+      </div>
+
+      <!-- Customer + Address Card -->
+      <div class="card anim anim-3">
+        <div class="card-header">
+          <div class="card-title"><span class="ct-icon">👤</span> Customer</div>
+          <div style="font-size:11px;font-weight:700;color:var(--green);">⭐ 4.9 Rated</div>
+        </div>
+        <div class="info-row" style="padding-top:0">
+          <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#E3F2FD,#BBDEFB);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👩</div>
+          <div class="ir-body">
+            <div class="ir-value" style="font-size:15px;font-weight:900;">Priya Banerjee</div>
+            <div class="ir-label">Flat 4B, Sunrise Apartment, New Town</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ir-icon ir-green">📞</div>
+          <div class="ir-body">
+            <div class="ir-label">Mobile</div>
+            <div class="ir-value">+91 98765 43210</div>
+          </div>
+          <button class="ir-action" style="background:var(--green-lt);color:var(--green);" id="callBtn2">📞 Call</button>
+        </div>
+        <div class="info-row">
+          <div class="ir-icon ir-blue">🏠</div>
+          <div class="ir-body">
+            <div class="ir-label">Full Address</div>
+            <div class="ir-value">Flat 4B, Sunrise Apartment, New Town, Action Area II, Kolkata – 700156</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ir-icon ir-gold">📅</div>
+          <div class="ir-body">
+            <div class="ir-label">Scheduled Time</div>
+            <div class="ir-value">Today, 01 Apr 2024 · 2:00 PM</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Map -->
+      <div class="card anim anim-4" style="padding:14px">
+        <div class="card-header" style="margin-bottom:10px;">
+          <div class="card-title"><span class="ct-icon">📍</span> Customer Location</div>
+          <div style="font-size:11px;font-weight:700;color:var(--blue);cursor:pointer;" id="openMap2">Open in Maps ↗</div>
+        </div>
+        <div class="map-box" style="height:140px;" id="mapBox2">
+          <svg class="map-svg" viewBox="0 0 362 140" xmlns="http://www.w3.org/2000/svg">
+            <rect width="362" height="140" fill="#e4ecf5"/>
+            <line x1="0" y1="47"  x2="362" y2="47"  stroke="#ccd6e4" stroke-width="9"/>
+            <line x1="0" y1="95"  x2="362" y2="95"  stroke="#ccd6e4" stroke-width="7"/>
+            <line x1="75"  y1="0" x2="75"  y2="140" stroke="#ccd6e4" stroke-width="9"/>
+            <line x1="175" y1="0" x2="175" y2="140" stroke="#ccd6e4" stroke-width="7"/>
+            <line x1="275" y1="0" x2="275" y2="140" stroke="#ccd6e4" stroke-width="7"/>
+            <rect x="5"   y="5"   width="63" height="35" rx="4" fill="#c4d0e0" opacity="0.6"/>
+            <rect x="83"  y="5"   width="84" height="35" rx="4" fill="#c4d0e0" opacity="0.6"/>
+            <rect x="183" y="5"   width="84" height="35" rx="4" fill="#b0c4d8" opacity="0.7"/>
+            <rect x="5"   y="54"  width="63" height="34" rx="4" fill="#c4d0e0" opacity="0.6"/>
+            <rect x="83"  y="54"  width="84" height="34" rx="4" fill="#c0cce0" opacity="0.6"/>
+            <rect x="5"   y="100" width="63" height="34" rx="4" fill="#c4d0e0" opacity="0.6"/>
+            <rect x="83"  y="100" width="84" height="34" rx="4" fill="#b0c4d8" opacity="0.7"/>
+            <rect x="283" y="54"  width="73" height="34" rx="4" fill="#c4d0e0" opacity="0.6"/>
+            <!-- Route line -->
+            <path d="M 40 140 Q 40 95 75 95 Q 175 95 175 70" stroke="#1A73E8" stroke-width="3.5" fill="none" stroke-dasharray="8,5" stroke-linecap="round"/>
+            <!-- Expert dot -->
+            <circle cx="40" cy="130" r="8" fill="#1A73E8" stroke="white" stroke-width="2"/>
+            <!-- Pulse -->
+            <circle cx="175" cy="70" r="22" fill="rgba(211,47,47,0.12)"/>
+            <circle cx="175" cy="70" r="14" fill="rgba(211,47,47,0.2)"/>
+          </svg>
+          <div class="map-pin-wrap" style="left:45%;top:46%">
+            <div class="map-pin" style="width:30px;height:30px;"><div class="map-pin-inner" style="font-size:13px;">🏠</div></div>
+            <div class="map-pin-shadow"></div>
+          </div>
+          <div class="map-address-tag" style="bottom:8px;font-size:10px;">New Town, Action Area II · 3.2 km</div>
+        </div>
+      </div>
+
+      <!-- Service Summary -->
+      <div class="card anim anim-5">
+        <div class="card-header">
+          <div class="card-title"><span class="ct-icon">🧹</span> Service Details</div>
+          <div style="font-size:14px;font-weight:900;color:var(--navy);">₹1,475</div>
+        </div>
+        <div class="info-row" style="padding-top:0">
+          <div class="ir-icon ir-navy">🏠</div>
+          <div class="ir-body">
+            <div class="ir-label">Service</div>
+            <div class="ir-value">Full Home Deep Cleaning (2BHK)</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ir-icon ir-purple">📝</div>
+          <div class="ir-body">
+            <div class="ir-label">Customer Note</div>
+            <div class="ir-value">Please focus on kitchen &amp; bathrooms. Bring own equipment.</div>
+          </div>
+        </div>
+        <div class="info-row">
+          <div class="ir-icon ir-green">💳</div>
+          <div class="ir-body">
+            <div class="ir-label">Payment Mode</div>
+            <div class="ir-value">Cash on Completion</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:20px;"></div>
+    </div>
+
+    <!-- Bottom CTA — dynamic -->
+    <div class="cta-wrap" id="activeCTA">
+      <button class="btn-start" id="startBtn">🛵 I've Arrived — Start Service</button>
+      <button class="btn-invoice" id="showInvoiceBtn" style="display:none;">🧾 Generate Invoice</button>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       VIEW 3 — INVOICE
+  ══════════════════════════════════════════ -->
+  <div class="view" id="view-invoice">
+    <div class="invoice-top">
+      <div class="inv-logo"><span>🧹</span></div>
+      <div class="inv-brand">ARVI SCRUB HUB</div>
+      <div class="inv-number">Invoice #INV-20240402 · 01 Apr 2024</div>
+      <div class="inv-status-tag">● Unpaid · Cash Due</div>
+    </div>
+
+    <div class="invoice-body">
+
+      <!-- Billed To / From -->
+      <div class="inv-meta">
+        <div class="card-title" style="margin-bottom:12px;"><span class="ct-icon">📋</span> Invoice Details</div>
+        <div class="inv-meta-row">
+          <div class="imr-label">Invoice No.</div>
+          <div class="imr-val" style="font-weight:900;color:var(--navy);">#INV-20240402</div>
+        </div>
+        <div class="inv-meta-row">
+          <div class="imr-label">Booking ID</div>
+          <div class="imr-val">#BK-20240402</div>
+        </div>
+        <div class="inv-meta-row">
+          <div class="imr-label">Date & Time</div>
+          <div class="imr-val">01 Apr 2024, 2:00 PM</div>
+        </div>
+        <div class="inv-meta-row">
+          <div class="imr-label">Bill To</div>
+          <div class="imr-val">Priya Banerjee<br><span style="font-weight:600;color:var(--muted);font-size:11px;">Flat 4B, Sunrise Apt, New Town, KOL-156</span></div>
+        </div>
+        <div class="inv-meta-row">
+          <div class="imr-label">Expert</div>
+          <div class="imr-val">Rahul Kumar Sharma<br><span style="font-weight:600;color:var(--muted);font-size:11px;">ID: ASH-KOL-0247 · Bidhannagar</span></div>
+        </div>
+      </div>
+
+      <!-- Line Items -->
+      <div class="inv-items">
+        <div class="card-title" style="margin-bottom:12px;"><span class="ct-icon">🧾</span> Services Rendered</div>
+        <div class="inv-item-row">
+          <div class="inv-item-name">Full Home Deep Clean (2BHK)</div>
+          <div class="inv-item-qty">×1</div>
+          <div class="inv-item-amt">₹900</div>
+        </div>
+        <div class="inv-item-row">
+          <div class="inv-item-name">Bathroom Scrubbing</div>
+          <div class="inv-item-qty">×2</div>
+          <div class="inv-item-amt">₹200</div>
+        </div>
+        <div class="inv-item-row">
+          <div class="inv-item-name">Kitchen Deep Clean Add-on</div>
+          <div class="inv-item-qty">×1</div>
+          <div class="inv-item-amt">₹150</div>
+        </div>
+        <div class="inv-item-row">
+          <div class="inv-item-name" style="color:var(--green);">✓ On-time Bonus</div>
+          <div class="inv-item-qty"></div>
+          <div class="inv-item-amt" style="color:var(--green);">+₹50</div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="inv-totals">
+        <div class="inv-total-row">
+          <div class="itl">Subtotal</div>
+          <div class="itv">₹1,300</div>
+        </div>
+        <div class="inv-total-row">
+          <div class="itl">GST @ 18%</div>
+          <div class="itv">₹234</div>
+        </div>
+        <div class="inv-total-row">
+          <div class="itl">Discount</div>
+          <div class="itv" style="color:var(--green);">– ₹59</div>
+        </div>
+        <div class="inv-grand">
+          <div class="ig-label">Grand Total</div>
+          <div class="ig-val">₹1,475</div>
+        </div>
+      </div>
+
+      <!-- Expert Payout -->
+      <div class="card" style="padding:14px;border:2px solid var(--green-lt)">
+        <div class="card-title" style="margin-bottom:12px;"><span class="ct-icon">💰</span> Your Earnings</div>
+        <div class="inv-total-row">
+          <div class="itl">Customer Pays</div>
+          <div class="itv" style="font-weight:800;">₹1,475</div>
+        </div>
+        <div class="inv-total-row">
+          <div class="itl">Platform Fee (15%)</div>
+          <div class="itv" style="color:var(--red);">– ₹221</div>
+        </div>
+        <div class="inv-total-row" style="border-top:2px solid var(--green-lt);padding-top:10px;margin-top:4px;">
+          <div class="itl" style="font-size:14px;font-weight:900;color:var(--green);">Your Payout</div>
+          <div class="itv" style="font-size:16px;font-weight:900;color:var(--green);">₹1,254</div>
+        </div>
+      </div>
+
+      <!-- Terms -->
+      <div class="inv-note">
+        💡 Collect ₹1,475 cash from customer. Your payout ₹1,254 will be settled by Friday.
+      </div>
+
+      <div style="height:10px;"></div>
+    </div>
+
+    <div class="inv-actions">
+      <button class="btn-share" id="shareInvoice">📤 Share PDF</button>
+      <button class="btn-collect" id="collectBtn">✓ Mark as Collected</button>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       OTP MODAL
+  ══════════════════════════════════════════ -->
+  <div class="modal-overlay" id="otpModal">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Enter OTP to Complete</div>
+      <div class="modal-sub">Ask customer for the 4-digit OTP sent to their mobile</div>
+      <div class="otp-row">
+        <input class="otp-box" maxlength="1" type="tel" id="o1">
+        <input class="otp-box" maxlength="1" type="tel" id="o2">
+        <input class="otp-box" maxlength="1" type="tel" id="o3">
+        <input class="otp-box" maxlength="1" type="tel" id="o4">
+      </div>
+      <button class="btn-verify" id="verifyOTP">✓ Verify & Complete Job</button>
+      <div class="otp-resend">Didn't receive? <span id="resendOTP">Resend OTP</span></div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       CALL OVERLAY
+  ══════════════════════════════════════════ -->
+  <div class="call-overlay" id="callOverlay">
+    <div class="call-avatar">👩</div>
+    <div class="call-name">Priya Banerjee</div>
+    <div class="call-num">+91 98765 43210</div>
+    <div class="call-status">● Calling…</div>
+    <button class="call-end-btn" id="endCall">📵</button>
+  </div>
+
+
+  <!-- ── Toast ── -->
+  <div class="toast" id="toast"></div>
+</div>
+<!-- /phone -->
+
+<script>
+$(function(){
+
+  /* ─── Toast ─── */
+  let toastT;
+  function toast(msg,dur=2400){
+    clearTimeout(toastT);
+    $('#toast').text(msg).addClass('show');
+    toastT=setTimeout(()=>$('#toast').removeClass('show'),dur);
+  }
+
+  /* ─── View switcher ─── */
+  function showView(id){
+    $('.view').removeClass('active');
+    $('#'+id).addClass('active');
+  }
+
+  /* ─── Countdown Timer ─── */
+  let secs=298;
+  const timerEl=$('#timer');
+  const countDown=setInterval(()=>{
+    secs--;
+    if(secs<=0){clearInterval(countDown);timerEl.parent().text('⛔ Time expired');return;}
+    const m=Math.floor(secs/60),s=secs%60;
+    timerEl.text(m+':'+(s<10?'0':'')+s);
+    if(secs<=30) timerEl.parent().css('color','var(--red)');
+  },1000);
+
+  /* ─── ACCEPT BOOKING ─── */
+  $('#acceptBtn').on('click',function(){
+    clearInterval(countDown);
+    $(this).text('✓ Booking Accepted!').prop('disabled',true).css('opacity',0.8);
+    toast('🎉 Booking accepted! Head to customer location');
+    setTimeout(()=>showView('view-active'),700);
+  });
+
+  /* ─── DECLINE ─── */
+  $('#declineBtn').on('click',function(){
+    if(confirm('Are you sure you want to decline this booking?')){
+      toast('❌ Booking declined');
+    }
+  });
+
+  /* ─── Back ─── */
+  $('#backFromActive').on('click',()=>showView('view-preaccept'));
+
+  /* ─── Calling overlay ─── */
+  function openCall(){
+    $('#callOverlay').addClass('open');
+    setTimeout(()=>{
+      $('#callOverlay .call-status').text('● Connected');
+      setTimeout(()=>$('#callOverlay').removeClass('open'),3000);
+    },2000);
+  }
+  $('#callBtn1,#callBtn2,#callCustomer,#preCallBtn').on('click',openCall);
+  $('#endCall').on('click',()=>{
+    $('#callOverlay').removeClass('open');
+    toast('📞 Call ended');
+  });
+
+  /* ─── WhatsApp ─── */
+  $('#whatsappBtn').on('click',()=>toast('💬 Opening WhatsApp…'));
+
+  /* ─── Navigate ─── */
+  $('#navigateBtn, #navBtn, #openMapBtn1, #openMap2, #mapBox1, #mapBox2').on('click',function(e){
+    if($(e.target).closest('.map-open-btn, #openMap2, #navBtn').length || this.id==='navigateBtn'){
+      toast('🗺 Opening Google Maps navigation…');
+    }
+  });
+
+  /* ─── Step Progress ─── */
+  let stepState=2; // 1=accepted,2=on-way,3=arrived,4=complete
+  function setStep(n){
+    stepState=n;
+    for(let i=1;i<=4;i++){
+      const $c=$('#step'+i);
+      if(i<n){ $c.attr('class','step-circle sc-done').text('✓'); $('#step'+i).siblings('.step-label').attr('class','step-label done'); }
+      else if(i===n){ $c.attr('class','step-circle sc-active').text(i); $('#step'+i).siblings('.step-label').attr('class','step-label active'); }
+      else{ $c.attr('class','step-circle sc-idle').text(i); $('#step'+i).siblings('.step-label').attr('class','step-label'); }
+    }
+    for(let i=1;i<=3;i++){
+      $('#line'+i).toggleClass('done',i<n);
+    }
+    const subs=['','Head to customer location','On the way to customer…','You have arrived — Start service!','Job in progress…'];
+    $('#activeStatusSub').text(subs[n]);
+  }
+
+  /* ─── Start Button ─── */
+  $('#startBtn').on('click',function(){
+    if(stepState===2){
+      setStep(3);
+      $(this).text('▶ Start Cleaning');
+      toast('📍 Arrived! Now start the service.');
+    } else if(stepState===3){
+      setStep(4);
+      $(this).hide();
+      $('#showInvoiceBtn').show();
+      $('#activeStatusSub').text('Service in progress…');
+      toast('✅ Service started!');
+    }
+  });
+
+  /* ─── Invoice Button ─── */
+  $('#invoiceBtn, #showInvoiceBtn').on('click',function(){
+    showView('view-invoice');
+  });
+
+  /* ─── OTP Modal ─── */
+  // OTP auto-advance
+  $('.otp-box').on('input',function(){
+    if($(this).val().length===1){
+      $(this).next('.otp-box').focus();
+    }
+  }).on('keydown',function(e){
+    if(e.key==='Backspace'&&!$(this).val()){
+      $(this).prev('.otp-box').focus();
+    }
+  });
+
+  $('#verifyOTP').on('click',function(){
+    const otp=$('#o1').val()+$('#o2').val()+$('#o3').val()+$('#o4').val();
+    if(otp.length<4){ toast('⚠ Enter all 4 digits'); return; }
+    $('#otpModal').removeClass('open');
+    setStep(4);
+    toast('✅ OTP Verified! Job marked complete.');
+    $('#showInvoiceBtn').show();
+    $('#startBtn').hide();
+    $('#activeStatusSub').text('Job completed! Collect payment.');
+    setTimeout(()=>showView('view-invoice'),800);
+  });
+
+  $('#resendOTP').on('click',()=>toast('📱 OTP resent to customer'));
+
+  /* ─── Show OTP on complete tap (long press) ─── */
+  let holdT;
+  $('#showInvoiceBtn').on('touchstart mousedown',function(){
+    holdT=setTimeout(()=>{
+      $('#o1,#o2,#o3,#o4').val('');
+      $('#otpModal').addClass('open');
+      $('#o1').focus();
+    },600);
+  }).on('touchend mouseup mouseleave',()=>clearTimeout(holdT));
+
+  /* ─── Invoice Actions ─── */
+  $('#shareInvoice').on('click',()=>toast('📤 Invoice shared via WhatsApp'));
+  $('#collectBtn').on('click',function(){
+    $(this).text('✓ Payment Collected! ₹1,475')
+           .css({'background':'var(--navy)','pointer-events':'none'});
+    toast('💰 ₹1,475 collected! Great job today! 🎉',3000);
+    setTimeout(()=>{
+      $('.inv-status-tag').text('✓ Paid · Cash Collected')
+                         .css({'background':'rgba(26,163,80,0.15)',
+                               'border-color':'rgba(26,163,80,0.4)',
+                               'color':'var(--green)'});
+    },500);
+  });
+
+  /* ─── Ripple on qa-btns ─── */
+  $('.qa-btn').on('click',function(e){
+    const $r=$('<div>').css({
+      position:'absolute',borderRadius:'50%',
+      background:'rgba(0,0,0,0.06)',
+      width:60,height:60,
+      left:e.offsetX-30,top:e.offsetY-30,
+      animation:'fadeIn 0.4s ease both'
+    });
+    $(this).css('position','relative').append($r);
+    setTimeout(()=>$r.remove(),400);
+  });
+
+  /* Initialize */
+  setStep(2);
+});
+</script>
+</body>
+</html>

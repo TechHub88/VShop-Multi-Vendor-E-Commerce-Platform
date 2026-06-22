@@ -1,0 +1,71 @@
+.template-box {
+    width: 100%;
+    background: #ffff;
+    box-shadow: 0px 1px 4px #00000029;
+    border: 1px solid #FBFBFB;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.template-img {
+    height: 103px;
+}
+
+.template-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.template-cont {
+    width: 100%;
+    padding: 6px 12px;
+}
+
+.template-cont p {
+    font-size: 12px;
+    color: #2B2A2A;
+}
+
+.btn-check-sec {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.primary-btn {
+    background: #004392;
+    border: 0;
+    color: #fff;
+    padding: 4px 22px;
+    font-size: 14px;
+    border-radius: 4px;
+    box-shadow: 0px 3px 6px #00000029;
+}
+
+.template-check-box {
+    width: 38px;
+    height: 28px;
+    background: #fff;
+    box-shadow: 0px 1px 4px #00000029;
+    border: 1px solid #FBFBFB;
+    border-radius: 4px;
+}
+
+.template-check-box .application-container {
+    width: 100%;
+    height: 100%;
+}
+
+.template-check-box .application-container .radio-check {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border: 2px solid #004392;
+}
+
+.template-check-box .application-container .radio-check:after {
+    width: 12px;
+    height: 12px;
+}

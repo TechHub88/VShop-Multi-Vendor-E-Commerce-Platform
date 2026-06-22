@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anmol Tyagi | Interactive Aurora Portfolio</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #ffffff;
+            overflow-x: hidden;
+            line-height: 1.5;
+        }
+
+        /* Canvas Background for Interactive Gradient Balls */
+        #gradient-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            display: block;
+            cursor: none;
+        }
+
+        /* Overlay for better text readability */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(10, 10, 20, 0.3), rgba(5, 5, 15, 0.7));
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Custom Cursor (optional) */
+        .custom-cursor {
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #06b6d4, #8b5cf6);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: screen;
+            transition: transform 0.1s ease;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1a1a2e; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, #06b6d4, #8b5cf6); border-radius: 10px; }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Glassmorphism Navbar */
+        nav {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 1200px;
+            background: rgba(15, 15, 26, 0.6);
+            backdrop-filter: blur(12px);
+            border-radius: 60px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            z-index: 1000;
+            padding: 12px 28px;
+            transition: all 0.3s;
+        }
+
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: #e0e0ff;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: #06b6d4;
+        }
+
+        /* Glass Card Style */
+        .glass-card {
+            background: rgba(20, 20, 35, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            border-radius: 28px;
+            padding: 28px;
+            transition: all 0.35s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(6, 182, 212, 0.5);
+            box-shadow: 0 20px 35px -15px rgba(6, 182, 212, 0.2);
+            background: rgba(30, 30, 50, 0.5);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding-top: 100px;
+        }
+
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 0.9fr;
+            gap: 50px;
+            align-items: center;
+        }
+
+        .hero-text h3 {
+            font-size: 16px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .hero-text h1 {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .hero-text .highlight {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            display: inline-block;
+            color: #c4b5fd;
+        }
+
+        .hero-text p {
+            font-size: 16px;
+            color: #b9c3d4;
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+
+        .hero-image img {
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(6, 182, 212, 0.5);
+            animation: float 5s ease-in-out infinite;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 12px 32px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: 0.3s;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(6, 182, 212, 0.4);
+        }
+
+        section {
+            padding: 90px 0;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 50px;
+            background: linear-gradient(135deg, #ffffff, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        /* Grids */
+        .grid-2 { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+        .grid-3 { display: grid; gap: 28px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+        .grid-4 { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+
+        .skill-tag {
+            display: inline-block;
+            background: rgba(139, 92, 246, 0.2);
+            padding: 5px 14px;
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 500;
+            margin: 6px 6px 0 0;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+
+        .contact-form {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(20, 20, 35, 0.4);
+            backdrop-filter: blur(12px);
+            padding: 40px;
+            border-radius: 32px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            border-radius: 60px;
+            background: rgba(10, 10, 20, 0.6);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            transition: 0.3s;
+        }
+
+        .form-group textarea {
+            border-radius: 24px;
+            resize: vertical;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #06b6d4;
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #06b6d4, #8b5cf6);
+            border: none;
+            border-radius: 60px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .submit-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 6px 18px rgba(139, 92, 246, 0.4);
+        }
+
+        footer {
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(8px);
+            padding: 40px 0;
+            text-align: center;
+            border-top: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 28px;
+            margin-bottom: 20px;
+        }
+
+        .social-links a {
+            color: #c4b5fd;
+            font-size: 24px;
+            transition: 0.3s;
+        }
+
+        .social-links a:hover {
+            color: #06b6d4;
+            transform: translateY(-4px);
+        }
+
+        @media (max-width: 768px) {
+            .hero-content { grid-template-columns: 1fr; text-align: center; }
+            .hero-text h1 { font-size: 40px; }
+            .nav-links { display: none; }
+            .section-title { font-size: 32px; }
+            nav { top: 16px; width: 95%; padding: 10px 20px; }
+        }
+
+        .menu-btn {
+            display: none;
+            font-size: 26px;
+            cursor: pointer;
+            color: #c4b5fd;
+        }
+
+        @media (max-width: 768px) {
+            .menu-btn { display: block; }
+            .nav-links.active {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 65px;
+                left: 20px;
+                right: 20px;
+                background: rgba(15, 15, 26, 0.95);
+                backdrop-filter: blur(16px);
+                border-radius: 28px;
+                padding: 24px;
+                text-align: center;
+                border: 1px solid rgba(139, 92, 246, 0.4);
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gradient-canvas"></canvas>
+    <div class="overlay"></div>
+    <div class="custom-cursor"></div>
+
+    <nav>
+        <div class="nav-container">
+            <div class="logo">ANMOL TYAGI</div>
+            <div class="menu-btn" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#profile">Profile</a></li>
+                <li><a href="#education">Education</a></li>
+                <li><a href="#skills">Skills</a></li>
+                <li><a href="#projects">Projects</a></li>
+                <li><a href="#contact">Connect</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section id="home" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h3>✦ QA AUTOMATION ENTHUSIAST ✦</h3>
+                    <h1>Anmol Tyagi</h1>
+                    <div class="highlight">QA Tester | Test Automation | UI/UX</div>
+                    <p><i class="fas fa-map-pin"></i> Ambala, Haryana, India · Chandigarh University Graduate</p>
+                    <p>Bringing precision, reliability, and user-focused quality to software — with growing expertise in test automation and SDLC.</p>
+                    <a href="#contact" class="btn btn-primary">Let's Collaborate →</a>
+                </div>
+                <div class="hero-image">
+                    <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Anmol Tyagi">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="profile">
+        <div class="container">
+            <h2 class="section-title">Professional Profile</h2>
+            <div class="glass-card" style="text-align: center; max-width: 900px; margin: 0 auto;">
+                <p style="font-size: 17px; line-height: 1.7;">Hello, I'm Anmol, a QA Tester with growing expertise in test automation and a strong foundation in the Software Development Life Cycle (SDLC). With practical experience in quality assurance and a focused interest in UI/UX design, I bring attention to detail, problem-solving ability, and a commitment to delivering reliable, user-focused software. I am actively expanding my automation skills to contribute more effectively to quality-driven projects with precision and professionalism.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="education">
+        <div class="container">
+            <h2 class="section-title">Education</h2>
+            <div class="grid-2">
+                <div class="glass-card">
+                    <i class="fas fa-graduation-cap" style="font-size: 36px; margin-bottom: 12px; display: inline-block;"></i>
+                    <h3>Chandigarh University</h3>
+                    <p><strong>July 2021 - July 2025</strong><br>Bachelor's in Computer Science — core technical foundations & problem-solving</p>
+                </div>
+                <div class="glass-card">
+                    <i class="fas fa-school" style="font-size: 36px; margin-bottom: 12px;"></i>
+                    <h3>Angels Public School</h3>
+                    <p><strong>Intermediate (PCM) 2019-2021</strong><br>Matriculation 2018-2019 — strong analytical & quantitative foundation</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="skills">
+        <div class="container">
+            <h2 class="section-title">Core Competencies</h2>
+            <div class="grid-3">
+                <div class="glass-card"><i class="fas fa-vial"></i><h3>System Testing</h3><p>End-to-end validation, QA best practices</p></div>
+                <div class="glass-card"><i class="fas fa-tasks"></i><h3>Test Planning</h3><p>Strategic design & execution frameworks</p></div>
+                <div class="glass-card"><i class="fas fa-pen-ruler"></i><h3>UI/UX Design</h3><p>User-centric design & interface optimization</p></div>
+            </div>
+
+            <h2 class="section-title" style="margin-top: 70px;">Technical Arsenal</h2>
+            <div class="grid-2">
+                <div class="glass-card"><i class="fas fa-bug"></i><h3>Software Testing</h3><p>Manual + automated strategies, test case design, defect management</p></div>
+                <div class="glass-card"><i class="fas fa-code-branch"></i><h3>SDLC Knowledge</h3><p>Full lifecycle command — req analysis to deployment</p></div>
+                <div class="glass-card"><i class="fas fa-chart-line"></i><h3>Data Analysis</h3><p>Tableau dashboards, visual analytics & reporting</p></div>
+                <div class="glass-card"><i class="fas fa-cloud-upload-alt"></i><h3>Automation & DevOps</h3><p>CI/CD pipelines, test automation (growing expertise)</p></div>
+            </div>
+
+            <h2 class="section-title" style="margin-top: 70px;">Areas of Interest</h2>
+            <div class="grid-4">
+                <div class="glass-card"><i class="fas fa-check-circle"></i><h3>QA Excellence</h3><p>Reliability & consistency</p></div>
+                <div class="glass-card"><i class="fas fa-draw-polygon"></i><h3>UI/UX Craft</h3><p>Seamless experiences</p></div>
+                <div class="glass-card"><i class="fas fa-lightbulb"></i><h3>Innovation</h3><p>Emerging tech solutions</p></div>
+                <div class="glass-card"><i class="fas fa-robot"></i><h3>Test Automation</h3><p>Scalable automation workflows</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="projects">
+        <div class="container">
+            <h2 class="section-title">Signature Projects</h2>
+            <div class="grid-2">
+                <div class="glass-card"><i class="fas fa-comments fa-2x"></i><h3>Chatpy</h3><p>Real-time chat platform powered by WebSocket architecture</p><div><span class="skill-tag">Development</span><span class="skill-tag">Testing</span></div></div>
+                <div class="glass-card"><i class="fas fa-project-diagram fa-2x"></i><h3>ProjectExplorer</h3><p>Intelligent project recommendation engine</p><div><span class="skill-tag">Frontend Testing</span><span class="skill-tag">UI/UX</span><span class="skill-tag">Deployment</span></div></div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <h2 class="section-title">Certifications & Publication</h2>
+            <div class="grid-3">
+                <div class="glass-card"><i class="fas fa-link"></i><h3>Blockchain Basics</h3><p>Distributed ledger expertise</p></div>
+                <div class="glass-card"><i class="fas fa-chart-simple"></i><h3>Visual Analytics (Tableau)</h3><p>BI & data storytelling</p></div>
+                <div class="glass-card"><i class="fas fa-chart-pie"></i><h3>Data Visualization (Tableau)</h3><p>Advanced dashboard techniques</p></div>
+                <div class="glass-card"><i class="fas fa-leaf"></i><h3>Net-Zero Building</h3><p>Sustainable architecture knowledge</p></div>
+                <div class="glass-card"><i class="fas fa-shield-alt"></i><h3>Cybersecurity Automation (Python)</h3><p>Security ops & threat detection</p></div>
+            </div>
+            <div class="glass-card" style="margin-top: 30px; text-align: center;"><i class="fas fa-file-alt fa-2x"></i><h3>📄 Publication: Standardized & Decentralized Ticketing System</h3><p>Research on scalable ticketing architectures via decentralized protocols.</p></div>
+
+            <h2 class="section-title" style="margin-top: 70px;">Languages</h2>
+            <div class="grid-3">
+                <div class="glass-card"><i class="fas fa-language"></i><h3>English</h3><p>Professional working proficiency</p></div>
+                <div class="glass-card"><i class="fas fa-language"></i><h3>Hindi</h3><p>Professional working proficiency</p></div>
+                <div class="glass-card"><i class="fas fa-language"></i><h3>Punjabi</h3><p>Professional working proficiency</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact">
+        <div class="container">
+            <h2 class="section-title">Let's Connect</h2>
+            <div class="contact-form">
+                <p style="text-align: center; margin-bottom: 24px; color: #cbd5e6;">Open to strategic collaborations & quality-driven initiatives.</p>
+                <form id="contactForm">
+                    <div class="form-group"><input type="text" placeholder="Full Name" required></div>
+                    <div class="form-group"><input type="email" placeholder="Email address" required></div>
+                    <div class="form-group"><textarea placeholder="Your message..." rows="4" required></textarea></div>
+                    <button type="submit" class="submit-btn">Send Message →</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="social-links">
+                <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                <a href="#"><i class="fab fa-github"></i></a>
+                <a href="#"><i class="fab fa-x-twitter"></i></a>
+                <a href="#"><i class="fab fa-instagram"></i></a>
+            </div>
+            <p style="opacity: 0.7;">© 2025 Anmol Tyagi — Interactive Aurora Edition. Precision. Quality. Innovation.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Canvas and context
+        const canvas = document.getElementById('gradient-canvas');
+        const ctx = canvas.getContext('2d');
+        const cursorDot = document.querySelector('.custom-cursor');
+        
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        
+        // Mouse position tracking (normalized 0-1)
+        let mouseX = 0.5;
+        let mouseY = 0.5;
+        let targetMouseX = 0.5;
+        let targetMouseY = 0.5;
+        
+        // Gradient balls data
+        let balls = [
+            { baseX: 0.2, baseY: 0.3, radius: 0.22, color: { r: 6, g: 182, b: 212 }, speed: 0.8, influence: 0.4 },   // Cyan
+            { baseX: 0.5, baseY: 0.6, radius: 0.25, color: { r: 139, g: 92, b: 246 }, speed: 0.6, influence: 0.5 },   // Purple
+            { baseX: 0.8, baseY: 0.4, radius: 0.2, color: { r: 236, g: 72, b: 153 }, speed: 0.7, influence: 0.45 },    // Pink
+            { baseX: 0.3, baseY: 0.8, radius: 0.18, color: { r: 59, g: 130, b: 246 }, speed: 0.9, influence: 0.35 },    // Blue
+            { baseX: 0.7, baseY: 0.2, radius: 0.2, color: { r: 168, g: 85, b: 247 }, speed: 0.5, influence: 0.4 },      // Light Purple
+            { baseX: 0.5, baseY: 0.9, radius: 0.16, color: { r: 20, g: 184, b: 166 }, speed: 1.0, influence: 0.3 },      // Teal
+            { baseX: 0.15, baseY: 0.5, radius: 0.15, color: { r: 245, g: 158, b: 11 }, speed: 0.75, influence: 0.35 },   // Orange
+            { baseX: 0.85, baseY: 0.7, radius: 0.17, color: { r: 34, g: 211, b: 238 }, speed: 0.65, influence: 0.38 }     // Bright Cyan
+        ];
+        
+        let time = 0;
+        let scrollY = 0;
+        
+        // Smooth mouse tracking
+        let currentMouseX = 0.5;
+        let currentMouseY = 0.5;
+        
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        
+        // Track mouse movement
+        document.addEventListener('mousemove', (e) => {
+            targetMouseX = e.clientX / width;
+            targetMouseY = e.clientY / height;
+            
+            // Update custom cursor position
+            cursorDot.style.left = e.clientX - 10 + 'px';
+            cursorDot.style.top = e.clientY - 10 + 'px';
+            
+            // Add ripple effect on cursor move
+            cursorDot.style.transform = 'scale(1.2)';
+            setTimeout(() => {
+                cursorDot.style.transform = 'scale(1)';
+            }, 100);
+        });
+        
+        // Mouse leave effect
+        document.addEventListener('mouseleave', () => {
+            targetMouseX = 0.5;
+            targetMouseY = 0.5;
+            cursorDot.style.opacity = '0';
+        });
+        
+        document.addEventListener('mouseenter', () => {
+            cursorDot.style.opacity = '1';
+        });
+        
+        function drawInteractiveGradientBalls() {
+            if (!ctx) return;
+            
+            // Smooth mouse tracking (lerp for smooth movement)
+            currentMouseX += (targetMouseX - currentMouseX) * 0.08;
+            currentMouseY += (targetMouseY - currentMouseY) * 0.08;
+            
+            // Clear canvas with dark base
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Calculate scroll factor
+            const scrollFactor = scrollY / (document.body.scrollHeight - height) || 0;
+            
+            // Draw each gradient ball
+            for (let i = 0; i < balls.length; i++) {
+                const ball = balls[i];
+                
+                // Animated oscillation
+                const offsetX = Math.sin(time * ball.speed + i) * 0.04;
+                const offsetY = Math.cos(time * (ball.speed + 0.3) + i * 1.2) * 0.04;
+                
+                // Mouse influence - balls move away from cursor (repel effect)
+                const dxFromMouse = currentMouseX - ball.baseX;
+                const dyFromMouse = currentMouseY - ball.baseY;
+                const distanceToMouse = Math.sqrt(dxFromMouse * dxFromMouse + dyFromMouse * dyFromMouse);
+                
+                let mouseInfluenceX = 0;
+                let mouseInfluenceY = 0;
+                
+                if (distanceToMouse < 0.35) {
+                    const strength = (1 - distanceToMouse / 0.35) * ball.influence;
+                    const angle = Math.atan2(dyFromMouse, dxFromMouse);
+                    mouseInfluenceX = -Math.cos(angle) * strength * 0.15;
+                    mouseInfluenceY = -Math.sin(angle) * strength * 0.15;
+                }
+                
+                // Scroll influence
+                const scrollInfluenceX = Math.sin(scrollFactor * Math.PI * 2 + i) * 0.05;
+                const scrollInfluenceY = Math.cos(scrollFactor * Math.PI * 2 + i * 1.5) * 0.05;
+                
+                // Final ball position
+                let centerX = (ball.baseX + offsetX + mouseInfluenceX + scrollInfluenceX + scrollFactor * 0.2) * width;
+                let centerY = (ball.baseY + offsetY + mouseInfluenceY + scrollInfluenceY + scrollFactor * 0.15) * height;
+                
+                // Keep in bounds
+                centerX = Math.min(Math.max(centerX, -width * 0.2), width * 1.2);
+                centerY = Math.min(Math.max(centerY, -height * 0.2), height * 1.2);
+                
+                // Pulsing radius with mouse proximity
+                let radiusMultiplier = 1;
+                if (distanceToMouse < 0.3) {
+                    radiusMultiplier = 1 + (1 - distanceToMouse / 0.3) * 0.5;
+                }
+                
+                const pulse = Math.sin(time * 1.5 + i) * 0.05;
+                const radius = (ball.radius + pulse + scrollFactor * 0.08) * radiusMultiplier * Math.min(width, height);
+                
+                // Color variation with time and mouse influence
+                const mouseColorInfluence = Math.max(0, 1 - distanceToMouse * 2) * 30;
+                const r = Math.min(255, ball.color.r + Math.sin(time * 0.8 + i) * 15 + mouseColorInfluence);
+                const g = Math.min(255, ball.color.g + Math.cos(time * 0.9 + i) * 15 + mouseColorInfluence * 0.7);
+                const b = Math.min(255, ball.color.b + Math.sin(time * 1.0 + i) * 15 + mouseColorInfluence * 1.2);
+                
+                // Create radial gradient
+                const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+                gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.5)`);
+                gradient.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, 0.25)`);
+                gradient.addColorStop(0.6, `rgba(${r}, ${g}, ${b}, 0.1)`);
+                gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+                
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, height);
+            }
+            
+            // Add floating particles that follow mouse
+            ctx.globalCompositeOperation = 'screen';
+            for (let i = 0; i < 50; i++) {
+                const particleX = (Math.sin(time * 0.5 + i) * 0.3 + currentMouseX) * width;
+                const particleY = (Math.cos(time * 0.6 + i * 2) * 0.2 + currentMouseY + scrollY * 0.05) % (height + 200) - 100;
+                const radius = 2 + Math.sin(time * 3 + i) * 1;
+                
+                const gradient = ctx.createRadialGradient(particleX, particleY, 0, particleX, particleY, radius * 5);
+                gradient.addColorStop(0, `rgba(255, 255, 255, 0.5)`);
+                gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, width, height);
+            }
+            
+            ctx.globalCompositeOperation = 'source-over';
+        }
+        
+        function animate() {
+            time += 0.016;
+            drawInteractiveGradientBalls();
+            requestAnimationFrame(animate);
+        }
+        
+        // Track scroll position
+        window.addEventListener('scroll', () => {
+            scrollY = window.scrollY;
+        });
+        
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+        });
+        
+        resizeCanvas();
+        animate();
+        
+        // Mobile menu toggle
+        function toggleMenu() {
+            document.querySelector('.nav-links').classList.toggle('active');
+        }
+        
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if(target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+        
+        // Contact form submission
+        document.getElementById('contactForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('✨ Thanks for reaching out! Anmol will respond within 24 hours.');
+            e.target.reset();
+        });
+        
+        // Navbar background change on scroll
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if(window.scrollY > 50) nav.style.background = 'rgba(10, 10, 20, 0.8)';
+            else nav.style.background = 'rgba(15, 15, 26, 0.6)';
+        });
+    </script>
+</body>
+</html>

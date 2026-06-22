@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('cart_items', function (Blueprint $table) {
+            if (!Schema::hasColumn('cart_items', 'embroidery_total_price')) {
+                $table->decimal('embroidery_total_price', 12, 2)->nullable()->default(0)->after('embroidery_price');
+            }
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('cart_items', function (Blueprint $table) {
+            if (Schema::hasColumn('cart_items', 'embroidery_total_price')) {
+                $table->dropColumn('embroidery_total_price');
+            }
+        });
+    }
+};

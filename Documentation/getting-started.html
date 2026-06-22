@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+		<!--SEO Meta Tags-->
+		<meta charset="utf-8" />
+		<!-- SITE TITLE -->
+		<title>Dusty - Laravel 11 Admin Dashboard Template</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+		<meta name="description" content="A fully featured admin theme which can be used to build CRM, CMS, etc." />
+		<meta name="author" content="Zoyothemes" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+		<!-- App favicon -->
+		<link rel="shortcut icon" href="favicon.ico">
+
+		<!-- Bootstrap Core CSS -->
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+
+		<!-- Material Design Icons -->
+		<link href="css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+
+		<!-- Prettify -->
+		<link href="css/prettify.css" rel="stylesheet" type="text/css" />
+
+		<!-- Custom CSS -->
+		<link href="css/styles.css" rel="stylesheet">
+
+	</head>
+
+	<body>
+
+		<!-- Begin page -->
+		<div id="wrapper">
+
+			<!-- Topbar -->
+			<div id="page-topbar">
+				<div class="layout-width">
+					<div class="navbar-header">
+						<h5 class="text-dark fw-semibold">Dusty - Laravel 11 Admin Dashboard Template</h5>
+					</div>
+				</div><!-- container -->
+			</div>
+
+			<!-- Sidebar -->
+			<div id="sidebar-wrapper">
+				<!-- LOGO -->
+				<div class="navbar-brand-box">
+					<!-- Dark Logo-->
+					<a href="index.html" class="logo">
+						<span class="logo-sm">
+							<img src="images/logo-dark.png" alt="" height="22">
+						</span>
+					</a>
+				</div>
+
+				<ul class="sidebar-nav">
+					<li class="menu-item">
+						<a href="index.html">Introduction</a>
+					</li>
+					<li class="menu-item">
+						<a href="getting-started.html">Getting Started</a>
+					</li>
+					<li class="menu-item">
+						<a href="resources-plugins.html">Plugins</a>
+					</li>
+					<li class="menu-item">
+						<a href="support.html">Support</a>
+					</li>
+					<li class="menu-item">
+						<a href="changelog.html">Change Log</a>
+					</li>
+				</ul>
+			</div>
+			<!-- /#sidebar-wrapper -->
+
+			<!-- Page Content -->
+			<div id="page-content-wrapper">
+				<div class="page-content mb-0">
+					<div class="container-fluid">
+						<div class="row">
+							<div class="col-lg-12">
+								<div class="card border-0 mb-4">
+									<div class="card-header">
+										<h4 class="card-title fs-18 mb-0">Prerequisites</h4>
+									</div>
+									<div class="card-body p-4">
+										<p class="text-muted">Please follow below steps to install and setup all
+											prerequisites:</p>
+
+										<p class="text-muted"> The Laravel framework has specific system requirements that need to be met. While using the 
+											<a class="text-danger" href="https://laravel.com/docs/11.x/homestead" target="_blank">Laravel Homestead</a> virtual machine is highly recommended for your local development environment. so it's highly recommended that you use Homestead as your local Laravel development environment
+										</p>
+										
+										<p>However, if you are not using Homestead, you will need to make sure your server meets the following requirements:</p>
+
+										<ul class="ps-8 list-disc">
+											<li class="my-2.5"><a class="text-primary fs-16" href="https://www.php.net/"
+													target="_blank">PHP</a>
+												~v8.0
+											</li>
+											<li>BCMath PHP Extension</li>
+											<li>Ctype PHP Extension</li>
+											<li>Fileinfo PHP extension</li>
+											<li>JSON PHP Extension</li>
+											<li>Mbstring PHP Extension</li>
+											<li>OpenSSL PHP Extension</li>
+											<li>PDO PHP Extension</li>
+											<li>Tokenizer PHP Extension</li>
+											<li>XML PHP Extension</li>
+										</ul>
+
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="row">
+							<div class="col-lg-12">
+								<div class="card border-0">
+									<div class="card-header">
+										<h4 class="card-title fs-18 mb-0">Installation</h4>
+									</div>
+									<div class="card-body p-4">
+
+										<p class="mb-3 text-dark"> You can run the following commands to run project locally or build for production use:</p>
+
+										<div class="mt-3">
+											<ul>
+												<li>
+													<p>Open up command prompt and navigate to the Dusty folder (where you have extracted the folder). E.g.</p>
+													<p class="bg-light p-2">
+														<code>cd Dusty</code>
+													</p>
+												</li>
+												<li>
+													<p>Next, run the following commands to install all dependencies</p>
+													<p class="bg-light p-2">
+														<code>composer install</code>
+													</p>
+		
+													<p class="bg-light p-2">
+														<code>yarn install</code>
+													</p>
+												</li>
+												<li>
+													<p>Now rename the .env.example to .env and modify the values for database in it as per your local environment</p>
+												</li>
+												<li>
+													<p>Run the following command to generate the key</p>
+		
+													<p class="bg-light p-2">
+														<code>php artisan key:generate</code>
+													</p>
+												</li>
+												<li>
+													<p>Run the following command to run database migration to create tables</p>
+		
+													<p class="bg-light p-2">
+														<code>php artisan migrate</code>
+													</p>
+													<p class="bg-light p-2">
+														<code>php artisan db:seed</code>
+													</p>
+												</li>
+												<li>
+													<p>Run the following command to compile all assets</p>
+		
+													<p class="bg-light p-2">
+														<code>yarn dev</code>
+													</p>
+												</li>
+												<li>
+													<p>And Done, now you are ready to start development server</p>
+		
+													<p class="bg-light p-2">
+														<code>php artisan serve</code>
+													</p>
+												</li>
+												<p>Open <a href="http://127.0.0.1:8000" target="_blank" class="text-danger">http://127.0.0.1:8000</a> to see it live there.</p>
+											</ul>
+
+											<p class="mb-1 mt-4">Note following commands around the compilation of assets</p>
+											<table class="table table-bordered m-0 mb-4">
+												<thead>
+													<tr>
+														<th style="width: 20%;">
+															<i class="ti-file"></i> Command
+														</th>
+														<th>Description</th>
+													</tr>
+												</thead>
+												<tbody>
+													<tr>
+														<td>
+															<code>yarn dev</code>
+														</td>
+														<td>
+															Watch files and compiles assets on the fly.
+														</td>
+													</tr>
+													<tr>
+														<td>
+															<code>yarn build</code>
+														</td>
+														<td>
+															For compile and prepare assets for production.
+														</td>
+													</tr>
+												</tbody>
+											</table>
+
+
+											<div class="mb-0">
+												You can review official laravel documentation for additional configuration and options: <a href="https://laravel.com/docs/11.x" target="_blank" class="text-danger"> Laravel Documentation</a>
+											</div>
+
+										</div>
+
+									</div>
+								</div>
+							</div>
+						</div>
+						<!-- /#page-content-wrapper -->
+
+						<div class="text-center">
+							<p class="copy mb-0">
+								<script>document.write(new Date().getFullYear())</script> © Dusty Design & Develop by
+								Zoyothemes.
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- end page-content-wrapper -->
+		</div>
+		<!-- /#wrapper -->
+
+		<!-- jQuery -->
+		<script src="js/jquery.js"></script>
+
+		<!-- Bootstrap Core JavaScript -->
+		<script src="js/bootstrap.min.js"></script>
+
+		<script src="js/jquery.easing.min.js"></script>
+
+		<script type="text/javascript" src="js/prettify.js"></script>
+
+		<!-- Menu Toggle Script -->
+		<script>
+
+			//jQuery for page scrolling feature - requires jQuery Easing plugin
+			$(function () {
+				$('.sidebar-nav a').bind('click', function (event) {
+					var $anchor = $(this);
+					$('html, body').stop().animate({
+						scrollTop: $($anchor.attr('href')).offset().top - 100
+					}, 1500, 'easeInOutExpo');
+					event.preventDefault();
+				});
+			});
+		</script>
+
+	</body>
+
+</html>
