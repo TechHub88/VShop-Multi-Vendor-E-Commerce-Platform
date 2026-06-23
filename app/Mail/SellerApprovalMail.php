@@ -1,11 +1,6 @@
 <?php
-
 namespace App\Mail;
 
-/**
- * SellerApprovalMail — Simple PHP mail() based Approval sender for Seller Portal
- * Same pattern as SellerOtpMail — No Laravel Mail facade, no SMTP — pure php mail()
- */
 class SellerApprovalMail
 {
     /**
