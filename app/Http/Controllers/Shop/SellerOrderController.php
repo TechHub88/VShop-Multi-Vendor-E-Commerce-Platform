@@ -286,6 +286,9 @@ public function index(Request $request)
     $maxSliderPrice = 10000;
     $attributes = [];
     $attributeTerms = [];
+    $products = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10);
+    $banners = [];
+    $brands = [];
 
     return view('vshop.seller.orders.index', compact(
         'orders',
@@ -294,7 +297,10 @@ public function index(Request $request)
         'ratings',
         'maxSliderPrice',
         'attributes',
-        'attributeTerms'
+        'attributeTerms',
+        'products',
+        'banners',
+        'brands'
     ));
 }
     public function processing()
