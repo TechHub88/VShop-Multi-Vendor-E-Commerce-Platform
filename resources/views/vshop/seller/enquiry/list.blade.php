@@ -513,7 +513,7 @@
 .enquiry-table{
     margin-bottom:0 !important;
     vertical-align:middle;
-    min-width:1700px;
+    min-width:1200px;
 }
 
 /* ================= TABLE HEAD ================= */
@@ -774,7 +774,7 @@
 <thead>
 
 <tr>
-<th>Enquiry ID</th>
+<th>Enquiry Details</th>
 <th>User Details</th>
 <th>Product / Service</th>
 <th>Interaction</th>
@@ -827,16 +827,19 @@ if(!empty($e->next_followup_date)){
 
 <tr>
 
-{{-- ================= ENQUIRY ID ================= --}}
+{{-- ================= ENQUIRY DETAILS ================= --}}
 <td>
 
-<div class="enquiry-id">
+<div class="enquiry-id mb-2">
     #{{ $e->enquiry_no }}
 </div>
 
-<div class="enquiry-date">
-    {{ \Carbon\Carbon::parse($e->created_at)->format('d M Y') }}<br>
-    {{ \Carbon\Carbon::parse($e->created_at)->format('h:i A') }}
+<div class="user-meta mb-1">
+    <i class="fa-regular fa-calendar text-muted"></i> {{ \Carbon\Carbon::parse($e->created_at)->format('d-m-Y') }}
+</div>
+
+<div class="user-meta">
+    <i class="fa-regular fa-clock text-muted"></i> {{ \Carbon\Carbon::parse($e->created_at)->format('h:i A') }}
 </div>
 
 </td>
