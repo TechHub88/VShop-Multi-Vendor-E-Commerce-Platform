@@ -1,55 +1,8 @@
 @extends('vshop.seller.main')
 
-<style>
-    .boost-card h6 {
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    .boost-card button {
-        background: #004392;
-        border-color: #004392;
-        font-size: 14px;
-    }
-    .boost-card button i {
-        font-size: 17px;
-        margin-right: 6px;
-    }
-    .dashboard-card-wrapper-sec {
-        display: grid;
-        grid-template-columns: 1fr 300px;
-        gap: 14px;
-    }
-    .boost-card {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-    .pro-card {
-        border: 1px solid rgb(201 208 218) !important;
-    }
-    .dashboard-card {
-        border: 1px solid rgb(201 208 218) !important;
-    }
-    .pro-card p {
-        margin: 0;
-        font-size: 13px;
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-    .dashboard-card .card-header {
-        text-transform: uppercase;
-        font-size: 14px;
-        font-weight: 700;
-    }
-    @media(max-width: 767px) {
-        .dashboard-card-wrapper-sec {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
+@push('styles')
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+@endpush
 
 @section('title','Dashboard')
 
@@ -86,7 +39,10 @@
                 <h4 class="money" data-amount="{{ $totalSales ?? 0 }}">
                     ₹ {{ number_format($totalSales ?? 0, 2) }}
                 </h4>
-                <small class="text-success">▲ 16.8% Since last month</small>
+                <div class="pro-card-meta">
+                    <span class="badge-success">▲ 16.8%</span>
+                    <span class="meta-text">Since last month</span>
+                </div>
             </div>
         </div>
     
@@ -94,7 +50,10 @@
             <div class="pro-card">
                 <p>Total Orders</p>
                 <h4>{{ $totalOrders ?? 0 }}</h4>
-                <small class="text-success">▲ 3.5% Since last month</small>
+                <div class="pro-card-meta">
+                    <span class="badge-success">▲ 3.5%</span>
+                    <span class="meta-text">Since last month</span>
+                </div>
             </div>
         </div>
     
@@ -102,7 +61,10 @@
             <div class="pro-card">
                 <p>New Customers</p>
                 <h4>{{ $newCustomers ?? 0 }}</h4>
-                <small class="text-danger">▼ 6.8% Since last month</small>
+                <div class="pro-card-meta">
+                    <span class="badge-danger">▼ 6.8%</span>
+                    <span class="meta-text">Since last month</span>
+                </div>
             </div>
         </div>
     
@@ -112,7 +74,10 @@
                 <h4 class="money" data-amount="{{ $totalIncome ?? 0 }}">
                     ₹ {{ number_format($totalIncome ?? 0, 2) }}
                 </h4>
-                <small class="text-success">▲ 9.1% Since last month</small>
+                <div class="pro-card-meta">
+                    <span class="badge-success">▲ 9.1%</span>
+                    <span class="meta-text">Since last month</span>
+                </div>
             </div>
         </div>
     
@@ -122,7 +87,9 @@
                 <h4 class="money" data-amount="{{ $totalReturns ?? 0 }}">
                     ₹ {{ number_format($totalReturns ?? 0, 2) }}
                 </h4>
-                <small class="text-success">▲ 16.8%</small>
+                <div class="pro-card-meta">
+                    <span class="badge-success">▲ 16.8%</span>
+                </div>
             </div>
         </div>
     </div>
@@ -133,7 +100,9 @@
             <div class="pro-card">
                 <p>Active Enquiries</p>
                 <h4>{{ $activeEnquiries ?? 0 }}</h4>
-                <small class="text-muted">Current</small>
+                <div class="pro-card-meta">
+                    <span class="badge-neutral">Current</span>
+                </div>
             </div>
         </div>
     
@@ -141,7 +110,9 @@
             <div class="pro-card">
                 <p>Payment Success Rate</p>
                 <h4>{{ $paymentSuccessRate ?? '0%' }}</h4>
-                <small class="text-success">Transactions Success</small>
+                <div class="pro-card-meta">
+                    <span class="badge-success">Transactions Success</span>
+                </div>
             </div>
         </div>
     
@@ -149,7 +120,9 @@
             <div class="pro-card">
                 <p>SLA Performance</p>
                 <h4>{{ $slaPerformance ?? '0%' }}</h4>
-                <small class="text-muted">Dispatch / Delivery</small>
+                <div class="pro-card-meta">
+                    <span class="badge-neutral">Dispatch / Delivery</span>
+                </div>
             </div>
         </div>
     
@@ -157,7 +130,9 @@
             <div class="pro-card">
                 <p>Refund Efficiency</p>
                 <h4>{{ $refundEfficiency ?? '0%' }}</h4>
-                <small class="text-success">Processed Quickly</small>
+                <div class="pro-card-meta">
+                    <span class="badge-success">Processed Quickly</span>
+                </div>
             </div>
         </div>
     
@@ -165,51 +140,51 @@
             <div class="pro-card">
                 <p>Delayed Orders</p>
                 <h4 class="text-danger">{{ $delayedOrders ?? 0 }}</h4>
-                <small class="text-danger">Requires Attention</small>
+                <div class="pro-card-meta">
+                    <span class="badge-danger">Requires Attention</span>
+                </div>
             </div>
         </div>
     </div>
     </div>
 
-    <div class="">
-    <!-- Row 3: Boost Performance -->
-    <div class="">
-        <div class="pro-card boost-card" style="padding: 16px; border-radius: 12px; background-color: #fff; position: relative;">
+    <div class="boost-card-container">
+        <!-- Row 3: Boost Performance -->
+        <div class="pro-card boost-card">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <p class="mb-0 fw-bold" style="font-size: 14px; color: #333; text-transform: uppercase;">BOOST PERFORMANCE</p>
+                <p class="mb-0 fw-bold">BOOST PERFORMANCE</p>
                 <i class="fa fa-question-circle text-muted" style="font-size: 15px; cursor: pointer;"></i>
             </div>
             
-            <div class="d-flex justify-content-between align-items-center mb-2" style="font-size: 14px;">
-                <span style="color: #444;">Current Reach</span>
-                <span class="fw-bold text-dark" style="font-size: 14px;">({{ $currentReach ?? 15 }}k)</span>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>Current Reach</span>
+                <span class="fw-bold">({{ $currentReach ?? 15 }}k)</span>
             </div>
             
-            <div class="d-flex justify-content-between align-items-center mb-2" style="font-size: 14px;">
-                <span style="color: #444;">Estimated Reach</span>
-                <span class="fw-bold text-dark" style="font-size: 14px;">({{ $estimatedReach ?? 55 }}k)</span>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>Estimated Reach</span>
+                <span class="fw-bold">({{ $estimatedReach ?? 55 }}k)</span>
             </div>
             
-            <div class="d-flex justify-content-between align-items-center mb-2" style="font-size: 14px;">
-                <span style="color: #444;">Boosted Enquiries</span>
-                <span class="fw-bold text-success" style="font-size: 14px;">(+{{ $boostedEnquiries ?? 42 }})</span>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>Boosted Enquiries</span>
+                <span class="fw-bold text-success">(+{{ $boostedEnquiries ?? 42 }})</span>
             </div>
             
-            <div class="d-flex justify-content-between align-items-center mb-4" style="font-size: 14px;">
-                <span style="color: #444;">Boost ROI</span>
-                <span class="fw-bold text-dark" style="font-size: 14px;">({{ $boostROI ?? 3.1 }}x)</span>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <span>Boost ROI</span>
+                <span class="fw-bold">({{ $boostROI ?? 3.1 }}x)</span>
             </div>
             
             <div class="d-flex justify-content-center mt-3">
-                <button type="button" class="btn p-0 border-0 bg-transparent shadow-none" style="transition: transform 0.2s; cursor: pointer;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
-                    <div class="d-flex flex-column align-items-center justify-content-center" style="background: white; padding: 8px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #f0f0f0; width: 95px;">
+                <button type="button" class="btn p-0 border-0 bg-transparent shadow-none boost-btn">
+                    <div class="boost-icon-wrapper">
                         <img src="{{ asset('images/boost_icon.png') }}" alt="Boost Now" style="width: 100%; height: auto; display: block;">
                     </div>
                 </button>
             </div>
         </div>
     </div>
-</div>
 </div>
 
     {{-- Based on seller type, show/hide sections --}}
@@ -489,156 +464,377 @@
 @push('styles')
 <style>
 /* =========================================================
-   SELLER DASHBOARD
+   SELLER DASHBOARD GLOBAL & FONTS
 ========================================================= */
-.seller-dashboard{
-    background:#f5f7fb;
-    padding:15px;
-    position:relative;
+.seller-dashboard {
+    background: #f8fafc;
+    padding: 24px;
+    position: relative;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 
+.seller-dashboard * {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+/* =========================================================
+   DASHBOARD CARD WRAPPER & GRID
+========================================================= */
+.dashboard-card-wrapper-sec {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 20px;
+    align-items: stretch;
+}
+
+.dashboard-card-wrapper-left {
+    min-width: 0;
+}
+
+.boost-card-container {
+    width: 280px;
+}
+
+@media (max-width: 1200px) {
+    .dashboard-card-wrapper-sec {
+        grid-template-columns: 1fr;
+    }
+    .boost-card-container {
+        width: 100%;
+    }
+}
+
+/* =========================================================
+   METRIC CARD (PRO CARD)
+========================================================= */
+.pro-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    position: relative;
+}
+
+.pro-card:hover {
+    transform: translateY(-4px);
+    border-color: #3b82f6 !important;
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.08), 0 4px 6px -4px rgba(59, 130, 246, 0.08);
+}
+
+.pro-card p {
+    margin: 0 0 6px 0;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pro-card h4 {
+    margin: 0 0 8px 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+    font-family: 'Outfit', sans-serif !important;
+}
+
+/* =========================================================
+   METRIC CARD BADGES
+========================================================= */
+.pro-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+.badge-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: #f0fdf4;
+    color: #166534;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 11px;
+    border: 1px solid #dcfce7;
+}
+
+.badge-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: #fef2f2;
+    color: #991b1b;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 11px;
+    border: 1px solid #fee2e2;
+}
+
+.badge-neutral {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: #f1f5f9;
+    color: #475569;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 11px;
+    border: 1px solid #e2e8f0;
+}
+
+.meta-text {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* =========================================================
+   BOOST PERFORMANCE CARD
+========================================================= */
+.boost-card {
+    border: 1px solid #e2e8f0 !important;
+    background: linear-gradient(to bottom, #ffffff, #f8fafc) !important;
+    border-radius: 16px !important;
+    padding: 24px 20px !important;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.boost-card p.fw-bold {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 12px !important;
+    letter-spacing: 0.5px;
+    color: #475569 !important;
+    text-transform: uppercase;
+}
+
+.boost-card span {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 13px !important;
+    color: #64748b;
+}
+
+.boost-card .fw-bold {
+    color: #0f172a !important;
+    font-family: 'Outfit', sans-serif !important;
+}
+
+.boost-card .text-success {
+    color: #166534 !important;
+}
+
+.boost-icon-wrapper {
+    background: white;
+    padding: 10px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    border: 1px solid #f0f0f0;
+    width: 105px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.boost-icon-wrapper:hover {
+    transform: scale(1.08);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    border-color: #3b82f6;
+}
+
+/* =========================================================
+   DASHBOARD SECTION CARDS
+========================================================= */
+.dashboard-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+.dashboard-card .card-header {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 600;
+    font-size: 15px;
+    color: #0f172a;
+    background: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 18px 24px;
+}
+
+.dashboard-card .card-body {
+    padding: 24px;
+}
+
+.dashboard-card .card-footer {
+    background: #ffffff;
+    border-top: 1px solid #f1f5f9;
+    padding: 14px 24px;
+}
 
 /* =========================================================
    HEATMAP
 ========================================================= */
-.heatmap-grid{
-    display:flex;
-    flex-direction:column;
-    gap:6px;
+.heatmap-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-.heatmap-row{
-    display:flex;
-    align-items:center;
-    gap:6px;
+.heatmap-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.heatmap-day{
-    width:60px;
-    font-size:12px;
-    color:#6b7280;
+.heatmap-day {
+    width: 60px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
 }
 
-.heatmap-cell{
-    width:22px;
-    height:22px;
-    border-radius:4px;
-    background:#e5e7eb;
-    transition:.2s;
+.heatmap-cell {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: #f1f5f9;
+    transition: all 0.2s ease;
 }
 
-.heatmap-cell:hover{
-    transform:scale(1.2);
-}
-
-/* =========================================================
-   DASHBOARD CARD
-========================================================= */
-.dashboard-card{
-    background:#fff;
-    border-radius:12px;
-    box-shadow:0 4px 14px rgba(0,0,0,.06);
-    border:none;
-}
-
-.dashboard-card .card-header{
-    font-weight:600;
-    background:transparent;
-    border-bottom:1px solid #e9ecef;
-    padding:1rem 1.25rem;
-}
-
-.dashboard-card .card-footer{
-    background:transparent;
-    border-top:1px solid #e9ecef;
+.heatmap-cell:hover {
+    transform: scale(1.25);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 10;
 }
 
 /* =========================================================
-   CANVAS
+   CANVAS & CHARTS
 ========================================================= */
-canvas{
-    max-height:320px;
+canvas {
+    max-height: 320px;
 }
 
-#salesOverview, #bookingTrends{
-    height:300px !important;
+#salesOverview, #bookingTrends {
+    height: 300px !important;
 }
 
 /* =========================================================
-   PRO CARD
+   PREMIUM TABLES
 ========================================================= */
-.pro-card{
-    background:#fff;
-    border-radius:12px;
-    padding:18px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.05);
-    transition:.3s;
+.table-responsive {
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 0;
 }
 
-.pro-card:hover{
-    transform:translateY(-4px);
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
 }
 
-.pro-card p{
-    margin:0;
-    color:#6b7280;
-    font-size:14px;
+.table th {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+    letter-spacing: 0.5px !important;
+    text-transform: uppercase !important;
+    color: #004392 !important;
+    background-color: #f0f7ff !important;
+    border: none !important;
+    border-bottom: 2px solid #dbeafe !important;
+    padding: 14px 20px !important;
 }
 
-.pro-card h4{
-    margin:8px 0;
-    font-weight:700;
-    color:#000;
+.table tbody td {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 13px !important;
+    color: #334155 !important;
+    border: none !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding: 14px 20px !important;
+    vertical-align: middle !important;
+    background: #ffffff !important;
 }
 
-.pro-card small{
-    font-size:12px;
+.table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table tbody tr:hover td {
+    background-color: #f8fafc !important;
 }
 
 /* =========================================================
-   TABLE
+   5 CARDS COLUMNS
 ========================================================= */
-.table th{
-    font-weight:600;
-    color:#fff !important;
-    background-color:#004392 !important;
-    border:1px solid #fff;
+.col-xl-2-4 {
+    width: 20%;
 }
 
-.table tbody td{
-    border:1px solid #dee2e6;
-    vertical-align:middle;
-}
-
-/* =========================================================
-   5 CARDS PER ROW
-========================================================= */
-.col-xl-2-4{
-    width:20%;
-}
-
-@media(max-width:1200px){
-    .col-xl-2-4{
-        width:25%;
+@media(max-width:1200px) {
+    .col-xl-2-4 {
+        width: 25%;
     }
 }
 
-@media(max-width:992px){
-    .col-xl-2-4{
-        width:33.33%;
+@media(max-width:992px) {
+    .col-xl-2-4 {
+        width: 33.33%;
     }
 }
 
-@media(max-width:768px){
-    .col-xl-2-4{
-        width:50%;
+@media(max-width:768px) {
+    .col-xl-2-4 {
+        width: 50%;
     }
 }
 
-@media(max-width:576px){
-    .col-xl-2-4{
-        width:100%;
+@media(max-width:576px) {
+    .col-xl-2-4 {
+        width: 100%;
     }
+}
+
+/* =========================================================
+   FORM ELEMENTS & SELECTS
+========================================================= */
+.form-select-sm {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #334155 !important;
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    padding: 6px 32px 6px 12px !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+    height: auto !important;
+}
+
+.form-select-sm:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+    outline: none !important;
 }
 
 .filter-dropdown {
@@ -648,24 +844,6 @@ canvas{
 
 .filter-form {
     margin: 0;
-}
-
-.boost-card {
-    border: 1px solid #e0e0e0;
-    padding: 15px;
-    background: #fff;
-    border-radius: 8px;
-    text-align: left;
-}
-.boost-card h6 {
-    margin: 5px 0;
-    font-weight: 500;
-}
-.boost-btn button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
 }
 </style>
 @endpush
@@ -691,6 +869,10 @@ document.addEventListener("DOMContentLoaded", function(){
                 </div>
             `;
         } else {
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, '#3b82f6');
+            gradient.addColorStop(1, '#93c5fd');
+            
             new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -698,15 +880,44 @@ document.addEventListener("DOMContentLoaded", function(){
                     datasets: [{
                         label: 'Sales (₹)',
                         data: salesData,
-                        backgroundColor: '#0d6efd',
-                        borderRadius: 6
+                        backgroundColor: gradient,
+                        hoverBackgroundColor: '#2563eb',
+                        borderRadius: 8,
+                        borderSkipped: false
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleFont: { family: 'Plus Jakarta Sans', size: 13, weight: 'bold' },
+                            bodyFont: { family: 'Plus Jakarta Sans', size: 12 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { family: 'Plus Jakarta Sans', size: 11, weight: '500' },
+                                color: '#64748b'
+                            }
+                        },
+                        y: {
+                            grid: { color: '#f1f5f9' },
+                            border: { dash: [5, 5] },
+                            ticks: {
+                                font: { family: 'Plus Jakarta Sans', size: 11 },
+                                color: '#64748b',
+                                beginAtZero: true
+                            }
+                        }
+                    }
                 }
             });
         }
@@ -729,6 +940,10 @@ document.addEventListener("DOMContentLoaded", function(){
                 </div>
             `;
         } else {
+            const fillGradient = ctx.createLinearGradient(0, 0, 0, 300);
+            fillGradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
+            fillGradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+            
             new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -736,17 +951,51 @@ document.addEventListener("DOMContentLoaded", function(){
                     datasets: [{
                         label: 'Bookings',
                         data: bookingData,
-                        backgroundColor: '#0d6efd',
-                        borderColor: '#0d6efd',
+                        borderColor: '#3b82f6',
+                        borderWidth: 3,
+                        backgroundColor: fillGradient,
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#3b82f6',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleFont: { family: 'Plus Jakarta Sans', size: 13, weight: 'bold' },
+                            bodyFont: { family: 'Plus Jakarta Sans', size: 12 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { family: 'Plus Jakarta Sans', size: 11, weight: '500' },
+                                color: '#64748b'
+                            }
+                        },
+                        y: {
+                            grid: { color: '#f1f5f9' },
+                            border: { dash: [5, 5] },
+                            ticks: {
+                                font: { family: 'Plus Jakarta Sans', size: 11 },
+                                color: '#64748b',
+                                beginAtZero: true,
+                                stepSize: 1
+                            }
+                        }
+                    }
                 }
             });
         }
@@ -756,11 +1005,11 @@ document.addEventListener("DOMContentLoaded", function(){
     @if($isVshop)
     document.querySelectorAll('.heatmap-cell').forEach(cell => {
         let value = parseInt(cell.dataset.value || 0);
-        let color = '#e5e7eb';
-        if(value > 0 && value <= 10) color = '#c7d2fe';
-        else if(value <= 30) color = '#818cf8';
-        else if(value <= 60) color = '#4f46e5';
-        else if(value > 60) color = '#1e3a8a';
+        let color = '#f1f5f9';
+        if(value > 0 && value <= 10) color = '#dbeafe';
+        else if(value <= 30) color = '#93c5fd';
+        else if(value <= 60) color = '#3b82f6';
+        else if(value > 60) color = '#1d4ed8';
         cell.style.background = color;
     });
     @endif

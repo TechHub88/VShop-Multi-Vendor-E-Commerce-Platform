@@ -57,6 +57,27 @@
                                                 {{ $seller->name }}
                                             </a>
                                         </h6>
+                                        @php
+                                            $approved = is_string($seller->approved_platforms) ? json_decode($seller->approved_platforms, true) : ($seller->approved_platforms ?? []);
+                                            if(!is_array($approved)) $approved = [];
+                                        @endphp
+                                        <div class="my-1 d-flex gap-1 flex-wrap">
+                                            @if(count($approved) > 0)
+                                                @foreach($approved as $p)
+                                                    @if ($p == 'product')
+                                                        <span class="badge bg-info-subtle text-info px-2 py-0.5" style="font-size: 10px; font-weight: 600;">V-Shop</span>
+                                                    @elseif ($p == 'travel')
+                                                        <span class="badge bg-success-subtle text-success px-2 py-0.5" style="font-size: 10px; font-weight: 600;">V-Travel</span>
+                                                    @elseif ($p == 'vcampus')
+                                                        <span class="badge bg-warning-subtle text-warning px-2 py-0.5" style="font-size: 10px; font-weight: 600;">V-Campus</span>
+                                                    @else
+                                                        <span class="badge bg-secondary-subtle text-secondary px-2 py-0.5" style="font-size: 10px; font-weight: 600;">{{ ucfirst($p) }}</span>
+                                                    @endif
+                                                @endforeach
+                                            @else
+                                                <span class="badge bg-secondary-subtle text-secondary px-2 py-0.5" style="font-size: 10px; font-weight: 600;">No Platform</span>
+                                            @endif
+                                        </div>
                                         <small class="text-muted">{{ $seller->legal_name ?? 'N/A' }}</small>
                                     </div>
                                 </div>

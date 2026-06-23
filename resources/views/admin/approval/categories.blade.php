@@ -39,7 +39,30 @@
                             </td>
                             <td>
                                 @if($cat->seller)
-                                    {{ $cat->seller->name ?? $cat->seller->email ?? 'N/A' }}
+                                    <div>
+                                        {{ $cat->seller->name ?? $cat->seller->email ?? 'N/A' }}
+                                    </div>
+                                    @php
+                                        $approved = is_string($cat->seller->approved_platforms) ? json_decode($cat->seller->approved_platforms, true) : ($cat->seller->approved_platforms ?? []);
+                                        if(!is_array($approved)) $approved = [];
+                                    @endphp
+                                    <div class="mt-1 d-flex gap-1 flex-wrap">
+                                        @if(count($approved) > 0)
+                                            @foreach($approved as $p)
+                                                @if ($p == 'product')
+                                                    <span class="badge bg-info-subtle text-info px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Shop</span>
+                                                @elseif ($p == 'travel')
+                                                    <span class="badge bg-success-subtle text-success px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Travel</span>
+                                                @elseif ($cat->seller->app_v_campus || $p == 'vcampus')
+                                                    <span class="badge bg-warning-subtle text-warning px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Campus</span>
+                                                @else
+                                                    <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">{{ ucfirst($p) }}</span>
+                                                @endif
+                                            @endforeach
+                                        @else
+                                            <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">No Platform</span>
+                                        @endif
+                                    </div>
                                 @else
                                     <span class="text-muted">System</span>
                                 @endif
