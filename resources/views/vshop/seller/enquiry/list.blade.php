@@ -504,7 +504,6 @@
 .enquiry-table-wrapper{
     background:#fff;
     border:1px solid #dbe4ee;
-    border-radius:18px;
     overflow:hidden;
     box-shadow:0 8px 30px rgba(15,23,42,.05);
 }
@@ -835,11 +834,11 @@ if(!empty($e->next_followup_date)){
 </div>
 
 <div class="user-meta mb-1">
-    <i class="fa-regular fa-calendar text-muted"></i> {{ \Carbon\Carbon::parse($e->created_at)->format('d-m-Y') }}
+    <i class="fa-regular fa-calendar text-muted" style="font-size:11px;"></i> {{ \Carbon\Carbon::parse($e->created_at)->format('d-m-Y') }}
 </div>
 
 <div class="user-meta">
-    <i class="fa-regular fa-clock text-muted"></i> {{ \Carbon\Carbon::parse($e->created_at)->format('h:i A') }}
+    <i class="fa-regular fa-clock text-muted" style="font-size:11px;"></i> {{ \Carbon\Carbon::parse($e->created_at)->format('h:i A') }}
 </div>
 
 </td>
