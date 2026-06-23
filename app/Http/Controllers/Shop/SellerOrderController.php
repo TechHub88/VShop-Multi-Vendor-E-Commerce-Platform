@@ -284,13 +284,17 @@ public function index(Request $request)
     // Defining variables to prevent undefined variable error in view
     $ratings = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
     $maxSliderPrice = 10000;
+    $attributes = [];
+    $attributeTerms = [];
 
     return view('vshop.seller.orders.index', compact(
         'orders',
         'categories',
         'subcategories',
         'ratings',
-        'maxSliderPrice'
+        'maxSliderPrice',
+        'attributes',
+        'attributeTerms'
     ));
 }
     public function processing()
