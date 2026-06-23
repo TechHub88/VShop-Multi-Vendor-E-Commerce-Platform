@@ -103,18 +103,55 @@
                     <div class="row g-4" id="addressesList">
                         @forelse($addresses as $addr)
                         <div class="col-md-6 address-card" data-id="{{ $addr->id }}">
-                            <div class="card h-100 border shadow-sm rounded-3">
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <h5 class="card-title">{{ ucfirst($addr->address_type ?? 'Address') }}</h5>
-                                        @if($addr->is_default) <span class="badge bg-success rounded-pill">Default</span> @endif
+                            <div class="card h-100 border {{ $addr->is_default ? 'border-primary shadow' : 'border-light shadow-sm' }}" style="border-radius: 16px; transition: all 0.3s ease;">
+                                @if($addr->is_default)
+                                    <div class="position-absolute top-0 end-0 bg-primary text-white px-3 py-1" style="border-radius: 0 16px 0 16px; font-size: 12px; font-weight: 600; z-index: 1;">
+                                        <i class="fa-solid fa-circle-check me-1"></i> Default
                                     </div>
-                                    <p class="mb-1"><strong>{{ $addr->name }}</strong> | {{ $addr->phone }}</p>
-                                    <p class="card-text text-muted">{{ $addr->address_line1 }}, {{ $addr->city }}, {{ $addr->state }} - {{ $addr->pincode }}</p>
-                                    <p class="text-muted small">{{ $addr->country }} | Email: {{ $addr->email }}</p>
-                                    <div class="mt-2">
-                                        <button class="btn btn-sm btn-outline-primary edit-address" data-id="{{ $addr->id }}" data-name="{{ $addr->name }}" data-phone="{{ $addr->phone }}" data-email="{{ $addr->email }}" data-line="{{ $addr->address_line1 }}" data-city="{{ $addr->city }}" data-state="{{ $addr->state }}" data-pincode="{{ $addr->pincode }}" data-country="{{ $addr->country }}" data-type="{{ $addr->address_type }}" data-default="{{ $addr->is_default }}">Edit</button>
-                                        <button class="btn btn-sm btn-outline-danger delete-address" data-id="{{ $addr->id }}">Delete</button>
+                                @endif
+                                <div class="card-body p-4 d-flex flex-column">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3 flex-shrink-0" style="width: 48px; height: 48px;">
+                                            @if(strtolower($addr->address_type) == 'home')
+                                                <i class="fa-solid fa-house fs-5"></i>
+                                            @elseif(strtolower($addr->address_type) == 'work' || strtolower($addr->address_type) == 'office')
+                                                <i class="fa-solid fa-building fs-5"></i>
+                                            @else
+                                                <i class="fa-solid fa-location-dot fs-5"></i>
+                                            @endif
+                                        </div>
+                                        <div>
+                                            <h5 class="card-title mb-1 fw-bold text-dark">{{ ucfirst($addr->address_type ?? 'Address') }}</h5>
+                                            <div class="fw-semibold text-secondary" style="font-size: 14px;">{{ $addr->name }}</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="address-details bg-light rounded-3 p-3 mb-4 flex-grow-1">
+                                        <div class="d-flex align-items-start mb-2">
+                                            <i class="fa-solid fa-phone text-muted mt-1 me-2" style="font-size: 13px;"></i>
+                                            <span class="text-dark fw-medium" style="font-size: 14px;">{{ $addr->phone }}</span>
+                                        </div>
+                                        <div class="d-flex align-items-start mb-2">
+                                            <i class="fa-solid fa-map-pin text-muted mt-1 me-2" style="font-size: 13px;"></i>
+                                            <span class="text-secondary" style="font-size: 14px; line-height: 1.5;">
+                                                {{ $addr->address_line1 }}<br>
+                                                {{ $addr->city }}, {{ $addr->state }} - <span class="fw-bold text-dark">{{ $addr->pincode }}</span><br>
+                                                {{ $addr->country }}
+                                            </span>
+                                        </div>
+                                        <div class="d-flex align-items-start">
+                                            <i class="fa-solid fa-envelope text-muted mt-1 me-2" style="font-size: 13px;"></i>
+                                            <span class="text-secondary" style="font-size: 14px;">{{ $addr->email }}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2 mt-auto">
+                                        <a href="{{ url('vshop/address/' . $addr->id . '/edit') }}" class="btn btn-outline-primary flex-grow-1 fw-semibold" style="border-radius: 8px; font-size: 14px; padding: 8px 0;">
+                                            <i class="fa-regular fa-pen-to-square me-1"></i> Edit
+                                        </a>
+                                        <button class="btn btn-outline-danger flex-grow-1 fw-semibold delete-address" data-id="{{ $addr->id }}" style="border-radius: 8px; font-size: 14px; padding: 8px 0;">
+                                            <i class="fa-regular fa-trash-can me-1"></i> Delete
+                                        </button>
                                     </div>
                                 </div>
                             </div>
