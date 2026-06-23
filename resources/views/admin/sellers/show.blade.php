@@ -748,7 +748,7 @@
                     </div>
                 </div>
                 <div class="v-card-body">
-                    <form method="POST" action="{{ route('sellers.approve-platforms', $seller->id) }}">
+                    <form method="POST" action="{{ route('admin.sellers.approve-platforms', $seller->id) }}">
                         @csrf
                         <div class="row">
                             <div class="col-md-12">
