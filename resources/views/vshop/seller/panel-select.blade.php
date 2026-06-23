@@ -164,6 +164,39 @@ body{
     You can select multiple modules
 </p>
 
+@php
+    $requested = is_string($seller->requested_platforms) ? json_decode($seller->requested_platforms, true) : ($seller->requested_platforms ?? []);
+    $approved = is_string($seller->approved_platforms) ? json_decode($seller->approved_platforms, true) : ($seller->approved_platforms ?? []);
+    if (!is_array($requested)) $requested = [];
+    if (!is_array($approved)) $approved = [];
+    $isPending = !empty($requested) && empty($approved);
+    
+    function getCardStatus($platform, $requested, $approved, $isPending) {
+        if ($isPending) {
+            return in_array($platform, $requested) ? 'pending' : 'disabled';
+        } elseif (!empty($approved)) {
+            return in_array($platform, $approved) ? 'selectable-card' : 'disabled';
+        }
+        return 'selectable-card';
+    }
+@endphp
+
+@if(session('success'))
+    <div class="alert alert-success">{{ session('success') }}</div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger">{{ session('error') }}</div>
+@endif
+@if(session('info'))
+    <div class="alert alert-info">{{ session('info') }}</div>
+@endif
+
+@if($isPending)
+    <div class="alert alert-warning text-center">
+        <strong>Pending Approval!</strong> Your request is pending with admin. Within 24 hours you will get an update.
+    </div>
+@endif
+
 <form method="POST"
       action="{{ route('seller.switch.panel.multi') }}"
       id="panelForm">
@@ -174,13 +207,16 @@ body{
 
         <!-- VSHOP -->
         <div class="col-md-6">
+            @php $status = getCardStatus('product', $requested, $approved, $isPending); @endphp
+            <div class="panel-card {{ $status === 'selectable-card' ? 'selectable-card' : 'disabled' }}"
+                 {!! $status === 'selectable-card' ? 'onclick="toggleCard(this)"' : '' !!}>
 
-            <div class="panel-card selectable-card"
-                 onclick="toggleCard(this)">
-
+                @if($status === 'pending')
+                    <span class="badge bg-warning text-dark position-absolute" style="top: 15px; left: 15px;">Pending</span>
+                @endif
                 <input type="checkbox"
                        name="panels[]"
-                       value="product">
+                       value="product" {{ $status !== 'selectable-card' ? 'disabled' : '' }}>
 
                 <div class="icon">🛒</div>
 
@@ -198,13 +234,16 @@ body{
 
         <!-- VTRAVEL -->
         <div class="col-md-6">
+            @php $status = getCardStatus('travel', $requested, $approved, $isPending); @endphp
+            <div class="panel-card {{ $status === 'selectable-card' ? 'selectable-card' : 'disabled' }}"
+                 {!! $status === 'selectable-card' ? 'onclick="toggleCard(this)"' : '' !!}>
 
-            <div class="panel-card selectable-card"
-                 onclick="toggleCard(this)">
-
+                @if($status === 'pending')
+                    <span class="badge bg-warning text-dark position-absolute" style="top: 15px; left: 15px;">Pending</span>
+                @endif
                 <input type="checkbox"
                        name="panels[]"
-                       value="travel">
+                       value="travel" {{ $status !== 'selectable-card' ? 'disabled' : '' }}>
 
                 <div class="icon">✈️</div>
 
@@ -222,13 +261,16 @@ body{
 
         <!-- VCAMPUS -->
         <div class="col-md-6">
+            @php $status = getCardStatus('vcampus', $requested, $approved, $isPending); @endphp
+            <div class="panel-card {{ $status === 'selectable-card' ? 'selectable-card' : 'disabled' }}"
+                 {!! $status === 'selectable-card' ? 'onclick="toggleCard(this)"' : '' !!}>
 
-            <div class="panel-card selectable-card"
-                 onclick="toggleCard(this)">
-
+                @if($status === 'pending')
+                    <span class="badge bg-warning text-dark position-absolute" style="top: 15px; left: 15px;">Pending</span>
+                @endif
                 <input type="checkbox"
                        name="panels[]"
-                       value="vcampus">
+                       value="vcampus" {{ $status !== 'selectable-card' ? 'disabled' : '' }}>
 
                 <div class="icon">🎓</div>
 
@@ -272,10 +314,12 @@ body{
             Please select at least one workspace
         </div>
 
+        @if(!$isPending)
         <button type="submit"
                 class="continue-btn">
             Continue
         </button>
+        @endif
 
     </div>
 

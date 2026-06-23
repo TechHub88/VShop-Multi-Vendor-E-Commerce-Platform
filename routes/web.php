@@ -2293,6 +2293,9 @@ Route::get('/sellers/edit/{id}', [SellermanagementController::class, 'edit'])->n
 
     Route::post('/sellers/{id}/approve', [App\Http\Controllers\admin\SellermanagementController::class, 'approve'])
         ->name('sellers.approve');
+        
+    Route::post('/sellers/{id}/approve-platforms', [App\Http\Controllers\admin\SellermanagementController::class, 'approvePlatforms'])
+        ->name('sellers.approve-platforms');
 
     Route::post('/sellers/{id}/reject', [App\Http\Controllers\admin\SellermanagementController::class, 'reject'])
         ->name('sellers.reject');

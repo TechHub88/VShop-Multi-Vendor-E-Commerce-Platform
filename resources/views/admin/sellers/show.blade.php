@@ -738,6 +738,52 @@
     <div class="row">
         <div class="col-lg-8 animated-fade-in">
             
+            {{-- Platform Approval --}}
+            @if(!empty($seller->requested_platforms))
+            <div class="v-card v-border-basic">
+                <div class="v-card-header">
+                    <div class="v-card-title">
+                        <i class="ri-apps-line text-primary"></i>
+                        <span>Platform Approval</span>
+                    </div>
+                </div>
+                <div class="v-card-body">
+                    <form method="POST" action="{{ route('sellers.approve-platforms', $seller->id) }}">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-12">
+                                <p class="mb-3">The seller has requested access to the following platforms. Select the ones you want to approve:</p>
+                                
+                                @php 
+                                    $requested = is_string($seller->requested_platforms) ? json_decode($seller->requested_platforms, true) : ($seller->requested_platforms ?? []);
+                                    $approved = is_string($seller->approved_platforms) ? json_decode($seller->approved_platforms, true) : ($seller->approved_platforms ?? []);
+                                    if(!is_array($requested)) $requested = [];
+                                    if(!is_array($approved)) $approved = [];
+                                @endphp
+                                
+                                <div class="d-flex gap-4 flex-wrap mb-3">
+                                    @foreach(['product' => 'V-Shop', 'travel' => 'V-Travel', 'vcampus' => 'V-Campus'] as $key => $label)
+                                        @if(in_array($key, $requested) || in_array($key, $approved))
+                                            <div class="form-check">
+                                                <input class="form-check-input border-primary" style="transform: scale(1.2)" type="checkbox" name="platforms[]" value="{{ $key }}" id="plat_{{ $key }}" {{ in_array($key, $approved) ? 'checked' : '' }}>
+                                                <label class="form-check-label fw-bold ms-1" for="plat_{{ $key }}">
+                                                    {{ $label }}
+                                                </label>
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                </div>
+                                
+                                <button type="submit" class="action-btn action-btn-primary">
+                                    <i class="ri-save-line"></i> Save Platforms
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
+
             {{-- Organization Verification --}}
             <div class="v-card v-border-org">
                 <div class="v-card-header">

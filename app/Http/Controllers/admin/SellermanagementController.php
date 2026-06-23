@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Services\NotificationService;
 
+use App\Mail\SellerApprovalMail;
+
 class SellermanagementController extends Controller
 {
     public function index(Request $request)
@@ -86,11 +88,16 @@ class SellermanagementController extends Controller
         );
         
         if ($allApproved) {
+            $wasApproved = ($oldData['status'] ?? '') === 'approved';
             $seller->status = 'approved';
             $seller->is_verified = 1;
             $seller->save();
             $this->logAudit($id, 'seller_approved', 'Seller automatically approved after all verifications completed');
             NotificationService::notify($seller->id, 'seller', 'kyc', 'Your KYC application has been fully approved by admin.', route('seller.profile'));
+            
+            if (!$wasApproved) {
+                SellerApprovalMail::send($seller->email, $seller->name);
+            }
         } else {
             // If not all approved, status remains pending
             if ($seller->status == 'approved') {
@@ -109,6 +116,8 @@ class SellermanagementController extends Controller
         $seller = Seller::findOrFail($id);
         $oldData = $seller->toArray();
         
+        $wasApproved = ($oldData['status'] ?? '') === 'approved';
+        
         // Approve all statuses at once
         $seller->update([
             'status' => 'approved',
@@ -125,7 +134,36 @@ class SellermanagementController extends Controller
         $this->logAudit($id, 'seller_approved', 'Seller fully approved by admin', $oldData, $seller->toArray());
         NotificationService::notify($seller->id, 'seller', 'kyc', 'Your KYC application has been fully approved by admin.', route('seller.profile'));
         
+        if (!$wasApproved) {
+            SellerApprovalMail::send($seller->email, $seller->name);
+        }
+        
         return back()->with('success', 'Seller has been fully approved and verified successfully!');
+    }
+
+    public function approvePlatforms(Request $request, $id)
+    {
+        $request->validate([
+            'platforms' => 'required|array|min:1'
+        ]);
+
+        $seller = Seller::findOrFail($id);
+        $oldData = $seller->toArray();
+        
+        $seller->update([
+            'approved_platforms' => $request->platforms
+        ]);
+        
+        $this->logAudit($id, 'platforms_approved', 'Seller platforms approved by admin', $oldData, $seller->toArray());
+        NotificationService::notify($seller->id, 'seller', 'platform', 'Your platform access request has been approved by admin.', route('seller.dashboard'));
+        
+        // Send email using PHP mail()
+        $subject = "Platform Request Approved";
+        $message = "Hello " . $seller->name . ",\n\nYour request for platform access has been approved by the admin. You can now login to your chosen platforms.\n\nThank you.";
+        $headers = "From: noreply@vshop.zelofx.com";
+        @mail($seller->email, $subject, $message, $headers);
+        
+        return back()->with('success', 'Selected platforms have been approved for the seller.');
     }
 
     public function reject($id)

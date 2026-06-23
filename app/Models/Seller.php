@@ -31,6 +31,9 @@ class Seller extends Authenticatable
         'is_verified',
         'otp',
         'otp_generated_at',
+        'requested_platforms',
+        'approved_platforms',
+        'platform_request_time',
 
         /* ================= ORGANIZATION ================= */
 
@@ -146,6 +149,9 @@ class Seller extends Authenticatable
         'contact_persons' => 'array',
            // 🔥 ADD THIS
     'gateways' => 'array',
+    'requested_platforms' => 'array',
+    'approved_platforms' => 'array',
+    'platform_request_time' => 'datetime',
         
         'pan_expiry' => 'datetime',
     'gst_expiry' => 'datetime',
