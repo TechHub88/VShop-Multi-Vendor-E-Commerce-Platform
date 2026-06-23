@@ -1029,12 +1029,18 @@ public function referralAnalytics()
         $symbol = '€';
     }
 
+    // Check if referred_by column has been migrated in customers table
+    $hasReferredBy = \Illuminate\Support\Facades\Schema::hasColumn('customers', 'referred_by');
+
     // 1. Referred Orders
-    $referredOrders = Order::where('seller_id', $seller->id)
-        ->whereHas('customer', function($q) {
-            $q->whereNotNull('referred_by');
-        })
-        ->get();
+    $referredOrders = collect();
+    if ($hasReferredBy) {
+        $referredOrders = Order::where('seller_id', $seller->id)
+            ->whereHas('customer', function($q) {
+                $q->whereNotNull('referred_by');
+            })
+            ->get();
+    }
 
     // 2. Metrics
     $referralConversions = $referredOrders->count();
@@ -1044,26 +1050,29 @@ public function referralAnalytics()
     $conversionRate = $totalClicks > 0 ? round(($referralConversions / $totalClicks) * 100, 1) : 0.0;
 
     // 3. Trend Clicks & Conversions over time
-    $trendRaw = DB::table('orders')
-        ->select(
-            DB::raw("DATE_FORMAT(created_at, '%b %d') as label"),
-            DB::raw("COUNT(*) as total_orders"),
-            DB::raw("SUM(CASE WHEN customer_id IN (SELECT id FROM customers WHERE referred_by IS NOT NULL) THEN 1 ELSE 0 END) as conversions")
-        )
-        ->where('seller_id', $seller->id)
-        ->groupBy('label')
-        ->orderBy(DB::raw("MIN(created_at)"), 'asc')
-        ->limit(10)
-        ->get();
+    $trend = collect();
+    if ($hasReferredBy) {
+        $trendRaw = DB::table('orders')
+            ->select(
+                DB::raw("DATE_FORMAT(created_at, '%b %d') as label"),
+                DB::raw("COUNT(*) as total_orders"),
+                DB::raw("SUM(CASE WHEN customer_id IN (SELECT id FROM customers WHERE referred_by IS NOT NULL) THEN 1 ELSE 0 END) as conversions")
+            )
+            ->where('seller_id', $seller->id)
+            ->groupBy('label')
+            ->orderBy(DB::raw("MIN(created_at)"), 'asc')
+            ->limit(10)
+            ->get();
 
-    $trend = $trendRaw->map(function($item) {
-        $conv = (int)$item->conversions;
-        return (object)[
-            'label' => $item->label,
-            'conversions' => $conv,
-            'clicks' => $conv * 6 + (($item->total_orders - $conv) * 2) + 5
-        ];
-    });
+        $trend = $trendRaw->map(function($item) {
+            $conv = (int)$item->conversions;
+            return (object)[
+                'label' => $item->label,
+                'conversions' => $conv,
+                'clicks' => $conv * 6 + (($item->total_orders - $conv) * 2) + 5
+            ];
+        });
+    }
 
     if ($trend->isEmpty()) {
         $trend = collect([
@@ -1072,24 +1081,27 @@ public function referralAnalytics()
     }
 
     // 4. Top Referrers leads & services
-    $referredOrderItems = DB::table('order_items')
-        ->join('orders', 'order_items.order_id', '=', 'orders.id')
-        ->join('products', 'order_items.product_id', '=', 'products.id')
-        ->join('customers', 'orders.customer_id', '=', 'customers.id')
-        ->select('products.name as service', DB::raw('COUNT(order_items.id) as conversions'))
-        ->where('orders.seller_id', $seller->id)
-        ->whereNotNull('customers.referred_by')
-        ->groupBy('products.id', 'products.name')
-        ->orderByDesc('conversions')
-        ->limit(5)
-        ->get();
+    $topReferrersServices = collect();
+    if ($hasReferredBy) {
+        $referredOrderItems = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->join('customers', 'orders.customer_id', '=', 'customers.id')
+            ->select('products.name as service', DB::raw('COUNT(order_items.id) as conversions'))
+            ->where('orders.seller_id', $seller->id)
+            ->whereNotNull('customers.referred_by')
+            ->groupBy('products.id', 'products.name')
+            ->orderByDesc('conversions')
+            ->limit(5)
+            ->get();
 
-    $topReferrersServices = $referredOrderItems->map(function($item) {
-        return (object)[
-            'service' => $item->service,
-            'clicks' => $item->conversions * 6 + 3
-        ];
-    });
+        $topReferrersServices = $referredOrderItems->map(function($item) {
+            return (object)[
+                'service' => $item->service,
+                'clicks' => $item->conversions * 6 + 3
+            ];
+        });
+    }
 
     if ($topReferrersServices->isEmpty()) {
         $topReferrersServices = collect([
@@ -1117,69 +1129,73 @@ public function referralAnalytics()
     }
 
     // 6. Top Referred Products List (Table)
-    $productsRaw = DB::table('order_items')
-        ->join('orders', 'order_items.order_id', '=', 'orders.id')
-        ->join('products', 'order_items.product_id', '=', 'products.id')
-        ->join('customers', 'orders.customer_id', '=', 'customers.id')
-        ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
-        ->select(
-            'products.id',
-            'products.name',
-            'categories.name as category',
-            DB::raw('SUM(order_items.quantity) as conversions'),
-            DB::raw('SUM(order_items.total) as sales_value')
-        )
-        ->where('orders.seller_id', $seller->id)
-        ->whereNotNull('customers.referred_by')
-        ->groupBy('products.id', 'products.name', 'category')
-        ->orderByDesc('sales_value')
-        ->get();
-
     $topReferredProducts = collect();
-    $rank = 1;
-    foreach ($productsRaw as $p) {
-        $avgRating = (int)round(DB::table('product_reviews')->where('product_id', $p->id)->avg('rating') ?? 5);
-        $topReferredProducts->push((object)[
-            'rank' => $rank++,
-            'name' => $p->name,
-            'category' => $p->category ?? 'General',
-            'views' => $p->conversions * 6 + 10,
-            'conversions' => (int)$p->conversions,
-            'value' => (float)$p->sales_value * $rate,
-            'rating' => $avgRating
-        ]);
+    if ($hasReferredBy) {
+        $productsRaw = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->join('customers', 'orders.customer_id', '=', 'customers.id')
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+            ->select(
+                'products.id',
+                'products.name',
+                'categories.name as category',
+                DB::raw('SUM(order_items.quantity) as conversions'),
+                DB::raw('SUM(order_items.total) as sales_value')
+            )
+            ->where('orders.seller_id', $seller->id)
+            ->whereNotNull('customers.referred_by')
+            ->groupBy('products.id', 'products.name', 'category')
+            ->orderByDesc('sales_value')
+            ->get();
+
+        $rank = 1;
+        foreach ($productsRaw as $p) {
+            $avgRating = (int)round(DB::table('product_reviews')->where('product_id', $p->id)->avg('rating') ?? 5);
+            $topReferredProducts->push((object)[
+                'rank' => $rank++,
+                'name' => $p->name,
+                'category' => $p->category ?? 'General',
+                'views' => $p->conversions * 6 + 10,
+                'conversions' => (int)$p->conversions,
+                'value' => (float)$p->sales_value * $rate,
+                'rating' => $avgRating
+            ]);
+        }
     }
 
     // 7. Top Referrers Leaderboard (Table)
-    $referrersRaw = DB::table('orders')
-        ->join('customers as buyer', 'orders.customer_id', '=', 'buyer.id')
-        ->join('customers as referrer', 'buyer.referred_by', '=', 'referrer.id')
-        ->select(
-            'referrer.id',
-            'referrer.name',
-            DB::raw('COUNT(orders.id) as conversions')
-        )
-        ->where('orders.seller_id', $seller->id)
-        ->groupBy('referrer.id', 'referrer.name')
-        ->orderByDesc('conversions')
-        ->get();
-
     $leaderboard = collect();
-    $lRank = 1;
-    foreach ($referrersRaw as $r) {
-        $totalRewards = DB::table('seller_finances')
-            ->where('seller_id', $r->id)
-            ->where('transaction_type', 'referral')
-            ->sum('credit');
+    if ($hasReferredBy) {
+        $referrersRaw = DB::table('orders')
+            ->join('customers as buyer', 'orders.customer_id', '=', 'buyer.id')
+            ->join('customers as referrer', 'buyer.referred_by', '=', 'referrer.id')
+            ->select(
+                'referrer.id',
+                'referrer.name',
+                DB::raw('COUNT(orders.id) as conversions')
+            )
+            ->where('orders.seller_id', $seller->id)
+            ->groupBy('referrer.id', 'referrer.name')
+            ->orderByDesc('conversions')
+            ->get();
 
-        $leaderboard->push((object)[
-            'rank' => $lRank++,
-            'name' => $r->name,
-            'clicks' => $r->conversions * 6 + 8,
-            'conversions' => (int)$r->conversions,
-            'total_rewards' => (float)$totalRewards * $rate,
-            'status' => 'Pending'
-        ]);
+        $lRank = 1;
+        foreach ($referrersRaw as $r) {
+            $totalRewards = DB::table('seller_finances')
+                ->where('seller_id', $r->id)
+                ->where('transaction_type', 'referral')
+                ->sum('credit');
+
+            $leaderboard->push((object)[
+                'rank' => $lRank++,
+                'name' => $r->name,
+                'clicks' => $r->conversions * 6 + 8,
+                'conversions' => (int)$r->conversions,
+                'total_rewards' => (float)$totalRewards * $rate,
+                'status' => 'Pending'
+            ]);
+        }
     }
 
     // 8. Campaign Performance (Table)
@@ -1189,19 +1205,22 @@ public function referralAnalytics()
 
     $campaignPerformance = collect();
     foreach ($campaignsRaw as $c) {
-        $query = DB::table('orders')
-            ->join('customers', 'orders.customer_id', '=', 'customers.id')
-            ->where('orders.seller_id', $seller->id)
-            ->whereNotNull('customers.referred_by');
+        $conversions = 0;
+        if ($hasReferredBy) {
+            $query = DB::table('orders')
+                ->join('customers', 'orders.customer_id', '=', 'customers.id')
+                ->where('orders.seller_id', $seller->id)
+                ->whereNotNull('customers.referred_by');
 
-        if ($c->start_date) {
-            $query->whereDate('orders.created_at', '>=', $c->start_date);
-        }
-        if ($c->end_date) {
-            $query->whereDate('orders.created_at', '<=', $c->end_date);
-        }
+            if ($c->start_date) {
+                $query->whereDate('orders.created_at', '>=', $c->start_date);
+            }
+            if ($c->end_date) {
+                $query->whereDate('orders.created_at', '<=', $c->end_date);
+            }
 
-        $conversions = $query->count();
+            $conversions = $query->count();
+        }
 
         $earn = 0;
         if ($conversions > 0) {
