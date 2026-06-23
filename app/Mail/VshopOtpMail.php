@@ -87,7 +87,7 @@ class VshopOtpMail
   <tr>
     <td style="background:#f8f9fa;padding:18px 40px;text-align:center;border-top:1px solid #eeeeee;">
       <p style="margin:0;color:#aaaaaa;font-size:12px;">
-        &copy; 2025 VSHOP &mdash;
+        &copy; 2026 VRIDHEE INNOVATIONS PRIVATE LIMITED &mdash;
         <a href="https://vshop.zelofx.com" style="color:#1a73e8;text-decoration:none;">vshop.zelofx.com</a>
       </p>
       <p style="margin:5px 0 0;color:#cccccc;font-size:11px;">This is an automated email. Please do not reply.</p>
