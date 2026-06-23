@@ -48,9 +48,9 @@ class SellerApprovalMail
 
   <!-- HEADER -->
   <tr>
-    <td style="background:linear-gradient(135deg, #28a745, #218838);padding:28px 40px;text-align:center;">
+    <td style="background:linear-gradient(135deg, #233d79, #2c7fc3);padding:28px 40px;text-align:center;">
       <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:1px;">VSHOP SELLER</h1>
-      <p style="margin:6px 0 0;color:#d4edda;font-size:14px;">' . htmlspecialchars($purposeTitle) . '</p>
+      <p style="margin:6px 0 0;color:#d0e4ff;font-size:14px;">' . htmlspecialchars($purposeTitle) . '</p>
     </td>
   </tr>
 
@@ -64,8 +64,8 @@ class SellerApprovalMail
 
       <!-- SUCCESS BOX -->
       <div style="text-align:center;margin:0 0 25px;">
-        <a href="https://vshop.zelofx.com/seller" style="display:inline-block;background:#28a745;color:#ffffff;text-decoration:none;font-weight:bold;border-radius:8px;padding:15px 35px;font-size:16px;box-shadow:0 4px 6px rgba(40,167,69,0.2);">
-          Go to Seller Dashboard
+        <a href="https://vshop.zelofx.com/seller/login" style="display:inline-block;background:#233d79;color:#ffffff;text-decoration:none;font-weight:bold;border-radius:8px;padding:15px 35px;font-size:16px;box-shadow:0 4px 6px rgba(35,61,121,0.2);">
+          Login Now
         </a>
       </div>
 
@@ -80,7 +80,7 @@ class SellerApprovalMail
     <td style="background:#f8f9fa;padding:18px 40px;text-align:center;border-top:1px solid #eeeeee;">
       <p style="margin:0;color:#aaaaaa;font-size:12px;">
         &copy; 2025 VSHOP Seller Portal &mdash;
-        <a href="https://vshop.zelofx.com/seller" style="color:#28a745;text-decoration:none;">vshop.zelofx.com/seller</a>
+        <a href="https://vshop.zelofx.com/seller" style="color:#233d79;text-decoration:none;">vshop.zelofx.com/seller</a>
       </p>
       <p style="margin:5px 0 0;color:#cccccc;font-size:11px;">This is an automated email. Please do not reply.</p>
     </td>
@@ -95,7 +95,7 @@ class SellerApprovalMail
         // ── Plain text fallback ──────────────────────────────────────────
         $plain = "Dear {$name},\r\n\r\n"
                . "Your permission has been approved. You can now login to your seller dashboard and start using the platform.\r\n\r\n"
-               . "Seller Dashboard: https://vshop.zelofx.com/seller\r\n\r\n"
+               . "Login URL: https://vshop.zelofx.com/seller/login\r\n\r\n"
                . "Regards,\r\nVSHOP Seller Support\r\nhttps://vshop.zelofx.com/seller";
 
         // ── Build multipart MIME ─────────────────────────────────────────
