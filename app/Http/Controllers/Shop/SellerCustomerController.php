@@ -1036,11 +1036,11 @@ public function show($id)
 
     // 🔥 GET ADDRESSES
     $billingAddresses = Address::where('customer_id', $id)
-        ->where('type', 'billing')
+        ->whereIn('address_type', ['billing', 'both'])
         ->get();
 
     $deliveryAddresses = Address::where('customer_id', $id)
-        ->where('type', 'delivery')
+        ->whereIn('address_type', ['shipping', 'delivery', 'both'])
         ->get();
 
     return view('vshop.seller.customer.show', compact(

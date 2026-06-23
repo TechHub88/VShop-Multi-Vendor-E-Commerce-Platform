@@ -93,24 +93,36 @@
                                             <tr>
                                                 {{-- DELIVERY --}}
                                                 <td>
+                                                    @if(in_array(strtolower($address->address_type ?? ''), ['shipping', 'delivery', 'both']))
                                                     <label class="filter-radio">
                                                         <input type="radio"
                                                             name="delivery_radio"
-                                                            value="{{ $address->id }}"
-                                                            {{ $loop->first ? 'checked' : '' }}>
+                                                            value="{{ $address->id }}">
                                                         <span class="filter-checkmark"></span>
                                                     </label>
+                                                    @else
+                                                    <label class="filter-radio" style="opacity: 0.5; cursor: not-allowed;">
+                                                        <input type="radio" disabled>
+                                                        <span class="filter-checkmark" style="cursor: not-allowed;"></span>
+                                                    </label>
+                                                    @endif
                                                 </td>
 
                                                 {{-- BILLING --}}
                                                 <td>
+                                                    @if(in_array(strtolower($address->address_type ?? ''), ['billing', 'both']))
                                                     <label class="filter-radio">
                                                         <input type="radio"
                                                             name="billing_radio"
-                                                            value="{{ $address->id }}"
-                                                            {{ $loop->first ? 'checked' : '' }}>
+                                                            value="{{ $address->id }}">
                                                         <span class="filter-checkmark"></span>
                                                     </label>
+                                                    @else
+                                                    <label class="filter-radio" style="opacity: 0.5; cursor: not-allowed;">
+                                                        <input type="radio" disabled>
+                                                        <span class="filter-checkmark" style="cursor: not-allowed;"></span>
+                                                    </label>
+                                                    @endif
                                                 </td>
 
                                                 {{-- ADDRESS TEXT --}}
@@ -540,6 +552,16 @@
     // 🔥 PAGE LOAD AUTO CALL
     // ===================================================
     $(window).on('load', function () {
+        // Auto-select first available delivery address if none is checked
+        if ($('input[name="delivery_radio"]').length && !$('input[name="delivery_radio"]:checked').length) {
+            $('input[name="delivery_radio"]').first().prop('checked', true);
+        }
+        
+        // Auto-select first available billing address if none is checked
+        if ($('input[name="billing_radio"]').length && !$('input[name="billing_radio"]:checked').length) {
+            $('input[name="billing_radio"]').first().prop('checked', true);
+        }
+
         updateAddressGST();
     });
 
