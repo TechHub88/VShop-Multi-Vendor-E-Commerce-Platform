@@ -775,7 +775,6 @@
 
 <tr>
 <th>Enquiry ID</th>
-<th>Created Date</th>
 <th>User Details</th>
 <th>Product / Service</th>
 <th>Interaction</th>
@@ -836,19 +835,7 @@ if(!empty($e->next_followup_date)){
 </div>
 
 <div class="enquiry-date">
-    {{ \Carbon\Carbon::parse($e->created_at)->format('d M Y') }}
-</div>
-
-</td>
-
-{{-- ================= CREATED DATE ================= --}}
-<td>
-
-<div class="user-meta">
-    {{ \Carbon\Carbon::parse($e->created_at)->format('d-m-Y') }}
-</div>
-
-<div class="user-meta">
+    {{ \Carbon\Carbon::parse($e->created_at)->format('d M Y') }}<br>
     {{ \Carbon\Carbon::parse($e->created_at)->format('h:i A') }}
 </div>
 
