@@ -11,6 +11,18 @@
 @section('content')
 
 <style>
+    /* Prevent dropdown clipping in product cards */
+    .product-box, .item {
+        overflow: visible !important;
+        position: relative;
+    }
+    .product-box:hover, .product-box:focus-within, .product-box:has(.show) {
+        z-index: 9999;
+    }
+    .product-box-img {
+        overflow: hidden;
+    }
+
     .filter-top {
         display: none;
     }
@@ -1008,7 +1020,7 @@ PRODUCT GRID
 <div class="rating-size-sec">
 
 <div class="dropdown custom-rating-dropdown position-relative">
-    <button type="button" class="amazon-rating-sec dropdown-toggle text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; margin-bottom: 0; color: inherit; display: inline-flex; border: none; background: transparent; padding: 0;">
+    <div class="amazon-rating-sec dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; margin-bottom: 0; display: inline-flex; align-items: center;">
         <span class="rating-num">{{ number_format($product->average_rating ?? 0, 1) }}</span>
         <span class="stars">
             @for($i=1;$i<=5;$i++)
@@ -1016,7 +1028,7 @@ PRODUCT GRID
             @endfor
         </span>
         <i class="fa-solid fa-chevron-down ms-1 text-muted" style="font-size: 10px;"></i>
-    </button>
+    </div>
     <a href="{{ route('productmanage.show', $product->id) }}#reviews" class="rating-count d-inline-block ms-1" style="font-size: 13px; color: #007185; text-decoration: none;">
         ({{ $product->total_reviews ?? 0 }})
     </a>
@@ -1497,9 +1509,8 @@ No products found with selected filters.
 
 
 
+@push('scripts')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script>
 
 let shareUrl = '';
@@ -1921,6 +1932,7 @@ border:1px solid #ddd;
           overlay.classList.remove("active");
         });
     </script>
+@endpush
 
 @endsection
 

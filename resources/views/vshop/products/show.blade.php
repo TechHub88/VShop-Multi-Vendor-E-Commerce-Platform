@@ -1,5 +1,8 @@
 @extends('vshop.main')
 
+@section('title', $product->name . ' - Product Details')
+
+@push('styles')
 <style>
     .custom-product-image-wrapper-one {
         width: 80%;
@@ -80,6 +83,49 @@
 
     .product-box {
         height: auto !important;
+    }
+
+    /* Fixed Size & Equal Height for Related Cards */
+    .other-product-wrapper .owl-stage {
+        display: flex;
+    }
+    .other-product-wrapper .owl-item {
+        display: flex;
+        flex: 1 0 auto;
+    }
+    .other-product-wrapper .other-product-box {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    .other-product-wrapper .product-box {
+        height: 100% !important;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+    .other-product-wrapper .product-box-img {
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .other-product-wrapper .product-box-img img {
+        max-height: 100%;
+        width: auto;
+        object-fit: contain;
+    }
+    .other-product-wrapper .product-bottom {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+    .other-product-wrapper .product-bottom h3 {
+        margin-bottom: auto;
+    }
+    .other-product-wrapper .off-sec,
+    .other-product-wrapper .product-bottom-sec {
+        margin-top: auto;
     }
     
     .price-sec {
@@ -254,14 +300,14 @@
         gap: 8px;
     }
     .new-rupess {
-        font-size: 15px;
+        font-size: 20px;
         font-weight: 600;
         color: #212121;
         margin: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        text-align: right;
+        text-align: left;
     }
     .add-cart-btn {
         background: #004392;
@@ -279,8 +325,7 @@
         background: #003377;
     }
 </style>
-
-@section('title', $product->name . ' - Product Details')
+@endpush
 
 @section('content')
 <div class="dashboardPagesContentonner dashboardPosPagesLeftContent">
@@ -378,7 +423,7 @@
                                                 $saveAmount = ($regular > $price) ? ($regular - $price) : 0;
                                             @endphp
 
-                                            <div class="rating-sec" style="margin-bottom: 12px; display: flex; align-items: center; gap: 12px;">
+                                            <div class="rating-sec" style="margin-bottom: 12px; display: flex; align-items: center; justify-content: flex-start; gap: 12px;">
                                                 <div class="dropdown custom-rating-dropdown position-relative">
                                                     <button type="button" class="amazon-rating-sec dropdown-toggle text-decoration-none" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; margin-bottom: 0; color: inherit; display: inline-flex; border: none; background: transparent; padding: 0;">
                                                         <span class="rating-num">{{ number_format($averageRating ?? 0, 1) }}</span>
@@ -1414,10 +1459,7 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+@push('scripts')
 <script>
 // ========== SHARE MODAL (unchanged) ==========
 let shareUrl = '';
@@ -2628,17 +2670,33 @@ document.addEventListener("DOMContentLoaded", function () {
 <script>
     $(document).ready(function(){
         $(".other-product-wrapper").owlCarousel({
-            loop: false,
+            loop: true,
             margin: 20,
-            nav: true,
+            nav: false,
             dots: false,
+            autoplay: true,
+            autoplayTimeout: 3000,
+            autoplayHoverPause: true,
             responsive: {
                 0: { items: 1 },
                 600: { items: 2 },
                 1000: { items: 4 }
             }
         });
+
+        // Handle 'See customer reviews' links to open Reviews tab
+        $(document).on('click', 'a[href="#reviews"]', function(e) {
+            e.preventDefault();
+            var reviewTabBtn = $('#reviews-tab');
+            if (reviewTabBtn.length) {
+                reviewTabBtn.trigger('click');
+                $('html, body').animate({
+                    scrollTop: $("#productDetailTabs").offset().top - 80
+                }, 500);
+            }
+        });
     });
 </script>
+@endpush
 
 @endsection

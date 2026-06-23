@@ -157,9 +157,9 @@ $(function () {
     loop: true,
     nav: false,
     dots: false,
-    autoplay: false,
+    autoplay: true,
+    autoplayTimeout: 2000,
     margin: 15,
-    //autoplayTimeout: 3000,
     responsive: {
       0: {
         items: 1, 
