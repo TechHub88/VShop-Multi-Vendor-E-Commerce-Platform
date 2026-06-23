@@ -15,7 +15,7 @@ class SellerApprovalMail
      * @param  string  $name     Recipient name
      * @return bool
      */
-    public static function send(string $to, string $name): bool
+    public static function send(string $to, string $name, string $purpose = 'account'): bool
     {
         $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@zelofx.com');
         $fromName  = env('MAIL_FROM_NAME', 'VSHOP Seller');
@@ -23,9 +23,19 @@ class SellerApprovalMail
         // Ensure the envelope sender is set for PHP mail() on Windows/CPanel environments
         ini_set('sendmail_from', $fromEmail);
 
-        $subject      = 'VSHOP Seller - Account Approved';
-        $purposeTitle = 'Permission Approved';
-        $purposeDesc  = 'Your permission has been approved. You can now login to your seller dashboard and start using the platform.';
+        switch ($purpose) {
+            case 'platforms':
+                $subject      = 'VSHOP Seller - Platform Request Approved';
+                $purposeTitle = 'Platform Request Approved';
+                $purposeDesc  = 'Your request for platform access has been approved by the admin. You can now login to your chosen platforms.';
+                break;
+            case 'account':
+            default:
+                $subject      = 'VSHOP Seller - Account Approved';
+                $purposeTitle = 'Permission Approved';
+                $purposeDesc  = 'Your permission has been approved. You can now login to your seller dashboard and start using the platform.';
+                break;
+        }
 
         // ── HTML body ────────────────────────────────────────────────────
         $html = '<!DOCTYPE html>

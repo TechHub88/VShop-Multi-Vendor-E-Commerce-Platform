@@ -157,11 +157,8 @@ class SellermanagementController extends Controller
         $this->logAudit($id, 'platforms_approved', 'Seller platforms approved by admin', $oldData, $seller->toArray());
         NotificationService::notify($seller->id, 'seller', 'platform', 'Your platform access request has been approved by admin.', route('seller.dashboard'));
         
-        // Send email using PHP mail()
-        $subject = "Platform Request Approved";
-        $message = "Hello " . $seller->name . ",\n\nYour request for platform access has been approved by the admin. You can now login to your chosen platforms.\n\nThank you.";
-        $headers = "From: noreply@vshop.zelofx.com";
-        @mail($seller->email, $subject, $message, $headers);
+        // Send email using SellerApprovalMail wrapper
+        SellerApprovalMail::send($seller->email, $seller->name, 'platforms');
         
         return back()->with('success', 'Selected platforms have been approved for the seller.');
     }
