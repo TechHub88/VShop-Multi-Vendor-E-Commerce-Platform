@@ -281,10 +281,14 @@ public function index(Request $request)
     ->where('seller_id', auth()->id())
     ->get();
 
+    // Defining ratings to prevent undefined variable error in view
+    $ratings = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+
     return view('vshop.seller.orders.index', compact(
         'orders',
         'categories',
-        'subcategories'
+        'subcategories',
+        'ratings'
     ));
 }
     public function processing()
