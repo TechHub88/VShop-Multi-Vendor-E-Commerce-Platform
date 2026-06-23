@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,137 +8,273 @@
 
 <title>Select Panel</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
 
+:root {
+    --bg-primary: #1e3a8a;
+    --bg-secondary: #2563eb;
+    --accent-blue: #2563eb;
+    --accent-light: #eff6ff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+}
+
 body{
     margin:0;
     min-height:100vh;
-    background:linear-gradient(135deg,#004392,#0d6efd);
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
+    font-family: 'Plus Jakarta Sans', sans-serif;
     display:flex;
     align-items:center;
     justify-content:center;
     padding:20px;
+    position: relative;
+}
+
+/* Subtle glow */
+body::before {
+    content: '';
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(255,255,255,0) 70%);
+    top: -200px;
+    left: -200px;
+    pointer-events: none;
 }
 
 .panel-wrapper{
     width:100%;
     max-width:900px;
+    z-index: 10;
 }
 
 .panel-container{
     position:relative;
-    background:#fff;
-    border-radius:20px;
-    padding:40px;
-    box-shadow:0 20px 60px rgba(0,0,0,0.2);
+    background: var(--card-bg);
+    border-radius:24px;
+    padding:45px 40px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
 }
 
 .back-btn{
     position:absolute;
-    top:20px;
-    left:20px;
+    top:25px;
+    left:25px;
     width:42px;
     height:42px;
-    border-radius:50%;
-    background:#f1f5ff;
+    border-radius:12px;
+    background: #f1f5f9;
+    color: #475569;
     display:flex;
     align-items:center;
     justify-content:center;
     cursor:pointer;
-    transition:0.3s;
+    transition: all 0.3s;
 }
 
 .back-btn:hover{
-    background:#dbe7ff;
+    background: #e2e8f0;
+    color: #1e293b;
+    transform: translateX(-3px);
 }
 
 .panel-title{
     text-align:center;
-    font-weight:700;
+    font-family: 'Outfit', sans-serif;
+    font-weight:800;
     font-size:32px;
-    color:#004392;
-    margin-bottom:5px;
+    color: #0a1931;
+    margin-bottom:8px;
 }
 
 .panel-subtitle{
     text-align:center;
-    color:#777;
-    margin-bottom:35px;
+    color: var(--text-muted);
+    font-size: 15px;
+    margin-bottom:40px;
 }
 
 .panel-card{
     position:relative;
-    background:#f7f9fd;
-    border:2px solid transparent;
-    border-radius:18px;
-    padding:35px 20px;
+    background: #f8fafc;
+    border: 2px solid #f1f5f9;
+    border-radius:20px;
+    padding:35px 25px;
     text-align:center;
     cursor:pointer;
-    transition:0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     height:100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .panel-card:hover{
-    transform:translateY(-4px);
+    transform:translateY(-5px);
+    border-color: #cbd5e1;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
 }
 
 .panel-card.active{
-    border-color:#004392;
-    background:#edf4ff;
-    box-shadow:0 8px 25px rgba(0,67,146,0.15);
+    background: var(--accent-light);
+    border-color: var(--accent-blue);
+    box-shadow: 0 10px 25px rgba(37, 99, 235, 0.08);
 }
 
 .panel-card.disabled{
-    opacity:0.6;
+    opacity:0.55;
     cursor:not-allowed;
 }
 
-.panel-card input{
-    position:absolute;
-    top:15px;
-    right:15px;
-    transform:scale(1.3);
+.panel-card.disabled:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: #f1f5f9;
 }
 
-.icon{
-    font-size:45px;
-    margin-bottom:10px;
+/* Checkbox Design */
+.custom-checker {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    background: #ffffff;
+}
+
+.panel-card.active .custom-checker {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+.custom-checker i {
+    color: #ffffff;
+    font-size: 12px;
+    opacity: 0;
+    transform: scale(0.6);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.panel-card.active .custom-checker i {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.panel-card input{
+    display: none;
+}
+
+/* Icon Boxes */
+.icon-box{
+    width: 65px;
+    height: 65px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    font-size: 28px;
+    transition: all 0.3s;
+}
+
+.icon-vshop {
+    background: rgba(255, 107, 107, 0.1);
+    color: #ff6b6b;
+}
+.icon-vtravel {
+    background: rgba(78, 205, 196, 0.1);
+    color: #4ecdc4;
+}
+.icon-vcampus {
+    background: rgba(162, 89, 255, 0.1);
+    color: #a259ff;
+}
+.icon-vedge {
+    background: rgba(255, 209, 102, 0.1);
+    color: #ffd166;
+}
+
+.panel-card.active .icon-vshop {
+    background: #ff6b6b;
+    color: #ffffff;
+    box-shadow: 0 6px 15px rgba(255, 107, 107, 0.25);
+}
+.panel-card.active .icon-vtravel {
+    background: #4ecdc4;
+    color: #ffffff;
+    box-shadow: 0 6px 15px rgba(78, 205, 196, 0.25);
+}
+.panel-card.active .icon-vcampus {
+    background: #a259ff;
+    color: #ffffff;
+    box-shadow: 0 6px 15px rgba(162, 89, 255, 0.25);
 }
 
 .title{
-    font-size:20px;
+    font-size:19px;
     font-weight:700;
-    color:#111;
+    color: var(--text-main);
+    margin-bottom: 6px;
 }
 
 .desc{
-    font-size:14px;
-    color:#666;
-    margin-top:5px;
+    font-size:13.5px;
+    color: var(--text-muted);
+    line-height: 1.45;
 }
 
+/* Gradient Continue Button */
 .continue-btn{
     margin-top:35px;
-    background:#004392;
-    color:#fff;
+    background: var(--accent-blue);
+    color:#ffffff;
     border:none;
-    padding:14px 35px;
+    padding:14px 45px;
     border-radius:50px;
-    font-weight:600;
-    transition:0.3s;
+    font-weight:700;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    transition: all 0.3s;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.25);
 }
 
 .continue-btn:hover{
-    background:#003170;
+    background: var(--bg-primary);
+    box-shadow: 0 10px 25px rgba(30, 58, 138, 0.35);
+    transform: translateY(-2px);
+}
+
+.continue-btn:active {
+    transform: translateY(1px);
+}
+
+/* Alert Styling */
+.alert-custom {
+    border-radius: 12px;
+    font-size: 14px;
 }
 
 .error-box{
     display:none;
     margin-top:20px;
+    border-radius: 12px;
 }
 
 </style>
@@ -153,7 +288,7 @@ body{
 <div class="panel-container">
 
 <div class="back-btn" onclick="history.back()">
-    <i class="bi bi-arrow-left"></i>
+    <i class="ri-arrow-left-line"></i>
 </div>
 
 <h2 class="panel-title">
@@ -161,7 +296,7 @@ body{
 </h2>
 
 <p class="panel-subtitle">
-    You can select multiple modules
+    Select the modules you wish to continue with
 </p>
 
 @php
@@ -182,17 +317,18 @@ body{
 @endphp
 
 @if(session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
+    <div class="alert alert-success alert-custom mb-4">{{ session('success') }}</div>
 @endif
 @if(session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
+    <div class="alert alert-danger alert-custom mb-4">{{ session('error') }}</div>
 @endif
 @if(session('info'))
-    <div class="alert alert-info">{{ session('info') }}</div>
+    <div class="alert alert-info alert-custom mb-4">{{ session('info') }}</div>
 @endif
 
 @if($isPending)
-    <div class="alert alert-warning text-center">
+    <div class="alert alert-warning alert-custom text-center mb-4 p-3">
+        <i class="ri-time-line me-2 fs-5 align-middle"></i>
         <strong>Pending Approval!</strong> Your request is pending with admin. Within 24 hours you will get an update.
     </div>
 @endif
@@ -212,13 +348,22 @@ body{
                  {!! $status === 'selectable-card' ? 'onclick="toggleCard(this)"' : '' !!}>
 
                 @if($status === 'pending')
-                    <span class="badge bg-warning text-dark position-absolute" style="top: 15px; left: 15px;">Pending</span>
+                    <span class="badge bg-warning text-dark position-absolute" style="top: 20px; left: 20px; border-radius: 8px;">Pending</span>
                 @endif
+                
+                @if($status === 'selectable-card')
+                    <div class="custom-checker">
+                        <i class="ri-check-line"></i>
+                    </div>
+                @endif
+
                 <input type="checkbox"
                        name="panels[]"
                        value="product" {{ $status !== 'selectable-card' ? 'disabled' : '' }}>
 
-                <div class="icon">🛒</div>
+                <div class="icon-box icon-vshop">
+                    <i class="ri-shopping-cart-2-line"></i>
+                </div>
 
                 <div class="title">
                     V-Shop
@@ -239,13 +384,22 @@ body{
                  {!! $status === 'selectable-card' ? 'onclick="toggleCard(this)"' : '' !!}>
 
                 @if($status === 'pending')
-                    <span class="badge bg-warning text-dark position-absolute" style="top: 15px; left: 15px;">Pending</span>
+                    <span class="badge bg-warning text-dark position-absolute" style="top: 20px; left: 20px; border-radius: 8px;">Pending</span>
                 @endif
+                
+                @if($status === 'selectable-card')
+                    <div class="custom-checker">
+                        <i class="ri-check-line"></i>
+                    </div>
+                @endif
+
                 <input type="checkbox"
                        name="panels[]"
                        value="travel" {{ $status !== 'selectable-card' ? 'disabled' : '' }}>
 
-                <div class="icon">✈️</div>
+                <div class="icon-box icon-vtravel">
+                    <i class="ri-plane-line"></i>
+                </div>
 
                 <div class="title">
                     V-Travel
@@ -266,13 +420,22 @@ body{
                  {!! $status === 'selectable-card' ? 'onclick="toggleCard(this)"' : '' !!}>
 
                 @if($status === 'pending')
-                    <span class="badge bg-warning text-dark position-absolute" style="top: 15px; left: 15px;">Pending</span>
+                    <span class="badge bg-warning text-dark position-absolute" style="top: 20px; left: 20px; border-radius: 8px;">Pending</span>
                 @endif
+                
+                @if($status === 'selectable-card')
+                    <div class="custom-checker">
+                        <i class="ri-check-line"></i>
+                    </div>
+                @endif
+
                 <input type="checkbox"
                        name="panels[]"
                        value="vcampus" {{ $status !== 'selectable-card' ? 'disabled' : '' }}>
 
-                <div class="icon">🎓</div>
+                <div class="icon-box icon-vcampus">
+                    <i class="ri-graduation-cap-line"></i>
+                </div>
 
                 <div class="title">
                     V-Campus
@@ -291,7 +454,9 @@ body{
 
             <div class="panel-card disabled">
 
-                <div class="icon">⚡</div>
+                <div class="icon-box icon-vedge">
+                    <i class="ri-cpu-line"></i>
+                </div>
 
                 <div class="title">
                     V-Edge
@@ -311,7 +476,7 @@ body{
 
         <div class="alert alert-danger error-box"
              id="panelError">
-            Please select at least one workspace
+            <i class="ri-error-warning-line me-2"></i>Please select at least one workspace
         </div>
 
         @if(!$isPending)
@@ -329,6 +494,7 @@ body{
 
 </div>
 
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script>
 
 function toggleCard(el){
@@ -350,25 +516,23 @@ function toggleCard(el){
     $('#panelError').hide();
 }
 
+$(document).ready(function() {
+    $('#panelForm').submit(function(e){
 
-$('#panelForm').submit(function(e){
+        let checked = $('input[name="panels[]"]:checked').length;
 
-    let checked = $('input[name="panels[]"]:checked').length;
+        if(checked === 0){
 
-    if(checked === 0){
+            e.preventDefault();
 
-        e.preventDefault();
+            $('#panelError').fadeIn();
 
-        $('#panelError').fadeIn();
-
-        return false;
-    }
+            return false;
+        }
+    });
 });
 
 </script>
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
 </body>
 </html>
-
