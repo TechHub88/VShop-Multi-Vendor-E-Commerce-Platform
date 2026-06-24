@@ -1247,16 +1247,4 @@ public function getLogs($id)
             'pincode' => $city->pincode ?? null
         ]);
     }
-
-    public function getStates($country_id)
-    {
-        $states = \App\Models\State::where('country_id', $country_id)->pluck('name', 'id');
-        return response()->json($states);
-    }
-
-    public function getCities($state_id)
-    {
-        $cities = \App\Models\City::where('state_id', $state_id)->pluck('name', 'id');
-        return response()->json($cities);
-    }
 }
