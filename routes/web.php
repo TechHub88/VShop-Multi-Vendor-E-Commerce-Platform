@@ -1412,9 +1412,6 @@ Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])
 Route::post('/admin/login', [AuthenticatedSessionController::class, 'store'])
     ->name('admin.login.store');
 
-Route::get('/admin/switch-panel/{type}', [AuthenticatedSessionController::class, 'switchPanel'])
-    ->name('admin.switch.panel');
-
 Route::get('/admin/2fa', [AuthenticatedSessionController::class, 'show2faForm'])
     ->name('admin.2fa');
 Route::post('/admin/2fa', [AuthenticatedSessionController::class, 'verify2fa'])
@@ -1425,7 +1422,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 // ==================== ADMIN PROTECTED ROUTES ====================
 Route::prefix('admin')->name('admin.')->middleware('auth:web,admin_staff')->group(function () {
     
-    
+    Route::get('/switch-panel/{type}', [AuthenticatedSessionController::class, 'switchPanel'])->name('switch.panel');
     Route::get('/global-search', [App\Http\Controllers\admin\GlobalSearchController::class, 'search'])->name('global.search');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
        // Banner List

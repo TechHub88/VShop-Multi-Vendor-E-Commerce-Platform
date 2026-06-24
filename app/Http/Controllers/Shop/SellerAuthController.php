@@ -1375,52 +1375,65 @@ public function switchPanelMulti(Request $request)
     $panels = $request->panels;
     $seller = auth()->guard('seller')->user();
 
+    // Lazy check for 24h auto-approval
+    if (!empty($seller->requested_platforms) && empty($seller->approved_platforms) && !empty($seller->platform_request_time)) {
+        if (\Carbon\Carbon::parse($seller->platform_request_time)->addHours(24)->isPast()) {
+            $seller->approved_platforms = $seller->requested_platforms;
+            $seller->save();
+
+            // Send email
+            $subject = "Platform Request Approved";
+            $message = "Hello " . $seller->name . ",\n\nYour request for platform access has been automatically approved by the admin after 24 hours.\n\nThank you.";
+            $headers = "From: noreply@vshop.zelofx.com";
+            @mail($seller->email, $subject, $message, $headers);
+        }
+    }
+
     // If seller has not yet requested any platforms
     if (empty($seller->requested_platforms)) {
         $seller->requested_platforms = $panels;
         $seller->platform_request_time = now();
         $seller->save();
-        
-        return redirect()->back()->with('success', 'Your request has been sent to the admin for approval. You will get an update within 24 hours.');
     }
 
-    // If seller has approved platforms, process login
-    if (!empty($seller->approved_platforms)) {
-        $allowedPanels = array_intersect($panels, $seller->approved_platforms);
-        if (empty($allowedPanels)) {
-            return redirect()->back()->with('error', 'Selected platforms are not approved yet.');
-        }
-
-        session()->forget([
-            'selected_panels',
-            'seller_panel',
-            'admin_panel'
-        ]);
-
-        session([
-            'selected_panels' => $allowedPanels
-        ]);
-
-        if (in_array('product', $allowedPanels)) {
-            session(['admin_panel' => 'product']);
-        } elseif (in_array('travel', $allowedPanels)) {
-            session(['admin_panel' => 'travel']);
-        } elseif (in_array('vcampus', $allowedPanels)) {
-            session(['admin_panel' => 'vcampus']);
-        }
-
-        session(['seller_panel' => $allowedPanels]);
-        session()->save();
-
-        if (count($allowedPanels) == 1) {
-            $type = array_values($allowedPanels)[0];
-            session(['seller_panel' => [$type]]);
-        }
-
-        return redirect()->route('seller.dashboard')->with('success', 'Workspace selected successfully');
+    // Allowed panels are approved platforms if not empty, otherwise requested platforms.
+    $allowed = !empty($seller->approved_platforms) ? $seller->approved_platforms : $seller->requested_platforms;
+    if (empty($allowed)) {
+        $allowed = $panels; // fallback
     }
 
-    return redirect()->back()->with('info', 'Your request is still pending admin approval.');
+    $allowedPanels = array_intersect($panels, $allowed);
+    if (empty($allowedPanels)) {
+        return redirect()->back()->with('error', 'Selected platforms are not approved or are rejected.');
+    }
+
+    session()->forget([
+        'selected_panels',
+        'seller_panel',
+        'admin_panel'
+    ]);
+
+    session([
+        'selected_panels' => $allowedPanels
+    ]);
+
+    if (in_array('product', $allowedPanels)) {
+        session(['admin_panel' => 'product']);
+    } elseif (in_array('travel', $allowedPanels)) {
+        session(['admin_panel' => 'travel']);
+    } elseif (in_array('vcampus', $allowedPanels)) {
+        session(['admin_panel' => 'vcampus']);
+    }
+
+    session(['seller_panel' => $allowedPanels]);
+    session()->save();
+
+    if (count($allowedPanels) == 1) {
+        $type = array_values($allowedPanels)[0];
+        session(['seller_panel' => [$type]]);
+    }
+
+    return redirect()->route('seller.dashboard')->with('success', 'Workspace selected successfully');
 }
 
 

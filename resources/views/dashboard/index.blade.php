@@ -21,210 +21,8 @@
     $currentPanel = session('admin_panel', 'product');
     
     // =============================================
-    // DYNAMIC DATA FROM DATABASE
+    // DYNAMIC DATA FROM CONTROLLER (NO DIRECT DB QUERIES)
     // =============================================
-    
-    // 1. PRODUCT DATA
-    $totalProducts = Product::count();
-    $approvedProducts = Product::where('status', 'active')->count();
-    $pendingProducts = Product::where('status', 'pending')->count();
-    $rejectedProducts = Product::where('status', 'rejected')->count();
-    
-    // High Return Products (products with return rate > 10%)
-    $highReturnProductsCount = OrderItem::select('product_id', DB::raw('COUNT(*) as total_orders'), DB::raw('SUM(CASE WHEN status = "returned" THEN 1 ELSE 0 END) as returns_count'))
-        ->groupBy('product_id')
-        ->havingRaw('returns_count > 0 AND (returns_count * 100.0 / total_orders) > 10')
-        ->count();
-    
-    // Low Stock Products
-    $lowStockProducts = Product::where('inventory', '<', 10)->where('inventory', '>', 0)->count();
-    
-    // 2. ORDER DATA
-    $totalOrders = Order::count();
-    $completedOrders = Order::where('status', 'delivered')->orWhere('status', 'completed')->count();
-    $pendingOrders = Order::where('status', 'pending')->count();
-    $cancelledOrders = Order::where('status', 'cancelled')->count();
-    $processingOrders = Order::where('status', 'processing')->count();
-    $shippedOrders = Order::where('status', 'shipped')->count();
-    $returnedOrders = Order::where('status', 'returned')->count();
-    $liveOrdersToday = Order::whereDate('created_at', Carbon::today())->count();
-    
-    // Failed Payments
-    $failedPaymentsCount = Order::where('payment_status', 'failed')->count();
-    $failedPaymentsList = Order::where('payment_status', 'failed')->limit(5)->get();
-    
-    // Monthly Order Trends
-    $orderMonths = [];
-    $monthlyOrders = [];
-    $monthlyRevenue = [];
-    for($i = 11; $i >= 0; $i--) {
-        $month = Carbon::now()->subMonths($i);
-        $orderMonths[] = $month->format('M');
-        $monthOrders = Order::whereYear('created_at', $month->year)
-            ->whereMonth('created_at', $month->month)
-            ->count();
-        $monthlyOrders[] = $monthOrders ?: rand(80, 500);
-        $monthRev = SellerFinance::whereYear('created_at', $month->year)
-            ->whereMonth('created_at', $month->month)
-            ->sum('credit');
-        $monthlyRevenue[] = $monthRev ?: rand(500000, 3000000);
-    }
-    
-    // 3. SELLER DATA
-    $totalSellers = Seller::count();
-    $activeSellers = Seller::where('status', 'approved')->count();
-    $pendingSellers = Seller::where('status', 'pending')->count();
-    $pendingKYC = Seller::where('status', 'pending')->count() ?: 2;
-    $rejectedSellers = Seller::where('status', 'rejected')->count();
-    
-    // Seller Registration Trend
-    $sellerMonths = [];
-    $sellerRegistrations = [];
-    for($i = 11; $i >= 0; $i--) {
-        $month = Carbon::now()->subMonths($i);
-        $sellerMonths[] = $month->format('M');
-        $sellerRegistrations[] = Seller::whereYear('created_at', $month->year)
-            ->whereMonth('created_at', $month->month)
-            ->count() ?: rand(5, 30);
-    }
-    
-    // Top Sellers by revenue
-    $topSellersData = DB::table('seller_finances')
-        ->select('seller_id', DB::raw('SUM(credit) as total_revenue'), DB::raw('COUNT(DISTINCT order_id) as orders_count'))
-        ->where('transaction_type', 'credit')
-        ->groupBy('seller_id')
-        ->orderBy('total_revenue', 'desc')
-        ->limit(20)
-        ->get();
-    
-    if($topSellersData->isEmpty()) {
-        $topSellersData = Seller::limit(20)->get();
-        foreach($topSellersData as $seller) {
-            $seller->total_revenue = rand(200000, 1500000);
-            $seller->orders_count = rand(100, 900);
-            $seller->products_count = rand(10, 60);
-            $seller->name = $seller->name ?? 'Seller';
-        }
-    } else {
-        foreach($topSellersData as $sellerData) {
-            $sellerObj = Seller::find($sellerData->seller_id);
-            $sellerData->name = $sellerObj ? $sellerObj->name : 'Seller ' . $sellerData->seller_id;
-            $sellerData->products_count = rand(20, 60);
-        }
-    }
-    
-    // 4. REVENUE DATA
-    $totalRevenue = SellerFinance::where('transaction_type', 'credit')->sum('credit');
-    $thisMonthRevenue = SellerFinance::where('transaction_type', 'credit')
-        ->whereMonth('created_at', Carbon::now()->month)
-        ->sum('credit');
-    $platformFees = SellerFinance::where('transaction_type', 'debit')
-        ->where('reference_no', 'like', '%commission%')
-        ->sum('debit');
-    $outstandingPayouts = SellerFinance::where('status', 'pending')
-        ->where('transaction_type', 'credit')
-        ->sum('credit');
-    
-    // Revenue chart data
-    $revenueMonths = [];
-    $grossSales = [];
-    $netSales = [];
-    $lossAmount = [];
-    
-    for($i = 11; $i >= 0; $i--) {
-        $month = Carbon::now()->subMonths($i);
-        $revenueMonths[] = $month->format('M');
-        
-        $monthGross = SellerFinance::where('transaction_type', 'credit')
-            ->whereYear('created_at', $month->year)
-            ->whereMonth('created_at', $month->month)
-            ->sum('credit');
-        
-        $monthLoss = SellerFinance::where('transaction_type', 'debit')
-            ->where('reference_no', 'like', '%refund%')
-            ->whereYear('created_at', $month->year)
-            ->whereMonth('created_at', $month->month)
-            ->sum('debit');
-        
-        $grossSales[] = $monthGross ?: rand(1800000, 9100000);
-        $netSales[] = ($monthGross - ($monthGross * 0.2)) ?: rand(1350000, 7280000);
-        $lossAmount[] = $monthLoss ?: rand(80000, 280000);
-    }
-    
-    // Revenue by Application
-    $revenueByAppData = [42, 35, 13, 10];
-    $revenueByAppLabels = ["v-Shop", "v-Travel", "v-Campus", "v-Edge"];
-    
-    // Revenue by Category
-    $revenueByCategory = [
-        'Electronics' => 4520000,
-        'Fashion' => 2280000,
-        'Travel' => 1560000,
-        'Accessories' => 920000,
-        'Home & Living' => 680000,
-        'Beauty' => 450000,
-    ];
-    
-    // 5. LOCATION DATA for Heatmap
-    $locationData = DB::table('orders')
-        ->leftJoin('addresses', 'orders.delivery_address_id', '=', 'addresses.id')
-        ->select('addresses.city', 'addresses.state', DB::raw('COUNT(*) as total_orders'))
-        ->whereNotNull('addresses.city')
-        ->groupBy('addresses.city', 'addresses.state')
-        ->orderBy('total_orders', 'desc')
-        ->limit(10)
-        ->get();
-    
-    if($locationData->isEmpty()) {
-        $locationData = collect([
-            (object)['city' => 'Mumbai', 'state' => 'MH', 'total_orders' => 1840],
-            (object)['city' => 'Delhi', 'state' => 'NCR', 'total_orders' => 1220],
-            (object)['city' => 'Bangalore', 'state' => 'KA', 'total_orders' => 980],
-            (object)['city' => 'Hyderabad', 'state' => 'TS', 'total_orders' => 640],
-            (object)['city' => 'Pune', 'state' => 'MH', 'total_orders' => 420],
-            (object)['city' => 'Chennai', 'state' => 'TN', 'total_orders' => 380],
-            (object)['city' => 'Kolkata', 'state' => 'WB', 'total_orders' => 350],
-            (object)['city' => 'Ahmedabad', 'state' => 'GJ', 'total_orders' => 290],
-        ]);
-    }
-    
-    $maxOrders = $locationData->max('total_orders') ?: 1;
-    
-    // 6. ACTIVITY TIMELINE - REAL DATA FROM DATABASE
-    $allActivityTimeline = ActivityLog::orderBy('created_at', 'desc')->limit(50)->get();
-    
-    if($allActivityTimeline->isEmpty()) {
-        $allActivityTimeline = collect([
-            (object)['activity_type' => 'Seller Approved', 'description' => 'Super Admin approved seller profile', 'created_at' => Carbon::now()->subHours(2), 'color' => '#10b981', 'user_id' => null],
-            (object)['activity_type' => 'Product Rejected', 'description' => 'Listing rejected due to invalid certificates', 'created_at' => Carbon::now()->subHours(4), 'color' => '#ef4444', 'user_id' => null],
-            (object)['activity_type' => 'Order Cancelled', 'description' => 'Order #ORD-12345 cancelled (Refund initiated)', 'created_at' => Carbon::now()->subHours(6), 'color' => '#eab308', 'user_id' => null],
-            (object)['activity_type' => 'Payment Failed', 'description' => 'Payment gateway timeout for order #ORD-12346', 'created_at' => Carbon::now()->subHours(8), 'color' => '#ef4444', 'user_id' => null],
-            (object)['activity_type' => 'New Seller Registered', 'description' => 'New seller registered on platform', 'created_at' => Carbon::now()->subHours(10), 'color' => '#10b981', 'user_id' => null],
-            (object)['activity_type' => 'Product Approved', 'description' => 'New product approved by admin', 'created_at' => Carbon::now()->subHours(12), 'color' => '#10b981', 'user_id' => null],
-            (object)['activity_type' => 'Grievance Filed', 'description' => 'Customer filed a grievance against seller', 'created_at' => Carbon::now()->subHours(14), 'color' => '#f59e0b', 'user_id' => null],
-            (object)['activity_type' => 'Payout Processed', 'description' => 'Monthly payout processed for 45 sellers', 'created_at' => Carbon::now()->subHours(18), 'color' => '#3b82f6', 'user_id' => null],
-        ]);
-    }
-    
-    foreach($allActivityTimeline as $item) {
-        if(!isset($item->color)) {
-            if(str_contains(strtolower($item->activity_type ?? ''), 'approve') || str_contains(strtolower($item->description ?? ''), 'approve')) {
-                $item->color = '#10b981';
-            } elseif(str_contains(strtolower($item->activity_type ?? ''), 'reject') || str_contains(strtolower($item->activity_type ?? ''), 'cancel')) {
-                $item->color = '#ef4444';
-            } elseif(str_contains(strtolower($item->activity_type ?? ''), 'payment') || str_contains(strtolower($item->activity_type ?? ''), 'fail')) {
-                $item->color = '#ef4444';
-            } elseif(str_contains(strtolower($item->activity_type ?? ''), 'grievance')) {
-                $item->color = '#f59e0b';
-            } else {
-                $item->color = '#3b82f6';
-            }
-        }
-    }
-    
-    // Grievances
-    $grievancesCount = Grievance::where('status', 'pending')->count() ?: 3;
-    $pendingGrievancesList = Grievance::where('status', 'pending')->limit(5)->get();
     
     // Pagination
     $topProductsPerPage = 5;
@@ -269,58 +67,14 @@
         $item->stock = $item->inventory ?? rand(10, 300);
         $item->trend = ($item->total_sales > 100) ? 'up' : 'down';
     }
-    
-    $vshopSellers = Seller::where('application', 'vshop')->count() ?: 124;
-    $vshopProducts = Product::count() ?: 1845;
-    $vtravelSellers = Seller::where('application', 'vtravel')->count() ?: 89;
-    $vtravelProducts = Product::where('type', 'tour')->count() ?: 567;
-    $vshopRevenue = $totalRevenue * 0.42 ?: 1250000;
-    $vtravelRevenue = $totalRevenue * 0.35 ?: 980000;
-    $vcampusRevenue = 350000;
-    $vedgeRevenue = 210000;
-    
-    $productPending = Product::where('status', 'pending')->count() ?: 10;
-    $openOrders = Order::where('status', 'pending')->count() ?: 3;
-    
-    $sellerActivityFeed = ActivityLog::where('activity_type', 'like', '%seller%')
-        ->orderBy('created_at', 'desc')
-        ->limit(5)
-        ->get();
-    
-    if($sellerActivityFeed->isEmpty()) {
-        $sellerActivityFeed = collect([
-            (object)['description' => 'New seller registered on platform', 'created_at' => Carbon::now()->subMinutes(2)],
-            (object)['description' => 'Seller KYC document submitted', 'created_at' => Carbon::now()->subMinutes(5)],
-            (object)['description' => 'Seller payout processed successfully', 'created_at' => Carbon::now()->subMinutes(12)],
-        ]);
-    }
-    
-    $recentFailures = Order::where('payment_status', 'failed')->limit(5)->get();
-    if($recentFailures->isEmpty()) {
-        $recentFailures = collect([
-            (object)['id' => 8271, 'payment_status' => 'failed', 'total_amount' => 2499],
-            (object)['id' => 8272, 'payment_status' => 'failed', 'total_amount' => 5999],
-        ]);
-    }
-    
-    $liveClickCount = ActivityLog::where('activity_type', 'click')->count() ?: 1247;
-    $liveEnquiryCount = 342;
-    $todayRevenue = SellerFinance::whereDate('created_at', Carbon::today())->sum('credit') ?: 210000;
-    $suspiciousLeadAlerts = 2;
-    $activeUsers = ActivityLog::where('created_at', '>=', Carbon::now()->subMinutes(5))->distinct('user_id')->count('user_id') ?: 1247;
-    
-    // Growth rate calculation
-    $growthRates = [];
-    for($i = 1; $i < count($monthlyRevenue); $i++) {
-        $prev = $monthlyRevenue[$i-1];
-        $curr = $monthlyRevenue[$i];
-        if($prev > 0) {
-            $growthRates[] = round((($curr - $prev) / $prev) * 100, 1);
-        } else {
-            $growthRates[] = 0;
-        }
-    }
-    array_unshift($growthRates, 0);
+
+    // Pre-compute values that Blade @json can't handle (closures not allowed inside @json)
+    $monthlyRevenueLakhs = array_map(function($v) { return $v / 100000; }, $monthlyRevenue);
+    $revenueByCategoryLakhs = array_values(array_map(function($v) { return $v / 100000; }, $revenueByCategory));
+    $revenueByCategoryKeys = array_keys($revenueByCategory);
+    $sellerStatusSeries = [$activeSellers, $pendingSellers, $rejectedSellers];
+    $orderStatusSeries = [$completedOrders, $processingOrders, $shippedOrders, $pendingOrders, $cancelledOrders, $returnedOrders];
+    $productStatusSeries = [$approvedProducts, $pendingProducts, $rejectedProducts];
 @endphp
 
 <style>
@@ -474,6 +228,33 @@
 .live-status-text {
     color: #000 !important;
 }
+
+/* Smooth transitions for toggle operations */
+.tab-content,
+.live-ticker,
+.live-stats-grid,
+.card.app-card {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.app-card .card-body {
+    transition: opacity 0.3s ease;
+}
+
+.stat-card,
+.revenue-stat-card,
+.chart-container {
+    transition: opacity 0.3s ease, transform 0.2s ease;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up {
+    animation: fadeInUp 0.4s ease forwards;
+}
 </style>
 
 <div class="control-tower-container container-fluid px-4">
@@ -510,7 +291,7 @@
                     <div class="border rounded-4 p-3 shadow-sm bg-light-subtle">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div><h6 class="fw-bold text-dark mb-1">v-Shop</h6><small class="text-muted">Marketplace</small></div>
-                            <label class="premium-switch"><input type="checkbox" id="switch_vshop" onchange="toggleAppStatus('vshop', this.checked)" checked><span class="switch-slider"></span></label>
+                            <label class="premium-switch"><input type="checkbox" id="switch_vshop" onchange="toggleAppStatus('vshop', this.checked)" {{ in_array('product', $activePanels) ? 'checked' : '' }}><span class="switch-slider"></span></label>
                         </div>
                         <div class="border-top pt-2">
                             <div class="row g-1 text-muted small mb-2">
@@ -519,7 +300,7 @@
                                 <div class="col-12 mt-1">Revenue: <strong>₹{{ number_format($vshopRevenue, 2) }}</strong></div>
                             </div>
                             <div class="d-flex justify-content-between align-items-center border-top pt-2">
-                                <span class="status-badge status-active" id="badge_vshop">Active</span>
+                                <span class="status-badge {{ in_array('product', $activePanels) ? 'status-active' : 'status-offline' }}" id="badge_vshop">{{ in_array('product', $activePanels) ? 'Active' : 'Offline' }}</span>
                             </div>
                         </div>
                     </div>
@@ -528,7 +309,7 @@
                     <div class="border rounded-4 p-3 shadow-sm bg-light-subtle">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div><h6 class="fw-bold text-dark mb-1">v-Travel</h6><small class="text-muted">Tours & Travel</small></div>
-                            <label class="premium-switch"><input type="checkbox" id="switch_vtravel" onchange="toggleAppStatus('vtravel', this.checked)" checked><span class="switch-slider"></span></label>
+                            <label class="premium-switch"><input type="checkbox" id="switch_vtravel" onchange="toggleAppStatus('vtravel', this.checked)" {{ in_array('travel', $activePanels) ? 'checked' : '' }}><span class="switch-slider"></span></label>
                         </div>
                         <div class="border-top pt-2">
                             <div class="row g-1 text-muted small mb-2">
@@ -537,7 +318,7 @@
                                 <div class="col-12 mt-1">Revenue: <strong>₹{{ number_format($vtravelRevenue, 2) }}</strong></div>
                             </div>
                             <div class="d-flex justify-content-between align-items-center border-top pt-2">
-                                <span class="status-badge status-active" id="badge_vtravel">Active</span>
+                                <span class="status-badge {{ in_array('travel', $activePanels) ? 'status-active' : 'status-offline' }}" id="badge_vtravel">{{ in_array('travel', $activePanels) ? 'Active' : 'Offline' }}</span>
                             </div>
                         </div>
                     </div>
@@ -546,16 +327,16 @@
                     <div class="border rounded-4 p-3 shadow-sm bg-light-subtle">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div><h6 class="fw-bold text-dark mb-1">v-Campus</h6><small class="text-muted">Education</small></div>
-                            <label class="premium-switch"><input type="checkbox" id="switch_vcampus" onchange="toggleAppStatus('vcampus', this.checked)"><span class="switch-slider"></span></label>
+                            <label class="premium-switch"><input type="checkbox" id="switch_vcampus" onchange="toggleAppStatus('vcampus', this.checked)" {{ in_array('campus', $activePanels) ? 'checked' : '' }}><span class="switch-slider"></span></label>
                         </div>
                         <div class="border-top pt-2">
                             <div class="row g-1 text-muted small mb-2">
-                                <div class="col-6">Sellers: <strong>45</strong></div>
-                                <div class="col-6 text-end">Services: <strong>234</strong></div>
-                                <div class="col-12 mt-1">Revenue: <strong>₹3,50,000</strong></div>
+                                <div class="col-6">Sellers: <strong>{{ number_format($vcampusSellers) }}</strong></div>
+                                <div class="col-6 text-end">Services: <strong>{{ number_format($vcampusProducts) }}</strong></div>
+                                <div class="col-12 mt-1">Revenue: <strong>₹{{ number_format($vcampusRevenue, 2) }}</strong></div>
                             </div>
                             <div class="d-flex justify-content-between align-items-center border-top pt-2">
-                                <span class="status-badge status-offline" id="badge_vcampus">Offline</span>
+                                <span class="status-badge {{ in_array('campus', $activePanels) ? 'status-active' : 'status-offline' }}" id="badge_vcampus">{{ in_array('campus', $activePanels) ? 'Active' : 'Offline' }}</span>
                             </div>
                         </div>
                     </div>
@@ -564,16 +345,16 @@
                     <div class="border rounded-4 p-3 shadow-sm bg-light-subtle">
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <div><h6 class="fw-bold text-dark mb-1">v-Edge</h6><small class="text-muted">Digital Products</small></div>
-                            <label class="premium-switch"><input type="checkbox" id="switch_vedge" onchange="toggleAppStatus('vedge', this.checked)"><span class="switch-slider"></span></label>
+                            <label class="premium-switch"><input type="checkbox" id="switch_vedge" onchange="toggleAppStatus('vedge', this.checked)" {{ in_array('edge', $activePanels) ? 'checked' : '' }}><span class="switch-slider"></span></label>
                         </div>
                         <div class="border-top pt-2">
                             <div class="row g-1 text-muted small mb-2">
-                                <div class="col-6">Sellers: <strong>32</strong></div>
-                                <div class="col-6 text-end">Services: <strong>178</strong></div>
-                                <div class="col-12 mt-1">Revenue: <strong>₹2,10,000</strong></div>
+                                <div class="col-6">Sellers: <strong>{{ number_format($vedgeSellers) }}</strong></div>
+                                <div class="col-6 text-end">Services: <strong>{{ number_format($vedgeProducts) }}</strong></div>
+                                <div class="col-12 mt-1">Revenue: <strong>₹{{ number_format($vedgeRevenue, 2) }}</strong></div>
                             </div>
                             <div class="d-flex justify-content-between align-items-center border-top pt-2">
-                                <span class="status-badge status-offline" id="badge_vedge">Offline</span>
+                                <span class="status-badge {{ in_array('edge', $activePanels) ? 'status-active' : 'status-offline' }}" id="badge_vedge">{{ in_array('edge', $activePanels) ? 'Active' : 'Offline' }}</span>
                             </div>
                         </div>
                     </div>
@@ -603,20 +384,18 @@
                         <div class="col-md-3"><div class="stat-card"><div><span class="text-muted small">Rejected</span><h3 class="fw-bold text-danger m-0">{{ number_format($rejectedSellers) }}</h3></div></div></div>
                     </div>
                     
-                    <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:pie-chart-bold-duotone" class="text-primary"></iconify-icon> Seller Status Distribution</div>
-                                <div id="sellerStatusDonut" style="min-height: 300px;"></div>
+                                <div id="sellerStatusDonut" data-series='@json($sellerStatusSeries)' style="min-height: 300px;"></div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:graph-bold-duotone" class="text-primary"></iconify-icon> Seller Registration Trend</div>
-                                <div id="sellerRegistrationLine" style="min-height: 300px;"></div>
+                                <div id="sellerRegistrationLine" data-series='@json($sellerRegistrations)' data-categories='@json($sellerMonths)' style="min-height: 300px;"></div>
                             </div>
                         </div>
-                    </div>
                     
                     <div class="border rounded-4 bg-white mb-4 overflow-hidden">
                         <div class="section-header-white">
@@ -629,10 +408,10 @@
                                     @foreach($topSellersPaginated as $index => $seller)
                                     <tr>
                                         <td><strong>{{ $seller->name ?? 'Seller ' . ($index+1) }}</strong></td>
-                                        <td>{{ $seller->products_count ?? rand(20,60) }}</div></div></div></div></td>
-                                        <td>{{ $seller->orders_count ?? rand(100,900) }}</div></div></div></div></td>
-                                        <td class="money">₹{{ number_format($seller->total_revenue ?? rand(200000,1500000), 2) }}</div></div></div></div></td>
-                                        <td><span class="badge bg-{{ $index == 0 ? 'success' : 'primary' }}">{{ $index == 0 ? 'Top Seller' : 'Active' }}</span></div></div></div></div></td>
+                                        <td>{{ $seller->products_count }}</td>
+                                        <td>{{ $seller->orders_count }}</td>
+                                        <td class="money">₹{{ number_format($seller->total_revenue, 2) }}</td>
+                                        <td><span class="badge bg-{{ $index == 0 ? 'success' : 'primary' }}">{{ $index == 0 ? 'Top Seller' : 'Active' }}</span></td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -679,13 +458,13 @@
                         <div class="col-md-5">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:pie-chart-bold-duotone" class="text-primary"></iconify-icon> Order Status Distribution</div>
-                                <div id="orderStatusDonut" style="min-height: 300px;"></div>
+                                <div id="orderStatusDonut" data-series='@json($orderStatusSeries)' style="min-height: 300px;"></div>
                             </div>
                         </div>
                         <div class="col-md-7">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:graph-bold-duotone" class="text-primary"></iconify-icon> Orders & Revenue Trends</div>
-                                <div id="orderRevenueLine" style="min-height: 300px;"></div>
+                                <div id="orderRevenueLine" data-orders='@json($monthlyOrders)' data-revenue='@json($monthlyRevenueLakhs)' data-categories='@json($orderMonths)' style="min-height: 300px;"></div>
                             </div>
                         </div>
                     </div>
@@ -694,7 +473,7 @@
                         <div class="col-md-6">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:chart-2-bold-duotone" class="text-primary"></iconify-icon> Monthly Orders Bar Chart</div>
-                                <div id="monthlyOrdersBar" style="min-height: 280px;"></div>
+                                <div id="monthlyOrdersBar" data-series='@json($monthlyOrders)' data-categories='@json($orderMonths)' style="min-height: 280px;"></div>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -726,13 +505,13 @@
                         <div class="col-md-5">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:pie-chart-bold-duotone" class="text-primary"></iconify-icon> Products by Category</div>
-                                <div id="productCategoryDonut" style="min-height: 300px;"></div>
+                                <div id="productCategoryDonut" data-series='@json($productCategoryCounts)' data-labels='@json($productCategoryNames)' style="min-height: 300px;"></div>
                             </div>
                         </div>
                         <div class="col-md-7">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:graph-bold-duotone" class="text-primary"></iconify-icon> Product Status Distribution</div>
-                                <div id="productStatusBar" style="min-height: 300px;"></div>
+                                <div id="productStatusBar" data-series='@json($productStatusSeries)' style="min-height: 300px;"></div>
                             </div>
                         </div>
                     </div>
@@ -741,7 +520,7 @@
                         <div class="col-md-12">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:chart-2-bold-duotone" class="text-primary"></iconify-icon> Product Addition Trend</div>
-                                <div id="productAdditionArea" style="min-height: 300px;"></div>
+                                <div id="productAdditionArea" data-series='@json($productAddedData)' data-categories='@json($productMonths)' style="min-height: 300px;"></div>
                             </div>
                         </div>
                     </div>
@@ -757,11 +536,11 @@
                                     @foreach($topProducts as $product)
                                     @php $categoryName = $categories[$product->category_id] ?? 'General'; $trend = ($product->total_sales ?? 0) > 500 ? 'up' : 'down'; @endphp
                                     <tr>
-                                        <td><strong>{{ Str::limit($product->name, 30) }}</strong></div></div></div></div></td>
-                                        <td>{{ $categoryName }}</div></div></div></div></td>
-                                        <td>{{ number_format($product->total_sales ?? rand(100,2000)) }}</div></div></div></div></td>
-                                        <td class="money">₹{{ number_format(($product->price ?? rand(100000,1500000)) * (($product->total_sales ?? 1)), 2) }}</div></div></div></div></td>
-                                        <td><iconify-icon icon="solar:arrow-{{ $trend }}-linear" class="text-{{ $trend == 'up' ? 'success' : 'danger' }}"></iconify-icon></div></div></div></div></td>
+                                        <td><strong>{{ Str::limit($product->name, 30) }}</strong></td>
+                                        <td>{{ $categoryName }}</td>
+                                        <td>{{ number_format($product->total_sales ?? 0) }}</td>
+                                        <td class="money">₹{{ number_format(($product->price ?? 0) * ($product->total_sales ?? 0), 2) }}</td>
+                                        <td><iconify-icon icon="solar:arrow-{{ $trend }}-linear" class="text-{{ $trend == 'up' ? 'success' : 'danger' }}"></iconify-icon></td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -791,11 +570,11 @@
                                     @foreach($slowMovers as $item)
                                     @php $categoryName = $categories[$item->category_id] ?? 'General'; @endphp
                                     <tr>
-                                        <td>{{ Str::limit($item->name, 25) }}</div></div></div></div></td>
-                                        <td>{{ $categoryName }}</div></div></div></div></td>
-                                        <td>{{ number_format($item->stock) }}</div></div></div></div></td>
-                                       <td class="text-danger">{{ (int) $item->days_unsold }} days</td>
-                                        <td><span class="badge bg-warning">{{ $item->action }}</span></div></div></div></div></td>
+                                        <td>{{ Str::limit($item->name, 25) }}</td>
+                                        <td>{{ $categoryName }}</td>
+                                        <td>{{ number_format($item->stock) }}</td>
+                                        <td class="text-danger">{{ (int) $item->days_unsold }} days</td>
+                                        <td><span class="badge bg-warning">{{ $item->action }}</span></td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -828,13 +607,13 @@
                         <div class="col-md-7">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:graph-bold-duotone" class="text-primary"></iconify-icon> Revenue Overview (Gross vs Net vs Loss)</div>
-                                <div id="revenueAreaChart" style="min-height: 350px;"></div>
+                                <div id="revenueAreaChart" data-gross='@json($grossSales)' data-net='@json($netSales)' data-loss='@json($lossAmount)' data-categories='@json($revenueMonths)' style="min-height: 350px;"></div>
                             </div>
                         </div>
                         <div class="col-md-5">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:pie-chart-bold-duotone" class="text-primary"></iconify-icon> Revenue by Application</div>
-                                <div id="revenueByAppDonut" style="min-height: 350px;"></div>
+                                <div id="revenueByAppDonut" data-series='@json($revenueByAppData)' data-labels='@json($revenueByAppLabels)' style="min-height: 350px;"></div>
                             </div>
                         </div>
                     </div>
@@ -843,13 +622,13 @@
                         <div class="col-md-6">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:chart-2-bold-duotone" class="text-primary"></iconify-icon> Revenue by Category</div>
-                                <div id="revenueByCategoryBar" style="min-height: 320px;"></div>
+                                <div id="revenueByCategoryBar" data-series='@json($revenueByCategoryLakhs)' data-categories='@json($revenueByCategoryKeys)' style="min-height: 320px;"></div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="chart-container">
                                 <div class="chart-title"><iconify-icon icon="solar:trend-up-bold-duotone" class="text-primary"></iconify-icon> Monthly Growth Rate</div>
-                                <div id="growthLineChart" style="min-height: 320px;"></div>
+                                <div id="growthLineChart" data-series='@json($growthRates)' data-categories='@json($revenueMonths)' style="min-height: 320px;"></div>
                             </div>
                         </div>
                     </div>
@@ -860,14 +639,19 @@
                             <table class="pro-table">
                                 <thead><tr><th>Category</th><th>Revenue</th><th>Orders</th><th>Growth</th><th>Share</th></tr></thead>
                                 <tbody>
+                                    @php
+                                        $totalCategoryRevenueSum = array_sum($revenueByCategory);
+                                    @endphp
                                     @foreach($revenueByCategory as $category => $rev)
-                                    @php $share = ($rev / array_sum($revenueByCategory)) * 100; @endphp
+                                    @php 
+                                        $share = $totalCategoryRevenueSum > 0 ? ($rev / $totalCategoryRevenueSum) * 100 : 0; 
+                                    @endphp
                                     <tr>
-                                        <td><strong>{{ $category }}</strong></div></div></div></div></td>
-                                        <td class="money">₹{{ number_format($rev, 2) }}</div></div></div></div></td>
-                                        <td>{{ rand(500, 2500) }}</div></div></div></div></td>
-                                        <td class="text-success">↑ +{{ rand(5, 35) }}%</div></div></div></div></td>
-                                        <td><div class="progress" style="height:5px;"><div class="progress-bar bg-primary" style="width:{{ $share }}%"></div></div>{{ round($share) }}%</div></div></div></div></td>
+                                        <td><strong>{{ $category }}</strong></td>
+                                        <td class="money">₹{{ number_format($rev, 2) }}</td>
+                                        <td>{{ rand(500, 2500) }}</td>
+                                        <td class="text-success">↑ +{{ rand(5, 35) }}%</td>
+                                        <td><div class="progress" style="height:5px;"><div class="progress-bar bg-primary" style="width:{{ $share }}%"></div></div>{{ round($share) }}%</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -1160,45 +944,121 @@
 
 <script>
     function toggleAppStatus(appName, isChecked) {
-        let badge = document.getElementById('badge_' + appName);
-        if (isChecked) {
-            badge.innerText = "Active";
-            badge.className = "status-badge status-active";
-            if (appName === 'vshop') window.location.href = "{{ route('admin.switch.panel', 'product') }}";
-            else if (appName === 'vtravel') window.location.href = "{{ route('admin.switch.panel', 'travel') }}";
-        } else {
-            badge.innerText = "Offline";
-            badge.className = "status-badge status-offline";
+        let type = appName;
+        if (appName === 'vshop') type = 'product';
+        else if (appName === 'vtravel') type = 'travel';
+        else if (appName === 'vcampus') type = 'campus';
+        else if (appName === 'vedge') type = 'edge';
+        
+        // Smooth fade on data sections only
+        let mainContent = document.querySelector('.control-tower-container');
+        if (mainContent) {
+            mainContent.style.transition = 'opacity 0.25s ease';
+            mainContent.style.opacity = '0.5';
+            mainContent.style.pointerEvents = 'none';
         }
+        
+        // Step 1: Toggle the panel on server
+        fetch("/admin/switch-panel/" + type, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            // Whether JSON or redirect, session is updated. Now re-fetch page.
+            let cacheBuster = '_t=' + Date.now();
+            let sep = window.location.search ? '&' : '?';
+            let url = window.location.pathname + window.location.search + sep + cacheBuster;
+            return fetch(url, { credentials: 'same-origin' });
+        })
+        .then(response => response.text())
+        .then(html => {
+            let parser = new DOMParser();
+            let doc = parser.parseFromString(html, 'text/html');
+            
+            // Replace Application Control card body (toggles, stats, badges)
+            let newAppCardBody = doc.querySelector('.app-card .card-body');
+            let curAppCardBody = document.querySelector('.app-card .card-body');
+            if (newAppCardBody && curAppCardBody) {
+                curAppCardBody.innerHTML = newAppCardBody.innerHTML;
+                // Re-attach toggle event listeners since innerHTML destroys them
+                ['vshop', 'vtravel', 'vcampus', 'vedge'].forEach(app => {
+                    let toggle = document.getElementById('switch_' + app);
+                    if (toggle) {
+                        toggle.onchange = function() { toggleAppStatus(app, this.checked); };
+                    }
+                });
+            }
+            
+            // Replace Tab Content (Sellers, Orders, Products, Revenue)
+            let newTabContent = doc.querySelector('.tab-content');
+            let curTabContent = document.querySelector('.tab-content');
+            if (newTabContent && curTabContent) {
+                curTabContent.innerHTML = newTabContent.innerHTML;
+            }
+            
+            // Replace Live Ticker
+            let newTicker = doc.querySelector('.live-ticker');
+            let curTicker = document.querySelector('.live-ticker');
+            if (newTicker && curTicker) {
+                curTicker.innerHTML = newTicker.innerHTML;
+            }
+            
+            // Replace Live Stats Grid
+            let newStats = doc.querySelector('.live-stats-grid');
+            let curStats = document.querySelector('.live-stats-grid');
+            if (newStats && curStats) {
+                curStats.innerHTML = newStats.innerHTML;
+            }
+            
+            // Replace Sidebar Menu
+            let newSidebar = doc.querySelector('#sidebar-menu');
+            let curSidebar = document.querySelector('#sidebar-menu');
+            if (newSidebar && curSidebar) {
+                curSidebar.innerHTML = newSidebar.innerHTML;
+            }
+            
+            // Fade back in smoothly
+            if (mainContent) {
+                mainContent.style.opacity = '1';
+                mainContent.style.pointerEvents = 'auto';
+            }
+            
+            // Re-initialize charts after DOM update
+            setTimeout(() => {
+                if (typeof window.initDashboardCharts === 'function') {
+                    window.initDashboardCharts();
+                }
+            }, 100);
+        })
+        .catch(err => {
+            console.error("Toggle panel failed:", err);
+            // Fallback: reload the page
+            window.location.reload();
+        });
     }
     
     function updateToggleStates() {
-        const currentPanel = '{{ $currentPanel }}';
-        const vshopToggle = document.getElementById('switch_vshop');
-        const vshopBadge = document.getElementById('badge_vshop');
-        const vtravelToggle = document.getElementById('switch_vtravel');
-        const vtravelBadge = document.getElementById('badge_vtravel');
+        const activePanels = @json($activePanels);
         
-        if (vshopToggle) {
-            if (currentPanel === 'product') {
-                vshopToggle.checked = true;
-                vshopBadge.innerText = "Active";
-                vshopBadge.className = "status-badge status-active";
-            } else {
-                vshopToggle.checked = false;
-                vshopBadge.innerText = "Offline";
-                vshopBadge.className = "status-badge status-offline";
-            }
-        }
-        if (vtravelToggle) {
-            if (currentPanel === 'travel') {
-                vtravelToggle.checked = true;
-                vtravelBadge.innerText = "Active";
-                vtravelBadge.className = "status-badge status-active";
-            } else {
-                vtravelToggle.checked = false;
-                vtravelBadge.innerText = "Offline";
-                vtravelBadge.className = "status-badge status-offline";
+        const apps = {
+            'product': { toggle: 'switch_vshop', badge: 'badge_vshop' },
+            'travel': { toggle: 'switch_vtravel', badge: 'badge_vtravel' },
+            'campus': { toggle: 'switch_vcampus', badge: 'badge_vcampus' },
+            'edge': { toggle: 'switch_vedge', badge: 'badge_vedge' }
+        };
+        
+        for (const [panelName, config] of Object.entries(apps)) {
+            const toggle = document.getElementById(config.toggle);
+            const badge = document.getElementById(config.badge);
+            if (toggle && badge) {
+                const isActive = activePanels.includes(panelName);
+                toggle.checked = isActive;
+                badge.innerText = isActive ? "Active" : "Offline";
+                badge.className = "status-badge " + (isActive ? "status-active" : "status-offline");
             }
         }
     }
@@ -1226,151 +1086,227 @@
 @section('script-bottom')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+window.initDashboardCharts = function() {
     if (typeof ApexCharts !== "undefined") {
         
         // ========== SELLERS TAB CHARTS ==========
-        new ApexCharts(document.querySelector("#sellerStatusDonut"), {
-            series: [{{ $activeSellers }}, {{ $pendingSellers }}, {{ $rejectedSellers }}],
-            labels: ["Active Sellers", "Pending KYC", "Rejected"],
-            chart: { type: "donut", height: 300, toolbar: { show: false } },
-            colors: ["#10b981", "#f59e0b", "#ef4444"],
-            stroke: { width: 0 },
-            plotOptions: { pie: { donut: { size: '60%' } } },
-            legend: { position: 'bottom', fontSize: '12px' },
-            dataLabels: { enabled: true }
-        }).render();
+        let sellerStatusEl = document.querySelector("#sellerStatusDonut");
+        if (sellerStatusEl) {
+            sellerStatusEl.innerHTML = '';
+            let series = JSON.parse(sellerStatusEl.getAttribute('data-series') || '[]');
+            new ApexCharts(sellerStatusEl, {
+                series: series,
+                labels: ["Active Sellers", "Pending KYC", "Rejected"],
+                chart: { type: "donut", height: 300, toolbar: { show: false } },
+                colors: ["#10b981", "#f59e0b", "#ef4444"],
+                stroke: { width: 0 },
+                plotOptions: { pie: { donut: { size: '60%' } } },
+                legend: { position: 'bottom', fontSize: '12px' },
+                dataLabels: { enabled: true }
+            }).render();
+        }
         
-        new ApexCharts(document.querySelector("#sellerRegistrationLine"), {
-            series: [{ name: "New Registrations", data: @json($sellerRegistrations), color: "#4f46e5" }],
-            chart: { type: "line", height: 300, toolbar: { show: false }, zoom: { enabled: false } },
-            stroke: { curve: "smooth", width: 3 },
-            fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 } },
-            markers: { size: 4, colors: ["#4f46e5"], strokeColors: "#fff", strokeWidth: 2 },
-            xaxis: { categories: @json($sellerMonths), labels: { rotate: -45 } },
-            yaxis: { title: { text: "Number of Sellers" } },
-            tooltip: { y: { formatter: function(val) { return val + " sellers"; } } }
-        }).render();
+        let sellerRegEl = document.querySelector("#sellerRegistrationLine");
+        if (sellerRegEl) {
+            sellerRegEl.innerHTML = '';
+            let seriesData = JSON.parse(sellerRegEl.getAttribute('data-series') || '[]');
+            let categories = JSON.parse(sellerRegEl.getAttribute('data-categories') || '[]');
+            new ApexCharts(sellerRegEl, {
+                series: [{ name: "New Registrations", data: seriesData, color: "#4f46e5" }],
+                chart: { type: "line", height: 300, toolbar: { show: false }, zoom: { enabled: false } },
+                stroke: { curve: "smooth", width: 3 },
+                fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 } },
+                markers: { size: 4, colors: ["#4f46e5"], strokeColors: "#fff", strokeWidth: 2 },
+                xaxis: { categories: categories, labels: { rotate: -45 } },
+                yaxis: { title: { text: "Number of Sellers" } },
+                tooltip: { y: { formatter: function(val) { return val + " sellers"; } } }
+            }).render();
+        }
         
         // ========== ORDERS TAB CHARTS ==========
-        new ApexCharts(document.querySelector("#orderStatusDonut"), {
-            series: [{{ $completedOrders }}, {{ $processingOrders }}, {{ $shippedOrders }}, {{ $pendingOrders }}, {{ $cancelledOrders }}, {{ $returnedOrders }}],
-            labels: ["Completed", "Processing", "Shipped", "Pending", "Cancelled", "Returned"],
-            chart: { type: "donut", height: 300, toolbar: { show: false } },
-            colors: ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444", "#ec489a"],
-            stroke: { width: 0 },
-            plotOptions: { pie: { donut: { size: '60%' } } },
-            legend: { position: 'bottom', fontSize: '11px' },
-            dataLabels: { enabled: true }
-        }).render();
+        let orderStatusEl = document.querySelector("#orderStatusDonut");
+        if (orderStatusEl) {
+            orderStatusEl.innerHTML = '';
+            let series = JSON.parse(orderStatusEl.getAttribute('data-series') || '[]');
+            new ApexCharts(orderStatusEl, {
+                series: series,
+                labels: ["Completed", "Processing", "Shipped", "Pending", "Cancelled", "Returned"],
+                chart: { type: "donut", height: 300, toolbar: { show: false } },
+                colors: ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444", "#ec489a"],
+                stroke: { width: 0 },
+                plotOptions: { pie: { donut: { size: '60%' } } },
+                legend: { position: 'bottom', fontSize: '11px' },
+                dataLabels: { enabled: true }
+            }).render();
+        }
         
-        new ApexCharts(document.querySelector("#orderRevenueLine"), {
-            series: [
-                { name: "Orders Count", data: @json($monthlyOrders), color: "#4f46e5", type: "column" },
-                { name: "Revenue (₹ Lakhs)", data: @json(array_map(function($v) { return $v / 100000; }, $monthlyRevenue)), color: "#10b981", type: "line" }
-            ],
-            chart: { type: "line", height: 300, toolbar: { show: false }, stacked: false },
-            stroke: { width: [0, 3], curve: "smooth" },
-            fill: { opacity: [0.85, 1] },
-            markers: { size: [0, 4] },
-            xaxis: { categories: @json($orderMonths), labels: { rotate: -45 } },
-            yaxis: [{ title: { text: "Orders" }, min: 0 }, { opposite: true, title: { text: "Revenue (₹ Lakhs)" } }],
-            tooltip: { shared: true, intersect: false },
-            legend: { position: 'top' }
-        }).render();
+        let orderRevEl = document.querySelector("#orderRevenueLine");
+        if (orderRevEl) {
+            orderRevEl.innerHTML = '';
+            let orders = JSON.parse(orderRevEl.getAttribute('data-orders') || '[]');
+            let revenue = JSON.parse(orderRevEl.getAttribute('data-revenue') || '[]');
+            let categories = JSON.parse(orderRevEl.getAttribute('data-categories') || '[]');
+            new ApexCharts(orderRevEl, {
+                series: [
+                    { name: "Orders Count", data: orders, color: "#4f46e5", type: "column" },
+                    { name: "Revenue (₹ Lakhs)", data: revenue, color: "#10b981", type: "line" }
+                ],
+                chart: { type: "line", height: 300, toolbar: { show: false }, stacked: false },
+                stroke: { width: [0, 3], curve: "smooth" },
+                fill: { opacity: [0.85, 1] },
+                markers: { size: [0, 4] },
+                xaxis: { categories: categories, labels: { rotate: -45 } },
+                yaxis: [{ title: { text: "Orders" }, min: 0 }, { opposite: true, title: { text: "Revenue (₹ Lakhs)" } }],
+                tooltip: { shared: true, intersect: false },
+                legend: { position: 'top' }
+            }).render();
+        }
         
-        new ApexCharts(document.querySelector("#monthlyOrdersBar"), {
-            series: [{ name: "Orders", data: @json($monthlyOrders), color: "#4f46e5" }],
-            chart: { type: "bar", height: 280, toolbar: { show: false } },
-            plotOptions: { bar: { borderRadius: 8, horizontal: false, columnWidth: '60%' } },
-            xaxis: { categories: @json($orderMonths), labels: { rotate: -45 } },
-            yaxis: { title: { text: "Number of Orders" } },
-            fill: { type: "gradient", gradient: { shade: 'dark', type: "vertical", shadeIntensity: 0.5, opacityFrom: 0.8, opacityTo: 0.4 } },
-            dataLabels: { enabled: true }
-        }).render();
+        let monthlyOrdersEl = document.querySelector("#monthlyOrdersBar");
+        if (monthlyOrdersEl) {
+            monthlyOrdersEl.innerHTML = '';
+            let seriesData = JSON.parse(monthlyOrdersEl.getAttribute('data-series') || '[]');
+            let categories = JSON.parse(monthlyOrdersEl.getAttribute('data-categories') || '[]');
+            new ApexCharts(monthlyOrdersEl, {
+                series: [{ name: "Orders", data: seriesData, color: "#4f46e5" }],
+                chart: { type: "bar", height: 280, toolbar: { show: false } },
+                plotOptions: { bar: { borderRadius: 8, horizontal: false, columnWidth: '60%' } },
+                xaxis: { categories: categories, labels: { rotate: -45 } },
+                yaxis: { title: { text: "Number of Orders" } },
+                fill: { type: "gradient", gradient: { shade: 'dark', type: "vertical", shadeIntensity: 0.5, opacityFrom: 0.8, opacityTo: 0.4 } },
+                dataLabels: { enabled: true }
+            }).render();
+        }
         
         // ========== PRODUCTS TAB CHARTS ==========
-        new ApexCharts(document.querySelector("#productCategoryDonut"), {
-            series: @json($productCategoryCounts),
-            labels: @json($productCategoryNames),
-            chart: { type: "donut", height: 300, toolbar: { show: false } },
-            colors: ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec489a"],
-            stroke: { width: 0 },
-            plotOptions: { pie: { donut: { size: '60%' } } },
-            legend: { position: 'bottom', fontSize: '11px' },
-            dataLabels: { enabled: true, formatter: function(val) { return val.toFixed(0); } },
-            title: { text: 'Products Distribution by Category', align: 'center', style: { fontSize: '12px', color: '#666' } }
-        }).render();
+        let productCatEl = document.querySelector("#productCategoryDonut");
+        if (productCatEl) {
+            productCatEl.innerHTML = '';
+            let series = JSON.parse(productCatEl.getAttribute('data-series') || '[]');
+            let labels = JSON.parse(productCatEl.getAttribute('data-labels') || '[]');
+            new ApexCharts(productCatEl, {
+                series: series,
+                labels: labels,
+                chart: { type: "donut", height: 300, toolbar: { show: false } },
+                colors: ["#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec489a"],
+                stroke: { width: 0 },
+                plotOptions: { pie: { donut: { size: '60%' } } },
+                legend: { position: 'bottom', fontSize: '11px' },
+                dataLabels: { enabled: true, formatter: function(val) { return val.toFixed(0); } },
+                title: { text: 'Products Distribution by Category', align: 'center', style: { fontSize: '12px', color: '#666' } }
+            }).render();
+        }
         
-        new ApexCharts(document.querySelector("#productStatusBar"), {
-            series: [{ name: "Products", data: [{{ $approvedProducts }}, {{ $pendingProducts }}, {{ $rejectedProducts }}], color: "#4f46e5" }],
-            chart: { type: "bar", height: 300, toolbar: { show: false } },
-            plotOptions: { bar: { borderRadius: 8, horizontal: false, columnWidth: '50%' } },
-            xaxis: { categories: ["Approved", "Pending", "Rejected"] },
-            colors: ["#10b981", "#f59e0b", "#ef4444"],
-            fill: { type: "gradient", gradient: { shade: 'light', type: "vertical", opacityFrom: 0.8, opacityTo: 0.5 } },
-            dataLabels: { enabled: true }
-        }).render();
+        let productStatusEl = document.querySelector("#productStatusBar");
+        if (productStatusEl) {
+            productStatusEl.innerHTML = '';
+            let seriesData = JSON.parse(productStatusEl.getAttribute('data-series') || '[]');
+            new ApexCharts(productStatusEl, {
+                series: [{ name: "Products", data: seriesData, color: "#4f46e5" }],
+                chart: { type: "bar", height: 300, toolbar: { show: false } },
+                plotOptions: { bar: { borderRadius: 8, horizontal: false, columnWidth: '50%' } },
+                xaxis: { categories: ["Approved", "Pending", "Rejected"] },
+                colors: ["#10b981", "#f59e0b", "#ef4444"],
+                fill: { type: "gradient", gradient: { shade: 'light', type: "vertical", opacityFrom: 0.8, opacityTo: 0.5 } },
+                dataLabels: { enabled: true }
+            }).render();
+        }
         
-        new ApexCharts(document.querySelector("#productAdditionArea"), {
-            series: [{ name: "Products Added", data: @json($productAddedData), color: "#4f46e5" }],
-            chart: { type: "area", height: 300, toolbar: { show: false }, zoom: { enabled: false } },
-            stroke: { curve: "smooth", width: 2 },
-            fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
-            xaxis: { categories: @json($productMonths), labels: { rotate: -45 } },
-            yaxis: { title: { text: "Products Added" } },
-            tooltip: { y: { formatter: function(val) { return val + " products"; } } }
-        }).render();
+        let productAddEl = document.querySelector("#productAdditionArea");
+        if (productAddEl) {
+            productAddEl.innerHTML = '';
+            let seriesData = JSON.parse(productAddEl.getAttribute('data-series') || '[]');
+            let categories = JSON.parse(productAddEl.getAttribute('data-categories') || '[]');
+            new ApexCharts(productAddEl, {
+                series: [{ name: "Products Added", data: seriesData, color: "#4f46e5" }],
+                chart: { type: "area", height: 300, toolbar: { show: false }, zoom: { enabled: false } },
+                stroke: { curve: "smooth", width: 2 },
+                fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
+                xaxis: { categories: categories, labels: { rotate: -45 } },
+                yaxis: { title: { text: "Products Added" } },
+                tooltip: { y: { formatter: function(val) { return val + " products"; } } }
+            }).render();
+        }
         
         // ========== REVENUE TAB CHARTS ==========
-        new ApexCharts(document.querySelector("#revenueAreaChart"), {
-            series: [
-                { name: "Gross Sales", data: @json($grossSales), color: "#4f46e5" },
-                { name: "Net Sales", data: @json($netSales), color: "#10b981" },
-                { name: "Loss/Returns", data: @json($lossAmount), color: "#ef4444" }
-            ],
-            chart: { type: "area", height: 350, toolbar: { show: false }, zoom: { enabled: false } },
-            stroke: { curve: "smooth", width: 2 },
-            fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 } },
-            dataLabels: { enabled: false },
-            xaxis: { categories: @json($revenueMonths), labels: { rotate: -45 } },
-            yaxis: { labels: { formatter: function(val) { return '₹' + (val/100000).toFixed(1) + 'L'; } } },
-            tooltip: { y: { formatter: function(val) { return '₹' + val.toLocaleString(); } } },
-            legend: { position: 'top' }
-        }).render();
+        let revAreaEl = document.querySelector("#revenueAreaChart");
+        if (revAreaEl) {
+            revAreaEl.innerHTML = '';
+            let gross = JSON.parse(revAreaEl.getAttribute('data-gross') || '[]');
+            let net = JSON.parse(revAreaEl.getAttribute('data-net') || '[]');
+            let loss = JSON.parse(revAreaEl.getAttribute('data-loss') || '[]');
+            let categories = JSON.parse(revAreaEl.getAttribute('data-categories') || '[]');
+            new ApexCharts(revAreaEl, {
+                series: [
+                    { name: "Gross Sales", data: gross, color: "#4f46e5" },
+                    { name: "Net Sales", data: net, color: "#10b981" },
+                    { name: "Loss/Returns", data: loss, color: "#ef4444" }
+                ],
+                chart: { type: "area", height: 350, toolbar: { show: false }, zoom: { enabled: false } },
+                stroke: { curve: "smooth", width: 2 },
+                fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 } },
+                dataLabels: { enabled: false },
+                xaxis: { categories: categories, labels: { rotate: -45 } },
+                yaxis: { labels: { formatter: function(val) { return '₹' + (val/100000).toFixed(1) + 'L'; } } },
+                tooltip: { y: { formatter: function(val) { return '₹' + val.toLocaleString(); } } },
+                legend: { position: 'top' }
+            }).render();
+        }
         
-        new ApexCharts(document.querySelector("#revenueByAppDonut"), {
-            series: @json($revenueByAppData),
-            labels: @json($revenueByAppLabels),
-            chart: { type: "donut", height: 350, toolbar: { show: false } },
-            colors: ["#4f46e5", "#10b981", "#f59e0b", "#06b6d4"],
-            stroke: { width: 0 },
-            plotOptions: { pie: { donut: { size: '60%' } } },
-            legend: { position: 'bottom', fontSize: '12px' },
-            dataLabels: { enabled: true, formatter: function(val) { return val + "%"; } }
-        }).render();
+        let revAppEl = document.querySelector("#revenueByAppDonut");
+        if (revAppEl) {
+            revAppEl.innerHTML = '';
+            let series = JSON.parse(revAppEl.getAttribute('data-series') || '[]');
+            let labels = JSON.parse(revAppEl.getAttribute('data-labels') || '[]');
+            new ApexCharts(revAppEl, {
+                series: series,
+                labels: labels,
+                chart: { type: "donut", height: 350, toolbar: { show: false } },
+                colors: ["#4f46e5", "#10b981", "#f59e0b", "#06b6d4"],
+                stroke: { width: 0 },
+                plotOptions: { pie: { donut: { size: '60%' } } },
+                legend: { position: 'bottom', fontSize: '12px' },
+                dataLabels: { enabled: true, formatter: function(val) { return val + "%"; } }
+            }).render();
+        }
         
-        new ApexCharts(document.querySelector("#revenueByCategoryBar"), {
-            series: [{ name: "Revenue (₹ Lakhs)", data: @json(array_values(array_map(function($v) { return $v / 100000; }, $revenueByCategory))), color: "#4f46e5" }],
-            chart: { type: "bar", height: 320, toolbar: { show: false } },
-            plotOptions: { bar: { borderRadius: 8, horizontal: true, dataLabels: { position: 'top' } } },
-            xaxis: { categories: @json(array_keys($revenueByCategory)) },
-            dataLabels: { enabled: true, formatter: function(val) { return '₹' + val.toFixed(1) + 'L'; }, offsetX: 10 },
-            fill: { type: "gradient", gradient: { shade: 'light', type: "horizontal", opacityFrom: 0.8, opacityTo: 0.5 } }
-        }).render();
+        let revCatEl = document.querySelector("#revenueByCategoryBar");
+        if (revCatEl) {
+            revCatEl.innerHTML = '';
+            let seriesData = JSON.parse(revCatEl.getAttribute('data-series') || '[]');
+            let categories = JSON.parse(revCatEl.getAttribute('data-categories') || '[]');
+            new ApexCharts(revCatEl, {
+                series: [{ name: "Revenue (₹ Lakhs)", data: seriesData, color: "#4f46e5" }],
+                chart: { type: "bar", height: 320, toolbar: { show: false } },
+                plotOptions: { bar: { borderRadius: 8, horizontal: true, dataLabels: { position: 'top' } } },
+                xaxis: { categories: categories },
+                dataLabels: { enabled: true, formatter: function(val) { return '₹' + val.toFixed(1) + 'L'; }, offsetX: 10 },
+                fill: { type: "gradient", gradient: { shade: 'light', type: "horizontal", opacityFrom: 0.8, opacityTo: 0.5 } }
+            }).render();
+        }
         
-        new ApexCharts(document.querySelector("#growthLineChart"), {
-            series: [{ name: "Growth Rate (%)", data: @json($growthRates), color: "#10b981" }],
-            chart: { type: "line", height: 320, toolbar: { show: false } },
-            stroke: { curve: "smooth", width: 3 },
-            fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 } },
-            markers: { size: 5, colors: ["#10b981"], strokeColors: "#fff", strokeWidth: 2 },
-            xaxis: { categories: @json($revenueMonths), labels: { rotate: -45 } },
-            yaxis: { title: { text: "Growth Rate (%)" }, labels: { formatter: function(val) { return val.toFixed(1) + "%"; } } },
-            tooltip: { y: { formatter: function(val) { return val.toFixed(1) + "% growth"; } } },
-            colors: ["#10b981"]
-        }).render();
+        let growthEl = document.querySelector("#growthLineChart");
+        if (growthEl) {
+            growthEl.innerHTML = '';
+            let seriesData = JSON.parse(growthEl.getAttribute('data-series') || '[]');
+            let categories = JSON.parse(growthEl.getAttribute('data-categories') || '[]');
+            new ApexCharts(growthEl, {
+                series: [{ name: "Growth Rate (%)", data: seriesData, color: "#10b981" }],
+                chart: { type: "line", height: 320, toolbar: { show: false } },
+                stroke: { curve: "smooth", width: 3 },
+                fill: { type: "gradient", gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05 } },
+                markers: { size: 5, colors: ["#10b981"], strokeColors: "#fff", strokeWidth: 2 },
+                xaxis: { categories: categories, labels: { rotate: -45 } },
+                yaxis: { title: { text: "Growth Rate (%)" }, labels: { formatter: function(val) { return val.toFixed(1) + "%"; } } },
+                tooltip: { y: { formatter: function(val) { return val.toFixed(1) + "% growth"; } } },
+                colors: ["#10b981"]
+            }).render();
+        }
     }
+};
+
+document.addEventListener("DOMContentLoaded", function() {
+    window.initDashboardCharts();
 });
 
 

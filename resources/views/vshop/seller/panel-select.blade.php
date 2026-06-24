@@ -307,9 +307,7 @@ body::before {
     $isPending = !empty($requested) && empty($approved);
     
     function getCardStatus($platform, $requested, $approved, $isPending) {
-        if ($isPending) {
-            return in_array($platform, $requested) ? 'pending' : 'disabled';
-        } elseif (!empty($approved)) {
+        if (!empty($approved)) {
             return in_array($platform, $approved) ? 'selectable-card' : 'disabled';
         }
         return 'selectable-card';
@@ -343,11 +341,14 @@ body::before {
 
         <!-- VSHOP -->
         <div class="col-md-6">
-            @php $status = getCardStatus('product', $requested, $approved, $isPending); @endphp
-            <div class="panel-card {{ $status === 'selectable-card' ? 'selectable-card' : 'disabled' }}"
+            @php 
+                $status = getCardStatus('product', $requested, $approved, $isPending); 
+                $isActive = in_array('product', $approved) || (empty($approved) && in_array('product', $requested));
+            @endphp
+            <div class="panel-card {{ $status === 'selectable-card' ? 'selectable-card' : 'disabled' }} {{ $isActive ? 'active' : '' }}"
                  {!! $status === 'selectable-card' ? 'onclick="toggleCard(this)"' : '' !!}>
 
-                @if($status === 'pending')
+                @if($isPending && in_array('product', $requested))
                     <span class="badge bg-warning text-dark position-absolute" style="top: 20px; left: 20px; border-radius: 8px;">Pending</span>
                 @endif
                 
@@ -359,7 +360,7 @@ body::before {
 
                 <input type="checkbox"
                        name="panels[]"
-                       value="product" {{ $status !== 'selectable-card' ? 'disabled' : '' }}>
+                       value="product" {{ $status !== 'selectable-card' ? 'disabled' : '' }} {{ $isActive ? 'checked' : '' }}>
 
                 <div class="icon-box icon-vshop">
                     <i class="ri-shopping-cart-2-line"></i>
@@ -379,11 +380,14 @@ body::before {
 
         <!-- VTRAVEL -->
         <div class="col-md-6">
-            @php $status = getCardStatus('travel', $requested, $approved, $isPending); @endphp
-            <div class="panel-card {{ $status === 'selectable-card' ? 'selectable-card' : 'disabled' }}"
+            @php 
+                $status = getCardStatus('travel', $requested, $approved, $isPending); 
+                $isActive = in_array('travel', $approved) || (empty($approved) && in_array('travel', $requested));
+            @endphp
+            <div class="panel-card {{ $status === 'selectable-card' ? 'selectable-card' : 'disabled' }} {{ $isActive ? 'active' : '' }}"
                  {!! $status === 'selectable-card' ? 'onclick="toggleCard(this)"' : '' !!}>
 
-                @if($status === 'pending')
+                @if($isPending && in_array('travel', $requested))
                     <span class="badge bg-warning text-dark position-absolute" style="top: 20px; left: 20px; border-radius: 8px;">Pending</span>
                 @endif
                 
@@ -395,7 +399,7 @@ body::before {
 
                 <input type="checkbox"
                        name="panels[]"
-                       value="travel" {{ $status !== 'selectable-card' ? 'disabled' : '' }}>
+                       value="travel" {{ $status !== 'selectable-card' ? 'disabled' : '' }} {{ $isActive ? 'checked' : '' }}>
 
                 <div class="icon-box icon-vtravel">
                     <i class="ri-plane-line"></i>
@@ -415,11 +419,14 @@ body::before {
 
         <!-- VCAMPUS -->
         <div class="col-md-6">
-            @php $status = getCardStatus('vcampus', $requested, $approved, $isPending); @endphp
-            <div class="panel-card {{ $status === 'selectable-card' ? 'selectable-card' : 'disabled' }}"
+            @php 
+                $status = getCardStatus('vcampus', $requested, $approved, $isPending); 
+                $isActive = in_array('vcampus', $approved) || (empty($approved) && in_array('vcampus', $requested));
+            @endphp
+            <div class="panel-card {{ $status === 'selectable-card' ? 'selectable-card' : 'disabled' }} {{ $isActive ? 'active' : '' }}"
                  {!! $status === 'selectable-card' ? 'onclick="toggleCard(this)"' : '' !!}>
 
-                @if($status === 'pending')
+                @if($isPending && in_array('vcampus', $requested))
                     <span class="badge bg-warning text-dark position-absolute" style="top: 20px; left: 20px; border-radius: 8px;">Pending</span>
                 @endif
                 
@@ -431,7 +438,7 @@ body::before {
 
                 <input type="checkbox"
                        name="panels[]"
-                       value="vcampus" {{ $status !== 'selectable-card' ? 'disabled' : '' }}>
+                       value="vcampus" {{ $status !== 'selectable-card' ? 'disabled' : '' }} {{ $isActive ? 'checked' : '' }}>
 
                 <div class="icon-box icon-vcampus">
                     <i class="ri-graduation-cap-line"></i>
@@ -479,12 +486,10 @@ body::before {
             <i class="ri-error-warning-line me-2"></i>Please select at least one workspace
         </div>
 
-        @if(!$isPending)
         <button type="submit"
                 class="continue-btn">
             Continue
         </button>
-        @endif
 
     </div>
 

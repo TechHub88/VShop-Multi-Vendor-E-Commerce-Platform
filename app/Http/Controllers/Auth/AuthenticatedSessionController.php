@@ -168,15 +168,43 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * 🔹 Switch Panel (Vshop / Vtravel)
+     * 🔹 Switch Panel (Vshop / Vtravel / Vcampus / Vedge)
      */
     public function switchPanel($type)
     {
-        if (!in_array($type, ['product','travel'])) {
+        if (!in_array($type, ['product', 'travel', 'campus', 'edge', 'vcampus', 'vedge'])) {
             $type = 'product';
         }
+        if ($type === 'vcampus') $type = 'campus';
+        if ($type === 'vedge') $type = 'edge';
 
-        session(['admin_panel' => $type]);
+        // Retrieve current active panels from session
+        $activePanels = session('admin_panels', ['product']);
+
+        if (in_array($type, $activePanels)) {
+            // Remove it if it exists and we have at least 1 other active panel
+            if (count($activePanels) > 1) {
+                $activePanels = array_diff($activePanels, [$type]);
+            }
+        } else {
+            // Add it if it's not active
+            $activePanels[] = $type;
+        }
+
+        session(['admin_panels' => array_values($activePanels)]);
+
+        // For backward compatibility
+        session(['admin_panel' => reset($activePanels) ?: 'product']);
+
+        session()->save();
+
+        // Return JSON for AJAX requests, redirect for normal requests
+        if (request()->ajax() || request()->wantsJson() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'success' => true,
+                'activePanels' => array_values($activePanels),
+            ]);
+        }
 
         return back(); // stay on same page
     }

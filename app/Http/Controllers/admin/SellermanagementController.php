@@ -61,15 +61,57 @@ class SellermanagementController extends Controller
         $seller = Seller::findOrFail($id);
         $oldData = $seller->toArray();
         
+        $pan_status = $request->pan_status;
+        if ($pan_status !== null) {
+            $pan_status = (strtolower($pan_status) === 'approved') ? 'Approved' : 'rejected';
+        } else {
+            $pan_status = $seller->pan_status;
+        }
+
+        $gst_status = $request->gst_status;
+        if ($gst_status !== null) {
+            $gst_status = (strtolower($gst_status) === 'approved') ? 'Approved' : 'rejected';
+        } else {
+            $gst_status = $seller->gst_status;
+        }
+
+        $iec_status = $request->iec_status;
+        if ($iec_status !== null) {
+            $iec_status = (strtolower($iec_status) === 'approved') ? 'Approved' : 'rejected';
+        } else {
+            $iec_status = $seller->iec_status;
+        }
+
+        $bank_status = $request->bank_status;
+        if ($bank_status !== null) {
+            $bank_status = (strtolower($bank_status) === 'approved') ? 'approved' : 'rejected';
+        } else {
+            $bank_status = $seller->bank_status;
+        }
+
+        $agreement_status = $request->agreement_status;
+        if ($agreement_status !== null) {
+            $agreement_status = (strtolower($agreement_status) === 'approved') ? 'Approved' : 'rejected';
+        } else {
+            $agreement_status = $seller->agreement_status;
+        }
+
+        $company_status = $request->company_status;
+        if ($company_status !== null) {
+            $company_status = (strtolower($company_status) === 'approved') ? 'approved' : 'rejected';
+        } else {
+            $company_status = $seller->company_status;
+        }
+
         // Update only the existing fields from your model
         $seller->update([
             'status' => $request->status ?? $seller->status,
-            'pan_status' => $request->pan_status ?? $seller->pan_status,
-            'gst_status' => $request->gst_status ?? $seller->gst_status,
-            'iec_status' => $request->iec_status ?? $seller->iec_status,
-            'bank_status' => $request->bank_status ?? $seller->bank_status,
-            'agreement_status' => $request->agreement_status ?? $seller->agreement_status,
-            'company_status' => $request->company_status ?? $seller->company_status,
+            'pan_status' => $pan_status,
+            'gst_status' => $gst_status,
+            'iec_status' => $iec_status,
+            'bank_status' => $bank_status,
+            'agreement_status' => $agreement_status,
+            'company_status' => $company_status,
             'email_verified' => $request->email_verified ?? $seller->email_verified,
         ]);
         
@@ -105,12 +147,12 @@ class SellermanagementController extends Controller
         
         // AUTO APPROVAL LOGIC - Check if ALL required sections are approved
         $allApproved = (
-            ($request->pan_status ?? $seller->pan_status) == 'Approved' &&
-            ($request->gst_status ?? $seller->gst_status) == 'Approved' &&
-            ($request->iec_status ?? $seller->iec_status) == 'Approved' &&
-            ($request->bank_status ?? $seller->bank_status) == 'approved' &&
-            ($request->agreement_status ?? $seller->agreement_status) == 'Approved' &&
-            ($request->company_status ?? $seller->company_status) == 'approved' &&
+            strtolower($pan_status) === 'approved' &&
+            strtolower($gst_status) === 'approved' &&
+            strtolower($iec_status) === 'approved' &&
+            strtolower($bank_status) === 'approved' &&
+            strtolower($agreement_status) === 'approved' &&
+            strtolower($company_status) === 'approved' &&
             ($request->email_verified ?? $seller->email_verified) == 1
         );
         

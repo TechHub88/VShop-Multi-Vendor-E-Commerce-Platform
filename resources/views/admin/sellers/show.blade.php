@@ -102,6 +102,7 @@
     .v-badge-success { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
     .v-badge-danger { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
     .v-badge-warning { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .v-badge-na { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
     
     .v-data-label {
         font-size: 0.7rem;
@@ -855,17 +856,16 @@
                         {{-- PAN --}}
                         <div class="col-md-4">
                             <div class="kyc-card">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="fw-bold mb-0">📇 PAN</h6>
-                                    @php $panStatus = strtolower($seller->pan_status ?? 'pending'); @endphp
-                                    @if($panStatus == 'pending')
+                                    <div class="d-flex align-items-center gap-1">
+                                        @php $panStatus = strtolower($seller->pan_status ?? 'pending'); @endphp
+                                        <span class="v-badge v-badge-{{ $panStatus }} py-0 px-2" style="font-size:0.65rem; line-height: 1.5; border-radius: 4px;">{{ ucfirst($panStatus) }}</span>
                                         <div class="btn-group btn-group-sm gap-1">
-                                            <button class="btn-approve-modern py-1 px-2 ajax-verify-btn" data-field="pan_status" data-value="approved" style="font-size:0.7rem"><i class="ri-check-line"></i></button>
-                                            <button class="btn-reject-modern py-1 px-2 ajax-verify-btn" data-field="pan_status" data-value="rejected" style="font-size:0.7rem"><i class="ri-close-line"></i></button>
+                                            <button class="btn-approve-modern py-1 px-2 ajax-verify-btn" data-field="pan_status" data-value="Approved" style="font-size:0.7rem" title="Approve"><i class="ri-check-line"></i></button>
+                                            <button class="btn-reject-modern py-1 px-2 ajax-verify-btn" data-field="pan_status" data-value="rejected" style="font-size:0.7rem" title="Reject"><i class="ri-close-line"></i></button>
                                         </div>
-                                    @else
-                                        <span class="v-badge v-badge-{{ $panStatus }}">{{ ucfirst($panStatus) }}</span>
-                                    @endif
+                                    </div>
                                 </div>
                                 <div class="small text-muted">Number: <strong>{{ $seller->pan_number ?? '—' }}</strong></div>
                                 <div class="small text-muted mb-2">Expiry: {{ $seller->pan_expiry ? \Carbon\Carbon::parse($seller->pan_expiry)->format('d M Y') : '—' }}</div>
@@ -879,17 +879,16 @@
                         {{-- GST --}}
                         <div class="col-md-4">
                             <div class="kyc-card">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="fw-bold mb-0">📑 GST</h6>
-                                    @php $gstStatus = strtolower($seller->gst_status ?? 'pending'); @endphp
-                                    @if($gstStatus == 'pending')
+                                    <div class="d-flex align-items-center gap-1">
+                                        @php $gstStatus = strtolower($seller->gst_status ?? 'pending'); @endphp
+                                        <span class="v-badge v-badge-{{ $gstStatus }} py-0 px-2" style="font-size:0.65rem; line-height: 1.5; border-radius: 4px;">{{ ucfirst($gstStatus) }}</span>
                                         <div class="btn-group btn-group-sm gap-1">
-                                            <button class="btn-approve-modern py-1 px-2 ajax-verify-btn" data-field="gst_status" data-value="approved" style="font-size:0.7rem"><i class="ri-check-line"></i></button>
-                                            <button class="btn-reject-modern py-1 px-2 ajax-verify-btn" data-field="gst_status" data-value="rejected" style="font-size:0.7rem"><i class="ri-close-line"></i></button>
+                                            <button class="btn-approve-modern py-1 px-2 ajax-verify-btn" data-field="gst_status" data-value="Approved" style="font-size:0.7rem" title="Approve"><i class="ri-check-line"></i></button>
+                                            <button class="btn-reject-modern py-1 px-2 ajax-verify-btn" data-field="gst_status" data-value="rejected" style="font-size:0.7rem" title="Reject"><i class="ri-close-line"></i></button>
                                         </div>
-                                    @else
-                                        <span class="v-badge v-badge-{{ $gstStatus }}">{{ ucfirst($gstStatus) }}</span>
-                                    @endif
+                                    </div>
                                 </div>
                                 <div class="small text-muted">GSTIN: <strong>{{ $seller->gst_number ?? '—' }}</strong></div>
                                 <div class="small text-muted mb-2">Expiry: {{ $seller->gst_expiry ? \Carbon\Carbon::parse($seller->gst_expiry)->format('d M Y') : '—' }}</div>
@@ -903,17 +902,16 @@
                         {{-- IEC --}}
                         <div class="col-md-4">
                             <div class="kyc-card">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
                                     <h6 class="fw-bold mb-0">🌍 IEC</h6>
-                                    @php $iecStatus = strtolower($seller->iec_status ?? 'pending'); @endphp
-                                    @if($iecStatus == 'pending')
+                                    <div class="d-flex align-items-center gap-1">
+                                        @php $iecStatus = strtolower($seller->iec_status ?? 'pending'); @endphp
+                                        <span class="v-badge v-badge-{{ $iecStatus }} py-0 px-2" style="font-size:0.65rem; line-height: 1.5; border-radius: 4px;">{{ ucfirst($iecStatus) }}</span>
                                         <div class="btn-group btn-group-sm gap-1">
-                                            <button class="btn-approve-modern py-1 px-2 ajax-verify-btn" data-field="iec_status" data-value="approved" style="font-size:0.7rem"><i class="ri-check-line"></i></button>
-                                            <button class="btn-reject-modern py-1 px-2 ajax-verify-btn" data-field="iec_status" data-value="rejected" style="font-size:0.7rem"><i class="ri-close-line"></i></button>
+                                            <button class="btn-approve-modern py-1 px-2 ajax-verify-btn" data-field="iec_status" data-value="Approved" style="font-size:0.7rem" title="Approve"><i class="ri-check-line"></i></button>
+                                            <button class="btn-reject-modern py-1 px-2 ajax-verify-btn" data-field="iec_status" data-value="rejected" style="font-size:0.7rem" title="Reject"><i class="ri-close-line"></i></button>
                                         </div>
-                                    @else
-                                        <span class="v-badge v-badge-{{ $iecStatus }}">{{ ucfirst($iecStatus) }}</span>
-                                    @endif
+                                    </div>
                                 </div>
                                 <div class="small text-muted">IEC Code: <strong>{{ $seller->iec_code ?? '—' }}</strong></div>
                                 <div class="small text-muted mb-2">File No: {{ $seller->iec_file_number ?? '—' }}</div>

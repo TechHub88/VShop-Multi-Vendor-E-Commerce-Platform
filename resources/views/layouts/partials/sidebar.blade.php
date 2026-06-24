@@ -81,6 +81,43 @@
         }
         return false;
     };
+    
+    $activePanels = session('admin_panels', ['product']);
+    if (empty($activePanels)) {
+        $activePanels = ['product'];
+    }
+    
+    if (count($activePanels) > 1) {
+        $dashboardTitle = 'Unified Dashboard';
+        $managementTitle = 'Product & Service Management';
+        $verificationTitle = 'Product & Service Verification';
+        $categoryTitle = 'Product & Service Categories';
+        $ticketTitle = 'Tickets Tracking';
+    } elseif (in_array('travel', $activePanels)) {
+        $dashboardTitle = 'Service Dashboard';
+        $managementTitle = 'Service Management';
+        $verificationTitle = 'Service Verification';
+        $categoryTitle = 'Service Categories';
+        $ticketTitle = 'Service Tickets';
+    } elseif (in_array('campus', $activePanels)) {
+        $dashboardTitle = 'Campus Dashboard';
+        $managementTitle = 'Course Management';
+        $verificationTitle = 'Course Verification';
+        $categoryTitle = 'Course Categories';
+        $ticketTitle = 'Course Tickets';
+    } elseif (in_array('edge', $activePanels)) {
+        $dashboardTitle = 'Edge Dashboard';
+        $managementTitle = 'Digital Management';
+        $verificationTitle = 'Digital Verification';
+        $categoryTitle = 'Digital Categories';
+        $ticketTitle = 'Digital Tickets';
+    } else {
+        $dashboardTitle = 'Dashboard';
+        $managementTitle = 'Product Management';
+        $verificationTitle = 'Product Verification';
+        $categoryTitle = 'Product Categories';
+        $ticketTitle = 'Support Tickets';
+    }
 @endphp
 
 <!-- DASHBOARD -->
@@ -96,7 +133,7 @@
 <span class="nav-icon">
 <iconify-icon icon="solar:home-2-bold-duotone"></iconify-icon>
 </span>
-<span>{{ session('admin_panel') == 'travel' ? 'Service Dashboard' : 'Dashboard' }}</span>
+<span>{{ $dashboardTitle }}</span>
 </a>
 </li>
 @endif
@@ -110,7 +147,7 @@
 <iconify-icon icon="solar:checklist-bold-duotone"></iconify-icon>
 </span>
 <span>
-{{ session('admin_panel') == 'travel' ? 'Service Management' : 'Product Management' }}
+{{ $managementTitle }}
 </span>
 <span class="menu-arrow"></span>
 </a>
@@ -121,14 +158,14 @@
 <li>
 <a href="{{ route('admin.approval.products') }}"
 class="tp-link {{ request()->routeIs('admin.approval.products') ? 'active' : '' }}">
-{{ session('admin_panel') == 'travel' ? 'Service Verification' : 'Product Verification' }}
+{{ $verificationTitle }}
 </a>
 </li>
 
 <li>
 <a href="{{ route('admin.approval.categories') }}"
 class="tp-link {{ request()->routeIs('admin.approval.categories') ? 'active' : '' }}">
-{{ session('admin_panel') == 'travel' ? 'Service Categories' : 'Product Categories' }}
+{{ $categoryTitle }}
 </a>
 </li>
 
@@ -390,7 +427,7 @@ class="tp-link {{ request()->routeIs('admin.approval.categories') ? 'active' : '
 </li>
 <li>
     <a href="{{ route('admin.tickets.index') }}" class="tp-link {{ request()->routeIs('admin.tickets.*') ? 'active' : '' }}">
-        {{ session('admin_panel') == 'travel' ? 'Service Tickets' : 'Support Tickets' }}
+        {{ $ticketTitle }}
     </a>
 </li>
 <li>

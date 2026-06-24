@@ -117,30 +117,176 @@ class RoutingController extends BaseController
 
 private function dashboardData()
 {
-    $panel = session('admin_panel', 'product');
-
-    // Mapped variables
-    if ($panel === 'travel') {
-        $appKeyword = 'travel';
-        $productTypes = ['tour', 'vtravel-tour', 'vtravel-service', 'vtravel-professional', 'vtravel-information_advisory', 'service'];
-    } elseif ($panel === 'vcampus') {
-        $appKeyword = 'campus';
-        $productTypes = ['campus', 'course', 'vcampus-course'];
-    } else { // default 'product' -> vshop
-        $appKeyword = 'product';
-        $productTypes = ['product', 'vshop-product', 'vshop-professional', 'vshop-service', 'others'];
+    // Retrieve current active panels from session, defaulting to vshop ('product')
+    $activePanels = session('admin_panels', ['product']);
+    if (empty($activePanels)) {
+        $activePanels = ['product'];
     }
 
-    // Get seller IDs and product IDs belonging to this segment
-    $sellerIds = \App\Models\Seller::where('application', 'LIKE', '%' . $appKeyword . '%')->pluck('id');
+    $currentPanel = reset($activePanels) ?: 'product';
+
+    $appKeywords = [];
+    $productTypes = [];
+
+    foreach ($activePanels as $p) {
+        if ($p === 'travel') {
+            $appKeywords = array_merge($appKeywords, ['travel', 'vtravel']);
+            $productTypes = array_merge($productTypes, ['tour', 'vtravel-tour', 'vtravel-service', 'vtravel-professional', 'vtravel-information_advisory', 'service']);
+        } elseif ($p === 'campus') {
+            $appKeywords = array_merge($appKeywords, ['campus', 'vcampus']);
+            $productTypes = array_merge($productTypes, ['campus', 'course', 'vcampus-course']);
+        } elseif ($p === 'edge') {
+            $appKeywords = array_merge($appKeywords, ['edge', 'vedge', 'v-edge']);
+            $productTypes = array_merge($productTypes, ['edge', 'vedge', 'v-edge']);
+        } else { // default 'product' -> vshop
+            $appKeywords = array_merge($appKeywords, ['product', 'vshop', 'marketplace']);
+            $productTypes = array_merge($productTypes, ['product', 'vshop-product', 'vshop-professional', 'vshop-service', 'others']);
+        }
+    }
+
+    // Helper Closure for multi-panel querying of Seller model
+    $sellerQueryCallback = function($q) use ($appKeywords) {
+        foreach ($appKeywords as $index => $kw) {
+            if ($index === 0) {
+                $q->where('application', 'LIKE', '%' . $kw . '%');
+            } else {
+                $q->orWhere('application', 'LIKE', '%' . $kw . '%');
+            }
+        }
+    };
+
+    // Get seller IDs and product IDs belonging to these segments
+    $sellerIds = \App\Models\Seller::where($sellerQueryCallback)->pluck('id');
     $productIds = \App\Models\Product::whereIn('type', $productTypes)->pluck('id');
+
+    /*
+    |--------------------------------------------------------------------------
+    | DYNAMIC APP CONTROL METRICS
+    |--------------------------------------------------------------------------
+    */
+    $vshopSellers = 0;
+    $vshopRevenue = 0;
+    $vshopProducts = 0;
+    $vshopOrders = 0;
+
+    $vtravelSellers = 0;
+    $vtravelRevenue = 0;
+    $vtravelProducts = 0;
+    $vtravelOrders = 0;
+
+    $vcampusSellers = 0;
+    $vcampusRevenue = 0;
+    $vcampusProducts = 0;
+    $vcampusOrders = 0;
+
+    $vedgeSellers = 0;
+    $vedgeRevenue = 0;
+    $vedgeProducts = 0;
+    $vedgeOrders = 0;
+
+    try {
+        if (\Schema::hasColumn('sellers', 'application')) {
+            $vshopSellers = \App\Models\Seller::where(function($q) {
+                $q->where('application', 'LIKE', '%product%')
+                  ->orWhere('application', 'LIKE', '%vshop%')
+                  ->orWhere('application', 'LIKE', '%marketplace%');
+            })->count();
+            
+            $vtravelSellers = \App\Models\Seller::where(function($q) {
+                $q->where('application', 'LIKE', '%travel%')
+                  ->orWhere('application', 'LIKE', '%vtravel%');
+            })->count();
+            
+            $vcampusSellers = \App\Models\Seller::where(function($q) {
+                $q->where('application', 'LIKE', '%campus%')
+                  ->orWhere('application', 'LIKE', '%vcampus%');
+            })->count();
+            
+            $vedgeSellers = \App\Models\Seller::where(function($q) {
+                $q->where('application', 'LIKE', '%edge%')
+                  ->orWhere('application', 'LIKE', '%vedge%');
+            })->count();
+        }
+        
+        $vshopProducts = \App\Models\Product::whereIn('type', ['product', 'vshop-product', 'vshop-professional', 'vshop-service', 'others'])->count();
+        $vtravelProducts = \App\Models\Product::whereIn('type', ['tour', 'vtravel-tour', 'vtravel-service', 'vtravel-professional', 'vtravel-information_advisory', 'service'])->count();
+        $vcampusProducts = \App\Models\Product::whereIn('type', ['campus', 'course', 'vcampus-course'])->count();
+        $vedgeProducts = \App\Models\Product::whereIn('type', ['edge', 'vedge', 'v-edge'])->count();
+        
+        $vshopRevenue = \App\Models\Order::where('status', 'paid')
+            ->whereHas('seller', function($q) {
+                $q->where(function($sq) {
+                    $sq->where('application', 'LIKE', '%product%')
+                       ->orWhere('application', 'LIKE', '%vshop%')
+                       ->orWhere('application', 'LIKE', '%marketplace%');
+                });
+            })
+            ->sum('total_amount');
+            
+        $vtravelRevenue = \App\Models\Order::where('status', 'paid')
+            ->whereHas('seller', function($q) {
+                $q->where(function($sq) {
+                    $sq->where('application', 'LIKE', '%travel%')
+                       ->orWhere('application', 'LIKE', '%vtravel%');
+                });
+            })
+            ->sum('total_amount');
+
+        $vcampusRevenue = \App\Models\Order::where('status', 'paid')
+            ->whereHas('seller', function($q) {
+                $q->where(function($sq) {
+                    $sq->where('application', 'LIKE', '%campus%')
+                       ->orWhere('application', 'LIKE', '%vcampus%');
+                });
+            })
+            ->sum('total_amount');
+
+        $vedgeRevenue = \App\Models\Order::where('status', 'paid')
+            ->whereHas('seller', function($q) {
+                $q->where(function($sq) {
+                    $sq->where('application', 'LIKE', '%edge%')
+                       ->orWhere('application', 'LIKE', '%vedge%');
+                });
+            })
+            ->sum('total_amount');
+
+        $vshopOrders = \App\Models\Order::whereHas('seller', function($q) {
+            $q->where(function($sq) {
+                $sq->where('application', 'LIKE', '%product%')
+                   ->orWhere('application', 'LIKE', '%vshop%')
+                   ->orWhere('application', 'LIKE', '%marketplace%');
+            });
+        })->count();
+        
+        $vtravelOrders = \App\Models\Order::whereHas('seller', function($q) {
+            $q->where(function($sq) {
+                $sq->where('application', 'LIKE', '%travel%')
+                   ->orWhere('application', 'LIKE', '%vtravel%');
+            });
+        })->count();
+        
+        $vcampusOrders = \App\Models\Order::whereHas('seller', function($q) {
+            $q->where(function($sq) {
+                $sq->where('application', 'LIKE', '%campus%')
+                   ->orWhere('application', 'LIKE', '%vcampus%');
+            });
+        })->count();
+        
+        $vedgeOrders = \App\Models\Order::whereHas('seller', function($q) {
+            $q->where(function($sq) {
+                $sq->where('application', 'LIKE', '%edge%')
+                   ->orWhere('application', 'LIKE', '%vedge%');
+            });
+        })->count();
+    } catch (\Exception $e) {
+        // Fallback to zeros/null
+    }
 
     /*
     |--------------------------------------------------------------------------
     | BASIC COUNTS
     |--------------------------------------------------------------------------
     */
-
     $totalOrders = \App\Models\Order::whereIn('seller_id', $sellerIds)->count();
 
     $totalSales = \App\Models\Order::whereIn('seller_id', $sellerIds)->sum('total_amount');
@@ -162,26 +308,16 @@ private function dashboardData()
         $newCustomers = \App\Models\Customer::whereDate('created_at', now())->count();
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | SELLERS
     |--------------------------------------------------------------------------
     */
-
-    $totalSellers = \App\Models\Seller::where('application', 'LIKE', '%' . $appKeyword . '%')->count();
-
-    $pendingSellers = \App\Models\Seller::where('application', 'LIKE', '%' . $appKeyword . '%')
-        ->where('status', 'pending')
-        ->count();
-
-    $approvedSellers = \App\Models\Seller::where('application', 'LIKE', '%' . $appKeyword . '%')
-        ->where('status', 'approved')
-        ->count();
-
-    $rejectedSellers = \App\Models\Seller::where('application', 'LIKE', '%' . $appKeyword . '%')
-        ->where('status', 'rejected')
-        ->count();
+    $totalSellers = \App\Models\Seller::where($sellerQueryCallback)->count();
+    $pendingSellers = \App\Models\Seller::where($sellerQueryCallback)->where('status', 'pending')->count();
+    $approvedSellers = \App\Models\Seller::where($sellerQueryCallback)->where('status', 'approved')->count();
+    $activeSellers = $approvedSellers;
+    $rejectedSellers = \App\Models\Seller::where($sellerQueryCallback)->where('status', 'rejected')->count();
 
     // Seller Registration Trend
     $sellerMonths = [];
@@ -189,10 +325,10 @@ private function dashboardData()
     for($i = 11; $i >= 0; $i--) {
         $month = \Carbon\Carbon::now()->subMonths($i);
         $sellerMonths[] = $month->format('M');
-        $sellerRegistrations[] = \App\Models\Seller::where('application', 'LIKE', '%' . $appKeyword . '%')
+        $sellerRegistrations[] = \App\Models\Seller::where($sellerQueryCallback)
             ->whereYear('created_at', $month->year)
             ->whereMonth('created_at', $month->month)
-            ->count() ?: rand(5, 30);
+            ->count();
     }
 
     /*
@@ -200,7 +336,6 @@ private function dashboardData()
     | PRODUCTS
     |--------------------------------------------------------------------------
     */
-
     $totalProducts = \App\Models\Product::whereIn('type', $productTypes)->count();
 
     $verifiedProducts = \App\Models\Product::whereIn('type', $productTypes)
@@ -215,15 +350,8 @@ private function dashboardData()
         ->where('status', 'pending')
         ->count();
 
-    // Product status distribution
-    $approvedProducts = \App\Models\Product::whereIn('type', $productTypes)
-        ->whereIn('status', ['verified', 'approved', 'active'])
-        ->count();
-    
-    $pendingProducts = \App\Models\Product::whereIn('type', $productTypes)
-        ->where('status', 'pending')
-        ->count();
-    
+    $approvedProducts = $verifiedProducts;
+    $pendingProducts = $inProgressProducts;
     $rejectedProducts = \App\Models\Product::whereIn('type', $productTypes)
         ->where('status', 'rejected')
         ->count();
@@ -250,48 +378,80 @@ private function dashboardData()
         $productAddedData[] = \App\Models\Product::whereIn('type', $productTypes)
             ->whereYear('created_at', $month->year)
             ->whereMonth('created_at', $month->month)
-            ->count() ?: rand(30, 150);
+            ->count();
     }
 
-    // Product Category Distribution for Pie Chart
-    $productCategories = \App\Models\MarketplaceCategory::select('marketplace_categories.name', \DB::raw('COUNT(products.id) as count'))
-        ->leftJoin('products', 'marketplace_categories.id', '=', 'products.category_id')
-        ->whereIn('products.type', $productTypes)
-        ->groupBy('marketplace_categories.id', 'marketplace_categories.name')
+    // Determine allowed category types based on toggled panels
+    $allowedCategoryTypes = [];
+    if (in_array('product', $activePanels)) {
+        $allowedCategoryTypes[] = 'product';
+    }
+    if (in_array('travel', $activePanels)) {
+        $allowedCategoryTypes[] = 'service';
+    }
+    if (in_array('campus', $activePanels)) {
+        $allowedCategoryTypes[] = 'campus';
+    }
+    if (in_array('edge', $activePanels)) {
+        $allowedCategoryTypes[] = 'edge';
+    }
+    if (empty($allowedCategoryTypes)) {
+        $allowedCategoryTypes = ['product'];
+    }
+
+    $categories = \App\Models\MarketplaceCategory::whereIn('type', $allowedCategoryTypes)
+        ->pluck('name', 'id')
+        ->toArray();
+
+    // Query category counts directly from products table grouped by category_id
+    $rawCategoryCounts = \App\Models\Product::whereIn('type', $productTypes)
+        ->select('category_id', \DB::raw('COUNT(*) as count'))
+        ->groupBy('category_id')
         ->orderBy('count', 'desc')
-        ->limit(6)
         ->get();
 
-    if($productCategories->isEmpty()) {
-        $productCategories = collect([
-            (object)['name' => 'Electronics', 'count' => 450],
-            (object)['name' => 'Fashion', 'count' => 320],
-            (object)['name' => 'Home & Living', 'count' => 280],
-            (object)['name' => 'Beauty', 'count' => 195],
-            (object)['name' => 'Sports', 'count' => 140],
-            (object)['name' => 'Books', 'count' => 110],
+    $productCategoriesList = [];
+    foreach ($rawCategoryCounts as $item) {
+        $catId = $item->category_id;
+        if ($catId) {
+            $name = $categories[$catId] ?? 'General';
+            if (isset($productCategoriesList[$name])) {
+                $productCategoriesList[$name] += $item->count;
+            } else {
+                $productCategoriesList[$name] = $item->count;
+            }
+        }
+    }
+
+    // Convert to a collection of objects to match the view's expectation
+    $productCategories = collect([]);
+    foreach ($productCategoriesList as $name => $count) {
+        $productCategories->push((object)[
+            'name' => $name,
+            'count' => $count
         ]);
     }
 
-    // THESE ARE THE MISSING VARIABLES - FIXED!
     $productCategoryNames = $productCategories->pluck('name')->toArray();
     $productCategoryCounts = $productCategories->pluck('count')->toArray();
-
-    // Categories array for mapping
-    $categories = \App\Models\Category::pluck('name', 'id')->toArray();
 
     /*
     |--------------------------------------------------------------------------
     | ORDER STATUS
     |--------------------------------------------------------------------------
     */
-
     $openOrders = \App\Models\Order::whereIn('seller_id', $sellerIds)
         ->where('status', 'processing')
         ->count();
 
+    $pendingOrders = \App\Models\Order::whereIn('seller_id', $sellerIds)
+        ->where('status', 'pending')
+        ->count();
+
     $completedOrders = \App\Models\Order::whereIn('seller_id', $sellerIds)
-        ->where('status', 'paid')
+        ->where(function($q) {
+            $q->where('status', 'delivered')->orWhere('status', 'completed')->orWhere('status', 'paid');
+        })
         ->count();
 
     $cancelledOrders = \App\Models\Order::whereIn('seller_id', $sellerIds)
@@ -299,12 +459,10 @@ private function dashboardData()
         ->count();
 
     $returnedOrders = \App\Models\Order::whereIn('seller_id', $sellerIds)
-        ->where('status', 'return_approved')
+        ->where('status', 'returned')
         ->count();
 
-    $processingOrders = \App\Models\Order::whereIn('seller_id', $sellerIds)
-        ->where('status', 'processing')
-        ->count();
+    $processingOrders = $openOrders;
 
     $shippedOrders = \App\Models\Order::whereIn('seller_id', $sellerIds)
         ->where('status', 'shipped')
@@ -314,7 +472,6 @@ private function dashboardData()
         ->whereDate('created_at', \Carbon\Carbon::today())
         ->count();
 
-    // Failed Payments
     $failedPaymentsCount = \App\Models\Order::whereIn('seller_id', $sellerIds)
         ->where('payment_status', 'failed')
         ->count();
@@ -335,12 +492,13 @@ private function dashboardData()
             ->whereYear('created_at', $month->year)
             ->whereMonth('created_at', $month->month)
             ->count();
-        $monthlyOrders[] = $monthOrders ?: rand(80, 500);
-        $monthRev = \App\Models\SellerFinance::where('transaction_type', 'credit')
+        $monthlyOrders[] = $monthOrders;
+        $monthRev = \App\Models\SellerFinance::whereIn('seller_id', $sellerIds)
+            ->where('transaction_type', 'credit')
             ->whereYear('created_at', $month->year)
             ->whereMonth('created_at', $month->month)
             ->sum('credit');
-        $monthlyRevenue[] = $monthRev ?: rand(500000, 3000000);
+        $monthlyRevenue[] = $monthRev;
     }
 
     /*
@@ -348,15 +506,22 @@ private function dashboardData()
     | REVENUE DATA
     |--------------------------------------------------------------------------
     */
-
-    $totalRevenue = \App\Models\SellerFinance::where('transaction_type', 'credit')->sum('credit');
-    $thisMonthRevenue = \App\Models\SellerFinance::where('transaction_type', 'credit')
+    $totalRevenue = \App\Models\SellerFinance::whereIn('seller_id', $sellerIds)
+        ->where('transaction_type', 'credit')
+        ->sum('credit');
+        
+    $thisMonthRevenue = \App\Models\SellerFinance::whereIn('seller_id', $sellerIds)
+        ->where('transaction_type', 'credit')
         ->whereMonth('created_at', \Carbon\Carbon::now()->month)
         ->sum('credit');
-    $platformFees = \App\Models\SellerFinance::where('transaction_type', 'debit')
+        
+    $platformFees = \App\Models\SellerFinance::whereIn('seller_id', $sellerIds)
+        ->where('transaction_type', 'debit')
         ->where('reference_no', 'like', '%commission%')
         ->sum('debit');
-    $outstandingPayouts = \App\Models\SellerFinance::where('status', 'pending')
+        
+    $outstandingPayouts = \App\Models\SellerFinance::whereIn('seller_id', $sellerIds)
+        ->where('status', 'pending')
         ->where('transaction_type', 'credit')
         ->sum('credit');
 
@@ -370,35 +535,48 @@ private function dashboardData()
         $month = \Carbon\Carbon::now()->subMonths($i);
         $revenueMonths[] = $month->format('M');
         
-        $monthGross = \App\Models\SellerFinance::where('transaction_type', 'credit')
+        $monthGross = \App\Models\SellerFinance::whereIn('seller_id', $sellerIds)
+            ->where('transaction_type', 'credit')
             ->whereYear('created_at', $month->year)
             ->whereMonth('created_at', $month->month)
             ->sum('credit');
         
-        $monthLoss = \App\Models\SellerFinance::where('transaction_type', 'debit')
+        $monthLoss = \App\Models\SellerFinance::whereIn('seller_id', $sellerIds)
+            ->where('transaction_type', 'debit')
             ->where('reference_no', 'like', '%refund%')
             ->whereYear('created_at', $month->year)
             ->whereMonth('created_at', $month->month)
             ->sum('debit');
         
-        $grossSales[] = $monthGross ?: rand(1800000, 9100000);
-        $netSales[] = ($monthGross - ($monthGross * 0.2)) ?: rand(1350000, 7280000);
-        $lossAmount[] = $monthLoss ?: rand(80000, 280000);
+        $grossSales[] = $monthGross;
+        $netSales[] = ($monthGross - ($monthGross * 0.2));
+        $lossAmount[] = $monthLoss;
     }
 
     // Revenue by Application
-    $revenueByAppData = [42, 35, 13, 10];
+    $totalAppRevenue = $vshopRevenue + $vtravelRevenue + $vcampusRevenue + $vedgeRevenue;
+    if ($totalAppRevenue > 0) {
+        $revenueByAppData = [
+            round(($vshopRevenue / $totalAppRevenue) * 100),
+            round(($vtravelRevenue / $totalAppRevenue) * 100),
+            round(($vcampusRevenue / $totalAppRevenue) * 100),
+            round(($vedgeRevenue / $totalAppRevenue) * 100),
+        ];
+    } else {
+        $revenueByAppData = [0, 0, 0, 0];
+    }
     $revenueByAppLabels = ["v-Shop", "v-Travel", "v-Campus", "v-Edge"];
 
-    // Revenue by Category
-    $revenueByCategory = [
-        'Electronics' => 4520000,
-        'Fashion' => 2280000,
-        'Travel' => 1560000,
-        'Accessories' => 920000,
-        'Home & Living' => 680000,
-        'Beauty' => 450000,
-    ];
+    // Dynamic Revenue by Category from marketplace_categories
+    $revenueByCategory = \App\Models\OrderItem::join('products', 'order_items.product_id', '=', 'products.id')
+        ->join('marketplace_categories', 'products.category_id', '=', 'marketplace_categories.id')
+        ->whereIn('marketplace_categories.type', $allowedCategoryTypes)
+        ->whereIn('products.type', $productTypes)
+        ->select('marketplace_categories.name', \DB::raw('SUM(order_items.total) as total_revenue'))
+        ->groupBy('marketplace_categories.name')
+        ->orderBy('total_revenue', 'desc')
+        ->pluck('total_revenue', 'name')
+        ->toArray();
 
     // Growth rate calculation
     $growthRates = [];
@@ -415,10 +593,9 @@ private function dashboardData()
 
     /*
     |--------------------------------------------------------------------------
-    | TOP PRODUCTS (for blade - needs to be $topProductsData)
+    | TOP PRODUCTS
     |--------------------------------------------------------------------------
     */
-
     $topProductsData = \App\Models\OrderItem::select(
         'product_id',
         \DB::raw('SUM(quantity) as total_quantity_sold'),
@@ -446,14 +623,7 @@ private function dashboardData()
     });
 
     if($topProductsData->isEmpty()) {
-        $topProductsData = \App\Models\Product::whereIn('type', $productTypes)
-            ->orderBy('price', 'desc')
-            ->limit(20)
-            ->get()
-            ->map(function($product) {
-                $product->total_sales = rand(100, 2000);
-                return $product;
-            });
+        $topProductsData = collect([]);
     }
 
     /*
@@ -461,7 +631,6 @@ private function dashboardData()
     | SLOW MOVERS
     |--------------------------------------------------------------------------
     */
-
     $slowMoversData = \App\Models\Product::whereIn('type', $productTypes)
         ->where(function($q) {
             $q->where('sold', '<', 5)
@@ -477,15 +646,7 @@ private function dashboardData()
         });
 
     if($slowMoversData->isEmpty()) {
-        $slowMoversData = \App\Models\Product::whereIn('type', $productTypes)
-            ->orderBy('updated_at', 'asc')
-            ->limit(20)
-            ->get()
-            ->map(function($product) {
-                $product->total_sales = rand(0, 49);
-                $product->inventory = rand(10, 300);
-                return $product;
-            });
+        $slowMoversData = collect([]);
     }
 
     /*
@@ -493,8 +654,7 @@ private function dashboardData()
     | TOP SELLERS
     |--------------------------------------------------------------------------
     */
-
-    $topSellersData = \App\Models\Seller::where('application', 'LIKE', '%' . $appKeyword . '%')
+    $topSellersData = \App\Models\Seller::where($sellerQueryCallback)
         ->withCount('orders')
         ->withSum('orders', 'total_amount')
         ->orderBy('orders_count', 'desc')
@@ -502,28 +662,14 @@ private function dashboardData()
         ->get()
         ->map(function($seller) {
             $seller->total_revenue = $seller->orders_sum_total_amount ?? 0;
-            $seller->orders_count = $seller->orders_count ?? rand(100, 900);
-            $seller->products_count = rand(20, 60);
+            $seller->orders_count = $seller->orders_count ?? 0;
+            $seller->products_count = \App\Models\Product::where('seller_id', $seller->id)->count();
             return $seller;
         });
 
     if($topSellersData->isEmpty()) {
-        $topSellersData = \App\Models\Seller::where('application', 'LIKE', '%' . $appKeyword . '%')
-            ->limit(20)
-            ->get()
-            ->map(function($seller) {
-                $seller->total_revenue = rand(200000, 1500000);
-                $seller->orders_count = rand(100, 900);
-                $seller->products_count = rand(10, 60);
-                return $seller;
-            });
+        $topSellersData = collect([]);
     }
-
-    /*
-    |--------------------------------------------------------------------------
-    | TOP CATEGORIES
-    |--------------------------------------------------------------------------
-    */
 
     $topCategories = \App\Models\MarketplaceCategory::selectRaw("
             name,
@@ -537,65 +683,51 @@ private function dashboardData()
         ->take(5)
         ->get();
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | LATEST ORDERS (WITH PAGINATION)
-    |--------------------------------------------------------------------------
-    */
-
     $latestOrders = \App\Models\Order::whereIn('seller_id', $sellerIds)
-        ->with([
-            'customer',
-            'items',
-            'items.product',
-            'addresses'
-        ])
+        ->with(['customer', 'items', 'items.product', 'addresses'])
         ->orderByDesc('id')
         ->paginate(5);
-
 
     /*
     |--------------------------------------------------------------------------
     | ALERTS SECTION
     |--------------------------------------------------------------------------
     */
-
-    // Pending seller approval/KYC
     $pendingKYC = \App\Models\Seller::where('status', 'pending')
-        ->where('application', 'LIKE', '%' . $appKeyword . '%')
+        ->where($sellerQueryCallback)
         ->count();
 
-    // Product verification pending
     $productPending = \App\Models\Product::where('status', 'pending')
         ->whereIn('type', $productTypes)
         ->count();
 
-    // Failed / cancelled payments
     $paymentFailures = \App\Models\Order::where('status', 'cancelled')
         ->whereIn('seller_id', $sellerIds)
         ->count();
 
-    // High returns
     $highReturns = \App\Models\Order::where('status', 'return_approved')
         ->whereIn('seller_id', $sellerIds)
         ->count();
 
-    // Grievances
     $grievances = 0;
     if (class_exists(\App\Models\Grievance::class)) {
         $grievances = \App\Models\Grievance::whereIn('seller_id', $sellerIds)->count();
     }
     $grievancesCount = $grievances;
 
+    $pendingGrievancesList = collect([]);
+    if (class_exists(\App\Models\Grievance::class)) {
+        $pendingGrievancesList = \App\Models\Grievance::whereIn('seller_id', $sellerIds)
+            ->where('status', 'pending')
+            ->limit(5)
+            ->get();
+    }
 
     /*
     |--------------------------------------------------------------------------
     | NEW METRICS FOR ENHANCED DASHBOARD
     |--------------------------------------------------------------------------
     */
-
-    // Live metrics (today)
     $todayRevenue = \App\Models\Order::whereIn('seller_id', $sellerIds)
         ->whereDate('created_at', now())
         ->where('status', 'paid')
@@ -605,35 +737,29 @@ private function dashboardData()
         ->whereDate('created_at', now())
         ->count();
     
-    // Active users (users active in last 5 minutes)
     $activeUsers = 0;
     if (class_exists(\App\Models\User::class) && \Schema::hasColumn('users', 'last_activity')) {
         $activeUsers = \App\Models\User::where('last_activity', '>=', now()->subMinutes(5))->count();
     }
     
-    // Live clicks
-    $liveClickCount = 1247;
-    $liveEnquiryCount = 342;
-    $suspiciousLeadAlerts = 2;
+    $liveClickCount = \App\Models\ActivityLog::where('activity_type', 'click')->count();
+    if ($liveClickCount === 0) {
+        $liveClickCount = \App\Models\ActivityLog::count();
+    }
+    $liveEnquiryCount = \App\Models\Enquiry::count();
+    $suspiciousLeadAlerts = \App\Models\Order::whereIn('seller_id', $sellerIds)
+        ->where('fraud_status', 'suspicious')
+        ->count();
 
     /*
     |--------------------------------------------------------------------------
     | ACTIVITY TIMELINE
     |--------------------------------------------------------------------------
     */
-
     $allActivityTimeline = \App\Models\ActivityLog::orderBy('created_at', 'desc')->limit(50)->get();
 
     if($allActivityTimeline->isEmpty()) {
-        $allActivityTimeline = collect([
-            (object)['activity_type' => 'Seller Approved', 'description' => 'Super Admin approved seller profile', 'created_at' => \Carbon\Carbon::now()->subHours(2), 'color' => '#10b981'],
-            (object)['activity_type' => 'Product Rejected', 'description' => 'Listing rejected due to invalid certificates', 'created_at' => \Carbon\Carbon::now()->subHours(4), 'color' => '#ef4444'],
-            (object)['activity_type' => 'Order Cancelled', 'description' => 'Order #ORD-12345 cancelled (Refund initiated)', 'created_at' => \Carbon\Carbon::now()->subHours(6), 'color' => '#eab308'],
-            (object)['activity_type' => 'Payment Failed', 'description' => 'Payment gateway timeout for order #ORD-12346', 'created_at' => \Carbon\Carbon::now()->subHours(8), 'color' => '#ef4444'],
-            (object)['activity_type' => 'New Seller Registered', 'description' => 'New seller registered on platform', 'created_at' => \Carbon\Carbon::now()->subHours(10), 'color' => '#10b981'],
-            (object)['activity_type' => 'Product Approved', 'description' => 'New product approved by admin', 'created_at' => \Carbon\Carbon::now()->subHours(12), 'color' => '#10b981'],
-            (object)['activity_type' => 'Grievance Filed', 'description' => 'Customer filed a grievance against seller', 'created_at' => \Carbon\Carbon::now()->subHours(14), 'color' => '#f59e0b'],
-        ]);
+        $allActivityTimeline = collect([]);
     }
 
     foreach($allActivityTimeline as $item) {
@@ -652,32 +778,20 @@ private function dashboardData()
         }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | SELLER ACTIVITY FEED
-    |--------------------------------------------------------------------------
-    */
-
     $sellerActivityFeed = \App\Models\ActivityLog::where('activity_type', 'like', '%seller%')
         ->orderBy('created_at', 'desc')
         ->limit(5)
         ->get();
 
     if($sellerActivityFeed->isEmpty()) {
-        $sellerActivityFeed = collect([
-            (object)['description' => 'New seller registered on platform', 'created_at' => \Carbon\Carbon::now()->subMinutes(2)],
-            (object)['description' => 'Seller KYC document submitted', 'created_at' => \Carbon\Carbon::now()->subMinutes(5)],
-            (object)['description' => 'Seller payout processed successfully', 'created_at' => \Carbon\Carbon::now()->subMinutes(12)],
-        ]);
+        $sellerActivityFeed = collect([]);
     }
-
 
     /*
     |--------------------------------------------------------------------------
-    | LOCATION DATA for Heatmap
+    | LOCATION DATA
     |--------------------------------------------------------------------------
     */
-
     $locationData = \App\Models\Order::whereIn('seller_id', $sellerIds)
         ->select('addresses.city', 'addresses.state', \DB::raw('COUNT(*) as total_orders'))
         ->join('addresses', 'orders.address_id', '=', 'addresses.id')
@@ -688,21 +802,11 @@ private function dashboardData()
         ->get();
 
     if($locationData->isEmpty()) {
-        $locationData = collect([
-            (object)['city' => 'Mumbai', 'state' => 'MH', 'total_orders' => 1840],
-            (object)['city' => 'Delhi', 'state' => 'NCR', 'total_orders' => 1220],
-            (object)['city' => 'Bangalore', 'state' => 'KA', 'total_orders' => 980],
-            (object)['city' => 'Hyderabad', 'state' => 'TS', 'total_orders' => 640],
-            (object)['city' => 'Pune', 'state' => 'MH', 'total_orders' => 420],
-            (object)['city' => 'Chennai', 'state' => 'TN', 'total_orders' => 380],
-            (object)['city' => 'Kolkata', 'state' => 'WB', 'total_orders' => 350],
-            (object)['city' => 'Ahmedabad', 'state' => 'GJ', 'total_orders' => 290],
-        ]);
+        $locationData = collect([]);
     }
     
     $maxOrders = $locationData->max('total_orders') ?: 1;
 
-    // Recent failures for alerts
     $recentFailures = \App\Models\Order::whereIn('seller_id', $sellerIds)
         ->where('payment_status', 'failed')
         ->latest()
@@ -710,86 +814,17 @@ private function dashboardData()
         ->get();
 
     if($recentFailures->isEmpty()) {
-        $recentFailures = collect([
-            (object)['id' => 8271, 'payment_status' => 'failed', 'total_amount' => 2499],
-            (object)['id' => 8272, 'payment_status' => 'failed', 'total_amount' => 5999],
-        ]);
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | DYNAMIC APP CONTROL METRICS
-    |--------------------------------------------------------------------------
-    */
-
-    $vshopSellers = 512;
-    $vshopRevenue = 1250000;
-    $vshopProducts = 1845;
-    $vshopOrders = 1247;
-
-    $vtravelSellers = 89;
-    $vtravelRevenue = 980000;
-    $vtravelProducts = 567;
-    $vtravelOrders = 342;
-
-    $vcampusSellers = 45;
-    $vcampusRevenue = 350000;
-    $vcampusProducts = 234;
-    $vcampusOrders = 89;
-
-    $vedgeSellers = 32;
-    $vedgeRevenue = 210000;
-    $vedgeProducts = 178;
-    $vedgeOrders = 45;
-
-    try {
-        if (\Schema::hasColumn('sellers', 'application')) {
-            $vshopSellers = \App\Models\Seller::where('application', 'LIKE', '%product%')->count() ?: 512;
-            $vtravelSellers = \App\Models\Seller::where('application', 'LIKE', '%travel%')->count() ?: 89;
-            $vcampusSellers = \App\Models\Seller::where('application', 'LIKE', '%campus%')->count() ?: 45;
-            $vedgeSellers = \App\Models\Seller::where('application', 'LIKE', '%edge%')->count() ?: 32;
-        }
-        
-        $vshopProducts = \App\Models\Product::whereIn('type', ['product', 'vshop-product', 'vshop-professional', 'vshop-service', 'others'])->count() ?: 1845;
-        $vtravelProducts = \App\Models\Product::whereIn('type', ['tour', 'vtravel-tour', 'vtravel-service', 'vtravel-professional', 'vtravel-information_advisory', 'service'])->count() ?: 567;
-        $vcampusProducts = \App\Models\Product::whereIn('type', ['campus', 'course', 'vcampus-course'])->count() ?: 234;
-        $vedgeProducts = \App\Models\Product::whereIn('type', ['edge', 'vedge', 'v-edge'])->count() ?: 178;
-        
-        $vshopRevenue = \App\Models\Order::where('status', 'paid')
-            ->whereHas('seller', function($q) { $q->where('application', 'LIKE', '%product%'); })
-            ->sum('total_amount') ?: 1250000;
-            
-        $vtravelRevenue = \App\Models\Order::where('status', 'paid')
-            ->whereHas('seller', function($q) { $q->where('application', 'LIKE', '%travel%'); })
-            ->sum('total_amount') ?: 980000;
-
-        $vshopOrders = \App\Models\Order::whereHas('seller', function($q) { $q->where('application', 'LIKE', '%product%'); })->count() ?: 1247;
-        $vtravelOrders = \App\Models\Order::whereHas('seller', function($q) { $q->where('application', 'LIKE', '%travel%'); })->count() ?: 342;
-    } catch (\Exception $e) {
-        // Keep fallbacks
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | QUICK ACTIONS COUNTS
-    |--------------------------------------------------------------------------
-    */
-
-    $pendingKYCApprovals = $pendingKYC;
+        $recentFailures = collect([]);
+    }    $pendingKYCApprovals = $pendingKYC;
     $pendingProductVerification = $productPending;
     $pendingOrdersCount = $openOrders;
     $pendingGrievances = $grievances;
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | RETURN DATA - ALL VARIABLES DEFINED
-    |--------------------------------------------------------------------------
-    */
-
+    // Build the compact variables array
     return compact(
+        'activePanels',
+        'currentPanel',
+
         // BASIC
         'totalOrders',
         'totalSales',
@@ -801,6 +836,7 @@ private function dashboardData()
         'totalSellers',
         'pendingSellers',
         'approvedSellers',
+        'activeSellers',
         'rejectedSellers',
         'sellerMonths',
         'sellerRegistrations',
@@ -819,11 +855,12 @@ private function dashboardData()
         'productAddedData',
         'productCategories',
         'categories',
-        'productCategoryNames',  // FIXED: Now defined
-        'productCategoryCounts', // FIXED: Now defined
+        'productCategoryNames',
+        'productCategoryCounts',
 
         // ORDERS
         'openOrders',
+        'pendingOrders',
         'completedOrders',
         'cancelledOrders',
         'returnedOrders',
@@ -866,6 +903,7 @@ private function dashboardData()
         'highReturns',
         'grievances',
         'grievancesCount',
+        'pendingGrievancesList',
 
         // NEW METRICS
         'todayRevenue',
@@ -905,6 +943,7 @@ private function dashboardData()
         'vedgeOrders'
     );
 }
+
     public function thirdLevel(Request $request, $first, $second, $third)
     {
         return view($first . '.' . $second . '.' . $third);
