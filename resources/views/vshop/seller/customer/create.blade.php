@@ -246,6 +246,88 @@ Customer Type
 @enderror
 </div>
 
+<div class="col-md-3">
+
+<span>Geo Location</span>
+
+<button type="button"
+onclick="getLocation()"
+class="btn btn-dark w-100">
+
+Auto Fetch
+
+</button>
+
+</div>
+
+<div class="col-md-3">
+
+<span>Photo</span>
+
+<input type="file"
+name="photo"
+id="photoInput"
+class="form-control">
+
+<div style="
+position:relative;
+width:90px;
+height:90px;
+margin-top:10px;
+display:inline-block;
+overflow:visible;
+">
+
+<img id="previewImg"
+src="{{ !empty($customer->profile_picture) ? asset($customer->profile_picture) : '' }}"
+style="
+width:100%;
+height:100%;
+object-fit:cover;
+border-radius:8px;
+border:1px solid #ddd;
+{{ empty($customer->profile_picture)?'display:none;':'' }}
+">
+
+<span id="removeBtn"
+onclick="removePhoto()"
+style="
+position:absolute;
+top:-8px;
+right:-8px;
+background:#ff0000;
+color:#fff;
+width:20px;
+height:20px;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:12px;
+font-weight:bold;
+line-height:20px;
+cursor:pointer;
+z-index:9999;
+border:2px solid #fff;
+box-shadow:0 2px 6px rgba(0,0,0,0.25);
+overflow:hidden;
+padding:0;
+{{ empty($customer->profile_picture)?'display:none;':'' }}
+">
+
+×
+
+</span>
+
+</div>
+
+<input type="hidden"
+name="remove_photo"
+id="remove_photo"
+value="0">
+
+</div>
+
 </div>
 
 <hr>
@@ -601,94 +683,7 @@ class="btn btn-outline-success btn-sm">
 
 </button>
 
-<hr>
 
-{{-- ================= GEO + PHOTO ================= --}}
-<div class="row g-3">
-
-<div class="col-md-3">
-
-<span>Geo Location</span>
-
-<button type="button"
-onclick="getLocation()"
-class="btn btn-dark w-100">
-
-Auto Fetch
-
-</button>
-
-</div>
-
-<div class="col-md-3">
-
-<span>Photo</span>
-
-<input type="file"
-name="photo"
-id="photoInput"
-class="form-control">
-
-<div style="
-position:relative;
-width:90px;
-height:90px;
-margin-top:10px;
-display:inline-block;
-overflow:visible;
-">
-
-<img id="previewImg"
-src="{{ !empty($customer->profile_picture) ? asset($customer->profile_picture) : '' }}"
-style="
-width:100%;
-height:100%;
-object-fit:cover;
-border-radius:8px;
-border:1px solid #ddd;
-{{ empty($customer->profile_picture)?'display:none;':'' }}
-">
-
-<span id="removeBtn"
-onclick="removePhoto()"
-style="
-position:absolute;
-top:-8px;
-right:-8px;
-background:#ff0000;
-color:#fff;
-width:20px;
-height:20px;
-border-radius:50%;
-display:flex;
-align-items:center;
-justify-content:center;
-font-size:12px;
-font-weight:bold;
-line-height:20px;
-cursor:pointer;
-z-index:9999;
-border:2px solid #fff;
-box-shadow:0 2px 6px rgba(0,0,0,0.25);
-overflow:hidden;
-padding:0;
-{{ empty($customer->profile_picture)?'display:none;':'' }}
-">
-
-×
-
-</span>
-
-</div>
-
-<input type="hidden"
-name="remove_photo"
-id="remove_photo"
-value="0">
-
-</div>
-
-</div>
 
 <div class="text-end mt-4">
 
@@ -1256,12 +1251,11 @@ function getLocation(){
                 addr.region ||
                 '';
 
-                let cityName =
-                addr.city ||
-                addr.town ||
-                addr.village ||
-                addr.county ||
-                '';
+                let cityName = addr.city || addr.town || addr.village || addr.county || '';
+                
+                let possibleCities = [
+                    addr.city, addr.town, addr.village, addr.county, addr.state_district, addr.suburb
+                ].filter(Boolean).map(s => s.toLowerCase());
 
                 let pin =
                 addr.postcode || '';
@@ -1322,14 +1316,13 @@ function getLocation(){
                             let selected = '';
 
                             if(
-                                name.toLowerCase()
-                                .includes(stateName.toLowerCase())
+                                stateName && (
+                                    name.toLowerCase().includes(stateName.toLowerCase()) ||
+                                    stateName.toLowerCase().includes(name.toLowerCase())
+                                )
                             ){
-
                                 selected = 'selected';
-
                                 selectedStateId = id;
-
                             }
 
                             stateSelect.append(`
@@ -1354,18 +1347,22 @@ function getLocation(){
                                     </option>
                                 `);
 
+                                let bestMatchId = '';
+                                for(let i=0; i<possibleCities.length; i++){
+                                    let pc = possibleCities[i];
+                                    $.each(cities, function(id, name){
+                                        if(bestMatchId) return;
+                                        let dbName = name.toLowerCase();
+                                        if(dbName === pc || dbName.includes(pc) || pc.includes(dbName)){
+                                            bestMatchId = id;
+                                        }
+                                    });
+                                    if(bestMatchId) break;
+                                }
+
                                 $.each(cities, function(id, name){
 
-                                    let selected = '';
-
-                                    if(
-                                        name.toLowerCase()
-                                        .includes(cityName.toLowerCase())
-                                    ){
-
-                                        selected = 'selected';
-
-                                    }
+                                    let selected = (id == bestMatchId) ? 'selected' : '';
 
                                     citySelect.append(`
                                         <option value="${id}" ${selected}>

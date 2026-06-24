@@ -711,12 +711,9 @@
         @endif
         
         @if($seller->status != 'rejected' && $seller->status != 'blocked')
-            <form method="POST" action="{{ route('admin.sellers.reject', $seller->id) }}" class="d-inline">
-                @csrf
-                <button type="submit" class="action-btn action-btn-danger">
-                    <i class="ri-close-circle-line"></i> Deactivate
-                </button>
-            </form>
+            <button type="button" class="action-btn action-btn-danger" data-bs-toggle="modal" data-bs-target="#rejectSellerModal">
+                <i class="ri-close-circle-line"></i> Deactivate
+            </button>
         @endif
         
         <form method="POST" action="{{ route('admin.trigger.reverification', $seller->id) }}" class="d-inline">
@@ -1237,6 +1234,30 @@
     </div>
 </div>
 
+<div class="modal fade" id="rejectSellerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title"><i class="ri-close-circle-line"></i> Reject / Deactivate Seller</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ route('admin.sellers.reject', $seller->id) }}">
+                @csrf
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Reason for Rejection <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="reason" rows="4" required minlength="10" placeholder="Please provide a detailed reason for rejecting this seller application..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="action-btn action-btn-danger">Reject Seller</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <div class="modal fade" id="blockProductModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
@@ -1286,7 +1307,9 @@
         var originalContent = btn.html();
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
         
-        var payload = {};
+        var payload = {
+            _token: '{{ csrf_token() }}'
+        };
         payload[field] = value;
         
         $.ajax({
@@ -1300,6 +1323,8 @@
             }
         });
     });
+
+
 
     $('#block_product_select').on('change', function() {
         var productId = $(this).val();

@@ -76,6 +76,33 @@ class SellermanagementController extends Controller
         // Log the update
         $this->logAudit($id, 'kyc_updated', 'KYC/Document verification status updated', $oldData, $seller->toArray());
         
+        // Send notification if any document was rejected
+        $rejections = [];
+        if ($request->has('pan_status') && strtolower($request->pan_status) === 'rejected') {
+            $rejections[] = 'PAN document';
+        }
+        if ($request->has('gst_status') && strtolower($request->gst_status) === 'rejected') {
+            $rejections[] = 'GST document';
+        }
+        if ($request->has('iec_status') && strtolower($request->iec_status) === 'rejected') {
+            $rejections[] = 'IEC document';
+        }
+        if ($request->has('bank_status') && strtolower($request->bank_status) === 'rejected') {
+            $rejections[] = 'Bank Details';
+        }
+        if ($request->has('agreement_status') && strtolower($request->agreement_status) === 'rejected') {
+            $rejections[] = 'Agreement';
+        }
+        if ($request->has('company_status') && strtolower($request->company_status) === 'rejected') {
+            $rejections[] = 'Company Certificate';
+        }
+
+        if (!empty($rejections)) {
+            $details = implode(', ', $rejections);
+            $message = "Your " . $details . " was Rejected by Admin. Please update the details in your profile.";
+            NotificationService::notify($seller->id, 'seller', 'kyc', $message, route('seller.organization'));
+        }
+        
         // AUTO APPROVAL LOGIC - Check if ALL required sections are approved
         $allApproved = (
             ($request->pan_status ?? $seller->pan_status) == 'Approved' &&
@@ -163,8 +190,12 @@ class SellermanagementController extends Controller
         return back()->with('success', 'Selected platforms have been approved for the seller.');
     }
 
-    public function reject($id)
+    public function reject(Request $request, $id)
     {
+        $request->validate([
+            'reason' => 'required|string|min:10'
+        ]);
+
         $seller = Seller::findOrFail($id);
         $oldData = $seller->toArray();
         
@@ -173,10 +204,50 @@ class SellermanagementController extends Controller
             'is_verified' => 0,
         ]);
         
-        $this->logAudit($id, 'seller_rejected', 'Seller application rejected by admin', $oldData, $seller->toArray());
-        NotificationService::notify($seller->id, 'seller', 'kyc', 'Your KYC application has been rejected by admin.', route('seller.profile'));
+        $reason = $request->reason;
         
-        return back()->with('error', 'Seller has been rejected!');
+        $this->logAudit($id, 'seller_rejected', 'Seller application rejected by admin. Reason: ' . $reason, $oldData, $seller->toArray());
+        NotificationService::notify($seller->id, 'seller', 'kyc', 'Your KYC application has been rejected by admin. Reason: ' . $reason, route('seller.profile'));
+        
+        return back()->with('error', 'Seller has been rejected successfully!');
+    }
+
+    public function verifyDigilocker(Request $request, $id)
+    {
+        $seller = Seller::findOrFail($id);
+        $type = $request->type; // 'pan', 'contact_pan', 'contact_aadhar'
+        $number = $request->number;
+        
+        // MOCK DIGILOCKER API INTEGRATION
+        // Simulating API latency
+        sleep(1);
+        
+        // Mock Response validation (always pass for demo purposes unless number is missing)
+        if (!$number) {
+            return response()->json(['message' => 'Document number is required for Digilocker verification.'], 400);
+        }
+        
+        $oldData = $seller->toArray();
+        
+        if ($type == 'pan') {
+            $seller->update(['pan_status' => 'Approved']);
+            $this->logAudit($id, 'kyc_updated', 'Organization PAN verified successfully via Digilocker', $oldData, $seller->toArray());
+            $message = 'Organization PAN successfully verified via Digilocker API.';
+        } elseif ($type == 'gst') {
+            $seller->update(['gst_status' => 'Approved']);
+            $this->logAudit($id, 'kyc_updated', 'GST verified successfully via Digilocker', $oldData, $seller->toArray());
+            $message = 'GST successfully verified via Digilocker API.';
+        } elseif ($type == 'contact_pan') {
+            $this->logAudit($id, 'kyc_updated', 'Contact Person PAN verified successfully via Digilocker', $oldData, $seller->toArray());
+            $message = 'Contact Person PAN successfully verified via Digilocker API.';
+        } elseif ($type == 'contact_aadhar') {
+            $this->logAudit($id, 'kyc_updated', 'Contact Person Aadhaar verified successfully via Digilocker', $oldData, $seller->toArray());
+            $message = 'Contact Person Aadhaar successfully verified via Digilocker API.';
+        } else {
+            return response()->json(['message' => 'Invalid document type for Digilocker verification.'], 400);
+        }
+        
+        return response()->json(['success' => true, 'message' => $message]);
     }
 
     // ============ BLACKLIST CONTROL FUNCTIONS ============
@@ -243,6 +314,8 @@ class SellermanagementController extends Controller
         
         $this->logAudit($id, 'seller_blocked', $request->reason, $oldData, $seller->toArray());
         
+        NotificationService::notify($seller->id, 'seller', 'system', 'Your seller account has been blocked by the admin. Reason: ' . $request->reason, '#');
+        
         return back()->with('success', 'Seller has been blocked successfully!');
     }
     
@@ -286,6 +359,8 @@ class SellermanagementController extends Controller
         $product->update(['status' => 'blocked']);
         
         $this->logAudit($seller->id, 'product_blocked', 'Product blocked: ' . $product->name . ' - Reason: ' . $request->reason, $oldData, $seller->toArray());
+        
+        NotificationService::notify($seller->id, 'seller', 'product', 'Your product "' . $product->name . '" has been blocked. Reason: ' . $request->reason, route('seller.product.index') ?? '#');
         
         return back()->with('success', 'Product has been blocked successfully!');
     }

@@ -2304,6 +2304,9 @@ Route::get('/sellers/edit/{id}', [SellermanagementController::class, 'edit'])->n
 
     Route::post('/sellers/{id}/reject', [App\Http\Controllers\admin\SellermanagementController::class, 'reject'])
         ->name('sellers.reject');
+
+    Route::post('/sellers/{id}/digilocker', [App\Http\Controllers\admin\SellermanagementController::class, 'verifyDigilocker'])
+        ->name('sellers.digilocker');
         
             // 🔥 NEW
     Route::post('sellers/{id}/verification', [App\Http\Controllers\admin\SellermanagementController::class, 'updateVerification'])->name('sellers.verify');
