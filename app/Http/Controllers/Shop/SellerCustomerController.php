@@ -1239,12 +1239,24 @@ public function getLogs($id)
     return response()->json($logs);
 }
 
-public function cityPincode($id)
-{
-    $city = City::find($id);
+    public function cityPincode($id)
+    {
+        $city = City::find($id);
 
-    return response()->json([
-        'pincode' => $city->pincode ?? null
-    ]);
-}
+        return response()->json([
+            'pincode' => $city->pincode ?? null
+        ]);
+    }
+
+    public function getStates($country_id)
+    {
+        $states = \App\Models\State::where('country_id', $country_id)->pluck('name', 'id');
+        return response()->json($states);
+    }
+
+    public function getCities($state_id)
+    {
+        $cities = \App\Models\City::where('state_id', $state_id)->pluck('name', 'id');
+        return response()->json($cities);
+    }
 }
