@@ -77,21 +77,7 @@ class AuthenticatedSessionController extends Controller
             // Direct login (No 2FA)
             // 1. Try User
             if (Auth::guard('web')->attempt($credentials, $remember)) {
-                $user = Auth::guard('web')->user();
-                try {
-                    \App\Models\ActivityLog::create([
-                        'user_id' => $user->id,
-                        'activity_type' => 'admin_login',
-                        'description' => 'Admin ' . $user->name . ' logged in',
-                        'remarks' => 'IP: ' . request()->ip() . ', User Agent: ' . request()->userAgent(),
-                        'ip_address' => request()->ip(),
-                        'user_agent' => request()->userAgent()
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::error('Login logging failed: ' . $e->getMessage());
-                }
                 $request->session()->regenerate();
-                $this->cleanIntendedUrl();
                 return redirect()->intended('/dashboard/index');
             }
 
@@ -102,21 +88,7 @@ class AuthenticatedSessionController extends Controller
                     Auth::guard('admin_staff')->logout();
                     return back()->withErrors(['email' => 'Your staff account is ' . $staff->status . '. Please contact admin.'])->withInput();
                 }
-                try {
-                    $staff->update(['last_login' => now()]);
-                    \App\Models\ActivityLog::create([
-                        'user_id' => $staff->id,
-                        'activity_type' => 'staff_login',
-                        'description' => 'Staff: ' . $staff->first_name . ' ' . $staff->last_name . ' logged in',
-                        'remarks' => 'IP: ' . request()->ip() . ', User Agent: ' . request()->userAgent(),
-                        'ip_address' => request()->ip(),
-                        'user_agent' => request()->userAgent()
-                    ]);
-                } catch (\Exception $e) {
-                    \Log::error('Login logging failed: ' . $e->getMessage());
-                }
                 $request->session()->regenerate();
-                $this->cleanIntendedUrl();
                 return redirect()->intended('/dashboard/index');
             }
         }
@@ -171,35 +143,11 @@ class AuthenticatedSessionController extends Controller
 
         if ($userType === 'web') {
             Auth::guard('web')->loginUsingId($userId, $remember);
-            $user = Auth::guard('web')->user();
-            try {
-                \App\Models\ActivityLog::create([
-                    'user_id' => $user->id,
-                    'activity_type' => 'admin_login',
-                    'description' => 'Admin ' . $user->name . ' logged in via 2FA',
-                    'remarks' => 'IP: ' . request()->ip() . ', User Agent: ' . request()->userAgent(),
-                    'ip_address' => request()->ip(),
-                    'user_agent' => request()->userAgent()
-                ]);
-            } catch (\Exception $e) {}
         } else if ($userType === 'admin_staff') {
             Auth::guard('admin_staff')->loginUsingId($userId, $remember);
-            $staff = Auth::guard('admin_staff')->user();
-            try {
-                $staff->update(['last_login' => now()]);
-                \App\Models\ActivityLog::create([
-                    'user_id' => $staff->id,
-                    'activity_type' => 'staff_login',
-                    'description' => 'Staff: ' . $staff->first_name . ' ' . $staff->last_name . ' logged in via 2FA',
-                    'remarks' => 'IP: ' . request()->ip() . ', User Agent: ' . request()->userAgent(),
-                    'ip_address' => request()->ip(),
-                    'user_agent' => request()->userAgent()
-                ]);
-            } catch (\Exception $e) {}
         }
 
         $request->session()->regenerate();
-        $this->cleanIntendedUrl();
 
         return redirect()->intended('/dashboard/index');
     }
@@ -231,19 +179,5 @@ class AuthenticatedSessionController extends Controller
         session(['admin_panel' => $type]);
 
         return back(); // stay on same page
-    }
-
-    /**
-     * 🔹 Clean intended URL to avoid redirecting to assets/favicons on first login
-     */
-    private function cleanIntendedUrl()
-    {
-        $intended = session()->get('url.intended');
-        if ($intended) {
-            $path = parse_url($intended, PHP_URL_PATH);
-            if ($path && (preg_match('/\.(ico|png|jpg|jpeg|gif|svg|css|js)$/i', $path) || str_contains($path, 'favicon'))) {
-                session()->forget('url.intended');
-            }
-        }
     }
 }
