@@ -2620,7 +2620,7 @@ Route::prefix('admin/grievance')->name('admin.grievance.')->middleware('auth:web
     Route::post('/reply', [\App\Http\Controllers\admin\GrievanceController::class, 'reply'])->name('reply');
     
     // Escalation Matrix Routes
-    Route::post('/escalation-rule/store', [\App\Http\Controllers\admin\GrievanceController::class, 'storeEscalationRule'])->name('escalation-rule.store');
+    Route::post('/escalation-rule/store', [\App\Http\Controllers\admin\GrievanceController::class, 'storeEscalationRule'])->name('storeEscalationRule');
     Route::delete('/escalation-rule/{id}', [\App\Http\Controllers\admin\GrievanceController::class, 'deleteEscalationRule'])->name('escalation-rule.delete');
     Route::post('/priority-settings/update', [\App\Http\Controllers\admin\GrievanceController::class, 'updatePrioritySettings'])->name('priority-settings.update');
 });

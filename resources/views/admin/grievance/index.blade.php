@@ -1117,7 +1117,7 @@ $('#saveRuleBtn').on('click', function() {
         return;
     }
     $.ajax({
-        url: '{{ route("admin.grievance.escalation-rule.store") }}',
+        url: '{{ route("admin.grievance.storeEscalationRule") }}',
         method: 'POST',
         data: formData,
         success: function(res) {
