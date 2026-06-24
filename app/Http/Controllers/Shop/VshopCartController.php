@@ -49,6 +49,87 @@ use Illuminate\Http\Request;
 
         $product = Product::find($request->product_id);
 
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found.'
+            ], 404);
+        }
+
+        $existingQty = 0;
+        if (Auth::guard('customer')->check()) {
+            $customer = Auth::guard('customer')->user();
+            $cartItem = CartItem::where('customer_id', $customer->id)
+                ->where('product_id', $request->product_id)
+                ->where('color_id', $request->color_id)
+                ->where('size_id', $request->size_id)
+                ->first();
+            if ($cartItem) {
+                $existingQty = $cartItem->main_product_quantity;
+            }
+        } else {
+            $cart = Session::get('cart', []);
+            $cartKey = $request->product_id.'_'.$request->color_id.'_'.$request->size_id;
+            if (isset($cart[$cartKey])) {
+                $existingQty = $cart[$cartKey]['main_product_quantity'];
+            }
+        }
+        $totalRequestedQty = $existingQty + $request->quantity;
+
+        $isPhysicalProduct = in_array($product->type, ['product', 'vshop-product']) || empty($product->type);
+
+        if ($isPhysicalProduct) {
+            // Check main product stock
+            if (is_null($product->stock_qty) || $product->stock_qty <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Product is out of stock.'
+                ], 400);
+            }
+
+            if ($totalRequestedQty > $product->stock_qty) {
+                $avail = $product->stock_qty - $existingQty;
+                $msg = $avail > 0 
+                    ? "Cannot add more. Only {$avail} more items can be added (available stock: {$product->stock_qty})."
+                    : "Cannot add more. You already have all available stock ({$product->stock_qty}) in your cart.";
+                return response()->json([
+                    'success' => false,
+                    'message' => $msg
+                ], 400);
+            }
+
+            // Check variant combination stock if color_id or size_id is provided
+            if ($request->color_id || $request->size_id) {
+                $combinationStock = \App\Models\ProductAttribute::where('proid', $product->id)
+                    ->when($request->color_id, function($q) use ($request) {
+                        $q->where('attribute_term_id', $request->color_id);
+                    })
+                    ->when($request->size_id, function($q) use ($request) {
+                        $q->where('attribute_term_id', $request->size_id);
+                    })
+                    ->value('product_stock');
+
+                if (!is_null($combinationStock)) {
+                    if ($combinationStock <= 0) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Selected combination is out of stock.'
+                        ], 400);
+                    }
+                    if ($totalRequestedQty > $combinationStock) {
+                        $avail = $combinationStock - $existingQty;
+                        $msg = $avail > 0 
+                            ? "Cannot add more. Only {$avail} more items of this combination can be added (available stock: {$combinationStock})."
+                            : "Cannot add more. You already have all available stock of this combination ({$combinationStock}) in your cart.";
+                        return response()->json([
+                            'success' => false,
+                            'message' => $msg
+                        ], 400);
+                    }
+                }
+            }
+        }
+
         /*
         |--------------------------------------------------------------------------
         | FETCH FULL ATTRIBUTE COMBINATION
@@ -467,7 +548,48 @@ public function updateQty(Request $request)
                 ], 404);
             }
 
-            // REMOVED THE STOCK CHECK - Allow any quantity
+            $product = Product::find($cartItem->product_id);
+            if ($product && (in_array($product->type, ['product', 'vshop-product']) || empty($product->type))) {
+                if (is_null($product->stock_qty) || $product->stock_qty <= 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Product is out of stock.'
+                    ], 400);
+                }
+                if ($request->quantity > $product->stock_qty) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Only ' . $product->stock_qty . ' items available.'
+                    ], 400);
+                }
+
+                if ($cartItem->color_id || $cartItem->size_id) {
+                    $combinationStock = \App\Models\ProductAttribute::where('proid', $product->id)
+                        ->when($cartItem->color_id, function($q) use ($cartItem) {
+                            $q->where('attribute_term_id', $cartItem->color_id);
+                        })
+                        ->when($cartItem->size_id, function($q) use ($cartItem) {
+                            $q->where('attribute_term_id', $cartItem->size_id);
+                        })
+                        ->value('product_stock');
+                    
+                    if (!is_null($combinationStock)) {
+                        if ($combinationStock <= 0) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Selected combination is out of stock.'
+                            ], 400);
+                        }
+                        if ($request->quantity > $combinationStock) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Only ' . $combinationStock . ' items of this combination available.'
+                            ], 400);
+                        }
+                    }
+                }
+            }
+
             $cartItem->main_product_quantity = $request->quantity;
             $cartItem->save();
             
@@ -477,9 +599,8 @@ public function updateQty(Request $request)
                 ->first();
                 
             if ($sizeStock) {
-                // Optionally update the size quantity or leave it as is
-                // $sizeStock->quantity = $request->quantity; // Uncomment if you want to update
-                // $sizeStock->save();
+                $sizeStock->quantity = $request->quantity;
+                $sizeStock->save();
             }
 
         } else {
@@ -490,6 +611,51 @@ public function updateQty(Request $request)
             foreach ($cart as $key => $item) {
                 if ($key == $request->cart_item_id || 
                     (isset($item['product_id']) && $item['product_id'] == $request->cart_item_id)) {
+                    
+                    $product = Product::find($item['product_id'] ?? null);
+                    if ($product && (in_array($product->type, ['product', 'vshop-product']) || empty($product->type))) {
+                        if (is_null($product->stock_qty) || $product->stock_qty <= 0) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Product is out of stock.'
+                            ], 400);
+                        }
+                        if ($request->quantity > $product->stock_qty) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'Only ' . $product->stock_qty . ' items available.'
+                            ], 400);
+                        }
+
+                        $colorId = $item['color_id'] ?? null;
+                        $sizeId = $item['size_id'] ?? null;
+                        if ($colorId || $sizeId) {
+                            $combinationStock = \App\Models\ProductAttribute::where('proid', $product->id)
+                                ->when($colorId, function($q) use ($colorId) {
+                                    $q->where('attribute_term_id', $colorId);
+                                })
+                                ->when($sizeId, function($q) use ($sizeId) {
+                                    $q->where('attribute_term_id', $sizeId);
+                                })
+                                ->value('product_stock');
+                            
+                            if (!is_null($combinationStock)) {
+                                if ($combinationStock <= 0) {
+                                    return response()->json([
+                                        'success' => false,
+                                        'message' => 'Selected combination is out of stock.'
+                                    ], 400);
+                                }
+                                if ($request->quantity > $combinationStock) {
+                                    return response()->json([
+                                        'success' => false,
+                                        'message' => 'Only ' . $combinationStock . ' items of this combination available.'
+                                    ], 400);
+                                }
+                            }
+                        }
+                    }
+
                     $cart[$key]['main_product_quantity'] = $request->quantity;
                     $found = true;
                     break;

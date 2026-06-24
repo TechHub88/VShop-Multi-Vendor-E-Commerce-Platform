@@ -601,56 +601,62 @@
                                             <!--    <label class="color-box"><input type="radio" name="radio2"><span class="color-circle chocolate-box"></span></label>-->
                                             <!--    <p>( Barbarian Red )</p>-->
                                             <!--</div>-->
-                                            
                                             <div class="product-dtl-sec">
                                                 <p>Expected Delivery : <span class="blackColor" id="deliveryDate"></span> /
                                                     <a href="{{ route('vshop.address.create') }}" class="change-pincode">Change Pincode</a>
                                                 </p>
                                             </div>
 
-                                            {{-- QUANTITY AND CART + ENQUIRY BUTTONS --}}
-                                            <div class="action-row d-flex align-items-center gap-2 flex-wrap">
-                                                <!-- Quantity -->
-                                                <div class="qty-box d-flex align-items-center">
-                                                    <button type="button" id="decrementQty">-</button>
-                                                    <input type="text" id="quantity" value="1" readonly>
-                                                    <button type="button" id="incrementQty">+</button>
-                                                </div>
+                                             @php
+                                                 $isPhysicalProduct = in_array($product->type, ['product', 'vshop-product']) || empty($product->type);
+                                                 $isOutOfStock = $isPhysicalProduct && (is_null($product->stock_qty) || $product->stock_qty === '' || $product->stock_qty <= 0);
+                                             @endphp
 
-                                                <!-- Add to Cart -->
-                                                <button class="btn-cart text-nowrap" id="addToCartBtn" data-product-id="{{ $product->id }}">
-                                                    Add to Cart ₹ <span id="totalPrice">{{ number_format($price, 2) }}</span>
-                                                </button>
+                                             {{-- QUANTITY AND CART + ENQUIRY BUTTONS --}}
+                                             <div class="action-row d-flex align-items-center gap-2 flex-wrap">
+                                                 <!-- Quantity -->
+                                                 <div class="qty-box d-flex align-items-center" style="{{ $isOutOfStock ? 'opacity: 0.5; pointer-events: none;' : '' }}">
+                                                     <button type="button" id="decrementQty" {{ $isOutOfStock ? 'disabled' : '' }}>-</button>
+                                                     <input type="text" id="quantity" value="1" readonly>
+                                                     <button type="button" id="incrementQty" {{ $isOutOfStock ? 'disabled' : '' }}>+</button>
+                                                 </div>
 
-                                                <!-- Go to Cart -->
-                                                <a href="{{ route('vshop.cart.index') }}" class="btn-go-cart">Go to Cart</a>
+                                                 <!-- Add to Cart -->
+                                                 <button class="btn-cart text-nowrap" id="addToCartBtn" data-product-id="{{ $product->id }}" {{ $isOutOfStock ? 'disabled' : '' }}>
+                                                     Add to Cart ₹ <span id="totalPrice">{{ number_format($price, 2) }}</span>
+                                                 </button>
 
-                                                <!-- Buy Now -->
-                                                <button class="btn-buy" id="buyNowBtn" data-product-id="{{ $product->id }}">Buy</button>
+                                                 <!-- Go to Cart -->
+                                                 <a href="{{ route('vshop.cart.index') }}" class="btn-go-cart">Go to Cart</a>
 
-                                                <!-- ========== ENQUIRY BUTTONS ========== -->
-                                                <div class="enquiry-buttons d-flex gap-2 ms-2">
-                                                    <button class="btn-enquiry whatsapp-enquiry" data-contact="whatsapp" data-product-id="{{ $product->id }}">
-                                                        <i class="fab fa-whatsapp"></i> WhatsApp
-                                                    </button>
-                                                    <button class="btn-enquiry phone-enquiry" data-contact="phone" data-product-id="{{ $product->id }}">
-                                                        <i class="fas fa-phone-alt"></i> Phone
-                                                    </button>
-                                                    <button class="btn-enquiry email-enquiry" data-contact="email" data-product-id="{{ $product->id }}">
-                                                        <i class="fas fa-envelope"></i> Email
-                                                    </button>
-                                                </div>
-                                            </div>
+                                                 <!-- Buy Now -->
+                                                 <button class="btn-buy" id="buyNowBtn" data-product-id="{{ $product->id }}" {{ $isOutOfStock ? 'disabled' : '' }}>Buy</button>
 
-                                            <div class="stock-status" id="stockStatus">
-                                                @if(($product->stock_qty ?? 100) > 0)
-                                                <p class="in-stock"><i class="fa-regular fa-check-circle"></i> In Stock (<span id="availableStock">{{ $product->stock_qty ?? '0' }}</span> available)</p>
-                                                @else
-                                                <p class="out-of-stock"><i class="fa-regular fa-times-circle"></i> Out of Stock</p>
-                                                @endif
-                                            </div>
+                                                 <!-- ========== ENQUIRY BUTTONS ========== -->
+                                                 <div class="enquiry-buttons d-flex gap-2 ms-2">
+                                                     <button class="btn-enquiry whatsapp-enquiry" data-contact="whatsapp" data-product-id="{{ $product->id }}">
+                                                         <i class="fab fa-whatsapp"></i> WhatsApp
+                                                     </button>
+                                                     <button class="btn-enquiry phone-enquiry" data-contact="phone" data-product-id="{{ $product->id }}">
+                                                         <i class="fas fa-phone-alt"></i> Phone
+                                                     </button>
+                                                     <button class="btn-enquiry email-enquiry" data-contact="email" data-product-id="{{ $product->id }}">
+                                                         <i class="fas fa-envelope"></i> Email
+                                                     </button>
+                                                 </div>
+                                             </div>
 
-
+                                             <div class="stock-status" id="stockStatus">
+                                                 @if(!$isPhysicalProduct)
+                                                     {{-- Do not show stock status for services/professionals --}}
+                                                 @elseif($isOutOfStock)
+                                                     <p class="out-of-stock text-danger"><i class="fa-regular fa-times-circle"></i> Out of Stock (No stock available)</p>
+                                                 @elseif($product->low_stock_threshold !== null && $product->stock_qty <= $product->low_stock_threshold)
+                                                     <p class="in-stock text-warning" style="color: #ff9900 !important; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock! Only <span id="availableStock">{{ $product->stock_qty }}</span> left</p>
+                                                 @else
+                                                     <p class="in-stock text-success"><i class="fa-regular fa-check-circle"></i> In Stock (<span id="availableStock">{{ $product->stock_qty }}</span> available)</p>
+                                                 @endif
+                                             </div>
 
                                         </div>
                                     </div>
@@ -1683,11 +1689,24 @@ $(document).on('click','.copy',function(){
                 }
 
                 // ================= STOCK CHECK =================
-                let record = productConfig.combinations.find(c => c.combination_key == matchedKey);
+                if (productConfig.isPhysicalProduct) {
+                    if (productConfig.combinations.length > 0) {
+                        let record = productConfig.combinations.find(c => c.combination_key == matchedKey);
 
-                if (record && record.product_stock !== undefined && record.product_stock <= 0) {
-                    showToast("Out of stock", "error");
-                    return;
+                        if (record && record.product_stock !== undefined && record.product_stock <= 0) {
+                            showToast("Out of stock", "error");
+                            return;
+                        }
+                    } else {
+                        if (productConfig.mainStock === null || productConfig.mainStock <= 0) {
+                            showToast("Out of stock", "error");
+                            return;
+                        }
+                        if (productConfig.quantity > productConfig.mainStock) {
+                            showToast(`Only ${productConfig.mainStock} items available`, "error");
+                            return;
+                        }
+                    }
                 }
 
                 @auth('customer')
@@ -1735,13 +1754,15 @@ $(document).on('click','.copy',function(){
 
         // Product configuration object
         const productConfig = {
-            basePrice: {{ $product-> price
-    }},
-        baseRegularPrice: {{ $product-> regular_price ?? $product -> price }},
-        quantity: 1,
-        selectedAttributes: {},
-        combinations: @json($combinations)
-    };
+            basePrice: {{ $product->price }},
+            baseRegularPrice: {{ $product->regular_price ?? $product->price }},
+            quantity: 1,
+            selectedAttributes: {},
+            combinations: @json($combinations),
+            mainStock: {{ is_null($product->stock_qty) || $product->stock_qty === '' ? 'null' : $product->stock_qty }},
+            lowStockThreshold: {{ is_null($product->low_stock_threshold) || $product->low_stock_threshold === '' ? 'null' : $product->low_stock_threshold }},
+            isPhysicalProduct: {{ in_array($product->type, ['product', 'vshop-product']) || empty($product->type) ? 'true' : 'false' }}
+        };
 
     // Initialize the page
     init();
@@ -1773,6 +1794,9 @@ $(document).on('click','.copy',function(){
         if (c) setColor(c);
 
         updatePrice();
+        if (!s && !c) {
+            updateStockStatus(productConfig.mainStock, true);
+        }
 
         // Load wishlist status if logged in
         @auth('customer')
@@ -1823,21 +1847,21 @@ $(document).on('click','.copy',function(){
         if (el) el.textContent = name;
     }
 
-    // ================= PRICE LOGIC WITH COMBINATION CHECK =================
     function updatePrice() {
-
         let selectedTermIds = [];
-
         Object.values(productConfig.selectedAttributes).forEach(attr => {
             selectedTermIds.push(parseInt(attr.termId));
         });
 
-        if (selectedTermIds.length === 0) return;
+        const totalAttributeRows = document.querySelectorAll('.variant-row').length;
+
+        if (selectedTermIds.length === 0) {
+            updateStockStatus(productConfig.mainStock, true);
+            return;
+        }
 
         let matchedKey = null;
-
         const combos = productConfig.combinations;
-
         let comboMap = {};
 
         // group combination attributes
@@ -1851,59 +1875,74 @@ $(document).on('click','.copy',function(){
 
         // find matching combination
         for (let key in comboMap) {
-
             let attrs = comboMap[key];
-
             let match = selectedTermIds.every(id => attrs.includes(id));
-
             if (match) {
                 matchedKey = key;
                 break;
             }
-
         }
 
         if (matchedKey) {
-
             let record = combos.find(c => c.combination_key == matchedKey);
-
             if (!record) return;
 
             let price = parseFloat(record.price);
             let regular = parseFloat(record.regular_price ?? record.price);
 
             updatePriceUI(price, regular);
-
+            updateStockStatus(record.stock, true);
+        } else {
+            if (selectedTermIds.length === totalAttributeRows) {
+                updateStockStatus(0, false);
+            } else {
+                updateStockStatus(productConfig.mainStock, true);
+            }
         }
-
     }
 
     // ================= UPDATE STOCK STATUS =================
     function updateStockStatus(stock, combinationValid) {
         const stockStatus = document.getElementById('stockStatus');
+        const addToCartBtn = document.getElementById('addToCartBtn');
+        const buyNowBtn = document.getElementById('buyNowBtn');
         if (!stockStatus) return;
 
+        if (!productConfig.isPhysicalProduct) {
+            stockStatus.innerHTML = '';
+            if (addToCartBtn) addToCartBtn.disabled = false;
+            if (buyNowBtn) buyNowBtn.disabled = false;
+            return;
+        }
+
         if (!combinationValid && productConfig.currentSize && productConfig.currentColor) {
-            stockStatus.innerHTML = `<p class="out-of-stock">
+            stockStatus.innerHTML = `<p class="out-of-stock text-danger">
                 <i class="fa-regular fa-times-circle"></i> 
                 Combination Not Available
             </p>`;
-        } else if (stock > 0) {
-            stockStatus.innerHTML = `<p class="in-stock">
-                <i class="fa-regular fa-check-circle"></i> 
-                In Stock (${stock} available)
-            </p>`;
-        } else if (stock === 0 && productConfig.currentSize && productConfig.currentColor) {
-            stockStatus.innerHTML = `<p class="out-of-stock">
+            if (addToCartBtn) addToCartBtn.disabled = true;
+            if (buyNowBtn) buyNowBtn.disabled = true;
+        } else if (stock === null || stock === undefined || stock === '' || stock <= 0) {
+            stockStatus.innerHTML = `<p class="out-of-stock text-danger">
                 <i class="fa-regular fa-times-circle"></i> 
                 Out of Stock
             </p>`;
-        } else {
-            // Default stock from product
-            stockStatus.innerHTML = `<p class="in-stock">
-                <i class="fa-regular fa-check-circle"></i> 
-                In Stock ({{ $product->stock_qty ?? 100 }} available)
+            if (addToCartBtn) addToCartBtn.disabled = true;
+            if (buyNowBtn) buyNowBtn.disabled = true;
+        } else if (productConfig.lowStockThreshold !== null && stock <= productConfig.lowStockThreshold) {
+            stockStatus.innerHTML = `<p class="in-stock text-warning" style="color: #ff9900 !important; font-weight: bold;">
+                <i class="fa-solid fa-triangle-exclamation"></i> 
+                Low Stock! Only <span id="availableStock">${stock}</span> left
             </p>`;
+            if (addToCartBtn) addToCartBtn.disabled = false;
+            if (buyNowBtn) buyNowBtn.disabled = false;
+        } else {
+            stockStatus.innerHTML = `<p class="in-stock text-success">
+                <i class="fa-regular fa-check-circle"></i> 
+                In Stock (<span id="availableStock">${stock}</span> available)
+            </p>`;
+            if (addToCartBtn) addToCartBtn.disabled = false;
+            if (buyNowBtn) buyNowBtn.disabled = false;
         }
     }
 
@@ -1993,32 +2032,37 @@ $(document).on('click','.copy',function(){
 
     if (incrementBtn) {
         incrementBtn.addEventListener('click', function () {
-            // Check stock limit if combination selected
             let maxStock = 999;
 
-            if (productConfig.currentSize && productConfig.currentColor) {
-                const sizeTermId = productConfig.currentSize.termId;
-                const colorTermId = productConfig.currentColor.termId;
+            if (productConfig.isPhysicalProduct) {
+                if (productConfig.currentSize && productConfig.currentColor) {
+                    const sizeTermId = productConfig.currentSize.termId;
+                    const colorTermId = productConfig.currentColor.termId;
 
-                const sizeCombinations = new Set();
-                const colorCombinations = new Set();
+                    const sizeCombinations = new Set();
+                    const colorCombinations = new Set();
 
-                productConfig.combinations.forEach(comb => {
-                    if (comb.attribute_term_id == sizeTermId) {
-                        sizeCombinations.add(comb.combination_key);
+                    productConfig.combinations.forEach(comb => {
+                        if (comb.attribute_term_id == sizeTermId) {
+                            sizeCombinations.add(comb.combination_key);
+                        }
+                        if (comb.attribute_term_id == colorTermId) {
+                            colorCombinations.add(comb.combination_key);
+                        }
+                    });
+
+                    const validCombinationKeys = [...sizeCombinations].filter(key => colorCombinations.has(key));
+
+                    if (validCombinationKeys.length > 0) {
+                        const combinationKey = validCombinationKeys[0];
+                        const combinationRecord = productConfig.combinations.find(c => c.combination_key === combinationKey);
+                        if (combinationRecord && combinationRecord.product_stock !== undefined) {
+                            maxStock = parseInt(combinationRecord.product_stock);
+                        }
                     }
-                    if (comb.attribute_term_id == colorTermId) {
-                        colorCombinations.add(comb.combination_key);
-                    }
-                });
-
-                const validCombinationKeys = [...sizeCombinations].filter(key => colorCombinations.has(key));
-
-                if (validCombinationKeys.length > 0) {
-                    const combinationKey = validCombinationKeys[0];
-                    const combinationRecord = productConfig.combinations.find(c => c.combination_key === combinationKey);
-                    if (combinationRecord && combinationRecord.product_stock) {
-                        maxStock = parseInt(combinationRecord.product_stock);
+                } else {
+                    if (productConfig.mainStock !== null) {
+                        maxStock = productConfig.mainStock;
                     }
                 }
             }
@@ -2168,35 +2212,50 @@ $(document).on('click','.copy',function(){
             e.preventDefault();
 
             // Check if combination is valid
-            if (productConfig.currentSize && productConfig.currentColor) {
-                const sizeTermId = productConfig.currentSize.termId;
-                const colorTermId = productConfig.currentColor.termId;
+            if (productConfig.isPhysicalProduct) {
+                if (productConfig.currentSize && productConfig.currentColor) {
+                    const sizeTermId = productConfig.currentSize.termId;
+                    const colorTermId = productConfig.currentColor.termId;
 
-                const sizeCombinations = new Set();
-                const colorCombinations = new Set();
+                    const sizeCombinations = new Set();
+                    const colorCombinations = new Set();
 
-                productConfig.combinations.forEach(comb => {
-                    if (comb.attribute_term_id == sizeTermId) {
-                        sizeCombinations.add(comb.combination_key);
+                    productConfig.combinations.forEach(comb => {
+                        if (comb.attribute_term_id == sizeTermId) {
+                            sizeCombinations.add(comb.combination_key);
+                        }
+                        if (comb.attribute_term_id == colorTermId) {
+                            colorCombinations.add(comb.combination_key);
+                        }
+                    });
+
+                    const validCombinationKeys = [...sizeCombinations].filter(key => colorCombinations.has(key));
+
+                    if (validCombinationKeys.length === 0) {
+                        showToast("This size & color combination is not available", "error");
+                        return;
                     }
-                    if (comb.attribute_term_id == colorTermId) {
-                        colorCombinations.add(comb.combination_key);
+
+                    // Check stock
+                    const combinationKey = validCombinationKeys[0];
+                    const combinationRecord = productConfig.combinations.find(c => c.combination_key === combinationKey);
+                    if (combinationRecord && combinationRecord.product_stock !== undefined && combinationRecord.product_stock <= 0) {
+                        showToast("This combination is out of stock", "error");
+                        return;
                     }
-                });
-
-                const validCombinationKeys = [...sizeCombinations].filter(key => colorCombinations.has(key));
-
-                if (validCombinationKeys.length === 0) {
-                    showToast("This size & color combination is not available", "error");
-                    return;
-                }
-
-                // Check stock
-                const combinationKey = validCombinationKeys[0];
-                const combinationRecord = productConfig.combinations.find(c => c.combination_key === combinationKey);
-                if (combinationRecord && combinationRecord.product_stock <= 0) {
-                    showToast("This combination is out of stock", "error");
-                    return;
+                    if (combinationRecord && combinationRecord.product_stock !== undefined && productConfig.quantity > combinationRecord.product_stock) {
+                        showToast(`Only ${combinationRecord.product_stock} items available`, "error");
+                        return;
+                    }
+                } else {
+                    if (productConfig.mainStock === null || productConfig.mainStock <= 0) {
+                        showToast("This product is out of stock", "error");
+                        return;
+                    }
+                    if (productConfig.quantity > productConfig.mainStock) {
+                        showToast(`Only ${productConfig.mainStock} items available`, "error");
+                        return;
+                    }
                 }
             }
 

@@ -641,18 +641,39 @@ EMPTY STATE
     max-width:260px;
 }
 
-/* Loading overlay */
+/* Loading overlay — replaced with slim top progress bar */
 .loading-overlay{
-    position:fixed;
-    top:0;
-    left:0;
-    right:0;
-    bottom:0;
-    background:rgba(0,0,0,0.5);
-    z-index:999999;
-    display:none;
-    justify-content:center;
-    align-items:center;
+    display: none; /* kept for compat, not used as fullscreen */
+}
+
+/* ===== SLIM PROGRESS BAR ===== */
+#misProgressBar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    width: 0%;
+    background: linear-gradient(90deg, #004392, #38bdf8, #004392);
+    background-size: 200% 100%;
+    z-index: 9999999;
+    transition: width 0.3s ease;
+    animation: progressShimmer 1.2s linear infinite;
+    border-radius: 0 2px 2px 0;
+    box-shadow: 0 0 8px rgba(0,67,146,0.6);
+    display: none;
+}
+@keyframes progressShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Stat number counter animation */
+.stat-updating {
+    opacity: 0.45;
+    transition: opacity 0.2s;
+}
+.stat-updated {
+    opacity: 1;
+    transition: opacity 0.3s;
 }
 
 .loading-spinner{
@@ -1236,13 +1257,11 @@ RESPONSIVE
         <span id="refToastMessage">Settings saved successfully!</span>
     </div>
 
-    {{-- Loading Overlay --}}
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner">
-            <i class="fa-solid fa-spinner"></i>
-            <span>Loading filtered data...</span>
-        </div>
-    </div>
+    {{-- SLIM PROGRESS BAR (smooth AJAX indicator) --}}
+    <div id="misProgressBar"></div>
+
+    {{-- Loading Overlay (hidden — replaced by progress bar) --}}
+    <div class="loading-overlay" id="loadingOverlay" style="display:none;"></div>
 
     {{-- HEADER --}}
     <div class="mis-header-new">
@@ -2170,13 +2189,46 @@ function applyServiceFilter(){
 }
 
 /* =========================================
+PROGRESS BAR HELPERS
+========================================= */
+
+function showProgress() {
+    const bar = document.getElementById('misProgressBar');
+    if (!bar) return;
+    bar.style.display = 'block';
+    bar.style.opacity  = '1';
+    bar.style.width = '0%';
+    requestAnimationFrame(() => {
+        bar.style.transition = 'width 0.4s ease';
+        bar.style.width = '30%';
+        setTimeout(() => { bar.style.width = '65%'; }, 400);
+        setTimeout(() => { bar.style.width = '80%'; }, 900);
+    });
+}
+function hideProgress() {
+    const bar = document.getElementById('misProgressBar');
+    if (!bar) return;
+    bar.style.transition = 'width 0.2s ease';
+    bar.style.width = '100%';
+    setTimeout(() => {
+        bar.style.transition = 'opacity 0.3s';
+        bar.style.opacity = '0';
+        setTimeout(() => {
+            bar.style.display = 'none';
+            bar.style.width  = '0%';
+            bar.style.opacity = '1';
+        }, 350);
+    }, 200);
+}
+
+/* =========================================
 RELOAD WITH CURRENT FILTERS (AJAX)
 ========================================= */
 
 function reloadWithFilters(filterType = 'all'){
-    // Show loading overlay
-    document.getElementById('loadingOverlay').style.display = 'flex';
-    
+    showProgress();
+    document.querySelectorAll('.mis-card h2, .mis-card span[id]').forEach(el => el.classList.add('stat-updating'));
+
     let query = '';
     
     if(filterType === 'product') {
@@ -2228,8 +2280,15 @@ function reloadWithFilters(filterType = 'all'){
             updateBoostChart(data.boostChartData);
         }
         
-        // Hide loading overlay
-        document.getElementById('loadingOverlay').style.display = 'none';
+        // Restore stat numbers
+        document.querySelectorAll('.mis-card h2, .mis-card span[id]').forEach(el => {
+            el.classList.remove('stat-updating');
+            el.classList.add('stat-updated');
+            setTimeout(() => el.classList.remove('stat-updated'), 400);
+        });
+
+        // Hide progress bar
+        hideProgress();
         
         // Close dropdowns
         let mainMenu = document.getElementById('mainTypeDropdownMenu');
@@ -2239,8 +2298,9 @@ function reloadWithFilters(filterType = 'all'){
     })
     .catch(err => {
         console.error('Error:', err);
-        document.getElementById('loadingOverlay').style.display = 'none';
-        alert('Error loading filtered data. Please try again.');
+        hideProgress();
+        // Remove dimming
+        document.querySelectorAll('.mis-card h2, .mis-card span[id]').forEach(el => el.classList.remove('stat-updating'));
     });
 }
 

@@ -399,22 +399,19 @@ public function misDashboard(Request $request)
     /* =========================================
         REVIEWS (FILTERED BY ACTIVE TYPES)
     ========================================= */
-    $reviewQuery = ProductReview::where('seller_id', $sellerId)
-        ->whereIn('product_id', function($q) use ($sellerId, $currentQueryTypes) {
-            $q->select('id')->from('products')
-              ->where('created_by_id', $sellerId)
-              ->whereIn('type', $currentQueryTypes);
-        });
+    // Get seller product IDs matching current filter
+    $sellerProductIdsSub = Product::where('created_by_id', $sellerId)
+        ->whereIn('type', $currentQueryTypes)
+        ->pluck('id');
 
-    $totalReviews = (clone $reviewQuery)->count();
+    $reviewQuery = ProductReview::whereIn('product_id', $sellerProductIdsSub);
 
-    $totalRatings = (int) ((clone $reviewQuery)->avg('rating') ?? 0);
-
-    $rating4plus = (clone $reviewQuery)->where('rating', '>=', 4)->count();
-    $rating3below = (clone $reviewQuery)->where('rating', '<', 3)->count();
-
-    $goodReviews = (clone $reviewQuery)->where('rating', '>=', 4)->count();
-    $badReviews = (clone $reviewQuery)->where('rating', '<=', 2)->count();
+    $totalReviews  = (clone $reviewQuery)->count();
+    $totalRatings  = (int) ((clone $reviewQuery)->avg('rating') ?? 0);
+    $rating4plus   = (clone $reviewQuery)->where('rating', '>=', 4)->count();
+    $rating3below  = (clone $reviewQuery)->where('rating', '<', 3)->count();
+    $goodReviews   = (clone $reviewQuery)->where('rating', '>=', 4)->count();
+    $badReviews    = (clone $reviewQuery)->where('rating', '<=', 2)->count();
 
     /* =========================================
         DYNAMIC CHART DATA
@@ -1821,33 +1818,25 @@ public function review(Request $request)
 {
     $sellerId = auth()->guard('seller')->id();
 
-    $rating = $request->get('rating'); // top / low
-    $review = $request->get('review'); // good / bad
+    $status = $request->get('status'); // '4plus' / 'low' / null
 
-    $reviews = ProductReview::where('seller_id', $sellerId)
+    // Get all product IDs belonging to this seller
+    $sellerProductIds = Product::where('created_by_id', $sellerId)->pluck('id');
 
-        // Лѓлйла RATING FILTER
-        ->when($rating == 'top', function ($q) {
-            $q->where('rating', '>=', 4);
-        })
-        ->when($rating == 'low', function ($q) {
-            $q->where('rating', '<=', 2);
-        })
+    $query = ProductReview::whereIn('product_id', $sellerProductIds)
+        ->with(['product'])
+        ->when($status === '4plus', fn($q) => $q->where('rating', '>=', 4))
+        ->when($status === 'low',   fn($q) => $q->where('rating', '<=', 2))
+        ->latest();
 
-        // лЂл»лбл╝ REVIEW FILTER
-        ->when($review == 'good', function ($q) {
-            $q->where('rating', '>=', 4);
-        })
-        ->when($review == 'bad', function ($q) {
-            $q->where('rating', '<=', 2);
-        })
-
-        ->latest()
-        ->get();
+    $reviews    = $query->paginate(15);
+    $totalCount = ProductReview::whereIn('product_id', $sellerProductIds)->count();
+    $goodCount  = ProductReview::whereIn('product_id', $sellerProductIds)->where('rating', '>=', 4)->count();
+    $badCount   = ProductReview::whereIn('product_id', $sellerProductIds)->where('rating', '<=', 2)->count();
 
     return view(
         'vshop.seller.products.steps.review',
-        compact('reviews', 'rating', 'review')
+        compact('reviews', 'status', 'totalCount', 'goodCount', 'badCount')
     );
 }
 
