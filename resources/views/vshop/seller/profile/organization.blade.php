@@ -1176,7 +1176,6 @@ placeholder="Street Address"></textarea>
     <h6 class="text-primary">Communication Details</h6>
 
     <div class="row">
-
         {{-- PHONE WITH COUNTRY CODE --}}
         <div class="col-md-6">
             <label>Phone Number <span class="text-danger">*</span></label>
@@ -1190,56 +1189,55 @@ placeholder="Street Address"></textarea>
                     <option value="+44">+44</option>
                 </select>
 
+                {{-- hidden flag --}}
+                <input type="hidden" name="phone_verified" id="phoneVerified" value="{{ $seller->phone_verified ?? 0 }}">
+
                 {{-- PHONE --}}
                <input type="text"
-    name="phone"
-    id="phoneInput"
-    class="form-control"
-    maxlength="10"
-    value="{{ $seller->phone ?? '' }}"
-    placeholder="Enter phone number">
+                    name="org_mobile"
+                    id="phoneInput"
+                    class="form-control"
+                    maxlength="10"
+                    value="{{ old('org_mobile', $seller->org_mobile ?? '') }}"
+                    placeholder="Enter phone number">
     
-     @error('phone')
-    <small class="text-danger">{{ $message }}</small>
-@enderror
+                @error('org_mobile')
+                    <small class="text-danger">{{ $message }}</small>
+                @enderror
                     
-                  <div id="otpBox" style="display:none;" class="mt-2">
+                <div id="otpBox" style="display:none;" class="mt-2">
+                    <div class="d-flex gap-2">
+                        <input type="text"
+                            id="otpInput"
+                            class="form-control text-center"
+                            maxlength="4"
+                            style="width:80px;"
+                            placeholder="----"
+                            autocomplete="off">
 
-    <div class="d-flex gap-2">
-
-        <input type="text"
-            id="otpInput"
-            class="form-control text-center"
-            maxlength="4"
-            style="width:80px;"
-            placeholder="----">
-
-        <button type="button"
-            class="btn btn-success btn-sm"
-            id="verifyOtpBtn">
-            Submit
-        </button>
-
-    </div>
-
-</div>
+                        <button type="button"
+                            class="btn btn-success btn-sm"
+                            id="verifyOtpBtn">
+                            Submit
+                        </button>
+                    </div>
+                </div>
 
                 {{-- VERIFY BUTTON --}}
                 <button type="button"
                     class="btn btn-sm btn-outline-primary"
-                    id="sendOtpBtn">
+                    id="sendOtpBtn"
+                    @if($seller->phone_verified ?? 0) style="display:none;" @endif>
                     Verify
                 </button>
 
             </div>
 
             <small id="phoneStatus"
-    class="d-block mt-1 
-    {{ $seller->phone_verified ? 'text-success' : 'text-warning' }}">
-
-    {{ $seller->phone_verified ? 'Verified ✔' : 'Pending' }}
-
-</small>
+                class="d-block mt-1 
+                {{ $seller->phone_verified ? 'text-success' : 'text-warning' }}">
+                {{ $seller->phone_verified ? 'Verified ✔' : 'Pending' }}
+            </small>
         </div>
 
 
@@ -1254,16 +1252,17 @@ placeholder="Street Address"></textarea>
 
         {{-- email input --}}
         <input type="email"
-            name="email"
+            name="org_email"
             id="emailInput"
             class="form-control"
-            value="{{ old('email', $seller->email ?? '') }}"
+            value="{{ old('org_email', $seller->org_email ?? '') }}"
             placeholder="Enter email">
 
         {{-- verify button --}}
         <button type="button"
             class="btn btn-sm btn-outline-primary"
-            id="sendEmailOtpBtn">
+            id="sendEmailOtpBtn"
+            @if($seller->email_verified ?? 0) style="display:none;" @endif>
             Verify
         </button>
 
@@ -1278,7 +1277,8 @@ placeholder="Street Address"></textarea>
                 class="form-control text-center"
                 maxlength="4"
                 style="width:80px;"
-                placeholder="----">
+                placeholder="----"
+                autocomplete="off">
 
             <button type="button"
                 class="btn btn-success btn-sm"
@@ -1307,21 +1307,25 @@ placeholder="Street Address"></textarea>
 {{-- Phone --}}
 @php $phoneVerified = (int) ($seller->phone_verified ?? 0); @endphp
 
+<span id="phoneVerifiedBadgeContainer">
 @if($phoneVerified === 1)
     <span class="badge bg-success">Phone Verified</span>
 @else
     <span class="badge bg-warning text-dark">Phone Not Verified</span>
 @endif
+</span>
 
 
 {{-- Email --}}
 @php $emailVerified = (int) ($seller->email_verified ?? 0); @endphp
 
+<span id="emailVerifiedBadgeContainer">
 @if($emailVerified === 1)
     <span class="badge bg-success">Email Verified</span>
 @else
     <span class="badge bg-warning text-dark">Email Not Verified</span>
 @endif
+</span>
 
 </div>
 
@@ -1383,6 +1387,12 @@ $('#emailInput').on('input', function(){
         .html('Not Verified');
 
     $('#emailOtpBox').hide();
+    
+    // Show Verify button again when email is changed
+    $('#sendEmailOtpBtn').show();
+    
+    // Update badge back to Not Verified
+    $('#emailVerifiedBadgeContainer').html('<span class="badge bg-warning text-dark">Email Not Verified</span>');
 });
 
 
@@ -1403,6 +1413,9 @@ $('#sendEmailOtpBtn').click(function(){
         return;
     }
 
+    // Clear the OTP input field for a clean input box
+    $('#emailOtpInput').val('');
+
     $('#emailStatus')
         .removeClass()
         .addClass('text-warning')
@@ -1418,15 +1431,10 @@ $('#sendEmailOtpBtn').click(function(){
             $('#emailStatus')
                 .removeClass()
                 .addClass('text-info')
-                .html('OTP Sent ✔');
+                .html('Sent OTP to your mail');
 
             // ✅ SHOW OTP BOX
             $('#emailOtpBox').fadeIn();
-
-            // ✅ AUTO FILL (testing only)
-            if(res.otp){
-                $('#emailOtpInput').val(res.otp);
-            }
 
         } else {
 
@@ -1471,6 +1479,12 @@ $('#verifyEmailOtpBtn').click(function(){
 
             $('#emailOtpBox').fadeOut();
 
+            // Hide verify button upon success
+            $('#sendEmailOtpBtn').hide();
+
+            // Update badge at bottom
+            $('#emailVerifiedBadgeContainer').html('<span class="badge bg-success">Email Verified</span>');
+
             // ✅ SET VALUE
             $('#emailVerified').val(1);
 
@@ -1480,6 +1494,7 @@ $('#verifyEmailOtpBtn').click(function(){
                 type: 'POST',
                 data: {
                     _token: '{{ csrf_token() }}',
+                    org_email: $('#emailInput').val(),
                     email_verified: 1
                 }
             });
@@ -2209,6 +2224,22 @@ $('#logoInput').on('change', function(){
 // PHONE VALIDATION
 $('#phoneInput').on('input', function(){
     this.value = this.value.replace(/\D/g,'').slice(0,10);
+    
+    // Reset phone verification flag
+    $('#phoneVerified').val(0);
+
+    $('#phoneStatus')
+        .removeClass()
+        .addClass('text-warning')
+        .text('Pending');
+
+    $('#otpBox').hide();
+    
+    // Show Verify button again when phone is changed
+    $('#sendOtpBtn').show();
+    
+    // Update badge back to Not Verified
+    $('#phoneVerifiedBadgeContainer').html('<span class="badge bg-warning text-dark">Phone Not Verified</span>');
 });
 
 $('#sendOtpBtn').click(function(){
@@ -2219,6 +2250,9 @@ $('#sendOtpBtn').click(function(){
         alert('Enter valid phone number');
         return;
     }
+
+    // Clear the OTP input field for a clean input box
+    $('#otpInput').val('');
 
     $('#phoneStatus')
         .removeClass()
@@ -2240,10 +2274,6 @@ $('#sendOtpBtn').click(function(){
             // ✅ SHOW OTP BOX
             $('#otpBox').fadeIn();
 
-            // ✅ OPTIONAL AUTO FILL (only if testing)
-            if(res.otp){
-                $('#otpInput').val(res.otp);
-            }
 
         } else {
 
@@ -2285,12 +2315,25 @@ $('#verifyOtpBtn').click(function(){
 
             $('#otpBox').fadeOut();
 
-            // ✅ IMPORTANT (save verification)
-            $('<input>').attr({
-                type: 'hidden',
-                name: 'phone_verified',
-                value: 1
-            }).appendTo('#orgForm');
+            // Hide verify button upon success
+            $('#sendOtpBtn').hide();
+
+            // Update badge at bottom
+            $('#phoneVerifiedBadgeContainer').html('<span class="badge bg-success">Phone Verified</span>');
+
+            // ✅ SET VALUE
+            $('#phoneVerified').val(1);
+
+            // 🔥 IMPORTANT: FORCE SAVE TO DB
+            $.ajax({
+                url: '/seller/org-autosave',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    org_mobile: $('#phoneInput').val(),
+                    phone_verified: 1
+                }
+            });
 
         } else {
 

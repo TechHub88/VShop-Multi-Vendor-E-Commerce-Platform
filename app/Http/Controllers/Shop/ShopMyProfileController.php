@@ -383,8 +383,8 @@ public function saveOrganization(Request $request)
         'contact_zip'     => 'nullable',
         'contact_address' => 'nullable',
         
-        'phone' => 'required',
-        'email' => 'required',
+        'org_mobile' => 'required',
+        'org_email' => 'required',
     ];
 
     if ($request->has_iec === 'Yes') {
@@ -642,7 +642,7 @@ public function sendOtp(Request $request)
     $otp = rand(1000, 9999);
 
     $seller->update([
-        'phone' => $request->phone,
+        'org_mobile' => $request->phone,
         'phone_otp' => $otp,
         'phone_verified' => 0
     ]);
@@ -650,8 +650,7 @@ public function sendOtp(Request $request)
     \Log::info("OTP: ".$otp);
 
     return response()->json([
-        'success' => true,
-        'otp' => $otp
+        'success' => true
     ]);
 }
 
@@ -1445,9 +1444,15 @@ public function sendEmailOtp(Request $request)
 
     session(['email_otp' => $otp]);
 
+    $seller = Auth::guard('seller')->user();
+    
+    // Send email using Laravel standard mailer (configured with log mailer in .env for local testing)
+    \Illuminate\Support\Facades\Mail::to($request->email)->send(new \App\Mail\SellerEmailVerificationMail($otp, $seller->name ?? 'Seller'));
+    
+    \Illuminate\Support\Facades\Log::info("Email OTP generated: " . $otp . " for " . $request->email);
+
     return response()->json([
-        'success' => true,
-        'otp' => $otp
+        'success' => true
     ]);
 }
 
