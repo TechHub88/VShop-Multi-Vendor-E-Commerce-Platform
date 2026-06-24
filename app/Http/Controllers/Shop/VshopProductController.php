@@ -611,9 +611,13 @@ if ($relatedProducts->count() < 6) {
     |--------------------------------------------------------------------------
     */
       $productReviews = ProductReview::where('product_id',$product->id)
-
 ->latest()
 ->get();
+
+    $existingReview = null;
+    if (auth('customer')->check()) {
+        $existingReview = $productReviews->where('customer_id', auth('customer')->id())->first();
+    }
 
     return view('vshop.products.show', compact(
         'product',
@@ -626,7 +630,9 @@ if ($relatedProducts->count() < 6) {
         'averageRating',
         'totalReviews',
         'attributeOptions',
-        'combinations','productReviews'
+        'combinations',
+        'productReviews',
+        'existingReview'
     ));
 }
 

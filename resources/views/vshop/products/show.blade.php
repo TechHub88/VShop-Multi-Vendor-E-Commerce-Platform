@@ -1316,11 +1316,11 @@
                             <div class="p-3 bg-white rounded shadow-sm border">
                                 <div class="product-details-bottom-box-header d-flex justify-content-between align-items-center mb-3">
                                     <h4 class="mb-0 text-dark">Customer Reviews ({{ $totalReviews }})</h4>
-                                    <button class="btn btn-primary btn-sm" id="openReviewForm">Write a Review</button>
+                                    <button class="btn btn-primary btn-sm" id="openReviewForm">{{ isset($existingReview) ? 'Edit Your Review' : 'Write a Review' }}</button>
                                 </div>
                                 <div id="reviewFormBox" style="display:none; margin-top:20px;" class="mb-4">
                                     @auth('customer')
-                                    <form action="{{ route('vtravel.review.store') }}" method="POST">
+                                    <form id="reviewSubmitForm" action="{{ route('vtravel.review.store') }}" method="POST">
                                         @csrf
                                         <input type="hidden" name="product_id" value="{{ $product->id }}">
                                         <input type="hidden" name="seller_id" value="{{ $product->created_by_id }}">
@@ -1328,22 +1328,21 @@
                                             <div class="mb-4 d-flex align-items-center gap-3">
                                                 <label class="form-label mb-0"><strong>Rate this product</strong></label>
                                                 <div class="star-rating-ui">
-                                                    <i class="fa-solid fa-star" data-value="1"></i>
-                                                    <i class="fa-solid fa-star" data-value="2"></i>
-                                                    <i class="fa-solid fa-star" data-value="3"></i>
-                                                    <i class="fa-solid fa-star" data-value="4"></i>
-                                                    <i class="fa-solid fa-star" data-value="5"></i>
+                                                    @php $currentRating = isset($existingReview) ? $existingReview->rating : 0; @endphp
+                                                    @for($i=1; $i<=5; $i++)
+                                                    <i class="fa-solid fa-star {{ $i <= $currentRating ? 'active' : '' }}" data-value="{{ $i }}"></i>
+                                                    @endfor
                                                 </div>
-                                                <input type="hidden" name="rating" id="ratingValue">
+                                                <input type="hidden" name="rating" id="ratingValue" value="{{ $currentRating }}">
                                             </div>
-                                            <div class="mb-3"><label class="form-label">Review Title</label><input type="text" name="title" class="form-control"></div>
-                                            <div class="mb-3"><label class="form-label">Your Review</label><textarea name="comment" class="form-control" rows="4"></textarea></div>
+                                            <div class="mb-3"><label class="form-label">Review Title</label><input type="text" name="title" class="form-control" value="{{ isset($existingReview) ? $existingReview->title : '' }}" required></div>
+                                            <div class="mb-3"><label class="form-label">Your Review</label><textarea name="comment" class="form-control" rows="4" required>{{ isset($existingReview) ? $existingReview->comment : '' }}</textarea></div>
                                             <div class="mb-3">
                                                 <label class="form-label d-block">Would you recommend?</label>
-                                                <div class="form-check form-check-inline"><input type="radio" name="would_recommend" value="1" class="form-check-input" id="recommendYes"><label class="form-check-label" for="recommendYes">Yes</label></div>
-                                                <div class="form-check form-check-inline"><input type="radio" name="would_recommend" value="0" class="form-check-input" id="recommendNo"><label class="form-check-label" for="recommendNo">No</label></div>
+                                                <div class="form-check form-check-inline"><input type="radio" name="would_recommend" value="1" class="form-check-input" id="recommendYes" {{ (isset($existingReview) && $existingReview->would_recommend == 1) ? 'checked' : '' }} required><label class="form-check-label" for="recommendYes">Yes</label></div>
+                                                <div class="form-check form-check-inline"><input type="radio" name="would_recommend" value="0" class="form-check-input" id="recommendNo" {{ (isset($existingReview) && $existingReview->would_recommend == 0) ? 'checked' : '' }} required><label class="form-check-label" for="recommendNo">No</label></div>
                                             </div>
-                                            <button class="btn btn-primary w-100">Submit Review</button>
+                                            <button type="submit" class="btn btn-primary w-100" id="submitReviewBtn">{{ isset($existingReview) ? 'Update Review' : 'Submit Review' }}</button>
                                         </div>
                                     </form>
                                     @else
@@ -2530,6 +2529,7 @@ form.style.display="none";
         });
     });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.querySelectorAll('.star-rating-ui i').forEach(star => {
 
@@ -2557,6 +2557,67 @@ form.style.display="none";
     });
 
 });
+
+    // Review Form AJAX submission
+    const reviewForm = document.getElementById('reviewSubmitForm');
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            let ratingValue = document.getElementById('ratingValue').value;
+            if (!ratingValue || ratingValue == "0") {
+                Swal.fire('Warning', 'Please select a star rating.', 'warning');
+                return;
+            }
+
+            let btn = document.getElementById('submitReviewBtn');
+            let originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+
+            let formData = new FormData(this);
+
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    Swal.fire({
+                        title: 'Thank You!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonColor: '#004392'
+                    }).then(() => {
+                        document.getElementById('reviewFormBox').style.display = 'none';
+                        document.getElementById('openReviewForm').innerText = 'Edit Your Review';
+                        document.getElementById('submitReviewBtn').innerText = 'Update Review';
+                    });
+                } else {
+                    let msg = data.message || 'Something went wrong';
+                    if (data.errors) {
+                        msg = Object.values(data.errors).map(val => val.join(', ')).join('<br>');
+                    }
+                    Swal.fire('Error', msg, 'error');
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                Swal.fire('Error', 'Something went wrong. Please try again.', 'error');
+            })
+            .finally(() => {
+                if (btn.innerText.includes('Processing')) {
+                    btn.innerHTML = originalText;
+                }
+                btn.disabled = false;
+            });
+        });
+    }
 </script>
 
 <script>
