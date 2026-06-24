@@ -150,13 +150,8 @@
     </div>
 </div>
 
-<!-- Include Remix Icons and Bootstrap JS (if not already in layout) 
-     These lines will NOT be duplicated if layout already has them, 
-     but they are safe because they will simply re‑declare. 
-     To avoid potential conflicts, we only load them if not present. -->
+<!-- Remix Icons (if not already in layout) -->
 <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 $(document).ready(function() {
