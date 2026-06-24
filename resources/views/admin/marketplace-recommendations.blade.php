@@ -48,7 +48,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($rules as $rule)
+                                @forelse(($rules ?? []) as $rule)
                                 <tr>
                                     <td>
                                         <span class="badge bg-{{ $rule->type == 'product' ? 'primary' : ($rule->type == 'location' ? 'success' : ($rule->type == 'ai' ? 'info' : 'warning')) }}">
