@@ -10,6 +10,8 @@
     $monthlyLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     $commissionData = [12500, 15200, 14800, 17800, 19200, 21500, 23800, 25600, 28900, 31200, 34500, 37800];
     $revenueData = [45000, 52000, 49800, 58600, 62500, 69800, 74500, 81200, 89500, 96500, 102500, 115800];
+    $countriesListArray = ['India', 'USA', 'UK', 'Australia', 'Canada', 'Germany', 'France', 'Japan', 'China', 'Brazil', 'UAE', 'Singapore', 'Others'];
+
 @endphp
 
 <!-- Toast Notification Container -->
@@ -2007,7 +2009,7 @@ function ledgerNextPage() {
 
 <!-- SUB-TAB 2: Tax & Invoice Center -->
 <div class="refund-sub-pane d-none" id="sub-tax">
-    <form method="POST" action="{{ route('admin.finance.update-tax-rules') }}" id="taxSettingsForm">
+    <form method="POST" action="{{ route('admin.finance.update-tax-rules') }}" id="taxSettingsForm" onsubmit="saveTaxInvoiceMain(''); return false;">
         @csrf
         
         <!-- First Row: Tax & Currency Settings -->
@@ -2045,7 +2047,7 @@ function ledgerNextPage() {
                                     @forelse($taxRegions as $index => $tr)
                                     <tr class="tax-region-row">
                                         <td>
-                                            <input type="text" class="form-control form-control-sm" name="tax_regions[{{ $index }}][region]" value="{{ $tr['region'] }}" required>
+                                            <select class="form-select form-select-sm" name="tax_regions[{{ $index }}][region]" required><option value="">Select Country</option>@foreach($countriesListArray as $c)<option value="{{ $c }}" {{ $tr['region'] == $c ? 'selected' : '' }}>{{ $c }}</option>@endforeach</select>
                                         </td>
                                         <td>
                                             <input type="text" class="form-control form-control-sm" name="tax_regions[{{ $index }}][tax_name]" value="{{ $tr['tax_name'] }}" required>
@@ -2065,7 +2067,7 @@ function ledgerNextPage() {
                                     @empty
                                     <tr class="tax-region-row" id="defaultTaxRegionRow">
                                         <td>
-                                            <input type="text" class="form-control form-control-sm" name="tax_regions[0][region]" placeholder="e.g., India" required>
+                                            <select class="form-select form-select-sm" name="tax_regions[0][region]" required><option value="">Select Country</option>@foreach($countriesListArray as $c)<option value="{{ $c }}">{{ $c }}</option>@endforeach</select>
                                         </td>
                                         <td>
                                             <input type="text" class="form-control form-control-sm" name="tax_regions[0][tax_name]" placeholder="e.g., GST" required>
@@ -2272,10 +2274,10 @@ function ledgerNextPage() {
                         </div>
                         
                         <div class="d-flex gap-2 mb-3">
-                            <button type="submit" name="generate_invoice" value="1" class="btn btn-primary btn-sm w-50">
+                            <button type="button" class="btn btn-primary btn-sm w-50" onclick="generateInvoiceNew(1); return false;">
                                 <iconify-icon icon="solar:eye-bold" class="me-1"></iconify-icon> Preview
                             </button>
-                            <button type="submit" name="download_invoice" value="1" class="btn btn-success btn-sm w-50">
+                            <button type="button" class="btn btn-success btn-sm w-50" onclick="downloadInvoiceNew(1); return false;">
                                 <iconify-icon icon="solar:file-download-bold" class="me-1"></iconify-icon> Download PDF
                             </button>
                         </div>
@@ -2291,7 +2293,7 @@ function ledgerNextPage() {
                                     <option value="gst">GST Collection Report</option>
                                     <option value="currency">Currency Report</option>
                                 </select>
-                                <button type="submit" name="export_report" value="1" class="btn btn-success btn-sm">
+                                <button type="button" class="btn btn-success btn-sm" onclick="exportReportNew(1); return false;">
                                     <iconify-icon icon="solar:file-excel-bold-duotone" class="me-1"></iconify-icon> Export
                                 </button>
                             </div>
@@ -2461,15 +2463,15 @@ function ledgerNextPage() {
                         <div class="col-6">
                             <div class="p-2 rounded-3 text-center" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
                                 <small class="text-white-50">Refund Rate</small>
-                                <h4 class="text-white mb-0 fw-bold">8.5%</h4>
-                                <small class="text-white-50">↓ 2.1%</small>
+                                <h4 class="text-white mb-0 fw-bold">{{ ($refundAmount > 0 && $totalRevenue > 0) ? number_format(($refundAmount / $totalRevenue * 100), 1) . '%' : '' }}</h4>
+                                <small class="text-white-50">{{ ($refundAmount > 0 && $totalRevenue > 0) ? '↓ 2.1%' : '' }}</small>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-2 rounded-3 text-center" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
                                 <small class="text-white-50">Total Refunds</small>
-                                <h4 class="text-white mb-0 fw-bold">$12.5k</h4>
-                                <small class="text-white-50">128 txns</small>
+                                <h4 class="text-white mb-0 fw-bold">{{ $refundAmount > 0 ? $currencySymbol . number_format($refundAmount, 2) : '' }}</h4>
+                                <small class="text-white-50">{{ $refundTxnsCount > 0 ? $refundTxnsCount . ' txns' : '' }}</small>
                             </div>
                         </div>
                     </div>
@@ -2477,15 +2479,15 @@ function ledgerNextPage() {
                         <div class="col-6">
                             <div class="p-2 rounded-3 text-center" style="background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);">
                                 <small class="text-white-50">Avg SLA</small>
-                                <h4 class="text-white mb-0 fw-bold">4.2d</h4>
-                                <small class="text-white-50">to resolve</small>
+                                <h4 class="text-white mb-0 fw-bold">{{ $avgRefundSla ? number_format($avgRefundSla, 1) . 'd' : '' }}</h4>
+                                <small class="text-white-50">{{ $avgRefundSla ? 'to resolve' : '' }}</small>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-2 rounded-3 text-center" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
                                 <small class="text-white-50">Recovered</small>
-                                <h4 class="text-white mb-0 fw-bold">$3.2k</h4>
-                                <small class="text-white-50">reversals</small>
+                                <h4 class="text-white mb-0 fw-bold">{{ $recoveredAmount > 0 ? $currencySymbol . number_format($recoveredAmount, 2) : '' }}</h4>
+                                <small class="text-white-50">{{ $recoveredAmount > 0 ? 'reversals' : '' }}</small>
                             </div>
                         </div>
                     </div>
@@ -2493,15 +2495,15 @@ function ledgerNextPage() {
                         <div class="col-6">
                             <div class="p-2 rounded-3 text-center" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
                                 <small class="text-white-50">Commission Rev</small>
-                                <h4 class="text-white mb-0 fw-bold">$1.9k</h4>
-                                <small class="text-white-50">reversed</small>
+                                <h4 class="text-white mb-0 fw-bold">{{ $commissionReversedAmount > 0 ? $currencySymbol . number_format($commissionReversedAmount, 2) : '' }}</h4>
+                                <small class="text-white-50">{{ $commissionReversedAmount > 0 ? 'reversed' : '' }}</small>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="p-2 rounded-3 text-center" style="background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);">
                                 <small class="text-white-50">Fake Lead Ref</small>
-                                <h4 class="text-white mb-0 fw-bold">$340</h4>
-                                <small class="text-white-50">12 leads</small>
+                                <h4 class="text-white mb-0 fw-bold">{{ $leadRefundAmount > 0 ? $currencySymbol . number_format($leadRefundAmount, 2) : '' }}</h4>
+                                <small class="text-white-50">{{ $leadRefundCount > 0 ? $leadRefundCount . ' leads' : '' }}</small>
                             </div>
                         </div>
                     </div>
@@ -3022,7 +3024,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <tbody id="regionTaxTableBody2">
                                 @foreach($taxRegions as $tr)
                                 <tr>
-                                    <td><input type="text" class="form-control form-control-sm region-name-field2" value="{{ $tr['region'] }}" required></td>
+                                    <td><select class="form-select form-select-sm region-name-field2" required><option value="">Select Country</option>@foreach($countriesListArray as $c)<option value="{{ $c }}" {{ $tr['region'] == $c ? 'selected' : '' }}>{{ $c }}</option>@endforeach</select></td>
                                     <td><input type="text" class="form-control form-control-sm tax-name-field2" value="{{ $tr['tax_name'] }}" required></td>
                                     <td>
                                         <div class="input-group input-group-sm">
@@ -4223,7 +4225,7 @@ function addGlobalRuleRow() {
             </td>
             <td class="text-center">
                 <div class="form-check form-switch d-inline-block">
-                    <input type="checkbox" class="form-check-input boost-checkbox" name="rules[${index}][boost]" value="1">
+                    <input type="checkbox" class="form-check-input boost-checkbox" name="rules[${index}][boost]" disabled value="1">
                 </div>
             </td>
             <td>
@@ -8843,7 +8845,7 @@ function addTaxRegionRow() {
     newRow.className = 'tax-region-row';
     newRow.innerHTML = `
         <td>
-            <input type="text" class="form-control form-control-sm" name="tax_regions[${rowCount}][region]" placeholder="Enter region" required>
+            <select class="form-select form-select-sm" name="tax_regions[${rowCount}][region]" required><option value="">Select Country</option><option value="India">India</option><option value="USA">USA</option><option value="UK">UK</option><option value="Australia">Australia</option><option value="Canada">Canada</option><option value="Germany">Germany</option><option value="France">France</option><option value="Japan">Japan</option><option value="China">China</option><option value="Brazil">Brazil</option><option value="UAE">UAE</option><option value="Singapore">Singapore</option><option value="Others">Others</option></select>
         </td>
         <td>
             <input type="text" class="form-control form-control-sm" name="tax_regions[${rowCount}][tax_name]" placeholder="Enter tax name" required>
@@ -8968,14 +8970,18 @@ function reindexCurrencyRows() {
 }
 
 // Save all tax settings
-function saveTaxInvoiceMain() {
+function saveTaxInvoiceMain(suffix = '2') {
+    const isSuffix2 = suffix === '2';
+    const activeSuffix = isSuffix2 ? '2' : '';
+    
     // Collect tax regions data
     const taxRegions = [];
-    const taxRows = document.querySelectorAll('#regionTaxTableBody tr');
+    const taxTableBodyId = isSuffix2 ? 'regionTaxTableBody2' : 'regionTaxTableBody';
+    const taxRows = document.querySelectorAll(`#${taxTableBodyId} tr`);
     taxRows.forEach(row => {
-        const region = row.querySelector('input[name*="[region]"]')?.value;
-        const taxName = row.querySelector('input[name*="[tax_name]"]')?.value;
-        const rate = row.querySelector('input[name*="[rate]"]')?.value;
+        const region = row.querySelector('[name*="[region]"]')?.value || row.querySelector('.region-name-field2')?.value;
+        const taxName = row.querySelector('[name*="[tax_name]"]')?.value || row.querySelector('.tax-name-field2')?.value;
+        const rate = row.querySelector('[name*="[rate]"]')?.value || row.querySelector('.tax-rate-field2')?.value;
         
         if (region && taxName && rate) {
             taxRegions.push({
@@ -8988,7 +8994,8 @@ function saveTaxInvoiceMain() {
     
     // Collect currencies data
     const currenciesList = [];
-    const currencyRows = document.querySelectorAll('#currencyTableBody tr');
+    const currencyTableBodyId = isSuffix2 ? 'currencyTableBody2' : 'currencyTableBody';
+    const currencyRows = document.querySelectorAll(`#${currencyTableBodyId} tr`);
     currencyRows.forEach(row => {
         const currency = row.querySelector('input[name*="[currency]"]')?.value;
         const symbol = row.querySelector('input[name*="[symbol]"]')?.value;
@@ -9007,22 +9014,22 @@ function saveTaxInvoiceMain() {
     
     // Collect invoice template settings
     const invoiceTemplate = {
-        style: document.getElementById('templateStyleField2')?.value || 'Professional',
-        companyName: document.getElementById('companyNameField2')?.value || '',
-        companyGst: document.getElementById('companyGstField2')?.value || '',
-        companyEmail: document.getElementById('companyEmailField2')?.value || '',
-        companyPhone: document.getElementById('companyPhoneField2')?.value || '',
-        companyAddress: document.getElementById('companyAddressField2')?.value || '',
-        invoicePrefix: document.getElementById('invoicePrefixField2')?.value || 'INV',
-        invoiceFormat: document.getElementById('invoiceFormatField2')?.value || '{prefix}{year}{month}{seq}',
-        invoiceFooter: document.getElementById('invoiceFooterField2')?.value || ''
+        style: document.getElementById('templateStyleField' + activeSuffix)?.value || 'Professional',
+        companyName: document.getElementById('companyNameField' + activeSuffix)?.value || '',
+        companyGst: document.getElementById('companyGstField' + activeSuffix)?.value || '',
+        companyEmail: document.getElementById('companyEmailField' + activeSuffix)?.value || '',
+        companyPhone: document.getElementById('companyPhoneField' + activeSuffix)?.value || '',
+        companyAddress: document.getElementById('companyAddressField' + activeSuffix)?.value || '',
+        invoicePrefix: document.getElementById('invoicePrefixField' + activeSuffix)?.value || 'INV',
+        invoiceFormat: document.getElementById('invoiceFormatField' + activeSuffix)?.value || '{prefix}{year}{month}{seq}',
+        invoiceFooter: document.getElementById('invoiceFooterField' + activeSuffix)?.value || ''
     };
     
     // Get GST rate
-    const gstRate = document.getElementById('defaultTaxRateField2')?.value;
+    const gstRate = document.getElementById('defaultTaxRateField' + activeSuffix)?.value;
     
     // Get base currency
-    const baseCurrency = document.getElementById('baseCurrencyField2')?.value;
+    const baseCurrency = document.getElementById('baseCurrencyField' + activeSuffix)?.value;
     
     // Validate at least one tax region exists
     if (taxRegions.length === 0) {
@@ -9031,7 +9038,8 @@ function saveTaxInvoiceMain() {
     }
     
     // Disable save button to prevent double submission
-    const saveBtn = document.querySelector('#sub-tax .btn-primary');
+    const saveBtnSelector = isSuffix2 ? '#tax-invoice-tab .btn-primary' : '#sub-tax button[name="save_all_settings"]';
+    const saveBtn = document.querySelector(saveBtnSelector);
     const originalText = saveBtn ? saveBtn.innerHTML : 'Save';
     if (saveBtn) {
         saveBtn.disabled = true;
@@ -9060,7 +9068,7 @@ function saveTaxInvoiceMain() {
     .then(data => {
         if (data.success) {
             showToast(data.message || 'Tax and invoice settings saved successfully!', 'success');
-            // Reload page after 1 second to reflect changes
+            // Reload page after 1.5 seconds to reflect changes
             setTimeout(() => location.reload(), 1500);
         } else {
             showToast(data.message || 'Error saving settings', 'error');
@@ -9080,14 +9088,64 @@ function saveTaxInvoiceMain() {
 
 // Alternative save function for the second tab (if needed)
 function saveAllTaxSettingsNew() {
-    saveTaxInvoiceMain();
+    saveTaxInvoiceMain('2');
+}
+
+// Add new tax region row for section 2
+function addTaxRegionRow2() {
+    const tbody = document.getElementById('regionTaxTableBody2');
+    if (!tbody) return;
+    
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+        <td>
+            <select class="form-select form-select-sm region-name-field2" required>
+                <option value="">Select Country</option>
+                <option value="India">India</option>
+                <option value="USA">USA</option>
+                <option value="UK">UK</option>
+                <option value="Australia">Australia</option>
+                <option value="Canada">Canada</option>
+                <option value="Germany">Germany</option>
+                <option value="France">France</option>
+                <option value="Japan">Japan</option>
+                <option value="China">China</option>
+                <option value="Brazil">Brazil</option>
+                <option value="UAE">UAE</option>
+                <option value="Singapore">Singapore</option>
+                <option value="Others">Others</option>
+            </select>
+        </td>
+        <td>
+            <input type="text" class="form-control form-control-sm tax-name-field2" placeholder="e.g. GST" required>
+        </td>
+        <td>
+            <div class="input-group input-group-sm">
+                <input type="number" step="0.1" class="form-control tax-rate-field2" placeholder="0" required>
+                <span class="input-group-text">%</span>
+            </div>
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeTaxRegion2(this)">Delete</button>
+        </td>
+    `;
+    tbody.appendChild(newRow);
+}
+
+// Remove tax region row for section 2
+function removeTaxRegion2(button) {
+    const row = button.closest('tr');
+    if (row) {
+        row.remove();
+    }
 }
 
 // Generate invoice preview
-function generateInvoiceNew() {
-    const sellerId = document.getElementById('invoiceSelectSellerIdNew')?.value;
-    const startDate = document.getElementById('invoiceStartDateNew')?.value;
-    const endDate = document.getElementById('invoiceEndDateNew')?.value;
+function generateInvoiceNew(section = 2) {
+    const isSection1 = section === 1;
+    const sellerId = document.getElementById(isSection1 ? 'invoiceSelectSeller' : 'invoiceSelectSellerIdMain')?.value;
+    const startDate = document.getElementById(isSection1 ? 'invoiceStartDate' : 'invoiceStartDateMain')?.value;
+    const endDate = document.getElementById(isSection1 ? 'invoiceEndDate' : 'invoiceEndDateMain')?.value;
     
     if (!sellerId) {
         showToast('Please select a seller', 'error');
@@ -9142,10 +9200,11 @@ function generateInvoiceNew() {
 }
 
 // Download invoice
-function downloadInvoiceNew() {
-    const sellerId = document.getElementById('invoiceSelectSellerIdNew')?.value;
-    const startDate = document.getElementById('invoiceStartDateNew')?.value;
-    const endDate = document.getElementById('invoiceEndDateNew')?.value;
+function downloadInvoiceNew(section = 2) {
+    const isSection1 = section === 1;
+    const sellerId = document.getElementById(isSection1 ? 'invoiceSelectSeller' : 'invoiceSelectSellerIdMain')?.value;
+    const startDate = document.getElementById(isSection1 ? 'invoiceStartDate' : 'invoiceStartDateMain')?.value;
+    const endDate = document.getElementById(isSection1 ? 'invoiceEndDate' : 'invoiceEndDateMain')?.value;
     
     if (!sellerId) {
         showToast('Please select a seller', 'error');
@@ -9192,8 +9251,9 @@ function downloadInvoiceNew() {
 }
 
 // Export report
-function exportReportNew() {
-    const reportType = document.getElementById('reportTypeNew')?.value;
+function exportReportNew(section = 2) {
+    const isSection1 = section === 1;
+    const reportType = document.getElementById(isSection1 ? 'reportType' : 'reportTypeMain')?.value;
     
     if (!reportType) {
         showToast('Please select a report type', 'error');

@@ -185,6 +185,14 @@ class AdminFinanceController extends Controller
     // Refund Deduction Impact
     $refundImpact = SellerFinance::where('transaction_type', 'refund')->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->sum('debit') * $exchangeRate;
     
+    // Additional Refund Analytics dynamic stats
+    $refundTxnsCount = SellerFinance::where('transaction_type', 'refund')->count();
+    $avgRefundSla = Grievance::where('status', 'resolved')->whereNotNull('resolved_at')->avg(DB::raw('DATEDIFF(resolved_at, created_at)'));
+    $recoveredAmount = SellerFinance::where('transaction_type', 'refund_recovered')->sum('credit') * $exchangeRate;
+    $commissionReversedAmount = SellerFinance::where('transaction_type', 'commission_reversed')->sum('debit') * $exchangeRate;
+    $leadRefundAmount = SellerFinance::where('transaction_type', 'lead_refund')->sum('credit') * $exchangeRate;
+    $leadRefundCount = SellerFinance::where('transaction_type', 'lead_refund')->count();
+    
     // Dispute Wallet Hold Tracker
     $disputeWalletHold = SellerFinance::where('dispute_status', 'pending')->where('status', 'pending')->sum('debit') * $exchangeRate;
     if ($disputeWalletHold == 0) $disputeWalletHold = $openDisputes * 100 * $exchangeRate;
@@ -394,7 +402,8 @@ class AdminFinanceController extends Controller
         'refundImpact', 'appWiseCommission', 'disputeWalletHold', 'settings',
         'sellers', 'categories', 'products', 'globalRulesTable', 'earningsDetails',
         'pricingRulesTable', 'leadMonetizationTable', 'taxRegions', 'currenciesList', 'invoiceTemplate', 'autoEscalationRules',
-        'refundOrders', 'refundReasonsData'
+        'refundOrders', 'refundReasonsData',
+        'refundTxnsCount', 'avgRefundSla', 'recoveredAmount', 'commissionReversedAmount', 'leadRefundAmount', 'leadRefundCount'
     ));
 }
     
@@ -2492,7 +2501,7 @@ public function downloadInvoice(Request $request)
         $gstAmount = $commission * ($gstRate / 100);
         $netAmount = $totalSales - $commission - $gstAmount;
         
-        $pdf = PDF::loadView('admin.invoice-pdf', compact('seller', 'salesData', 'invoiceTemplate', 'totalSales', 'commission', 'gstRate', 'gstAmount', 'netAmount', 'startDate', 'endDate'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.invoice-pdf', compact('seller', 'salesData', 'invoiceTemplate', 'totalSales', 'commission', 'gstRate', 'gstAmount', 'netAmount', 'startDate', 'endDate'));
         
         return $pdf->download('invoice_' . $seller->id . '_' . date('Y-m-d') . '.pdf');
     } catch (\Exception $e) {
