@@ -2651,9 +2651,17 @@ Route::post('/update-current-location', [App\Http\Controllers\vtravel\HomeContro
 // ==================== DYNAMIC ROUTING ====================
 Route::group(['prefix' => '/', 'middleware' => 'auth:web,admin_staff'], function () {
 
-    Route::get('{first}/{second}/{third}', [RoutingController::class, 'thirdLevel'])->name('third');
-    Route::get('{first}/{second}', [RoutingController::class, 'secondLevel'])->name('second');
-    Route::get('{any}', [RoutingController::class, 'root'])->name('any');
+    Route::get('{first}/{second}/{third}', [RoutingController::class, 'thirdLevel'])
+        ->name('third')
+        ->where(['first' => '^[^.]+$', 'second' => '^[^.]+$', 'third' => '^[^.]+$']);
+
+    Route::get('{first}/{second}', [RoutingController::class, 'secondLevel'])
+        ->name('second')
+        ->where(['first' => '^[^.]+$', 'second' => '^[^.]+$']);
+
+    Route::get('{any}', [RoutingController::class, 'root'])
+        ->name('any')
+        ->where('any', '^[^.]+$');
 });
 
 // ==================== FRONTEND AUTH ROUTES ====================
@@ -2663,4 +2671,4 @@ Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('fron
 Route::post('/register', [AuthController::class, 'register'])->name('frontend.register');
 Route::post('/logout', [AuthController::class, 'logout'])->name('frontend.logout');
 Route::post('/login', [AuthController::class, 'login'])->name('frontend.login.submit');
-Route::post('admin/finance/update-leads-boost-settings', [AdminFinanceController::class, 'updateLeadsBoostSettings'])->name('admin.finance.update-leads-boost-settings');
+Route::post('admin/finance/update-leads-boost-settings', [AdminFinanceController::class, 'updateLeadsBoostSettings'])->name('admin.finance.update-leads-boost-settings');

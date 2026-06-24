@@ -1417,11 +1417,9 @@ public function updateCategory(Request $request, $id)
     $sellerId = Auth::guard('seller')->id();
 
     $request->validate([
-
-        'category_name'   => 'required|max:150',
-
+        'type'            => 'required|in:product,service',
+        'category_id'     => 'required|exists:marketplace_categories,id',
         'subcategories'   => 'required|array|min:1',
-
         'subcategories.*' => 'required|max:150'
     ]);
 
@@ -1429,7 +1427,9 @@ public function updateCategory(Request $request, $id)
 
     try{
 
-        $categoryName = $request->category_name;
+        $selectedCategory = MarketplaceCategory::findOrFail($request->category_id);
+        $categoryName = $selectedCategory->name;
+        $categoryType = $selectedCategory->type;
         $subCount = count($request->subcategories);
 
         /*
@@ -1441,7 +1441,8 @@ public function updateCategory(Request $request, $id)
         MarketplaceCategory::where('id',$id)
             ->update([
 
-                'name' => trim($request->category_name)
+                'name' => $categoryName,
+                'type' => $categoryType
             ]);
 
 

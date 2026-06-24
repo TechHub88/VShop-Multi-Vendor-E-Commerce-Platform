@@ -279,14 +279,14 @@
                     </ul>
 
                     <!-- NEW CARDS IN SIDEBAR (Styled to match screenshot) -->
-                    <div class="px-3 mt-4 mb-5 pb-4">
+                    <div class="px-3 mt-4 mb-3">
                         <!-- Need Help Card -->
                         <div class="card border-0 rounded-4 mb-3 position-relative overflow-hidden" style="background-color: #f1f5fb; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
                             <div class="card-body p-3">
                                 <div class="d-flex align-items-center mb-2">
                                     <div class="me-3 position-relative z-2">
                                         <div style="width: 40px; height: 40px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden;">
-                                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width:100%; height:100%; object-fit:cover;">
+                                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width:100%; height:100%; object-fit:cover;" />
                                         </div>
                                     </div>
                                     <div class="position-relative z-2">
@@ -299,74 +299,6 @@
                                 
                                 <!-- Decorative element -->
                                 <div style="position: absolute; right: -20px; top: -20px; width: 80px; height: 80px; background: rgba(255,255,255,0.4); border-radius: 50%; z-index: 1;"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Download Our App Card -->
-                        <div class="card border-0 rounded-4 overflow-hidden position-relative" style="background-color: #e4effb; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
-                            <div class="card-body p-3">
-                                <h6 class="fw-bold mb-1" style="font-size: 13px; color: #004392; position: relative; z-index: 2;">Download Our App</h6>
-                                <p class="small mb-3" style="font-size: 11px; color: #5a7184; position: relative; z-index: 2; max-width: 60%; line-height: 1.3;">Get exciting offers on the go!</p>
-                                
-                                <div class="d-flex flex-column gap-2 mb-1 position-relative" style="z-index: 2;">
-                                    <a href="#" class="btn btn-dark text-start rounded-3 d-flex align-items-center gap-2 px-2 py-1 shadow-sm" style="background-color: #222; border: none; width: fit-content; transition: opacity 0.2s;">
-                                        <i class="bi bi-google-play fs-6 text-white"></i>
-                                        <div class="text-white">
-                                            <div style="font-size: 7px; line-height: 1; text-transform: uppercase; color: #aaa;">GET IT ON</div>
-                                            <div style="font-size: 10px; font-weight: 600; line-height: 1.2;">Google Play</div>
-                                        </div>
-                                    </a>
-                                    <a href="#" class="btn btn-dark text-start rounded-3 d-flex align-items-center gap-2 px-2 py-1 shadow-sm" style="background-color: #222; border: none; width: fit-content; transition: opacity 0.2s;">
-                                        <i class="bi bi-apple fs-6 text-white"></i>
-                                        <div class="text-white">
-                                            <div style="font-size: 7px; line-height: 1; color: #aaa;">Download on the</div>
-                                            <div style="font-size: 10px; font-weight: 600; line-height: 1.2;">App Store</div>
-                                        </div>
-                                    </a>
-                                </div>
-                                
-                                <!-- Mobile Phone Mockup CSS Drawing -->
-                                <div class="position-absolute" style="bottom: -20px; right: -5px; z-index: 1;">
-                                    <div style="width: 75px; height: 135px; background: #004392; border-radius: 12px; border: 3px solid #fff; box-shadow: -2px 5px 15px rgba(0,0,0,0.15); position: relative; overflow: hidden; transform: rotate(-5deg);">
-                                        <!-- Screen content wrapper -->
-                                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f8fbff; border-radius: 9px;">
-                                            <!-- Top notch/header -->
-                                            <div style="width: 100%; height: 16px; background: #004392; border-bottom-left-radius: 6px; border-bottom-right-radius: 6px;"></div>
-                                            
-                                            <!-- App mockup items -->
-                                            <div style="margin-top: 10px; padding: 0 6px; display: flex; flex-direction: column; gap: 6px;">
-                                                <div style="width: 100%; height: 25px; background: white; border-radius: 4px; display: flex; align-items: center; padding: 0 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                                                    <div style="width: 12px; height: 12px; border-radius: 3px; background: #e0e0e0; flex-shrink: 0;"></div>
-                                                    <div style="margin-left: 6px; flex-grow: 1;">
-                                                        <div style="width: 80%; height: 3px; background: #ccc; border-radius: 2px; margin-bottom: 3px;"></div>
-                                                        <div style="width: 50%; height: 3px; background: #e0e0e0; border-radius: 2px;"></div>
-                                                    </div>
-                                                </div>
-                                                <div style="width: 100%; height: 25px; background: white; border-radius: 4px; display: flex; align-items: center; padding: 0 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                                                    <div style="width: 12px; height: 12px; border-radius: 3px; background: #e0e0e0; flex-shrink: 0;"></div>
-                                                    <div style="margin-left: 6px; flex-grow: 1;">
-                                                        <div style="width: 80%; height: 3px; background: #ccc; border-radius: 2px; margin-bottom: 3px;"></div>
-                                                        <div style="width: 50%; height: 3px; background: #e0e0e0; border-radius: 2px;"></div>
-                                                    </div>
-                                                </div>
-                                                <div style="width: 100%; height: 25px; background: white; border-radius: 4px; display: flex; align-items: center; padding: 0 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                                                    <div style="width: 12px; height: 12px; border-radius: 3px; background: #e0e0e0; flex-shrink: 0;"></div>
-                                                    <div style="margin-left: 6px; flex-grow: 1;">
-                                                        <div style="width: 80%; height: 3px; background: #ccc; border-radius: 2px; margin-bottom: 3px;"></div>
-                                                        <div style="width: 50%; height: 3px; background: #e0e0e0; border-radius: 2px;"></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Bottom navigation -->
-                                            <div style="position: absolute; bottom: 0; width: 100%; height: 12px; background: white; border-top: 1px solid #eee; display: flex; justify-content: space-around; align-items: center;">
-                                                <div style="width: 6px; height: 6px; background: #004392; border-radius: 50%;"></div>
-                                                <div style="width: 6px; height: 6px; background: #ddd; border-radius: 50%;"></div>
-                                                <div style="width: 6px; height: 6px; background: #ddd; border-radius: 50%;"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>

@@ -372,7 +372,9 @@ if($customerLoggedIn){
 
 <div class="left-side">
     <div class="logo-sec">
-        <img src="https://vshop.zelofx.com/public/images/new-logo-vridhee.png" alt="Boost Now" style="width: 100px; height: 60px; display: block;">
+        <a href="{{ $customerLoggedIn ? url('/') : route('vshoplogin') }}">
+            <img src="https://vshop.zelofx.com/public/images/new-logo-vridhee.png" alt="Boost Now" style="width: 100px; height: 60px; display: block;">
+        </a>
     </div>
 </div>
 

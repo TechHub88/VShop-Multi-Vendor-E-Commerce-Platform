@@ -68,6 +68,11 @@ title="Add Category">
 
 </div>
 
+@if($categories->isEmpty())
+    <div class="alert alert-info text-center py-4" style="border-radius: 12px; font-weight: 500;">
+        No products are available
+    </div>
+@else
 <form method="POST"
 action="{{ route('seller.marketplace.category.save') }}">
 @csrf
@@ -163,6 +168,7 @@ id="preview_{{ $cat->id }}"></div>
 </div>
 
 </form>
+@endif
 
 </div>
 

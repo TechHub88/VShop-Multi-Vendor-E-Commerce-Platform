@@ -71,7 +71,12 @@
     </div>
 </div>
 
-            @foreach($selectedCategories as $cat)
+            @if($selectedCategories->isEmpty())
+                <div class="alert alert-info text-center py-4" style="border-radius: 12px; font-weight: 500;">
+                    No products are available
+                </div>
+            @else
+                @foreach($selectedCategories as $cat)
 <div class="category-item d-flex justify-content-between align-items-start">
 
     <div>
@@ -96,7 +101,8 @@
 
 </div>
 
-            @endforeach
+                @endforeach
+            @endif
 
          
         </div>

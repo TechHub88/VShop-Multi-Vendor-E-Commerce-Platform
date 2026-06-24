@@ -78,6 +78,7 @@ class AuthenticatedSessionController extends Controller
             // 1. Try User
             if (Auth::guard('web')->attempt($credentials, $remember)) {
                 $request->session()->regenerate();
+                $this->cleanIntendedUrl();
                 return redirect()->intended('/dashboard/index');
             }
 
@@ -89,6 +90,7 @@ class AuthenticatedSessionController extends Controller
                     return back()->withErrors(['email' => 'Your staff account is ' . $staff->status . '. Please contact admin.'])->withInput();
                 }
                 $request->session()->regenerate();
+                $this->cleanIntendedUrl();
                 return redirect()->intended('/dashboard/index');
             }
         }
@@ -148,6 +150,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         $request->session()->regenerate();
+        $this->cleanIntendedUrl();
 
         return redirect()->intended('/dashboard/index');
     }
@@ -179,5 +182,19 @@ class AuthenticatedSessionController extends Controller
         session(['admin_panel' => $type]);
 
         return back(); // stay on same page
+    }
+
+    /**
+     * 🔹 Clean intended URL to avoid redirecting to assets/favicons on first login
+     */
+    private function cleanIntendedUrl()
+    {
+        $intended = session()->get('url.intended');
+        if ($intended) {
+            $path = parse_url($intended, PHP_URL_PATH);
+            if ($path && (preg_match('/\.(ico|png|jpg|jpeg|gif|svg|css|js)$/i', $path) || str_contains($path, 'favicon'))) {
+                session()->forget('url.intended');
+            }
+        }
     }
 }
