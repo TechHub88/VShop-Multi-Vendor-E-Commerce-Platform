@@ -77,6 +77,19 @@ class AuthenticatedSessionController extends Controller
             // Direct login (No 2FA)
             // 1. Try User
             if (Auth::guard('web')->attempt($credentials, $remember)) {
+                $user = Auth::guard('web')->user();
+                try {
+                    \App\Models\ActivityLog::create([
+                        'user_id' => $user->id,
+                        'activity_type' => 'admin_login',
+                        'description' => 'Admin ' . $user->name . ' logged in',
+                        'remarks' => 'IP: ' . request()->ip() . ', User Agent: ' . request()->userAgent(),
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->userAgent()
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Login logging failed: ' . $e->getMessage());
+                }
                 $request->session()->regenerate();
                 $this->cleanIntendedUrl();
                 return redirect()->intended('/dashboard/index');
@@ -88,6 +101,19 @@ class AuthenticatedSessionController extends Controller
                 if ($staff->status !== 'Active') {
                     Auth::guard('admin_staff')->logout();
                     return back()->withErrors(['email' => 'Your staff account is ' . $staff->status . '. Please contact admin.'])->withInput();
+                }
+                try {
+                    $staff->update(['last_login' => now()]);
+                    \App\Models\ActivityLog::create([
+                        'user_id' => $staff->id,
+                        'activity_type' => 'staff_login',
+                        'description' => 'Staff: ' . $staff->first_name . ' ' . $staff->last_name . ' logged in',
+                        'remarks' => 'IP: ' . request()->ip() . ', User Agent: ' . request()->userAgent(),
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->userAgent()
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Login logging failed: ' . $e->getMessage());
                 }
                 $request->session()->regenerate();
                 $this->cleanIntendedUrl();
@@ -145,8 +171,31 @@ class AuthenticatedSessionController extends Controller
 
         if ($userType === 'web') {
             Auth::guard('web')->loginUsingId($userId, $remember);
+            $user = Auth::guard('web')->user();
+            try {
+                \App\Models\ActivityLog::create([
+                    'user_id' => $user->id,
+                    'activity_type' => 'admin_login',
+                    'description' => 'Admin ' . $user->name . ' logged in via 2FA',
+                    'remarks' => 'IP: ' . request()->ip() . ', User Agent: ' . request()->userAgent(),
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
+                ]);
+            } catch (\Exception $e) {}
         } else if ($userType === 'admin_staff') {
             Auth::guard('admin_staff')->loginUsingId($userId, $remember);
+            $staff = Auth::guard('admin_staff')->user();
+            try {
+                $staff->update(['last_login' => now()]);
+                \App\Models\ActivityLog::create([
+                    'user_id' => $staff->id,
+                    'activity_type' => 'staff_login',
+                    'description' => 'Staff: ' . $staff->first_name . ' ' . $staff->last_name . ' logged in via 2FA',
+                    'remarks' => 'IP: ' . request()->ip() . ', User Agent: ' . request()->userAgent(),
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
+                ]);
+            } catch (\Exception $e) {}
         }
 
         $request->session()->regenerate();
