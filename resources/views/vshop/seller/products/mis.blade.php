@@ -485,8 +485,12 @@ STATS
     height:100%;
 }
 
+.mis-card.dropdown-active {
+    z-index: 50;
+}
+
 .mis-card:hover{
-    transform:translateY(-6px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.08);
 }
 
 .mis-card h2{
@@ -2073,20 +2077,27 @@ function toggleMenu(e, el){
     e.preventDefault();
     e.stopPropagation();
 
-    let currentMenu = el.closest('.mis-card')
-                        .querySelector('.dropdown-menu-custom');
+    let currentCard = el.closest('.mis-card');
+    let currentMenu = currentCard ? currentCard.querySelector('.dropdown-menu-custom') : null;
+    
+    if(!currentMenu) return;
 
     document.querySelectorAll('.dropdown-menu-custom')
         .forEach(menu => {
             if(menu !== currentMenu){
                 menu.style.display = 'none';
+                let parentCard = menu.closest('.mis-card');
+                if(parentCard) parentCard.classList.remove('dropdown-active');
             }
         });
 
-    currentMenu.style.display =
-        currentMenu.style.display === 'block'
-        ? 'none'
-        : 'block';
+    if (currentMenu.style.display === 'block') {
+        currentMenu.style.display = 'none';
+        if(currentCard) currentCard.classList.remove('dropdown-active');
+    } else {
+        currentMenu.style.display = 'block';
+        if(currentCard) currentCard.classList.add('dropdown-active');
+    }
 }
 
 /* =========================================
@@ -2547,6 +2558,8 @@ document.addEventListener('click', function(e){
         .forEach(menu => {
             if(!menu.contains(e.target)){
                 menu.style.display = 'none';
+                let parentCard = menu.closest('.mis-card');
+                if(parentCard) parentCard.classList.remove('dropdown-active');
             }
         });
 

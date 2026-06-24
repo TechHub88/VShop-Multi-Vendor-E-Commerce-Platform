@@ -410,8 +410,8 @@ public function misDashboard(Request $request)
     $totalRatings  = (int) ((clone $reviewQuery)->avg('rating') ?? 0);
     $rating4plus   = (clone $reviewQuery)->where('rating', '>=', 4)->count();
     $rating3below  = (clone $reviewQuery)->where('rating', '<', 3)->count();
-    $goodReviews   = (clone $reviewQuery)->where('rating', '>=', 4)->count();
-    $badReviews    = (clone $reviewQuery)->where('rating', '<=', 2)->count();
+    $goodReviews   = (clone $reviewQuery)->where('rating', '>=', 3)->count();
+    $badReviews    = (clone $reviewQuery)->where('rating', '<', 3)->count();
 
     /* =========================================
         DYNAMIC CHART DATA
