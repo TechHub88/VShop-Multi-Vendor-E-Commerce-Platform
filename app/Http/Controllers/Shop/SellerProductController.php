@@ -1205,6 +1205,20 @@ public function specifications(Product $product = null)
     );
 }
 
+public function getStockMovements(Request $request, Product $product)
+{
+    $this->checkOwner($product);
+
+    $perPage = (int) $request->get('per_page', 4);
+    $perPage = min($perPage, 50); // safety cap
+
+    $movements = \App\Models\StockMovement::where('product_id', $product->id)
+        ->orderByDesc('created_at')
+        ->paginate($perPage);
+
+    return response()->json($movements);
+}
+
 public function saveSpecifications(Request $request, Product $product)
 {
     $this->checkOwner($product);

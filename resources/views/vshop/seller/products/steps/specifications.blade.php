@@ -389,7 +389,7 @@ value="{{ old('stock_qty',$product->inventory ?? '') }}">
 
 {{-- DELIVERY --}}
 <div class="col-md-6 mb-3">
-    <label class="form-label required">Delivery Time (Days)</label>
+    <label class="form-label">Delivery Time (Days)</label>
 
     <input type="text"
         name="delivery_time"
@@ -404,11 +404,12 @@ value="{{ old('stock_qty',$product->inventory ?? '') }}">
 
 {{-- DELIVERY TIME (CLOCK) --}}
 <div class="col-md-6 mb-3">
-    <label class="form-label required">Delivery Time (Hour)</label>
+    <label class="form-label">Delivery Time (Hour)</label>
 
-    <input type="time"
+    <input type="text"
         name="delivery_hour"
         class="form-control @error('delivery_hour') is-invalid @enderror"
+        placeholder="e.g. 14:30 or 2 hours"
         value="{{ old('delivery_hour',$product->delivery_hour ?? '') }}">
 
     @error('delivery_hour')
@@ -446,17 +447,7 @@ value="{{ old('stock_qty',$product->inventory ?? '') }}">
 </div>
 </div>
 
-{{-- SUPPLIER --}}
-<div class="col-md-12 mb-4">
-<label class="form-label">Supplier Performance</label>
-<select name="supplier_performance_tag" class="form-control">
-<option value="">Select</option>
-<option value="excellent" {{ $product->supplier_performance_tag=='excellent'?'selected':'' }}>Excellent</option>
-<option value="good" {{ $product->supplier_performance_tag=='good'?'selected':'' }}>Good</option>
-<option value="average" {{ $product->supplier_performance_tag=='average'?'selected':'' }}>Average</option>
-<option value="poor" {{ $product->supplier_performance_tag=='poor'?'selected':'' }}>Poor</option>
-</select>
-</div>
+{{-- SUPPLIER PERFORMANCE REMOVED --}}
 
 {{-- SPECIFICATIONS --}}
 <div class="col-md-12 mb-4">
@@ -947,63 +938,144 @@ class="form-control editor">{!! old('research',$product->research) !!}</textarea
         Stock Movement History Log
     </h5>
 
-    <div class="table-responsive">
-        <table class="stock-movement-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Date & Time</th>
-                    <th>Type</th>
-                    <th>Quantity Changed</th>
-                    <th>Stock Before</th>
-                    <th>Stock After</th>
-                    <th>Reference / Order #</th>
-                    <th>Reason / Notes</th>
-                    <th>Staff / User</th>
-                </tr>
-            </thead>
-            <tbody>
-                @php
-                    $movements = $product->stockMovements ?? collect();
-                @endphp
-                
-                @forelse($movements as $index => $movement)
-                <tr>
-                    <td>{{ $index + 1 }}</td>
-                    <td>{{ $movement->created_at ? \Carbon\Carbon::parse($movement->created_at)->format('d M Y, h:i A') : '-' }}</td>
-                    <td>
-                        @if($movement->type == 'in')
-                            <span class="badge-in"><i class="fa-solid fa-arrow-down"></i> Stock In</span>
-                        @elseif($movement->type == 'out')
-                            <span class="badge-out"><i class="fa-solid fa-arrow-up"></i> Stock Out</span>
-                        @elseif($movement->type == 'adjustment')
-                            <span class="badge-adjust"><i class="fa-solid fa-pen"></i> Adjustment</span>
-                        @else
-                            <span class="badge-adjust">{{ ucfirst($movement->type) }}</span>
-                        @endif
-                    </td>
-                    <td class="{{ $movement->quantity_changed < 0 ? 'text-danger' : 'text-success' }}">
-                        {{ $movement->quantity_changed > 0 ? '+' : '' }}{{ $movement->quantity_changed ?? 0 }}
-                    </td>
-                    <td>{{ $movement->stock_before ?? '-' }}</td>
-                    <td>{{ $movement->stock_after ?? '-' }}</td>
-                    <td>{{ $movement->reference ?? $movement->order_number ?? '-' }}</td>
-                    <td>{{ $movement->reason ?? $movement->notes ?? '-' }}</td>
-                    <td>{{ $movement->user_name ?? $movement->staff_name ?? '-' }}</td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="9" style="text-align: center; padding: 40px;">
-                        <i class="fa-solid fa-boxes-stacked" style="font-size: 40px; opacity: 0.5; display: block; margin-bottom: 10px;"></i>
-                        No stock movement history found
-                        <br>
-                        <small class="text-muted">When stock is added or sold, movements will appear here</small>
-                    </td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
+    {{-- AJAX Paginated Table --}}
+    <div id="stockMovementWrapper">
+        <div class="table-responsive">
+            <table class="stock-movement-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date & Time</th>
+                        <th>Type</th>
+                        <th>Quantity Changed</th>
+                        <th>Stock Before</th>
+                        <th>Stock After</th>
+                        <th>Reference / Order #</th>
+                        <th>Reason / Notes</th>
+                        <th>Staff / User</th>
+                    </tr>
+                </thead>
+                <tbody id="stockMovementBody">
+                    <tr><td colspan="9" style="text-align:center;padding:30px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Pagination Controls --}}
+        <div id="stockMovementPagination" class="d-flex align-items-center justify-content-between mt-3" style="font-size:13px;">
+            <div id="stockMovementInfo" class="text-muted"></div>
+            <div id="stockMovementPages" class="d-flex gap-2"></div>
+        </div>
     </div>
+
+    <script>
+    (function(){
+        var productId = {{ $product->id ?? 'null' }};
+        var perPage   = 4;
+        var currentPage = 1;
+        var totalPages  = 1;
+
+        if (!productId) return;
+
+        function renderBadge(type) {
+            if (type === 'in')         return '<span class="badge-in"><i class="fa-solid fa-arrow-down"></i> Stock In</span>';
+            if (type === 'out')        return '<span class="badge-out"><i class="fa-solid fa-arrow-up"></i> Stock Out</span>';
+            if (type === 'adjustment') return '<span class="badge-adjust"><i class="fa-solid fa-pen"></i> Adjustment</span>';
+            return '<span class="badge-adjust">' + type.charAt(0).toUpperCase() + type.slice(1) + '</span>';
+        }
+
+        function loadPage(page) {
+            var tbody = document.getElementById('stockMovementBody');
+            tbody.style.opacity = '0.4';
+            tbody.style.transition = 'opacity 0.2s';
+
+            fetch('/seller/products/stock-movements/' + productId + '?page=' + page + '&per_page=' + perPage, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                currentPage = data.current_page;
+                totalPages  = data.last_page;
+                var offset  = (currentPage - 1) * perPage;
+                var rows    = '';
+
+                if (data.data.length === 0) {
+                    rows = '<tr><td colspan="9" style="text-align:center;padding:40px;">'
+                         + '<i class="fa-solid fa-boxes-stacked" style="font-size:40px;opacity:0.5;display:block;margin-bottom:10px;"></i>'
+                         + 'No stock movement history found<br><small class="text-muted">When stock is added or sold, movements will appear here</small></td></tr>';
+                } else {
+                    data.data.forEach(function(m, i){
+                        var qty    = m.quantity_changed;
+                        var qtyStr = (qty > 0 ? '+' : '') + qty;
+                        var qClass = qty < 0 ? 'text-danger' : 'text-success';
+                        rows += '<tr>'
+                            + '<td>' + (offset + i + 1) + '</td>'
+                            + '<td>' + (m.created_at ? new Date(m.created_at).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '-') + '</td>'
+                            + '<td>' + renderBadge(m.type) + '</td>'
+                            + '<td class="' + qClass + '">' + qtyStr + '</td>'
+                            + '<td>' + (m.stock_before ?? '-') + '</td>'
+                            + '<td>' + (m.stock_after  ?? '-') + '</td>'
+                            + '<td>' + (m.reference    ?? m.order_number ?? '-') + '</td>'
+                            + '<td>' + (m.reason       ?? m.notes        ?? '-') + '</td>'
+                            + '<td>' + (m.user_name    ?? m.staff_name   ?? '-') + '</td>'
+                        + '</tr>';
+                    });
+                }
+
+                tbody.innerHTML = rows;
+                setTimeout(function(){ tbody.style.opacity = '1'; }, 50);
+
+                // Info text
+                document.getElementById('stockMovementInfo').textContent =
+                    data.total > 0
+                    ? 'Showing ' + (offset+1) + '–' + Math.min(offset + data.data.length, data.total) + ' of ' + data.total + ' records'
+                    : '';
+
+                // Render page buttons
+                var pagesEl = document.getElementById('stockMovementPages');
+                pagesEl.innerHTML = '';
+
+                // Prev
+                var prevBtn = document.createElement('button');
+                prevBtn.className = 'btn btn-outline-secondary';
+                prevBtn.style.cssText = 'width:22px;height:22px;padding:0;font-size:9px;line-height:1;border-radius:4px;';
+                prevBtn.disabled  = (currentPage <= 1);
+                prevBtn.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
+                prevBtn.onclick   = function(){ if(currentPage > 1) loadPage(currentPage - 1); };
+                pagesEl.appendChild(prevBtn);
+
+                // Number buttons (show max 5 around current)
+                var start = Math.max(1, currentPage - 2);
+                var end   = Math.min(totalPages, start + 4);
+                for (var p = start; p <= end; p++) {
+                    (function(pg){
+                        var btn = document.createElement('button');
+                        btn.className = 'btn ' + (pg === currentPage ? 'btn-primary' : 'btn-outline-secondary');
+                        btn.style.cssText = 'width:22px;height:22px;padding:0;font-size:9px;line-height:1;border-radius:4px;';
+                        btn.textContent = pg;
+                        btn.onclick = function(){ loadPage(pg); };
+                        pagesEl.appendChild(btn);
+                    })(p);
+                }
+
+                // Next
+                var nextBtn = document.createElement('button');
+                nextBtn.className = 'btn btn-outline-secondary';
+                nextBtn.style.cssText = 'width:22px;height:22px;padding:0;font-size:9px;line-height:1;border-radius:4px;';
+                nextBtn.disabled  = (currentPage >= totalPages);
+                nextBtn.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+                nextBtn.onclick   = function(){ if(currentPage < totalPages) loadPage(currentPage + 1); };
+                pagesEl.appendChild(nextBtn);
+            })
+            .catch(function(){
+                document.getElementById('stockMovementBody').innerHTML =
+                    '<tr><td colspan="9" style="text-align:center;padding:20px;color:red;">Failed to load history.</td></tr>';
+            });
+        }
+
+        loadPage(1);
+    })();
+    </script>
 </div>
 @endif
 

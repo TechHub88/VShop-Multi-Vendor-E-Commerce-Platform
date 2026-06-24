@@ -340,6 +340,11 @@ class Product extends Model
         return $this->hasMany(ProductVersionHistory::class);
     }
 
+    public function stockMovements()
+    {
+        return $this->hasMany(\App\Models\StockMovement::class, 'product_id')->orderByDesc('created_at');
+    }
+
     public function getFinalPriceAttribute()
     {
         $price = $this->price ?? 0;

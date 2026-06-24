@@ -16,6 +16,7 @@ use App\Models\GlobalSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Models\StockMovement;
 use App\Services\NotificationService;
 
 
@@ -23,6 +24,36 @@ use Illuminate\Support\Facades\Session;
 
 class VshopOrderController extends Controller
 {
+    // ... existing methods ...
+
+    /**
+     * Decrement stock and log movement
+     */
+    protected function decrementStockAndLog(int $productId, int $qty, int $orderId)
+    {
+        $product = Product::find($productId);
+        if (!$product) {
+            return;
+        }
+        $stockBefore = $product->stock_qty ?? 0;
+        // Decrement stock
+        $product->decrement('stock_qty', $qty);
+        $stockAfter = $product->stock_qty;
+
+        // Log movement
+        StockMovement::create([
+            'product_id' => $productId,
+            'type' => 'out',
+            'quantity_changed' => -$qty,
+            'stock_before' => $stockBefore,
+            'stock_after' => $stockAfter,
+            'reference' => 'order_' . $orderId,
+            'reason' => 'Order placed',
+            'user_name' => Auth::guard('customer')->user()->name ?? 'Customer',
+        ]);
+    }
+
+
     protected $guard = 'customer';
 
 
@@ -253,11 +284,22 @@ public function placeOrder(Request $request)
 
             $product = DB::table('products')
                 ->where('id', $item->product_id)
-                ->select('created_by_id')
+                ->select('name', 'type', 'stock_qty', 'created_by_id')
                 ->first();
 
             if (!$product) {
                 throw new \Exception("Product not found");
+            }
+
+            $isPhysicalProduct = in_array($product->type, ['product', 'vshop-product']) || empty($product->type);
+
+            if ($isPhysicalProduct) {
+                if (is_null($product->stock_qty) || $product->stock_qty <= 0) {
+                    throw new \Exception("Product '{$product->name}' is out of stock.");
+                }
+                if ($qty > $product->stock_qty) {
+                    throw new \Exception("Requested quantity for '{$product->name}' exceeds available stock ({$product->stock_qty} available).");
+                }
             }
 
             $sellerId = $product->created_by_id;
@@ -545,6 +587,7 @@ $this->notifySeller(
                 'quantity'   => $qty,
                 'price'      => $price,
                 'total'      => $totalPrice,
+
                 'gst_percent'=> $gstPercent,
 
                 'commission_percent' => $platformComm + $referrerComm,
@@ -553,6 +596,9 @@ $this->notifySeller(
                 'referral_earning'   => $referralAmount,
                 'platform_earning'   => $platformAmount
             ]);
+            $this->decrementStockAndLog($productId, $qty, $order->id);
+
+
 
             /* ================= SELLER EARNING ================= */
 

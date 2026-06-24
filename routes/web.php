@@ -337,6 +337,11 @@ Route::post('/specifications/{product}/lead-settings',
 [SellerProductController::class,'saveLeadSettings'])
 ->name('specifications.lead-settings.update');
 
+Route::get('/stock-movements/{product}',
+[SellerProductController::class,'getStockMovements'])
+->name('specifications.stock-movements')
+->middleware('auth:seller');
+
 
 
 /*
