@@ -1159,9 +1159,9 @@ public function recommendationsIndex(Request $request)
     if (empty($sourceProductIds)) {
         $productsWithRecs = [];
     } else {
-        // Load source products with their category
+        // Load source products with their category and seller
         $sourceProducts = Product::whereIn('id', $sourceProductIds)
-            ->with('category')
+            ->with(['category', 'seller'])
             ->get()
             ->keyBy('id');
 
@@ -1172,9 +1172,8 @@ public function recommendationsIndex(Request $request)
         }
         $allRecIds = array_unique($allRecIds);
 
-        // Load recommended products (only needed fields)
+        // Load recommended products
         $recProducts = Product::whereIn('id', $allRecIds)
-            ->select('id', 'name')
             ->get()
             ->keyBy('id');
 

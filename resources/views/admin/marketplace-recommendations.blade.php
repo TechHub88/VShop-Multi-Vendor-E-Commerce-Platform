@@ -2,292 +2,300 @@
 
 @section('content')
 <style>
-    /* Additional inline styles to ensure proper display (without breaking layout) */
-    .badge { font-size: 0.75rem; padding: 0.35em 0.65em; }
-    .table th, .table td { vertical-align: middle; }
-    .form-switch .form-check-input { width: 2em; cursor: pointer; }
-    .btn-outline-primary, .btn-outline-danger { border-width: 1px; }
-    .ri-edit-line, .ri-delete-bin-line { font-size: 1rem; }
-    .modal-header .btn-close { filter: brightness(0) invert(1); }
+    /* Professional E-commerce Admin Styles (Amazon/Flipkart inspired) */
+    .page-title-box { padding-bottom: 15px; border-bottom: 1px solid #e5e7eb; margin-bottom: 20px; }
+    .page-title { color: #111827; font-weight: 600; font-size: 1.25rem; }
+    
+    .product-group-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    
+    .product-group-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #e5e7eb;
+        background-color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .main-product-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    
+    .main-img-box {
+        width: 64px;
+        height: 64px;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        background: #f9fafb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    
+    .main-img-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .product-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #0f1111; /* Amazon dark */
+        margin-bottom: 4px;
+        line-height: 1.4;
+    }
+    
+    .product-meta {
+        font-size: 0.8125rem;
+        color: #565959;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .meta-divider {
+        color: #d1d5db;
+        font-size: 12px;
+    }
+    
+    .price-tag {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #b12704; /* Amazon price color */
+    }
+    
+    .recommended-section {
+        padding: 20px;
+        background-color: #f9fafb;
+    }
+    
+    .section-title {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: #374151;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .rec-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+    }
+    
+    .rec-item {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 12px;
+        display: flex;
+        gap: 12px;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    .rec-item:hover {
+        border-color: #d1d5db;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.04);
+    }
+    
+    .rec-img-box {
+        width: 50px;
+        height: 50px;
+        border: 1px solid #f3f4f6;
+        border-radius: 4px;
+        background: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    
+    .rec-img-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    
+    .rec-details {
+        flex-grow: 1;
+        min-width: 0; /* for text truncation */
+    }
+    
+    .rec-title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #007185; /* Amazon link blue */
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .rec-meta {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-bottom: 4px;
+    }
+    
+    .rec-price {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #111827;
+    }
+    
+    .clean-badge {
+        background-color: #f3f4f6;
+        color: #374151;
+        border: 1px solid #e5e7eb;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
 </style>
 
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="page-title-box">
-                <h4 class="page-title">🔹 Recommendation Engine</h4>
-                <p class="text-muted">Manage cross-sell, location‑based, AI and sponsored recommendation rules.</p>
+            <div class="page-title-box mt-3">
+                <h4 class="page-title">Recommendation Engine</h4>
+                <p class="text-muted mb-0" style="font-size: 0.875rem;">View and manage cross-sell configurations established across the marketplace catalog.</p>
             </div>
         </div>
     </div>
 
-    <!-- Add Rule Button -->
-    <div class="row mb-3">
-        <div class="col-12 text-end">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ruleModal">
-                <i class="ri-add-line"></i> Add New Rule
-            </button>
-        </div>
-    </div>
-
-    <!-- Rules Table -->
+    <!-- Recommendations List -->
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover align-middle">
-                            <thead style="background: #2563eb; color: white;">
-                                <tr>
-                                    <th>Type</th>
-                                    <th>Source</th>
-                                    <th>Targets (Recommended)</th>
-                                    <th>Priority</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse(($rules ?? []) as $rule)
-                                <tr>
-                                    <td>
-                                        <span class="badge bg-{{ $rule->type == 'product' ? 'primary' : ($rule->type == 'location' ? 'success' : ($rule->type == 'ai' ? 'info' : 'warning')) }}">
-                                            {{ ucfirst($rule->type) }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $rule->source }} @if($rule->source_type) <small class="text-muted">({{ $rule->source_type }})</small> @endif</td>
-                                    <td>
-                                        @foreach($rule->targets as $target)
-                                            <span class="badge bg-secondary me-1">{{ $target }}</span>
-                                        @endforeach
-                                    </td>
-                                    <td>{{ $rule->priority }}</td>
-                                    <td>
-                                        <div class="form-check form-switch">
-                                            <input type="checkbox" class="form-check-input toggle-status" data-id="{{ $rule->id }}" {{ $rule->is_active ? 'checked' : '' }}>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary edit-rule" data-id="{{ $rule->id }}">
-                                            <i class="ri-edit-line"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger delete-rule" data-id="{{ $rule->id }}">
-                                            <i class="ri-delete-bin-line"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr><td colspan="6" class="text-center">No rules defined yet.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+            @if(empty($productsWithRecs))
+                <div class="text-center py-5" style="background: #fff; border: 1px dashed #d1d5db; border-radius: 8px;">
+                    <i class="ri-node-tree text-muted" style="font-size: 48px;"></i>
+                    <h5 class="text-muted mt-3">No recommendations configured yet.</h5>
+                    <p class="text-muted" style="font-size: 0.875rem;">Recommendations set by sellers will appear here.</p>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add / Edit Modal -->
-<div class="modal fade" id="ruleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header" style="background: #1e3a5f; color: white;">
-                <h5 class="modal-title" id="modalTitle">Add Recommendation Rule</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="ruleForm">
-                <div class="modal-body">
-                    <input type="hidden" name="rule_id" id="rule_id">
+            @else
+                @foreach($productsWithRecs as $index => $item)
+                    @php
+                        // Main Product Image
+                        $mainProduct = $item['product'];
+                        $mainThumb = null;
+                        if (!empty($mainProduct->thumbnail)) {
+                            $mainThumb = asset($mainProduct->thumbnail);
+                        } elseif (!empty($mainProduct->images) && is_array($mainProduct->images) && count($mainProduct->images) > 0) {
+                            $mainThumb = asset($mainProduct->images[0]);
+                        }
+                    @endphp
                     
-                    <div class="mb-3">
-                        <label>Rule Type</label>
-                        <select name="type" id="type" class="form-control" required>
-                            <option value="product">Product → Product (Cross-sell / Upsell)</option>
-                            <option value="location">Location → Services (City based)</option>
-                            <option value="ai">AI Collaborative (People bought X also bought Y)</option>
-                            <option value="sponsored">Sponsored (Global priority)</option>
-                        </select>
+                    <div class="product-group-card">
+                        <!-- Header / Main Product -->
+                        <div class="product-group-header">
+                            <div class="main-product-info">
+                                <div class="main-img-box">
+                                    @if($mainThumb)
+                                        <img src="{{ $mainThumb }}" alt="Image">
+                                    @else
+                                        <i class="ri-image-line text-muted" style="font-size: 24px;"></i>
+                                    @endif
+                                </div>
+                                
+                                <div>
+                                    <div class="product-title">{{ $mainProduct->name }}</div>
+                                    <div class="product-meta">
+                                        <span class="meta-item">
+                                            <span class="text-muted">SKU:</span>
+                                            <span class="text-dark fw-medium">{{ $mainProduct->sku ?? 'N/A' }}</span>
+                                        </span>
+                                        <span class="meta-divider">•</span>
+                                        <span class="meta-item">
+                                            <i class="ri-store-2-line text-muted"></i>
+                                            <span class="text-dark">{{ $mainProduct->seller ? $mainProduct->seller->name : 'Admin / Unknown' }}</span>
+                                        </span>
+                                        @if($item['category_name'])
+                                            <span class="meta-divider">•</span>
+                                            <span class="meta-item text-muted">{{ $item['category_name'] }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-end">
+                                <div class="price-tag">₹{{ number_format($mainProduct->price, 2) }}</div>
+                                <div class="mt-1">
+                                    <span class="clean-badge">{{ count($item['recommended_products']) }} Configured</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Body / Recommended Products -->
+                        <div class="recommended-section">
+                            <div class="section-title">
+                                <i class="ri-links-line text-muted"></i> Associated Recommendations
+                            </div>
+                            
+                            <div class="rec-grid">
+                                @forelse($item['recommended_products'] as $recProduct)
+                                    @php
+                                        // Recommended Product Image
+                                        $recThumb = null;
+                                        if (!empty($recProduct->thumbnail)) {
+                                            $recThumb = asset($recProduct->thumbnail);
+                                        } elseif (!empty($recProduct->images) && is_array($recProduct->images) && count($recProduct->images) > 0) {
+                                            $recThumb = asset($recProduct->images[0]);
+                                        }
+                                    @endphp
+                                    
+                                    <div class="rec-item">
+                                        <div class="rec-img-box">
+                                            @if($recThumb)
+                                                <img src="{{ $recThumb }}" alt="Image">
+                                            @else
+                                                <i class="ri-image-line text-muted" style="font-size: 20px;"></i>
+                                            @endif
+                                        </div>
+                                        <div class="rec-details">
+                                            <div class="rec-title" title="{{ $recProduct->name }}">{{ $recProduct->name }}</div>
+                                            <div class="rec-meta">
+                                                <span>ID: {{ $recProduct->id }}</span>
+                                                <span class="mx-1">|</span>
+                                                <span>SKU: {{ $recProduct->sku ?? 'N/A' }}</span>
+                                            </div>
+                                            <div class="rec-price">₹{{ number_format($recProduct->price, 2) }}</div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="col-12 py-2">
+                                        <span class="text-muted" style="font-size: 0.875rem;"><i class="ri-error-warning-line align-middle me-1"></i> Referenced products not found or deleted.</span>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
                     </div>
-
-                    <div class="mb-3">
-                        <label>Source</label>
-                        <div id="source_field"></div>
-                        <small class="text-muted">
-                            For product rules: Product ID or Category ID.<br>
-                            For location rules: City name (e.g., "Banaras", "Goa").<br>
-                            For AI/Sponsored: "global" or leave empty.
-                        </small>
-                    </div>
-
-                    <div class="mb-3">
-                        <label>Targets (Recommended Items)</label>
-                        <div id="targets_field"></div>
-                        <small class="text-muted">Comma separated IDs, product names, or service names.</small>
-                    </div>
-
-                    <div class="mb-3">
-                        <label>Priority</label>
-                        <input type="number" name="priority" id="priority" class="form-control" value="0">
-                    </div>
-
-                    <div class="mb-3" id="source_type_div">
-                        <label>Source Type (optional)</label>
-                        <select name="source_type" id="source_type" class="form-control">
-                            <option value="">None</option>
-                            <option value="product">Product</option>
-                            <option value="category">Category</option>
-                            <option value="location">Location</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Rule</button>
-                </div>
-            </form>
+                @endforeach
+            @endif
         </div>
     </div>
 </div>
-
-<!-- Remix Icons (if not already in layout) -->
-<link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
-
-<script>
-$(document).ready(function() {
-    // Helper to get Bootstrap modal instance
-    function getModal() {
-        return bootstrap.Modal.getInstance(document.getElementById('ruleModal'));
-    }
-
-    // Add mode – clear form when modal opens via the "Add New Rule" button
-    $('#ruleModal').on('show.bs.modal', function(event) {
-        var button = $(event.relatedTarget);
-        if (button.hasClass('edit-rule')) {
-            // Edit mode handled by separate click event; skip reset
-            return;
-        }
-        // Reset form for add mode
-        $('#modalTitle').text('Add Recommendation Rule');
-        $('#ruleForm')[0].reset();
-        $('#rule_id').val('');
-        loadSourceField('');
-        loadTargetsField('');
-        $('#priority').val(0);
-        $('#source_type').val('');
-    });
-
-    // Edit Rule
-    $('.edit-rule').click(function() {
-        let id = $(this).data('id');
-        $.get('/admin/marketplace/recommendations/' + id + '/edit', function(rule) {
-            $('#modalTitle').text('Edit Recommendation Rule');
-            $('#rule_id').val(rule.id);
-            $('#type').val(rule.type);
-            $('#priority').val(rule.priority);
-            $('#source_type').val(rule.source_type);
-            loadSourceField(rule.source);
-            loadTargetsField(rule.targets.join(','));
-            // Show modal using Bootstrap 5 API
-            const modal = new bootstrap.Modal(document.getElementById('ruleModal'));
-            modal.show();
-        });
-    });
-
-    function loadSourceField(value) {
-        let type = $('#type').val();
-        let html = '';
-        if (type == 'product') {
-            html = `<input type="text" name="source" class="form-control" placeholder="Product ID or Category ID" value="${escapeHtml(value)}" required>`;
-        } else if (type == 'location') {
-            html = `<input type="text" name="source" class="form-control" placeholder="City name (e.g., Banaras, Goa)" value="${escapeHtml(value)}" required>`;
-        } else {
-            html = `<input type="text" name="source" class="form-control" placeholder="global or leave empty" value="${escapeHtml(value)}">`;
-        }
-        $('#source_field').html(html);
-    }
-
-    function loadTargetsField(value) {
-        let html = `<input type="text" name="targets_input" class="form-control" placeholder="Comma separated values" value="${escapeHtml(value)}" required>`;
-        $('#targets_field').html(html);
-    }
-
-    function escapeHtml(str) {
-        if (!str) return '';
-        return str.replace(/[&<>]/g, function(m) {
-            if (m === '&') return '&amp;';
-            if (m === '<') return '&lt;';
-            if (m === '>') return '&gt;';
-            return m;
-        });
-    }
-
-    $('#type').change(function() { 
-        loadSourceField(''); 
-        loadTargetsField(''); 
-    });
-
-    $('#ruleForm').submit(function(e) {
-        e.preventDefault();
-        let id = $('#rule_id').val();
-        let url = id ? '/admin/marketplace/recommendations/' + id : '/admin/marketplace/recommendations/store';
-        let method = id ? 'PUT' : 'POST';
-
-        let targetsRaw = $('#targets_field input').val();
-        let targets = targetsRaw ? targetsRaw.split(',').map(s => s.trim()) : [];
-
-        let data = {
-            type: $('#type').val(),
-            source: $('#source_field input').val(),
-            source_type: $('#source_type').val(),
-            targets: targets,
-            priority: $('#priority').val(),
-            _token: '{{ csrf_token() }}'
-        };
-
-        $.ajax({
-            url: url,
-            method: method,
-            data: data,
-            success: function(res) {
-                if(res.success) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('ruleModal'));
-                    if (modal) modal.hide();
-                    location.reload();
-                } else {
-                    alert(res.message || 'Error saving rule');
-                }
-            },
-            error: function(xhr) {
-                let msg = xhr.responseJSON?.message || 'Server error';
-                alert('Error: ' + msg);
-            }
-        });
-    });
-
-    // Toggle Status
-    $('.toggle-status').change(function() {
-        let id = $(this).data('id');
-        $.post('/admin/marketplace/recommendations/toggle-status/' + id, {_token: '{{ csrf_token() }}'}, function(res) {
-            if(!res.success) alert('Failed to update status');
-        });
-    });
-
-    // Delete Rule
-    $('.delete-rule').click(function() {
-        if(confirm('Delete this rule?')) {
-            let id = $(this).data('id');
-            $.ajax({
-                url: '/admin/marketplace/recommendations/' + id,
-                method: 'DELETE',
-                data: {_token: '{{ csrf_token() }}'},
-                success: function(res) { 
-                    if(res.success) location.reload(); 
-                    else alert(res.message); 
-                }
-            });
-        }
-    });
-});
-</script>
 @endsection
