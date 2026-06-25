@@ -671,7 +671,8 @@ public function searchDiscovery(Request $request)
         $boostedProducts = Product::where(function($query) {
                 $query->where('is_featured', true)
                       ->orWhere('is_sponsored', '1')
-                      ->orWhere('is_pinned', '1');
+                      ->orWhere('is_pinned', '1')
+                      ->orWhere('is_boosted', 1);
             })
             ->with('seller')
             ->latest()
@@ -765,6 +766,7 @@ public function searchDiscovery(Request $request)
                 $product->is_featured = false;
                 $product->is_sponsored = '0';
                 $product->is_pinned = '0';
+                $product->is_boosted = 0;
             } else {
                 switch($type) {
                     case 'featured':
@@ -775,6 +777,9 @@ public function searchDiscovery(Request $request)
                         break;
                     case 'pinned':
                         $product->is_pinned = '0';
+                        break;
+                    case 'boosted':
+                        $product->is_boosted = 0;
                         break;
                 }
             }
@@ -810,7 +815,8 @@ public function searchDiscovery(Request $request)
             return response()->json([
                 'is_featured' => $product->is_featured ? true : false,
                 'is_sponsored' => $product->is_sponsored == '1' ? true : false,
-                'is_pinned' => $product->is_pinned ? true : false
+                'is_pinned' => $product->is_pinned ? true : false,
+                'is_boosted' => $product->is_boosted ? true : false
             ]);
             
         } catch(\Exception $e) {
@@ -837,6 +843,7 @@ public function searchDiscovery(Request $request)
             $product->is_featured = $request->is_featured ? true : false;
             $product->is_sponsored = $request->is_sponsored ? '1' : '0';
             $product->is_pinned = $request->is_pinned ? true : false;
+            $product->is_boosted = $request->is_boosted ? 1 : 0;
             $product->save();
             
             return response()->json([

@@ -246,6 +246,14 @@ Route::get('/mis-dashboard',
 Route::post('/save-referral-settings',
 [SellerProductController::class,'saveReferralSettings'])->name('save.referral.settings');
 
+        // GET CATEGORIES FOR DEPENDENT DROPDOWN
+        Route::get('/get-categories', [SellerProductController::class,'getCategories'])->name('getCategories');
+        
+        // BOOST PRODUCTS
+        Route::get('/boost-products', [SellerProductController::class, 'getBoostProducts'])->name('boost.products');
+        Route::post('/boost-submit', [SellerProductController::class, 'submitBoost'])->name('boost.submit');
+
+        // GET SUB-CATEGORIES FOR DEPENDENT DROPDOWN
 Route::get(
 '/categories/{type}',
 [SellerProductController::class,'getCategories']

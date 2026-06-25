@@ -245,10 +245,14 @@ class EnquiryController extends Controller
     {
         $request->validate([
             'assigned_to' => 'required|string|max:255',
+            'followup_note' => 'nullable|string|max:2000',
         ]);
 
         $enquiry = Enquiry::findOrFail($id);
         $enquiry->tags = $request->assigned_to;
+        if ($request->filled('followup_note')) {
+            $enquiry->followup_note = $request->followup_note;
+        }
         if ($enquiry->status == 'new') {
             $enquiry->status = 'contacted';
         }
@@ -262,10 +266,14 @@ class EnquiryController extends Controller
     {
         $request->validate([
             'status' => 'required|in:new,contacted,quoted,converted,closed,lost',
+            'followup_note' => 'nullable|string|max:2000',
         ]);
 
         $enquiry = Enquiry::findOrFail($id);
         $enquiry->status = $request->status;
+        if ($request->filled('followup_note')) {
+            $enquiry->followup_note = $request->followup_note;
+        }
         $enquiry->save();
 
         return response()->json(['success' => true, 'message' => 'Enquiry status updated successfully.']);

@@ -79,10 +79,43 @@ class CustomerEnquiryController extends Controller
         );
 
         Log::info('Enquiry created successfully', ['enquiry_no' => $enquiryNo]);
+
+        // Get seller's phone and email for WhatsApp/Email redirect
+        $seller = \App\Models\Seller::find($product->created_by_id);
+        $sellerPhone = null;
+        $sellerEmail = null;
+        if ($seller) {
+            $sellerEmail = $seller->email;
+            
+            // Prefer mobile, fallback to phone
+            $rawPhone = $seller->mobile ?: $seller->phone;
+            if ($rawPhone) {
+                // Clean phone: remove spaces, dashes, +, country code prefix
+                $sellerPhone = preg_replace('/[^0-9]/', '', $rawPhone);
+                // If 10 digits, prepend India code 91
+                if (strlen($sellerPhone) === 10) {
+                    $sellerPhone = '91' . $sellerPhone;
+                }
+            }
+            
+            // Send email to seller using Laravel Mail
+            if ($sellerEmail && $request->contact_type == 'email') {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($sellerEmail)->send(new \App\Mail\EnquiryMail($enquiry));
+                    Log::info('Enquiry email sent to seller', ['seller_email' => $sellerEmail]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send enquiry email: ' . $e->getMessage());
+                }
+            }
+        }
         
         return response()->json([
             'success' => true,
-            'message' => 'Enquiry submitted. Seller will contact you soon.'
+            'message' => 'Enquiry submitted. Seller will contact you soon.',
+            'seller_phone' => $sellerPhone,
+            'seller_email' => $sellerEmail,
+            'product_name' => $product->name,
+            'enquiry_no' => $enquiryNo,
         ]);
         
     } catch (\Exception $e) {

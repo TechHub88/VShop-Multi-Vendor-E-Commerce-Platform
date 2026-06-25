@@ -1050,8 +1050,16 @@ Support Team
        class="icon-btn email-btn">
         <i class="fa-solid fa-envelope"></i>
     </a>
-
-    <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $e->user_mobile) }}"
+    
+    @php
+        $customerPhone = preg_replace('/[^0-9]/', '', $e->user_mobile);
+        if (strlen($customerPhone) === 10) {
+            $customerPhone = '91' . $customerPhone;
+        }
+        $replyText = "Hi " . ($e->user_name ?? 'Customer') . ",\n\nI'm replying to your enquiry (" . ($e->enquiry_no ?? '') . ") regarding *" . ($e->product_service ?? '') . "*.\n\nYour message: \"" . ($e->message ?? '') . "\"\n\n";
+        $waUrl = "https://wa.me/" . $customerPhone . "?text=" . urlencode($replyText);
+    @endphp
+    <a href="{{ $waUrl }}"
        target="_blank"
        class="icon-btn whatsapp-btn">
         <i class="fa-brands fa-whatsapp"></i>

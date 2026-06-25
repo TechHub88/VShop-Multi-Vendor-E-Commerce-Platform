@@ -868,13 +868,12 @@
                                 <!-- Internal Notes -->
                                 <div class="card border border-light-subtle shadow-sm rounded-4 p-3 bg-white">
                                     <h6 class="fw-bold text-dark mb-3">Internal Notes</h6>
-                                    <div class="p-3 bg-light rounded-3 border border-light-subtle mb-2">
-                                        <p class="fs-12 text-dark mb-0 italic" id="lbl_internal_notes_text">
-                                            Call customer and share best offer.
-                                            - ABC Store Team
+                                    <div class="p-3 bg-light rounded-3 border border-light-subtle mb-2" id="internal_notes_container">
+                                        <p class="fs-12 text-dark mb-0" id="lbl_internal_notes_text" style="font-style: italic;">
+                                            No notes added yet.
                                         </p>
                                     </div>
-                                    <small class="text-muted fs-10" id="lbl_internal_notes_date">Added on 13 May 2025, 10:35 AM</small>
+                                    <small class="text-muted fs-10" id="lbl_internal_notes_date" style="display:none;"></small>
                                 </div>
                             </div>
                         </div>
@@ -901,6 +900,10 @@
                                                 @endforeach
                                             </select>
                                         </div>
+                                        <div class="mb-3">
+                                            <label class="form-label text-secondary fs-12">Internal Notes</label>
+                                            <textarea name="followup_note" id="assign_enq_note" class="form-control" rows="3" placeholder="Add internal notes..."></textarea>
+                                        </div>
                                         <button type="submit" class="btn btn-primary w-100">Assign Agent</button>
                                     </form>
                                 </div>
@@ -920,6 +923,10 @@
                                                 <option value="closed">Closed</option>
                                                 <option value="lost">Lost</option>
                                             </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label text-secondary fs-12">Internal Notes</label>
+                                            <textarea name="followup_note" id="status_enq_note" class="form-control" rows="3" placeholder="Add internal notes..."></textarea>
                                         </div>
                                         <button type="submit" class="btn btn-success w-100">Update Status</button>
                                     </form>
@@ -1165,9 +1172,18 @@
                     $('#lbl_conv_value').text('-');
                 }
 
-                // Internal Notes
-                $('#lbl_internal_notes_text').text(enq.followup_note || `Call customer and share best offer. - ${enq.tags || 'ABC Store Team'}`);
-                $('#lbl_internal_notes_date').text('Added on ' + enq.formatted_updated);
+                // Internal Notes (show only real DB data, no dummy text)
+                if (enq.followup_note && enq.followup_note.trim() !== '') {
+                    $('#lbl_internal_notes_text').text(enq.followup_note);
+                    $('#lbl_internal_notes_date').text('Added on ' + enq.formatted_updated).show();
+                } else {
+                    $('#lbl_internal_notes_text').text('No notes added yet.');
+                    $('#lbl_internal_notes_date').hide();
+                }
+
+                // Populate note textareas with existing notes
+                $('#assign_enq_note').val(enq.followup_note || '');
+                $('#status_enq_note').val(enq.followup_note || '');
 
                 // Actions Panel setup
                 $('#lbl_followup_date').text(enq.next_followup_date || '—');

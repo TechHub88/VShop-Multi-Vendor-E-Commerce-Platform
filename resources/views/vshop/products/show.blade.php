@@ -1521,55 +1521,106 @@ $(document).ready(function() {
             case 'email': contactLabel = 'Email'; break;
         }
 
-        Swal.fire({
-            title: `Enquiry via ${contactLabel}`,
-            html: `<textarea id="enquiryReason" class="swal2-textarea" rows="4" placeholder="Please describe your enquiry or question..."></textarea>`,
-            showCancelButton: true,
-            confirmButtonText: 'Send Enquiry',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#28a745',
-            preConfirm: () => {
-                const reason = document.getElementById('enquiryReason').value.trim();
-                if (!reason) {
-                    Swal.showValidationMessage('Please enter a reason/ message');
-                    return false;
-                }
-                return reason;
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
+        const submitEnquiry = (reason) => {
+            if (contactType !== 'phone') {
                 Swal.fire({ title: 'Submitting...', text: 'Please wait', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-                $.ajax({
-                    url: "{{ route('vshop.enquiry.store') }}",
-                    method: 'POST',
-                    data: {
-                        _token: '{{ csrf_token() }}',
-                        product_id: productId,
-                        reason: result.value,
-                        contact_type: contactType
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            Swal.fire({ icon: 'success', title: 'Enquiry Sent!', text: response.message, confirmButtonColor: '#28a745' });
-                        } else if (response.login_required) {
-                            Swal.fire({ icon: 'warning', title: 'Login Required', text: response.message, confirmButtonColor: '#004392', confirmButtonText: 'Login Now' })
-                                .then(() => { window.location.href = "{{ route('vshoplogin') }}?redirect=" + encodeURIComponent(window.location.href); });
-                        } else {
-                            Swal.fire({ icon: 'error', title: 'Error', text: response.message || 'Something went wrong', confirmButtonColor: '#dc3545' });
-                        }
-                    },
-                    error: function(xhr) {
-                        if (xhr.status === 401) {
-                            Swal.fire({ icon: 'warning', title: 'Login Required', text: 'Please login to submit enquiry.', confirmButtonColor: '#004392', confirmButtonText: 'Login Now' })
-                                .then(() => { window.location.href = "{{ route('vshoplogin') }}?redirect=" + encodeURIComponent(window.location.href); });
-                        } else {
-                            let msg = xhr.responseJSON?.message || 'Server error. Please try again.';
-                            Swal.fire({ icon: 'error', title: 'Failed', text: msg, confirmButtonColor: '#dc3545' });
-                        }
-                    }
-                });
+            } else {
+                Swal.fire({ title: 'Connecting...', text: 'Fetching seller number', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
             }
-        });
+
+            $.ajax({
+                url: "{{ route('vshop.enquiry.store') }}",
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    product_id: productId,
+                    reason: reason,
+                    contact_type: contactType
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // If WhatsApp contact type AND seller has phone → open wa.me
+                        if (contactType === 'whatsapp' && response.seller_phone) {
+                            let waMessage = `Hi, I'm interested in *${response.product_name || 'your product'}*.\n\nEnquiry No: ${response.enquiry_no || ''}\nMessage: ${reason}\n\nPlease share more details. Thank you!`;
+                            let waUrl = `https://wa.me/${response.seller_phone}?text=${encodeURIComponent(waMessage)}`;
+                            
+                            Swal.fire({
+                                icon: 'success',
+                                title: '✅ Enquiry Saved!',
+                                html: `<p>Your enquiry has been saved successfully.</p>
+                                       <p class="mb-1"><strong>Click below to message the seller on WhatsApp:</strong></p>
+                                       <a href="${waUrl}" target="_blank" class="btn btn-success btn-lg mt-2" style="background:#25D366;border:none;font-size:16px;padding:10px 30px;border-radius:30px;">
+                                           <i class="fab fa-whatsapp"></i> Chat with Seller on WhatsApp
+                                       </a>`,
+                                showConfirmButton: false,
+                                showCloseButton: true,
+                            });
+                        } else if (contactType === 'phone' && response.seller_phone) {
+                            let telUrl = `tel:+${response.seller_phone}`;
+                            window.location.href = telUrl;
+                            
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Calling...',
+                                text: 'Opening your phone dialer...',
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        } else if (contactType === 'email') {
+                            Swal.fire({ 
+                                icon: 'success', 
+                                title: '📧 Email Sent!', 
+                                text: 'Your enquiry has been successfully emailed to the seller. They will reply to you soon.', 
+                                confirmButtonColor: '#28a745' 
+                            });
+                        } else {
+                            Swal.fire({ icon: 'success', title: 'Enquiry Sent!', text: response.message, confirmButtonColor: '#28a745' });
+                        }
+                    } else if (response.login_required) {
+                        Swal.fire({ icon: 'warning', title: 'Login Required', text: response.message, confirmButtonColor: '#004392', confirmButtonText: 'Login Now' })
+                            .then(() => { window.location.href = "{{ route('vshoplogin') }}?redirect=" + encodeURIComponent(window.location.href); });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: response.message || 'Something went wrong', confirmButtonColor: '#dc3545' });
+                    }
+                },
+                error: function(xhr) {
+                    if (xhr.status === 401) {
+                        Swal.fire({ icon: 'warning', title: 'Login Required', text: 'Please login to submit enquiry.', confirmButtonColor: '#004392', confirmButtonText: 'Login Now' })
+                            .then(() => { window.location.href = "{{ route('vshoplogin') }}?redirect=" + encodeURIComponent(window.location.href); });
+                    } else {
+                        let msg = xhr.responseJSON?.message || 'Server error. Please try again.';
+                        Swal.fire({ icon: 'error', title: 'Failed', text: msg, confirmButtonColor: '#dc3545' });
+                    }
+                }
+            });
+        };
+
+        if (contactType === 'phone') {
+            // Direct call: bypass popup, submit with default message, dial instantly
+            submitEnquiry('Customer clicked to call the seller directly.');
+        } else {
+            // WhatsApp & Email: Ask for message first
+            Swal.fire({
+                title: `Enquiry via ${contactLabel}`,
+                html: `<textarea id="enquiryReason" class="swal2-textarea" rows="4" placeholder="Please describe your enquiry or question..."></textarea>`,
+                showCancelButton: true,
+                confirmButtonText: 'Send Enquiry',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#28a745',
+                preConfirm: () => {
+                    const reason = document.getElementById('enquiryReason').value.trim();
+                    if (!reason) {
+                        Swal.showValidationMessage('Please enter a reason/ message');
+                        return false;
+                    }
+                    return reason;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    submitEnquiry(result.value);
+                }
+            });
+        }
     });
 });
 

@@ -38,6 +38,73 @@ class SellerProductController extends Controller
         }
     }
 
+    public function getBoostProducts()
+    {
+        $sellerId = auth('seller')->id();
+        $products = Product::where('created_by_id', $sellerId)
+            ->select('id', 'name', 'slug', 'sku', 'is_boosted', 'price', 'thumbnail')
+            ->get();
+
+        $data = $products->map(function($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku ?? 'N/A',
+                'price' => $product->price ?? 0,
+                'is_boosted' => $product->is_boosted,
+                'image_url' => $product->thumbnail ? asset($product->thumbnail) : asset('images/no-image.png')
+            ];
+        });
+
+        return response()->json([
+            'success' => true, 
+            'data' => $data,
+            'wallet_balance' => session('seller_dummy_wallet', 15450.00)
+        ]);
+    }
+
+    public function submitBoost(Request $request)
+    {
+        $sellerId = auth('seller')->id();
+        $productIds = $request->input('product_ids', []);
+
+        // Count how many products will be boosted
+        $boostCount = count($productIds);
+        $perProductCost = 30.00;
+        $totalCost = $boostCount * $perProductCost;
+
+        $walletBalance = session('seller_dummy_wallet', 15450.00);
+
+        if ($walletBalance < $totalCost) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Insufficient wallet balance! You need ₹' . number_format($totalCost, 2) . ' but only have ₹' . number_format($walletBalance, 2)
+            ]);
+        }
+
+        // Deduct from wallet balance
+        $newBalance = $walletBalance - $totalCost;
+        session(['seller_dummy_wallet' => $newBalance]);
+
+        // First set all products to not boosted, then only boost selected ones
+        Product::where('created_by_id', $sellerId)->update(['is_boosted' => 0]);
+
+        if (!empty($productIds)) {
+            Product::where('created_by_id', $sellerId)
+                   ->whereIn('id', $productIds)
+                   ->update(['is_boosted' => 1]);
+        }
+
+        return response()->json([
+            'success' => true, 
+            'message' => 'Successfully boosted ' . $boostCount . ' product(s)! Charged ₹' . number_format($totalCost, 2),
+            'new_balance' => $newBalance
+        ]);
+    }
+
+
+
+
 public function index(Request $request)
 {
     $sellerId = Auth::id();
@@ -243,6 +310,14 @@ public function index(Request $request)
 
         case 'low_review':
             $query->orderBy('reviews_avg_rating', 'asc');
+            break;
+
+        case 'most_boosted':
+            $query->orderBy('is_boosted', 'desc');
+            break;
+
+        case 'recommended':
+            $query->has('recommendations')->latest();
             break;
 
         default:

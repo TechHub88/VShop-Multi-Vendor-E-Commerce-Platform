@@ -72,6 +72,7 @@
     .badge-featured { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
     .badge-sponsored { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
     .badge-pinned { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .badge-boosted { background: #faf5ff; color: #7c3aed; border: 1px solid #ddd6fe; }
     
     .product-image {
         width: 52px;
@@ -311,6 +312,9 @@
                                     @endif
                                     @if($product->is_sponsored)
                                         <span class="badge-boost badge-sponsored"><i class="bi bi-megaphone-fill"></i> Sponsored</span>
+                                    @endif
+                                    @if($product->is_boosted)
+                                        <span class="badge-boost badge-boosted"><i class="bi bi-rocket-takeoff-fill"></i> Boosted</span>
                                     @endif
                                 </div>
                             </td>
