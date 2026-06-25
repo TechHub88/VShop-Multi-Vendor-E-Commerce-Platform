@@ -434,7 +434,8 @@ if($customerLoggedIn){
                                     $currentLoc = session('current_location', '');
                                     if(empty($currentLoc) && $customerLoggedIn) {
                                         $dbLoc = \App\Models\Address::where('customer_id', Auth::guard('customer')->id())
-                                            ->where('address_type', 'current_location')
+                                            ->where('address_type', 'both')
+                                            ->where('address_line1', 'Current Location')
                                             ->first();
                                         if($dbLoc) {
                                             $currentLoc = $dbLoc->city;

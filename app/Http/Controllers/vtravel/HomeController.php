@@ -286,7 +286,8 @@ public function vshophome(Request $request)
                 $customer = Auth::guard('customer')->user();
                 
                 $address = \App\Models\Address::where('customer_id', $customerId)
-                    ->where('address_type', 'current_location')
+                    ->where('address_type', 'both')
+                    ->where('address_line1', 'Current Location')
                     ->first();
                 
                 if ($address) {
@@ -301,13 +302,15 @@ public function vshophome(Request $request)
                 } else {
                     \App\Models\Address::create([
                         'customer_id' => $customerId,
-                        'address_type' => 'current_location',
+                        'address_type' => 'both',
+                        'address_line1' => 'Current Location',
                         'city' => $request->city,
                         'state' => $request->state,
                         'pincode' => $request->pincode,
                         'name' => $customer->name ?? 'Customer',
                         'email' => $customer->email ?? '',
                         'phone' => $customer->phone ?? '',
+                        'country' => 'India',
                     ]);
                 }
             } catch (\Exception $e) {
