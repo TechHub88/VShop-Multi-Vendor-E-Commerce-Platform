@@ -82,10 +82,13 @@ public function index()
             
             $existing->delete();
 
+            $wishlistCount = Wishlist::where('customer_id', $customer->id)->count();
+
             return response()->json([
                 'success' => true,
                 'status' => 'removed',
-                'message' => 'Removed from wishlist'
+                'message' => 'Removed from wishlist',
+                'wishlist_count' => $wishlistCount
             ]);
         }
 
@@ -101,10 +104,13 @@ public function index()
 
         \Log::info('Wishlist item created', ['wishlist_id' => $wishlist->id]);
 
+        $wishlistCount = Wishlist::where('customer_id', $customer->id)->count();
+
         return response()->json([
             'success' => true,
             'status' => 'added',
-            'message' => 'Added to wishlist'
+            'message' => 'Added to wishlist',
+            'wishlist_count' => $wishlistCount
         ]);
 
     } catch (\Illuminate\Validation\ValidationException $e) {

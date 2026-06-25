@@ -777,7 +777,7 @@
 <th>User Details</th>
 <th>Product / Service</th>
 <th>Interaction</th>
-<th>Interested Service</th>
+<th>Enquiry Message</th>
 <th>Follow-up</th>
 <th>Source</th>
 <th>Assign To</th>
@@ -915,11 +915,11 @@ if(!empty($e->next_followup_date)){
 
 </td>
 
-{{-- ================= INTERESTED ================= --}}
+{{-- ================= ENQUIRY MESSAGE ================= --}}
 <td>
 
-<div class="user-meta">
-    {{ $e->interested_service ?? 'Campaign / Product Enquiry' }}
+<div class="user-meta" style="max-width: 200px; white-space: normal; word-wrap: break-word;">
+    {{ $e->message ?? '-' }}
 </div>
 
 </td>
@@ -1038,48 +1038,39 @@ Support Team
 
 </div>
 
-<div class="action-btn-wrap mb-2">
+<div class="d-flex align-items-center gap-2 mb-2">
 
-<button type="button"
-        class="btn followup-btn">
-
+<button type="button" class="btn followup-btn flex-grow-1">
     Next Follow-up
-
 </button>
 
-<a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ $e->user_email }}"
-   target="_blank"
-   class="icon-btn email-btn">
+<div class="d-flex gap-2">
+    <a href="https://mail.google.com/mail/?view=cm&fs=1&to={{ $e->user_email }}"
+       target="_blank"
+       class="icon-btn email-btn">
+        <i class="fa-solid fa-envelope"></i>
+    </a>
 
-    <i class="fa-solid fa-envelope"></i>
+    <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $e->user_mobile) }}"
+       target="_blank"
+       class="icon-btn whatsapp-btn">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
+</div>
 
-</a>
+</div>
 
-<a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $e->user_mobile) }}"
-   target="_blank"
-   class="icon-btn whatsapp-btn">
-
-    <i class="fa-brands fa-whatsapp"></i>
-
-</a>
-
+<div class="mb-2">
 @if($e->status!='Converted')
-
 <a href="{{ url('seller/enquiry/convert/'.$e->id) }}"
-   class="btn convert-btn">
-
+   class="btn convert-btn w-100 d-block text-center">
     Convert to Order
-
 </a>
-
 @else
-
-<span class="badge bg-success p-2">
+<span class="badge bg-success p-2 w-100 d-block text-center">
     Converted
 </span>
-
 @endif
-
 </div>
 
 <textarea name="followup_note"

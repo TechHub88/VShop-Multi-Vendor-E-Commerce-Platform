@@ -9,7 +9,9 @@ use App\Models\Seller;
 use App\Models\BroadcastMessage;
 use App\Models\InternalSupport;
 use App\Services\BroadcastService;
+use App\Services\GeminiChatService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class ChatController extends Controller
 {
@@ -90,7 +92,7 @@ class ChatController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
-        return response()->json(['messages' => $messages]);
+        return response()->json(['messages' => $messages, 'conversation_id' => $conversation->id]);
     } catch (\Exception $e) {
         \Log::error('getMessages error: ' . $e->getMessage());
         return response()->json(['error' => $e->getMessage()], 500);
@@ -122,6 +124,23 @@ class ChatController extends Controller
         ]);
 
         $conversation->update(['last_message_at' => now()]);
+
+        // Publish message to Socket.io server
+        try {
+            Http::post('http://localhost:3000/publish', [
+                'room' => 'conversation_' . $conversation->id,
+                'event' => 'message',
+                'data' => [
+                    'id' => $message->id,
+                    'message' => $message->message,
+                    'sender_id' => $adminId,
+                    'sender_type' => 'admin',
+                    'created_at' => $message->created_at->toDateTimeString()
+                ]
+            ]);
+        } catch (\Exception $ex) {
+            \Log::warning('Failed to publish admin message to Socket.io: ' . $ex->getMessage());
+        }
 
         return response()->json(['success' => true, 'message' => $message]);
     }
@@ -293,5 +312,136 @@ class ChatController extends Controller
         ];
 
         return response()->json($stats);
+    }
+
+    // ==================== ASHMITA CHATBOT API ====================
+    public function ashmitaHistory()
+    {
+        try {
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
+
+            $conversation = ChatConversation::firstOrCreate(
+                [
+                    'type' => 'support',
+                    'seller_id' => $userId,
+                ],
+                [
+                    'admin_id' => 1,
+                    'subject' => 'Support Chat with Ashmita',
+                    'status' => 'open',
+                    'last_message_at' => now(),
+                ]
+            );
+
+            $messages = ChatMessage::where('conversation_id', $conversation->id)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'conversation_id' => $conversation->id,
+                'messages' => $messages
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('ashmitaHistory error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function ashmitaMessage(Request $request, GeminiChatService $geminiService)
+    {
+        try {
+            $userId = Auth::id();
+            if (!$userId) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
+
+            $request->validate([
+                'message' => 'required|string',
+            ]);
+
+            $conversation = ChatConversation::firstOrCreate(
+                [
+                    'type' => 'support',
+                    'seller_id' => $userId,
+                ],
+                [
+                    'admin_id' => 1,
+                    'subject' => 'Support Chat with Ashmita',
+                    'status' => 'open',
+                    'last_message_at' => now(),
+                ]
+            );
+
+            // 1. Create and save the buyer's message
+            $buyerMessage = ChatMessage::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => $userId,
+                'sender_type' => 'seller',
+                'message' => $request->message,
+                'is_read' => false,
+            ]);
+
+            $conversation->update(['last_message_at' => now()]);
+
+            // 2. Publish buyer message to Socket.io server
+            try {
+                Http::post('http://localhost:3000/publish', [
+                    'room' => 'conversation_' . $conversation->id,
+                    'event' => 'message',
+                    'data' => [
+                        'id' => $buyerMessage->id,
+                        'message' => $buyerMessage->message,
+                        'sender_id' => $userId,
+                        'sender_type' => 'seller',
+                        'created_at' => $buyerMessage->created_at->toDateTimeString()
+                    ]
+                ]);
+            } catch (\Exception $ex) {
+                \Log::warning('Failed to publish buyer message to Socket.io: ' . $ex->getMessage());
+            }
+
+            // 3. Generate AI response from Ashmita
+            $botReplyText = $geminiService->getChatbotResponse($request->message, $userId);
+
+            // 4. Save Ashmita's message to database
+            $botMessage = ChatMessage::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => 1, // Admin ID 1 representing Ashmita
+                'sender_type' => 'admin',
+                'message' => $botReplyText,
+                'is_read' => false,
+            ]);
+
+            // 5. Publish Ashmita message to Socket.io server
+            try {
+                Http::post('http://localhost:3000/publish', [
+                    'room' => 'conversation_' . $conversation->id,
+                    'event' => 'message',
+                    'data' => [
+                        'id' => $botMessage->id,
+                        'message' => $botMessage->message,
+                        'sender_id' => 1,
+                        'sender_type' => 'admin',
+                        'created_at' => $botMessage->created_at->toDateTimeString()
+                    ]
+                ]);
+            } catch (\Exception $ex) {
+                \Log::warning('Failed to publish bot message to Socket.io: ' . $ex->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'buyer_message' => $buyerMessage,
+                'bot_message' => $botMessage
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('ashmitaMessage error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

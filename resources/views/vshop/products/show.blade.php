@@ -1368,6 +1368,13 @@
                                         @elseif($review->would_recommend == 0)
                                             <span class="text-danger small fw-semibold"><i class="fa-regular fa-circle-xmark"></i> Doesn't recommend</span>
                                         @endif
+
+                                        @if(!empty($review->admin_reply))
+                                            <div class="seller-reply mt-3 p-3 bg-white border rounded">
+                                                <h6 class="fw-bold text-primary mb-1" style="font-size: 14px;"><i class="fa-solid fa-reply"></i> Seller Reply</h6>
+                                                <p class="mb-0 text-secondary small">{{ $review->admin_reply }}</p>
+                                            </div>
+                                        @endif
                                     </div>
                                     @empty
                                         <p class="text-muted">No reviews yet.</p>
@@ -2165,6 +2172,11 @@ $(document).on('click','.copy',function(){
                     } else {
                         icon.className = "fa-regular fa-heart";
                         showToast("Removed from wishlist", "success");
+                    }
+
+                    if (data.wishlist_count !== undefined) {
+                        let countEl = document.getElementById('wishlistCount');
+                        if (countEl) countEl.innerText = data.wishlist_count;
                     }
                 })
                 .catch(() => {

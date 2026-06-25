@@ -3203,4 +3203,34 @@ public function generateSeoAIContent(Request $request)
         ], 500);
     }
 }
+
+    public function replyReview(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'reply' => 'required|string|max:1000'
+            ]);
+
+            $review = \App\Models\ProductReview::whereHas('product', function($q) {
+                $q->where('created_by_id', auth()->guard('seller')->id());
+            })->findOrFail($id);
+
+            $review->update([
+                'admin_reply' => $request->reply,
+                'replied_at' => now(),
+                'replied_by' => auth()->guard('seller')->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Reply sent successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send reply. ' . $e->getMessage()
+            ]);
+        }
+    }
 }

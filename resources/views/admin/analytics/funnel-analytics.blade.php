@@ -399,6 +399,18 @@
             window.addEventListener('resize', function() { funnelChart.resize(); });
         }
 
+        let categoryData = @json($categoryFunnel);
+        let catLabels = categoryData.map(c => c.category);
+        
+        let dropOffRates = categoryData.map(c => {
+            return c.views > 0 ? Math.round(((c.views - c.completed) / c.views) * 100) : 0;
+        });
+
+        let catVisitors = categoryData.map(c => c.views);
+        let catViews = categoryData.map(c => c.views);
+        let catEnquiries = categoryData.map(c => c.enquiries);
+        let catOrders = categoryData.map(c => c.orders);
+
         // ============================================
         // 2. CATEGORY DROP-OFF BAR CHART
         // ============================================
@@ -407,10 +419,10 @@
             new Chart(dropoffCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['Home Cleaning', 'Beauty & Salon', 'Pest Control', 'Appliances', 'Car Wash'],
+                    labels: catLabels,
                     datasets: [{
                         label: 'Drop-off Rate (%)',
-                        data: [85, 75, 65, 50, 50],
+                        data: dropOffRates,
                         backgroundColor: '#3b82f6',
                         hoverBackgroundColor: '#2563eb',
                         borderRadius: 6,
@@ -461,26 +473,26 @@
             new Chart(comparisonCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['Home Cleaning', 'Beauty & Salon', 'Pest Control', 'Appliances', 'Car Wash'],
+                    labels: catLabels,
                     datasets: [
                         {
                             label: 'Visitors',
-                            data: [35, 30, 25, 40, 30],
+                            data: catVisitors,
                             backgroundColor: '#3b82f6'
                         },
                         {
                             label: 'Views',
-                            data: [30, 25, 30, 25, 25],
+                            data: catViews,
                             backgroundColor: '#14b8a6'
                         },
                         {
                             label: 'Enquiries',
-                            data: [20, 25, 20, 20, 25],
+                            data: catEnquiries,
                             backgroundColor: '#eab308'
                         },
                         {
                             label: 'Orders',
-                            data: [15, 20, 25, 15, 20],
+                            data: catOrders,
                             backgroundColor: '#ef4444'
                         }
                     ]

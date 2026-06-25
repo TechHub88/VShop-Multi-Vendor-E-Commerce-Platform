@@ -426,6 +426,8 @@ Route::get('/review/',
 [SellerProductController::class,'review'])
 ->name('reviews');
 
+Route::post('/review/{id}/reply', [SellerProductController::class, 'replyReview'])->name('reviews.reply');
+
 Route::get(
     '{id}/review',
     [SellerProductController::class, 'productReview']
@@ -2648,6 +2650,10 @@ Route::prefix('chat')->name('chat.')->middleware('auth')->group(function () {
     Route::get('/broadcast-messaging', [ChatController::class, 'broadcastMessaging'])->name('broadcast-messaging');
     Route::post('/broadcast/send', [ChatController::class, 'sendBroadcast'])->name('send-broadcast');
     Route::get('/stats', [ChatController::class, 'getStats'])->name('stats');
+    Route::post('/ashmita/message', [ChatController::class, 'ashmitaMessage'])->name('ashmita.message');
+    Route::get('/ashmita/history', [ChatController::class, 'ashmitaHistory'])->name('ashmita.history');
+    Route::get('/admin/messages/{sellerId}', [ChatController::class, 'getMessages'])->name('admin.messages');
+    Route::post('/admin/send', [ChatController::class, 'sendMessage'])->name('admin.send');
 });
 
 // ==================== LOCATION ROUTES ====================

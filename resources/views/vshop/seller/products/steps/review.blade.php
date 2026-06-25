@@ -370,7 +370,7 @@
                                 }
                             @endphp
                             @if($thumb)
-                                <img src="{{ asset('storage/'.$thumb) }}" class="product-thumb" alt="">
+                                <img src="{{ asset($thumb) }}" class="product-thumb" alt="">
                             @else
                                 <div class="product-thumb d-flex align-items-center justify-content-center bg-light">
                                     <i class="fa-solid fa-box text-muted" style="font-size:14px;"></i>

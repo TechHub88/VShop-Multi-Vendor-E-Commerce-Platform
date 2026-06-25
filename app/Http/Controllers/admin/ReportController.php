@@ -862,9 +862,29 @@ public function salesAnalytics(Request $request)
     $totalOrders = $revenueTrends->sum('orders');
     $avgOrderValue = $totalOrders > 0 ? $totalRevenue / $totalOrders : 0;
     
+    // Top Sellers
+    $topSellers = OrderItem::join('products', 'order_items.product_id', '=', 'products.id')
+        ->join('sellers', 'products.created_by_id', '=', 'sellers.id')
+        ->join('orders', 'order_items.order_id', '=', 'orders.id')
+        ->whereBetween('orders.created_at', [$startDate, $endDate])
+        ->when($type, function($q) use ($type) {
+            return $q->where('products.type', $type);
+        })
+        ->select('sellers.name as seller_name', DB::raw('SUM(order_items.total) as revenue'))
+        ->groupBy('sellers.id', 'sellers.name')
+        ->orderByDesc('revenue')
+        ->limit(5)
+        ->get();
+
+    // Total Refunds
+    $totalRefunds = \App\Models\Refund::whereBetween('created_at', [$startDate, $endDate])
+        ->whereIn('status', ['approved', 'completed', 'processed'])
+        ->sum('amount');
+    
     return view('admin.analytics.sales-analytics', compact(
         'revenueTrends', 'peakPeriods', 'categorySales',
-        'totalRevenue', 'totalOrders', 'avgOrderValue', 'startDate', 'endDate'
+        'totalRevenue', 'totalOrders', 'avgOrderValue', 'startDate', 'endDate',
+        'topSellers', 'totalRefunds'
     ));
 }
 // ==============================================
@@ -903,10 +923,31 @@ public function funnelAnalytics(Request $request)
         'orders' => $totalOrders,
         'completed' => $completedOrders,
     ];
+
+    // Category Funnel Data (using the same approximations as global counts)
+    $categoryFunnel = OrderItem::join('products', 'order_items.product_id', '=', 'products.id')
+        ->join('marketplace_categories', 'products.category_id', '=', 'marketplace_categories.id')
+        ->join('orders', 'order_items.order_id', '=', 'orders.id')
+        ->whereBetween('orders.created_at', [$startDate, $endDate])
+        ->when($type, function($q) use ($type) {
+            return $q->where('products.type', $type);
+        })
+        ->select(
+            'marketplace_categories.name as category',
+            DB::raw('COUNT(order_items.id) as views'),
+            DB::raw('COUNT(DISTINCT orders.id) as enquiries'),
+            DB::raw('COUNT(DISTINCT orders.id) as orders'),
+            DB::raw('COUNT(DISTINCT CASE WHEN orders.delivery_status = "delivered" THEN orders.id END) as completed')
+        )
+        ->groupBy('marketplace_categories.id', 'marketplace_categories.name')
+        ->orderByDesc('orders')
+        ->limit(6)
+        ->get();
     
     return view('admin.analytics.funnel-analytics', compact(
         'funnelData', 'dropOffs', 'viewToEnquiryRate', 'enquiryToOrderRate',
-        'orderToCompleteRate', 'overallConversionRate', 'startDate', 'endDate'
+        'orderToCompleteRate', 'overallConversionRate', 'startDate', 'endDate',
+        'categoryFunnel'
     ));
 }
 

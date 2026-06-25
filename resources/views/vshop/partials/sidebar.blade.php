@@ -346,6 +346,7 @@
     // });
 </script>
 
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -353,20 +354,23 @@ document.addEventListener("DOMContentLoaded", function () {
     const chatBtns = document.querySelectorAll('.sidebarChatBtn');
     chatBtns.forEach(btn => {
         btn.addEventListener('click', function() {
+            const footerChatBtn = document.getElementById('openSupportChat');
+            if (footerChatBtn) {
+                footerChatBtn.click();
+                return;
+            }
+
             if(typeof Swal !== 'undefined') {
+                let sidebarSocket = null;
+                let conversationId = null;
+                let currentUserId = {{ Auth::id() ?? 0 }};
+
                 Swal.fire({
                     title: '<div style="text-align: left; font-size: 18px; display: flex; align-items: center;"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; margin-right: 10px;">Chat with Ashmita</div>',
                     html: `
                         <div id="liveChatWindow" class="scrollbar" style="height: 320px; overflow-y: auto; background: #f8f9fa; border-radius: 12px; padding: 15px; margin-bottom: 15px; text-align: left; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e9ecef;">
                             <div style="display: flex; flex-direction: column; gap: 12px;" id="liveChatContainer">
-                                <div style="display: flex; gap: 10px; align-items: flex-end;">
-                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #004392; color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,67,146,0.3); overflow: hidden;">
-                                        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width:100%; height:100%; object-fit:cover;">
-                                    </div>
-                                    <div style="background: white; padding: 12px 15px; border-radius: 14px; border-bottom-left-radius: 4px; max-width: 80%; font-size: 14px; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f1f1;">
-                                        Hi this is Ashmita, how can I help you?
-                                    </div>
-                                </div>
+                                <div class="text-center text-muted py-5">Loading conversation...</div>
                             </div>
                         </div>
                         <div style="display: flex; gap: 10px;">
@@ -381,38 +385,99 @@ document.addEventListener("DOMContentLoaded", function () {
                     customClass: {
                         popup: 'rounded-4 border-0 shadow-lg'
                     },
-                    didOpen: () => {
+                    didOpen: async () => {
                         const input = document.getElementById('liveChatInput');
                         const sendBtn = document.getElementById('liveChatSendBtn');
                         const chatWindow = document.getElementById('liveChatWindow');
                         const chatContainer = document.getElementById('liveChatContainer');
                         
-                        const sendMessage = () => {
-                            const msg = input.value.trim();
-                            if(msg) {
+                        function escapeHtml(text) {
+                            if (!text) return '';
+                            const div = document.createElement('div');
+                            div.textContent = text;
+                            return div.innerHTML;
+                        }
+
+                        function appendMsg(msg) {
+                            const isSent = msg.sender_id == currentUserId || msg.sender_type === 'seller';
+                            
+                            // Render user sent message on right
+                            if (isSent) {
                                 chatContainer.innerHTML += `
-                                    <div style="display: flex; gap: 10px; align-items: flex-end; align-self: flex-end; flex-direction: row-reverse;">
+                                    <div style="display: flex; gap: 10px; align-items: flex-end; align-self: flex-end; flex-direction: row-reverse;" id="msg-${msg.id}">
                                         <div style="background: #004392; color: white; padding: 12px 15px; border-radius: 14px; border-bottom-right-radius: 4px; max-width: 80%; font-size: 14px; text-align: left; box-shadow: 0 2px 8px rgba(0,67,146,0.2);">
-                                            ${msg}
+                                            ${escapeHtml(msg.message)}
                                         </div>
                                     </div>
                                 `;
-                                input.value = '';
-                                chatWindow.scrollTop = chatWindow.scrollHeight;
+                            } else {
+                                chatContainer.innerHTML += `
+                                    <div style="display: flex; gap: 10px; align-items: flex-end;" id="msg-${msg.id}">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #004392; color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,67,146,0.3); overflow: hidden;">
+                                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width:100%; height:100%; object-fit:cover;">
+                                        </div>
+                                        <div style="background: white; padding: 12px 15px; border-radius: 14px; border-bottom-left-radius: 4px; max-width: 80%; font-size: 14px; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f1f1;">
+                                            ${escapeHtml(msg.message)}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }
+
+                        // Load history
+                        try {
+                            const res = await fetch('{{ route('chat.ashmita.history') }}');
+                            const data = await res.json();
+                            if (data.success) {
+                                conversationId = data.conversation_id;
+                                chatContainer.innerHTML = '';
                                 
-                                setTimeout(() => {
-                                    chatContainer.innerHTML += `
+                                if (data.messages && data.messages.length > 0) {
+                                    data.messages.forEach(msg => appendMsg(msg));
+                                } else {
+                                    chatContainer.innerHTML = `
                                         <div style="display: flex; gap: 10px; align-items: flex-end;">
                                             <div style="width: 32px; height: 32px; border-radius: 50%; background: #004392; color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,67,146,0.3); overflow: hidden;">
                                                 <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width:100%; height:100%; object-fit:cover;">
                                             </div>
                                             <div style="background: white; padding: 12px 15px; border-radius: 14px; border-bottom-left-radius: 4px; max-width: 80%; font-size: 14px; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f1f1;">
-                                                Thank you for reaching out! Ashmita is reviewing your message and will connect shortly.
+                                                Hi this is Ashmita, how can I help you?
                                             </div>
                                         </div>
                                     `;
+                                }
+                                chatWindow.scrollTop = chatWindow.scrollHeight;
+
+                                // Connect Socket
+                                const socketUrl = window.location.protocol + '//' + window.location.hostname + ':3000';
+                                sidebarSocket = io(socketUrl);
+                                sidebarSocket.emit('join', 'conversation_' + conversationId);
+                                sidebarSocket.on('message', (msg) => {
+                                    if (document.getElementById('msg-' + msg.id)) return;
+                                    appendMsg(msg);
                                     chatWindow.scrollTop = chatWindow.scrollHeight;
-                                }, 1200);
+                                });
+                            }
+                        } catch (err) {
+                            chatContainer.innerHTML = '<div class="text-danger p-3">Failed to load chat history.</div>';
+                        }
+
+                        const sendMessage = async () => {
+                            const msg = input.value.trim();
+                            if(msg) {
+                                input.value = '';
+                                try {
+                                    await fetch('{{ route('chat.ashmita.message') }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                        },
+                                        body: JSON.stringify({ message: msg })
+                                    });
+                                } catch (err) {
+                                    console.error(err);
+                                }
                             }
                         };
                         
@@ -422,6 +487,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         });
                         
                         input.focus();
+                    },
+                    willClose: () => {
+                        if (sidebarSocket) {
+                            sidebarSocket.disconnect();
+                        }
                     }
                 });
             } else {

@@ -105,7 +105,53 @@ class MarketingGrowthController extends Controller
 
     public function campaignTracking()
     {
-        return view('admin.marketing.campaigns');
+        $campaigns = \App\Models\PromotionCampaign::latest()->get();
+        
+        $totalClicks = $campaigns->sum('unique_users');
+        $totalConversions = $campaigns->sum('total_orders');
+        $totalSpend = $campaigns->sum('total_discount_given');
+        
+        $conversionRate = $totalClicks > 0 ? ($totalConversions / $totalClicks) * 100 : 0;
+        $avgCost = $totalConversions > 0 ? $totalSpend / $totalConversions : 0;
+
+        // Chart Data (Last 7 days mock/aggregate from created_at as an example)
+        $chartDates = [];
+        $chartClicks = [];
+        $chartConversions = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i)->format('M d');
+            $chartDates[] = $date;
+            
+            // For a fully dynamic chart from PromotionCampaign based on creation date:
+            $dayCampaigns = $campaigns->filter(function($camp) use ($i) {
+                return $camp->created_at && $camp->created_at->format('Y-m-d') === now()->subDays($i)->format('Y-m-d');
+            });
+            $chartClicks[] = $dayCampaigns->sum('unique_users');
+            $chartConversions[] = $dayCampaigns->sum('total_orders');
+        }
+
+        // Helper to format numbers like 245.8K
+        $formatNumber = function ($number) {
+            if ($number >= 100000) {
+                return round($number / 100000, 2) . 'L'; // Lakhs
+            }
+            if ($number >= 1000) {
+                return round($number / 1000, 1) . 'K';
+            }
+            return number_format($number);
+        };
+
+        return view('admin.marketing.campaigns', compact(
+            'campaigns', 
+            'totalClicks', 
+            'totalConversions', 
+            'conversionRate', 
+            'avgCost',
+            'formatNumber',
+            'chartDates',
+            'chartClicks',
+            'chartConversions'
+        ));
     }
 
     public function rewardConfig()

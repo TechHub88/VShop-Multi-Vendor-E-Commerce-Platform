@@ -139,20 +139,20 @@
 
         <div class="metrics-grid">
             <div class="metric-box">
-                <div class="metric-label">Total Clicks</div>
-                <div class="metric-value">245.8K</div>
+                <div class="metric-label">Total Clicks (Unique Users)</div>
+                <div class="metric-value">{{ $formatNumber($totalClicks) }}</div>
             </div>
             <div class="metric-box">
-                <div class="metric-label">Conversions</div>
-                <div class="metric-value">18.2K</div>
+                <div class="metric-label">Conversions (Orders)</div>
+                <div class="metric-value">{{ $formatNumber($totalConversions) }}</div>
             </div>
             <div class="metric-box">
                 <div class="metric-label">Conversion Rate</div>
-                <div class="metric-value" style="color:#10b981;">7.4%</div>
+                <div class="metric-value" style="color:#10b981;">{{ number_format($conversionRate, 1) }}%</div>
             </div>
             <div class="metric-box">
                 <div class="metric-label">Avg. Acquisition Cost</div>
-                <div class="metric-value">₹120</div>
+                <div class="metric-value">₹{{ number_format($avgCost, 2) }}</div>
             </div>
         </div>
 
@@ -175,33 +175,29 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td><strong>Summer Vacation Special</strong></td>
-                        <td>Travel Package</td>
-                        <td>45,200</td>
-                        <td>3,100</td>
-                        <td>₹1.2L</td>
-                        <td><span class="status-active">Active</span></td>
-                        <td><a href="#" style="color:#5b45f4; font-weight:600; text-decoration:none;">View Report</a></td>
-                    </tr>
-                    <tr>
-                        <td><strong>Electronics Mega Sale</strong></td>
-                        <td>Product specific</td>
-                        <td>88,500</td>
-                        <td>9,400</td>
-                        <td>₹3.8L</td>
-                        <td><span class="status-active">Active</span></td>
-                        <td><a href="#" style="color:#5b45f4; font-weight:600; text-decoration:none;">View Report</a></td>
-                    </tr>
-                    <tr>
-                        <td><strong>New User Sign-up Bonus</strong></td>
-                        <td>Referral</td>
-                        <td>12,300</td>
-                        <td>1,250</td>
-                        <td>₹62K</td>
-                        <td><span class="status-active">Active</span></td>
-                        <td><a href="#" style="color:#5b45f4; font-weight:600; text-decoration:none;">View Report</a></td>
-                    </tr>
+                    @forelse($campaigns as $camp)
+                        <tr>
+                            <td><strong>{{ $camp->name }}</strong></td>
+                            <td>{{ $camp->formatted_type }}</td>
+                            <td>{{ $formatNumber($camp->unique_users) }}</td>
+                            <td>{{ $formatNumber($camp->total_orders) }}</td>
+                            <td>₹{{ number_format($camp->total_discount_given, 2) }}</td>
+                            <td>
+                                @if($camp->status === 'active')
+                                    <span class="status-active">Active</span>
+                                @elseif($camp->status === 'scheduled')
+                                    <span class="status-active" style="background:#fff7ed; color:#ea580c;">Scheduled</span>
+                                @else
+                                    <span class="status-active" style="background:#f1f5f9; color:#64748b;">{{ $camp->formatted_status }}</span>
+                                @endif
+                            </td>
+                            <td><a href="#" style="color:#5b45f4; font-weight:600; text-decoration:none;">View Report</a></td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No campaigns found.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -214,11 +210,11 @@ document.addEventListener("DOMContentLoaded", function() {
         series: [{
             name: 'Clicks',
             type: 'column',
-            data: [23000, 31000, 22000, 45000, 32000, 52000, 38000]
+            data: @json($chartClicks)
         }, {
             name: 'Conversions',
             type: 'area',
-            data: [1800, 2400, 1500, 3500, 2200, 4100, 2700]
+            data: @json($chartConversions)
         }],
         chart: {
             height: 350,
@@ -240,7 +236,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 stops: [0, 100]
             }
         },
-        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        labels: @json($chartDates),
         xaxis: {
             type: 'category',
         },

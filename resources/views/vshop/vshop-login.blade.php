@@ -151,7 +151,7 @@
                     <div class="login-form-sec">
                         <div class="top-area">
                             <a href="#">
-                                <img src="{{ asset('images/vshop-logo.png') }}" alt="VSHOP Logo">
+                                <img src="{{ asset('images/new-logo-vridhee.png') }}" alt="Vridhee Logo">
                             </a>
                             <h2>Sign In to VSHOP</h2>
                             <p>Access your account to manage orders and downloads</p>
@@ -172,7 +172,7 @@
                                     <input
                                         type="email"
                                         name="email"
-                                        value="{{ old('email') }}"
+                                        value="{{ old('email', 'sayaniroy.webmantra@gmail.com') }}"
                                         placeholder="Enter your email"
                                         class="@error('email') is-invalid @enderror"
                                         required
@@ -187,6 +187,7 @@
                                     <input
                                         type="password"
                                         name="password"
+                                        value="12341234"
                                         placeholder="Enter your password"
                                         required
                                     >

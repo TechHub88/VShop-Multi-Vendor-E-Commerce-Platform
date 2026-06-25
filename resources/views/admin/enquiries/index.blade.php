@@ -883,6 +883,7 @@
 
                     <!-- Tab 2: Actions & Management -->
                     <div class="tab-pane fade" id="modal-actions" role="tabpanel" aria-labelledby="modal-actions-tab">
+                        <input type="hidden" id="enq_action_id">
                         
                         <div class="row g-3">
                             <div class="col-lg-6">
@@ -896,7 +897,7 @@
                                             <select name="assigned_to" class="form-select" required id="select_enq_agent">
                                                 <option value="">Select Agent</option>
                                                 @foreach($staffMembers as $staff)
-                                                    <option value="{{ $staff->name }}">{{ $staff->name }} ({{ ucfirst($staff->type) }})</option>
+                                                    <option value="{{ $staff->first_name }} {{ $staff->last_name }}">{{ $staff->first_name }} {{ $staff->last_name }} ({{ ucfirst($staff->role) }})</option>
                                                 @endforeach
                                             </select>
                                         </div>

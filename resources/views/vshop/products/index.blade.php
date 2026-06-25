@@ -1612,7 +1612,7 @@ document.addEventListener('click', function(e){
 
             // 🔥🔥🔥 COUNT UPDATE FIX
             if(data.wishlist_count !== undefined){
-                let countEl = document.getElementById('wishlist-count');
+                let countEl = document.getElementById('wishlistCount');
                 if(countEl){
                     countEl.innerText = data.wishlist_count;
 

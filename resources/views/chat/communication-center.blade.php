@@ -158,6 +158,7 @@
     </div>
 </div>
 
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
     // Tab switching
     document.querySelectorAll('[data-tab]').forEach(tab => {
@@ -172,6 +173,63 @@
 
     // Load messages for selected seller
     let currentSellerId = null;
+    let adminSocket = null;
+    let activeConversationId = null;
+    const currentUserId = {{ auth()->id() }};
+
+    function connectAdminSocket(conversationId) {
+        if (adminSocket) {
+            adminSocket.disconnect();
+            adminSocket = null;
+        }
+
+        activeConversationId = conversationId;
+        const socketUrl = window.location.protocol + '//' + window.location.hostname + ':3000';
+        adminSocket = io(socketUrl);
+
+        adminSocket.on('connect', () => {
+            console.log('Admin connected to socket server');
+            adminSocket.emit('join', 'conversation_' + conversationId);
+        });
+
+        adminSocket.on('message', (msg) => {
+            // Check if message already exists in UI
+            if (document.getElementById('msg-' + msg.id)) return;
+            
+            appendAdminMessage(msg);
+            const container = document.getElementById('chatMessages');
+            container.scrollTop = container.scrollHeight;
+        });
+
+        adminSocket.on('disconnect', () => {
+            console.log('Admin disconnected from socket server');
+        });
+    }
+
+    function appendAdminMessage(msg) {
+        const container = document.getElementById('chatMessages');
+        const isAdmin = msg.sender_id == currentUserId || msg.sender_type === 'admin';
+        
+        // Remove empty placeholder if it exists
+        if (container.querySelector('.text-muted')) {
+            container.innerHTML = '';
+        }
+
+        let timeStr = 'Just now';
+        if (msg.created_at) {
+            timeStr = new Date(msg.created_at).toLocaleTimeString();
+        }
+
+        const msgHtml = `
+            <div class="d-flex ${isAdmin ? 'justify-content-end' : 'justify-content-start'} mb-2" id="msg-${msg.id}">
+                <div class="p-2 rounded ${isAdmin ? 'bg-primary text-white' : 'bg-light'} max-width-75">
+                    ${escapeHtml(msg.message)}
+                    <div class="small ${isAdmin ? 'text-white-50' : 'text-muted'}">${timeStr}</div>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', msgHtml);
+    }
 
     function loadMessages(sellerId) {
         currentSellerId = sellerId;
@@ -179,24 +237,20 @@
             .then(res => res.json())
             .then(data => {
                 const container = document.getElementById('chatMessages');
+                container.innerHTML = '';
+                
                 if (!data.messages || data.messages.length === 0) {
                     container.innerHTML = '<div class="text-center text-muted">No messages yet. Start the conversation!</div>';
-                    return;
+                } else {
+                    data.messages.forEach(msg => {
+                        appendAdminMessage(msg);
+                    });
                 }
-                let html = '';
-                data.messages.forEach(msg => {
-                    const isAdmin = msg.sender_id === {{ auth()->id() }};
-                    html += `
-                        <div class="d-flex ${isAdmin ? 'justify-content-end' : 'justify-content-start'} mb-2">
-                            <div class="p-2 rounded ${isAdmin ? 'bg-primary text-white' : 'bg-light'} max-width-75">
-                                ${escapeHtml(msg.message)}
-                                <div class="small ${isAdmin ? 'text-white-50' : 'text-muted'}">${new Date(msg.created_at).toLocaleTimeString()}</div>
-                            </div>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
                 container.scrollTop = container.scrollHeight;
+
+                if (data.conversation_id) {
+                    connectAdminSocket(data.conversation_id);
+                }
             })
             .catch(err => console.error(err));
     }

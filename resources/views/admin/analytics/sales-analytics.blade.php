@@ -125,12 +125,11 @@
     </div>
 
     @php
-        // Prepare dummy totals matching the screenshot if database is empty
-        $grossRevenue = $totalRevenue ?: 1250000;
-        $netRevenue = $totalRevenue ? ($totalRevenue * 0.9) : 1120000;
-        $totalOrdersVal = $totalOrders ?: 4560;
-        $avgOrderValueVal = $avgOrderValue ?: 2743;
-        $refundsVal = $totalRevenue ? ($totalRevenue * 0.1) : 130000;
+        $grossRevenue = $totalRevenue ?? 0;
+        $refundsVal = $totalRefunds ?? 0;
+        $netRevenue = $grossRevenue - $refundsVal;
+        $totalOrdersVal = $totalOrders ?? 0;
+        $avgOrderValueVal = $avgOrderValue ?? 0;
     @endphp
 
     <!-- Summary KPI Cards -->
@@ -235,23 +234,11 @@
                     @php
                         // Initialize a 24-hour map
                         $hourlyMap = [];
+                        for ($i = 0; $i < 24; $i++) {
+                            $hourlyMap[$i] = 0;
+                        }
                         foreach ($peakPeriods as $p) {
                             $hourlyMap[$p->hour] = $p->orders;
-                        }
-                        for ($i = 0; $i < 24; $i++) {
-                            if (!isset($hourlyMap[$i])) {
-                                $hourlyMap[$i] = 0;
-                            }
-                        }
-
-                        // Seed mockup peaks if database has no counts
-                        if (count($peakPeriods) == 0) {
-                            for ($i = 0; $i < 24; $i++) {
-                                if ($i >= 11 && $i <= 15) $hourlyMap[$i] = rand(22, 30);
-                                else if ($i >= 17 && $i <= 20) $hourlyMap[$i] = rand(18, 25);
-                                else if ($i >= 22 || $i <= 4) $hourlyMap[$i] = rand(1, 5);
-                                else $hourlyMap[$i] = rand(6, 12);
-                            }
                         }
 
                         $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -265,19 +252,12 @@
                                 <div class="d-flex flex-grow-1 gap-1">
                                     @for ($h = 0; $h < 24; $h++)
                                         @php
-                                            $baseVal = $hourlyMap[$h];
-                                            // Variance multipliers for realistic grids
-                                            $mult = 1.0;
-                                            if ($day === 'Sat' || $day === 'Sun') $mult = 1.25;
-                                            if ($day === 'Mon') $mult = 0.8;
-                                            if ($day === 'Wed' || $day === 'Thu') $mult = 1.1;
-
-                                            // Cell calculation
-                                            $cellVal = round($baseVal * $mult * (0.85 + (rand(0, 30)/100)));
+                                            // Cell calculation based purely on database map
+                                            $cellVal = $hourlyMap[$h];
                                             
                                             // Determine purple scale opacity based on volume
-                                            $maxDensity = 32;
-                                            $opacity = $cellVal > 0 ? min(0.08 + ($cellVal / $maxDensity) * 0.92, 1.0) : 0.05;
+                                            $maxDensity = max(1, max($hourlyMap));
+                                            $opacity = $cellVal > 0 ? min(0.1 + ($cellVal / $maxDensity) * 0.9, 1.0) : 0.05;
                                         @endphp
                                         <div class="heatmap-cell flex-fill rounded-1" 
                                              style="height: 18px; background-color: rgba(106, 57, 198, {{ $opacity }});" 
@@ -340,51 +320,28 @@
                     <h4 class="header-title fw-bold text-dark mb-3">Top Sellers Revenue</h4>
                     <p class="text-muted fs-11 mb-3">Leading seller portfolios by generated revenue.</p>
                     <div class="d-flex flex-column gap-3 mt-2">
-                        <div>
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-semibold text-dark fs-13">CleanPro Services</span>
-                                <span class="text-muted fw-bold fs-13">₹1.2L</span>
+                        @php
+                            $maxSellerRevenue = $topSellers->count() > 0 ? $topSellers->max('revenue') : 1;
+                        @endphp
+                        
+                        @forelse($topSellers as $seller)
+                            @php
+                                $percent = min(100, round(($seller->revenue / $maxSellerRevenue) * 100));
+                            @endphp
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="fw-semibold text-dark fs-13">{{ $seller->seller_name }}</span>
+                                    <span class="text-muted fw-bold fs-13">₹{{ $seller->revenue >= 100000 ? round($seller->revenue / 100000, 2) . 'L' : number_format($seller->revenue) }}</span>
+                                </div>
+                                <div class="progress" style="height: 6px; border-radius: 4px; background-color: #f1f5f9;">
+                                    <div class="progress-bar" role="progressbar" style="width: {{ $percent }}%; background-color: #3b7ddd; border-radius: 4px;"></div>
+                                </div>
                             </div>
-                            <div class="progress" style="height: 6px; border-radius: 4px; background-color: #f1f5f9;">
-                                <div class="progress-bar" role="progressbar" style="width: 92%; background-color: #3b7ddd; border-radius: 4px;"></div>
+                        @empty
+                            <div class="text-center py-4">
+                                <span class="text-muted fs-13">No seller revenue data found for this period.</span>
                             </div>
-                        </div>
-                        <div>
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-semibold text-dark fs-13">Urban Care</span>
-                                <span class="text-muted fw-bold fs-13">₹99K</span>
-                            </div>
-                            <div class="progress" style="height: 6px; border-radius: 4px; background-color: #f1f5f9;">
-                                <div class="progress-bar" role="progressbar" style="width: 78%; background-color: #3b7ddd; border-radius: 4px;"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-semibold text-dark fs-13">Fixit Solutions</span>
-                                <span class="text-muted fw-bold fs-13">₹85K</span>
-                            </div>
-                            <div class="progress" style="height: 6px; border-radius: 4px; background-color: #f1f5f9;">
-                                <div class="progress-bar" role="progressbar" style="width: 68%; background-color: #3b7ddd; border-radius: 4px;"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-semibold text-dark fs-13">Perfect Clean</span>
-                                <span class="text-muted fw-bold fs-13">₹72K</span>
-                            </div>
-                            <div class="progress" style="height: 6px; border-radius: 4px; background-color: #f1f5f9;">
-                                <div class="progress-bar" role="progressbar" style="width: 58%; background-color: #3b7ddd; border-radius: 4px;"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="fw-semibold text-dark fs-13">Home Masters</span>
-                                <span class="text-muted fw-bold fs-13">₹60K</span>
-                            </div>
-                            <div class="progress" style="height: 6px; border-radius: 4px; background-color: #f1f5f9;">
-                                <div class="progress-bar" role="progressbar" style="width: 48%; background-color: #3b7ddd; border-radius: 4px;"></div>
-                            </div>
-                        </div>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -405,50 +362,16 @@
             [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
         }
 
-        // ============================================
-        // DUMMY DATA FOR REVENUE TRENDS (30 days)
-        // ============================================
-        const last30Days = [];
-        const revenueData = [];
-        const ordersData = [];
-
-        for (let i = 29; i >= 0; i--) {
-            const date = new Date();
-            date.setDate(date.getDate() - i);
-            
-            // Format to "DD MMM"
-            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            last30Days.push(date.getDate() + ' ' + months[date.getMonth()]);
-
-            const dayOfWeek = date.getDay();
-            let multiplier = 1;
-            if (dayOfWeek === 0 || dayOfWeek === 6) multiplier = 1.4; // Weekend peak
-            if (dayOfWeek === 1) multiplier = 0.85; // Monday drop
-
-            const baseRevenue = 85000 + (Math.random() * 45000) * multiplier;
-            const baseOrders = 350 + (Math.random() * 180) * multiplier;
-
-            revenueData.push(Math.floor(baseRevenue));
-            ordersData.push(Math.floor(baseOrders));
-        }
-
         let revenueLabels = @json($revenueTrends->pluck('date') ?? []);
         let revenueValues = @json($revenueTrends->pluck('revenue') ?? []);
         let orderValues = @json($revenueTrends->pluck('orders') ?? []);
 
-        // Use formatted dummy data if no DB values exist
-        if (!revenueLabels || revenueLabels.length === 0) {
-            revenueLabels = last30Days;
-            revenueValues = revenueData;
-            orderValues = ordersData;
-        } else {
-            // Format labels from dates to 'DD MMM'
-            revenueLabels = revenueLabels.map(d => {
-                const dateObj = new Date(d);
-                const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                return dateObj.getDate() + ' ' + months[dateObj.getMonth()];
-            });
-        }
+        // Format labels from dates to 'DD MMM'
+        revenueLabels = revenueLabels.map(d => {
+            const dateObj = new Date(d);
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return dateObj.getDate() + ' ' + months[dateObj.getMonth()];
+        });
 
         // ============================================
         // CHART 1: REVENUE TRENDS (LINE CHART)
@@ -525,15 +448,10 @@
         }
 
         // ============================================
-        // DUMMY DATA FOR CATEGORY CHART
+        // DB DATA FOR CATEGORY CHART
         // ============================================
         let catLabels = @json($categorySales->pluck('category') ?? []);
         let catValues = @json($categorySales->pluck('revenue') ?? []);
-
-        if (!catLabels || catLabels.length === 0) {
-            catLabels = ['Home Cleaning', 'Beauty & Salon', 'Pest Control', 'Appliances', 'Car Wash', 'Others'];
-            catValues = [470000, 390000, 310000, 190000, 140000, 80000];
-        }
 
         // ============================================
         // CHART 2: CATEGORY WISE SALES (BAR CHART)

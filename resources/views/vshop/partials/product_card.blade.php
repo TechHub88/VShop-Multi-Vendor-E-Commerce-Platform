@@ -12,10 +12,17 @@
                 </a>
             </h3>
             
+            @php
+                $realAvgRating = \App\Models\ProductReview::where('product_id', $product->id)->where('is_approved', 1)->avg('rating') ?? 0;
+                $realReviewCount = \App\Models\ProductReview::where('product_id', $product->id)->where('is_approved', 1)->count();
+            @endphp
             <div class="rating-size-sec" style="display: flex !important; align-items: center !important; margin-bottom: 8px !important; gap: 8px;">
-                <span class="rating-sec" style="font-size: 12px !important; font-weight: bold; margin: 0 !important; color: #388e3c; display: inline-flex; align-items: center; gap: 3px;">
-                    {{ number_format($product->average_rating ?? 4.5, 1) }}
-                    <i class="fa-solid fa-star" style="font-size: 10px !important; color: #ffffffff;"></i>
+                <span class="rating-sec" style="font-size: 12px !important; font-weight: bold; margin: 0 !important; color: #212121; display: inline-flex; align-items: center; gap: 3px;">
+                    {{ number_format($realAvgRating, 1) }}
+                    <i class="fa-solid fa-star" style="font-size: 10px !important; color: #ffc107;"></i>
+                    @if($realReviewCount > 0)
+                        <span style="color: #878787; font-weight: normal; margin-left: 2px;">({{ $realReviewCount }})</span>
+                    @endif
                 </span>
                 <span class="color-size-sec" style="font-size: 12px !important; margin: 0 !important; color: #878787;">
                     @if(isset($product->created_by) && $product->created_by === 'seller')

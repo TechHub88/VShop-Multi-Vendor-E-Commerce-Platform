@@ -16,7 +16,11 @@ class EnquiryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Enquiry::query();
+        // Only enquiries that sellers haven't followed up
+        $query = Enquiry::where(function($q) {
+            $q->whereNull('followup_count')
+              ->orWhere('followup_count', 0);
+        });
 
         // Filters
         if ($request->filled('status')) {
@@ -72,7 +76,7 @@ class EnquiryController extends Controller
         $enquiries = $query->with('seller')->orderBy('created_at', 'desc')->paginate(15, ['*'], 'enquiries_page')->withQueryString();
 
         // Staff members for assignment dropdown
-        $staffMembers = User::whereIn('type', ['admin', 'product', 'travel'])->get();
+        $staffMembers = \App\Models\AdminStaff::all();
 
         // ── SOURCE TRACKING STATS ──
         $sourceStats = Enquiry::select('source', DB::raw('COUNT(*) as total'))

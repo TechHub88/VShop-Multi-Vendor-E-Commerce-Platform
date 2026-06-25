@@ -117,6 +117,11 @@ public function vtravelRegister(Request $request)
         }
     }
 
+    // Generate unique 4-digit referral code
+    do {
+        $myReferralCode = rand(1000, 9999);
+    } while (Customer::where('referral_code', $myReferralCode)->exists());
+
     $customer = Customer::create([
         'name'     => $request->name,
         'email'    => $request->email,
@@ -125,6 +130,7 @@ public function vtravelRegister(Request $request)
         'type'     => 'travel',  // Fixed: travel type
         'status'   => 'approved', // Direct approved
         'referred_by' => $referredBy,
+        'referral_code' => $myReferralCode,
     ]);
 
     if ($referredBy) {
@@ -158,6 +164,11 @@ public function vtravelRegister(Request $request)
             }
         }
 
+        // Generate unique 4-digit referral code
+        do {
+            $myReferralCode = rand(1000, 9999);
+        } while (Customer::where('referral_code', $myReferralCode)->exists());
+
         $customer = Customer::create([
             'name'     => $request->name,
             'email'    => $request->email,
@@ -168,6 +179,7 @@ public function vtravelRegister(Request $request)
             'otp'      => $otp,
             'otp_generated_at' => now(),
             'referred_by' => $referredBy,
+            'referral_code' => $myReferralCode,
         ]);
 
         // Send OTP via PHP mail()
