@@ -44,7 +44,7 @@ $routeName = 'productmanage.show';
 
 @if($products->count() > 0)
     @foreach($products->take(4) as $product)
-    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+    <div class="col-6 col-md-4 col-lg-2 mb-4">
         @include('vshop.partials.product_card', ['product' => $product])
     </div>
     @endforeach
@@ -76,7 +76,7 @@ $routeName = 'productmanage.show';
     @endphp
 
     @foreach($discountProducts as $product)
-    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+    <div class="col-6 col-md-4 col-lg-2 mb-4">
         @include('vshop.partials.product_card', ['product' => $product])
     </div>
     @endforeach
@@ -101,7 +101,7 @@ Best Sellers from {{ $seller->name ?? $seller->org_name }}
 
 @forelse($products as $product)
 
-<div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+<div class="col-6 col-md-4 col-lg-2 mb-4">
     @include('vshop.partials.product_card', ['product' => $product])
 </div>
 
