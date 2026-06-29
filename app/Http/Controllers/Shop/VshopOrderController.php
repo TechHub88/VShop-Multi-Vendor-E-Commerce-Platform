@@ -454,8 +454,18 @@ public function placeOrder(Request $request)
                 if ($config) {
                     $commPercent = $config->commission_percentage ?? 0;
                     if ($commPercent > 0) {
-                        $rewardAmount = ($subTotal * $commPercent) / 100;
-                        $rewardPoints = (int) $rewardAmount;
+                        // Determine points from the RewardRedemptionTier set by admin
+                        $tier = \App\Models\RewardRedemptionTier::where('discount_amount', $commPercent)
+                            ->where('status', 'active')
+                            ->first();
+
+                        if ($tier) {
+                            $rewardPoints = $tier->points_required;
+                            $rewardAmount = $rewardPoints; // Assuming 1 point = 1 currency unit for display
+                        } else {
+                            $rewardAmount = ($subTotal * $commPercent) / 100;
+                            $rewardPoints = (int) $rewardAmount;
+                        }
                         
                         \App\Models\Reward::create([
                             'customer_id' => $referrerId,
