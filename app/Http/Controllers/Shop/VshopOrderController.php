@@ -438,6 +438,9 @@ public function placeOrder(Request $request)
         ]);
 
         // Process Buyer-to-Buyer Referral Commission
+        $historyCommPercent = 0;
+        $historyAmount = 0;
+        
         if ($referrerId) {
             $hasOrderedBefore = \App\Models\Order::where('customer_id', $customer->id)
                 ->where('seller_id', $sellerId)
@@ -467,6 +470,19 @@ public function placeOrder(Request $request)
                             $rewardPoints = (int) $rewardAmount;
                         }
                         
+                        $historyCommPercent = $commPercent;
+                        
+                        // We also need to factor in the discount the seller gave to the buyer
+                        $configExtra = json_decode($config->description, true);
+                        $refereeDiscountPercent = $configExtra['referee_discount'] ?? 0;
+                        $discountGiven = 0;
+                        if ($refereeDiscountPercent > 0) {
+                            $discountGiven = ($subTotal * $refereeDiscountPercent) / 100;
+                        }
+                        
+                        // Amount deducted from seller: Commission given to referrer + Discount given to buyer
+                        $historyAmount = $rewardAmount + $discountGiven;
+                        
                         \App\Models\Reward::create([
                             'customer_id' => $referrerId,
                             'type' => 'points',
@@ -492,8 +508,8 @@ public function placeOrder(Request $request)
                 'buyer_id' => $customer->id,
                 'seller_id' => $sellerId,
                 'order_id' => $order->id,
-                'amount' => 0, // Commission calculated later on delivery
-                'commission_percent' => 0,
+                'amount' => $historyAmount, 
+                'commission_percent' => $historyCommPercent,
                 'status' => 'pending',
             ]);
         }
