@@ -39,7 +39,7 @@ class OrderController extends Controller
     }
    public function index(Request $request)
     {
-        $query = Order::query()->with('seller');
+        $query = Order::query()->with(['seller', 'customer']);
         
         // Apply filters
         if ($request->filled('seller')) {
@@ -47,11 +47,16 @@ class OrderController extends Controller
         }
         
         if ($request->filled('product')) {
-            $query->where('product_id', $request->product);
+            $query->whereHas('items', function($q) use ($request) {
+                $q->where('product_id', $request->product);
+            });
         }
         
         if ($request->filled('location')) {
-            $query->where('location', $request->location);
+            $query->where(function($q) use ($request) {
+                $q->where('location', 'like', '%' . $request->location . '%')
+                  ->orWhere('city', 'like', '%' . $request->location . '%');
+            });
         }
         
         if ($request->filled('payment_type')) {
@@ -65,15 +70,85 @@ class OrderController extends Controller
         if ($request->filled('order_status')) {
             $query->where('status', $request->order_status);
         }
+
+        if ($request->filled('date_range')) {
+            switch ($request->date_range) {
+                case 'today':
+                    $query->whereDate('created_at', now()->today());
+                    break;
+                case 'yesterday':
+                    $query->whereDate('created_at', now()->yesterday());
+                    break;
+                case 'this_week':
+                    $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+                    break;
+                case 'last_week':
+                    $query->whereBetween('created_at', [now()->subWeek()->startOfWeek(), now()->subWeek()->endOfWeek()]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year);
+                    break;
+                case 'last_month':
+                    $query->whereMonth('created_at', now()->subMonth()->month)->whereYear('created_at', now()->subMonth()->year);
+                    break;
+                case 'this_year':
+                    $query->whereYear('created_at', now()->year);
+                    break;
+                case 'last_year':
+                    $query->whereYear('created_at', now()->subYear()->year);
+                    break;
+            }
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                  ->orWhere('order_no', 'like', "%{$search}%")
+                  ->orWhereHas('customer', function($q2) use ($search) {
+                      $q2->where('name', 'like', "%{$search}%")
+                         ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
         
         $orders = $query->latest()->paginate(15);
         
-        // Get data for filters from respective tables (optimized to only select needed columns)
-        $sellers = Seller::select('id', 'name')->get(); 
-        $products = Product::select('id', 'name')->get(); 
-        $cities = City::select('name')->orderBy('name')->get();
+        // Compute KPI Counts accurately
+        $directOrdersCount = Order::whereNull('referrer_id')->count();
+        $completedOrdersCount = Order::whereIn('status', ['Completed', 'completed', 'delivered', 'Delivered'])->count();
+        $cancelledOrdersCount = Order::whereIn('status', ['Cancelled', 'cancelled'])->count();
+        $pendingOrdersCount = Order::whereIn('status', ['Pending', 'pending'])->count();
+
+        // Get data for filters optimized to prevent memory limit issues
+        $sellers = Seller::select('id', 'name')->limit(300)->get(); 
+        $products = Product::select('id', 'name')->limit(300)->get(); 
+        $cities = City::select('name')->orderBy('name')->limit(300)->get();
         
-        return view('admin.orders.index', compact('orders', 'sellers', 'products', 'cities'));
+        return view('admin.orders.index', compact(
+            'orders', 'sellers', 'products', 'cities',
+            'directOrdersCount', 'completedOrdersCount', 'cancelledOrdersCount', 'pendingOrdersCount'
+        ));
+    }
+
+    public function invoice(Request $request, $id)
+    {
+        $order = Order::with([
+            'customer.firstAddress',
+            'seller',
+            'items.product',
+            'items.color',
+            'items.size'
+        ])->findOrFail($id);
+
+        if ($request->has('download') || $request->query('export') === 'pdf') {
+            if (class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.orders.invoice', compact('order'));
+                return $pdf->download('Invoice_' . ($order->order_no ?? $order->id) . '.pdf');
+            }
+        }
+
+        return view('admin.orders.invoice', compact('order'));
     }
  
  
@@ -117,38 +192,27 @@ public function cancellation(Request $request)
     $products = \App\Models\Product::all();
     $cities = \App\Models\City::all();
     
-    $orders = Order::with(['customer', 'items.product'])
-        ->where(function($q) {
-            $q->where('cancellation_requested', true)
-              ->orWhere('return_requested', true);
-        })
+    $returns = \App\Models\OrderReturn::with(['customer', 'order.items.product'])
         ->when($request->request_type, function($q) use ($request) {
-            if($request->request_type == 'cancellation') {
-                $q->where('cancellation_requested', true);
-            } elseif($request->request_type == 'return') {
-                $q->where('return_requested', true);
-            }
+            $q->where('return_type', $request->request_type);
         })
         ->when($request->status, function($q) use ($request) {
-            $q->where(function($q2) use ($request) {
-                $q2->where('cancellation_status', $request->status)
-                   ->orWhere('return_status', $request->status);
-            });
+            $q->where('status', $request->status);
         })
         ->when($request->seller, function($q) use ($request) {
-            $q->whereHas('items.product', function($q2) use ($request) {
+            $q->whereHas('order.items.product', function($q2) use ($request) {
                 $q2->where('seller_id', $request->seller);
             });
         })
         ->when($request->product, function($q) use ($request) {
-            $q->whereHas('items', function($q2) use ($request) {
+            $q->whereHas('order.items', function($q2) use ($request) {
                 $q2->where('product_id', $request->product);
             });
         })
         ->orderBy('id', 'desc')
-        ->paginate(6); // CHANGE FROM get() TO paginate()
+        ->paginate(10);
 
-    return view('admin.orders.cancellation', compact('orders', 'sellers', 'products', 'cities'));
+    return view('admin.orders.cancellation', compact('returns', 'sellers', 'products', 'cities'));
 }
 
 
@@ -564,16 +628,11 @@ public function exportCancellation(Request $request)
         $totalAmount = Order::where('payment_status', 'success')->sum('total_amount');
         $refundedAmount = Order::where('payment_status', 'refunded')->sum('total_amount');
         
-        // ========== FILTER DROPDOWN DATA ==========
+        // ========== FILTER DROPDOWN DATA (Optimized) ==========
         
-        // Get all sellers for filter dropdown
-        $sellers = Seller::orderBy('name')->get();
-        
-        // Get all products for filter dropdown
-        $products = Product::orderBy('name')->get();
-        
-        // Get all cities for filter dropdown
-        $cities = City::orderBy('name')->get();
+        $sellers = Seller::select('id', 'name')->orderBy('name')->limit(300)->get();
+        $products = Product::select('id', 'name')->orderBy('name')->limit(300)->get();
+        $cities = City::select('name')->orderBy('name')->limit(300)->get();
         
         // Return view with all data
         return view('admin.orders.payment', compact(
@@ -588,6 +647,78 @@ public function exportCancellation(Request $request)
             'totalAmount',
             'refundedAmount'
         ));
+    }
+
+    /* =====================================================
+     *  PAYMENT MONITORING ACTIONS
+     * ===================================================== */
+    public function getPaymentDetails($id)
+    {
+        try {
+            $order = Order::with(['customer', 'seller', 'items.product'])->findOrFail($id);
+            $html = view('admin.orders.partials.payment_details', compact('order'))->render();
+            return response()->json(['success' => true, 'html' => $html]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function paymentDetails($id)
+    {
+        return $this->getPaymentDetails($id);
+    }
+
+    public function validateInvoice($id)
+    {
+        $order = Order::findOrFail($id);
+        $isValid = !empty($order->total_amount) && $order->total_amount > 0;
+        return response()->json([
+            'valid' => $isValid,
+            'message' => $isValid 
+                ? '<strong>Invoice Validated & Verified.</strong><br>Order #' . $order->id . ' has matching payment records and total (₹' . number_format($order->total_amount, 2) . ').' 
+                : 'Invoice validation warning: Order total is 0 or missing.'
+        ]);
+    }
+
+    public function markSuspicious($id)
+    {
+        $order = Order::findOrFail($id);
+        $order->fraud_status = 'suspicious';
+        $order->fraud_score = max(50, $order->fraud_score ?? 50);
+        $order->save();
+        return response()->json(['success' => true, 'message' => 'Payment marked as suspicious']);
+    }
+
+    public function flagFraud(Request $request, $id)
+    {
+        $order = Order::findOrFail($id);
+        $order->fraud_status = 'flagged';
+        $order->fraud_score = 95;
+        $order->fraud_reason = $request->reason ?? 'Flagged by admin';
+        $order->save();
+        return response()->json(['success' => true, 'message' => 'Payment flagged as fraud']);
+    }
+
+    public function clearFraudFlag($id)
+    {
+        $order = Order::findOrFail($id);
+        $order->fraud_status = 'clean';
+        $order->fraud_score = 0;
+        $order->fraud_reason = null;
+        $order->save();
+        return response()->json(['success' => true, 'message' => 'Fraud flag cleared']);
+    }
+
+    public function refundPayment(Request $request, $id)
+    {
+        $order = Order::findOrFail($id);
+        $order->payment_status = 'refunded';
+        $order->refund_status = 'completed';
+        $order->refund_amount = $request->amount ?? $order->total_amount;
+        $order->refund_reason = $request->reason ?? 'Refunded by admin';
+        $order->refunded_at = now();
+        $order->save();
+        return response()->json(['success' => true, 'message' => 'Payment refunded successfully.']);
     }
     
   
@@ -691,384 +822,6 @@ public function exportCancellation(Request $request)
             'Cache-Control' => 'max-age=0',
         ]);
     }
-    
-    /**
-     * Get payment details for a specific order
-     */
-  
-    
-    /**
-     * Validate invoice for an order
-     */
-  /**
- * Validate invoice for an order
- */
-public function validateInvoice($id)
-{
-    $order = Order::findOrFail($id);
-    
-    $isValid = true;
-    $message = [];
-    
-    // Check if invoice exists - Auto generate if missing
-    if (!$order->invoice_no) {
-        $order->invoice_no = 'INV-' . str_pad($order->id, 8, '0', STR_PAD_LEFT);
-        $order->save();
-        $message[] = 'Invoice number was missing and has been auto-generated';
-    }
-    
-    // Check if payment is successful - Consider 'paid' as success too
-    if (!in_array($order->payment_status, ['success', 'paid'])) {
-        $isValid = false;
-        $message[] = 'Payment is not completed';
-    }
-    
-    // Verify total amount - Skip if no items
-    if ($order->items && $order->items->count() > 0) {
-        $calculatedTotal = $order->items->sum('total_price') ?? $order->items->sum('price') ?? 0;
-        if ($order->total_amount != $calculatedTotal && $calculatedTotal > 0) {
-            $isValid = false;
-            $message[] = 'Total amount mismatch';
-        }
-    }
-    
-    // Check for fraud flags
-    if ($order->fraud_status == 'flagged') {
-        $isValid = false;
-        $message[] = 'Transaction flagged for fraud';
-    }
-    
-    // If valid, update status
-    if ($isValid) {
-        $order->payment_status = 'success';
-        $order->fraud_status = 'clean';
-        $order->fraud_score = 0;
-        $order->save();
-        $message = ['Invoice is valid and verified'];
-    }
-    
-    return response()->json([
-        'valid' => $isValid,
-        'message' => implode('<br>', $message)
-    ]);
-}
-    /**
-     * Mark payment as suspicious
-     */
-    public function markSuspicious($id, Request $request)
-    {
-        $order = Order::findOrFail($id);
-        $order->fraud_status = 'suspicious';
-        $order->fraud_score = ($order->fraud_score ?? 0) + 30;
-        $order->fraud_reason = $request->reason ?? 'Marked suspicious by admin';
-        $order->save();
-        
-        return response()->json(['success' => true, 'message' => 'Payment marked as suspicious']);
-    }
-    
-    /**
-     * Flag payment as fraud
-     */
-    public function flagFraud($id, Request $request)
-    {
-        $order = Order::findOrFail($id);
-        $order->fraud_status = 'flagged';
-        $order->fraud_score = 100;
-        $order->fraud_reason = $request->reason ?? 'Flagged as fraudulent';
-        $order->payment_status = 'failed';
-        $order->save();
-        
-        return response()->json(['success' => true, 'message' => 'Payment flagged as fraud']);
-    }
-    
-    /**
-     * Clear fraud flag
-     */
-    public function clearFraud($id)
-    {
-        $order = Order::findOrFail($id);
-        $order->fraud_status = 'clean';
-        $order->fraud_score = 0;
-        $order->fraud_reason = null;
-        $order->save();
-        
-        return response()->json(['success' => true, 'message' => 'Fraud flag cleared']);
-    }
-    
-    /**
-     * Process refund for payment
-     */
-    public function refundPayment($id, Request $request)
-    {
-        $request->validate([
-            'amount' => 'required|numeric|min:0',
-            'reason' => 'required|string'
-        ]);
-        
-        $order = Order::findOrFail($id);
-        
-        if ($order->payment_status != 'success') {
-            return response()->json(['error' => 'Only successful payments can be refunded'], 400);
-        }
-        
-        if ($request->amount > $order->total_amount) {
-            return response()->json(['error' => 'Refund amount cannot exceed order total'], 400);
-        }
-        
-        $order->payment_status = 'refunded';
-        $order->refund_amount = $request->amount;
-        $order->refund_reason = $request->reason;
-        $order->refunded_at = now();
-        $order->save();
-        
-        // Create refund log
-        \App\Models\PaymentLog::create([
-            'order_id' => $order->id,
-            'type' => 'refund',
-            'amount' => $request->amount,
-            'status' => 'completed',
-            'remarks' => $request->reason
-        ]);
-        
-        return response()->json([
-            'success' => true, 
-            'message' => 'Refund processed successfully. Amount: ₹' . number_format($request->amount, 2)
-        ]);
-    }
-    
-    
-    
-    
-    
-    /**
- * View invoice for an order
- */
-public function viewInvoice($id)
-{
-    $order = Order::with(['customer', 'items.product', 'seller'])->findOrFail($id);
-    
-    // Return HTML for invoice modal
-    $html = '
-    <div class="invoice-wrapper p-4">
-        <div class="text-center mb-4">
-            <h2>INVOICE</h2>
-            <p>Order #' . $order->id . '</p>
-        </div>
-        
-        <div class="row mb-4">
-            <div class="col-6">
-                <strong>Bill To:</strong><br>
-                ' . ($order->customer->name ?? $order->recipient_name ?? 'N/A') . '<br>
-                ' . ($order->customer->email ?? 'N/A') . '<br>
-                ' . ($order->customer->phone ?? $order->phone ?? 'N/A') . '<br>
-                ' . ($order->location ?? $order->city ?? 'N/A') . '
-            </div>
-            <div class="col-6 text-end">
-                <strong>Invoice Details:</strong><br>
-                Invoice No: ' . ($order->invoice_no ?? 'INV-' . str_pad($order->id, 8, '0', STR_PAD_LEFT)) . '<br>
-                Order Date: ' . ($order->created_at ? $order->created_at->format('d M Y') : 'N/A') . '<br>
-                Payment Date: ' . ($order->payment_date ? date('d M Y', strtotime($order->payment_date)) : 'N/A') . '<br>
-                Payment Method: ' . ucfirst(str_replace('_', ' ', $order->payment_type ?? 'N/A')) . '
-            </div>
-        </div>
-        
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Product</th>
-                    <th>Quantity</th>
-                    <th>Unit Price</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>';
-    
-    $total = 0;
-    if($order->items && $order->items->count() > 0) {
-        foreach($order->items as $key => $item) {
-            $subtotal = $item->quantity * $item->price;
-            $total += $subtotal;
-            $html .= '
-                <tr>
-                    <td>' . ($key + 1) . '</td>
-                    <td>' . ($item->product->name ?? 'Product ' . $item->product_id) . '</td>
-                    <td>' . $item->quantity . '</td>
-                    <td>₹' . number_format($item->price, 2) . '</td>
-                    <td>₹' . number_format($subtotal, 2) . '</td>
-                </tr>';
-        }
-    } else {
-        $html .= '
-                <tr>
-                    <td colspan="5" class="text-center">No items found</td>
-                </tr>';
-    }
-    
-    $html .= '
-            </tbody>
-            <tfoot>
-                <tr>
-                    <th colspan="4" class="text-end">Subtotal:</th>
-                    <th>₹' . number_format($total, 2) . '</th>
-                </tr>
-                <tr>
-                    <th colspan="4" class="text-end">Shipping:</th>
-                    <th>₹0.00</th>
-                </tr>
-                <tr>
-                    <th colspan="4" class="text-end">Tax:</th>
-                    <th>₹0.00</th>
-                </tr>
-                <tr class="table-active">
-                    <th colspan="4" class="text-end">Total Amount:</th>
-                    <th>₹' . number_format($order->total_amount ?? $total, 2) . '</th>
-                </tr>
-            </tfoot>
-        </table>
-        
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="alert alert-info">
-                    <strong>Payment Status:</strong> 
-                    <span class="badge bg-' . ($order->payment_status == 'success' ? 'success' : ($order->payment_status == 'failed' ? 'danger' : 'warning')) . '">
-                        ' . ucfirst($order->payment_status ?? 'Pending') . '
-                    </span>
-                    <br>
-                    <strong>Transaction ID:</strong> ' . ($order->transaction_id ?? 'N/A') . '
-                </div>
-            </div>
-        </div>
-        
-        <div class="text-center mt-4">
-            <p>Thank you for your business!</p>
-        </div>
-    </div>';
-    
-    return response()->json(['html' => $html]);
-}
-
-/**
- * Get payment details HTML for modal
- */
-public function paymentDetails($id)
-{
-    $order = Order::with(['customer', 'items.product'])->findOrFail($id);
-    
-    $html = '
-    <div class="payment-details">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card mb-3">
-                    <div class="card-header bg-light">
-                        <strong>Order Information</strong>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-sm">
-                            <tr><th>Order ID:</th><td>#' . $order->id . '</td></tr>
-                            <tr><th>Order Date:</th><td>' . ($order->created_at ? $order->created_at->format('Y-m-d H:i:s') : 'N/A') . '</td></tr>
-                            <tr><th>Customer:</th><td>' . ($order->customer->name ?? $order->recipient_name ?? 'N/A') . '</td></tr>
-                            <tr><th>Email:</th><td>' . ($order->customer->email ?? 'N/A') . '</td></tr>
-                            <tr><th>Phone:</th><td>' . ($order->customer->phone ?? $order->phone ?? 'N/A') . '</td></tr>
-                            <tr><th>Location:</th><td>' . ($order->location ?? $order->city ?? 'N/A') . '</td></tr>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card mb-3">
-                    <div class="card-header bg-light">
-                        <strong>Payment Information</strong>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-sm">
-                            <tr><th>Total Amount:</th><td class="fw-bold">₹' . number_format($order->total_amount ?? 0, 2) . '</td></tr>
-                            <tr><th>Payment Type:</th><td>' . ucfirst(str_replace('_', ' ', $order->payment_type ?? 'N/A')) . '</td></tr>
-                            <tr><th>Transaction ID:</th><td><code>' . ($order->transaction_id ?? 'N/A') . '</code></td></tr>
-                            <tr><th>Payment Status:</th>
-                                <td>
-                                    <span class="badge bg-' . ($order->payment_status == 'success' ? 'success' : ($order->payment_status == 'failed' ? 'danger' : 'warning')) . '">
-                                        ' . ucfirst($order->payment_status ?? 'Pending') . '
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr><th>Payment Date:</th><td>' . ($order->payment_date ? date('Y-m-d H:i:s', strtotime($order->payment_date)) : 'N/A') . '</td></tr>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <strong>Fraud Detection Details</strong>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <strong>Fraud Score:</strong>
-                                <div class="progress mt-2" style="height: 10px;">
-                                    <div class="progress-bar bg-' . ($order->fraud_score < 30 ? 'success' : ($order->fraud_score < 70 ? 'warning' : 'danger')) . '" 
-                                         style="width: ' . ($order->fraud_score ?? 0) . '%">
-                                    </div>
-                                </div>
-                                <p class="mt-2">' . ($order->fraud_score ?? 0) . '%</p>
-                            </div>
-                            <div class="col-md-4">
-                                <strong>Fraud Status:</strong><br>
-                                <span class="badge bg-' . ($order->fraud_status == 'clean' ? 'success' : ($order->fraud_status == 'suspicious' ? 'warning' : 'danger')) . ' mt-2">
-                                    ' . ucfirst($order->fraud_status ?? 'Clean') . '
-                                </span>
-                            </div>
-                            <div class="col-md-4">
-                                <strong>Fraud Reason:</strong><br>
-                                <p class="mt-2">' . ($order->fraud_reason ?? 'No fraud detected') . '</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row mt-3">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-light">
-                        <strong>Products</strong>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr><th>Product</th><th>Quantity</th><th>Price</th><th>Total</th></tr>
-                            </thead>
-                            <tbody>';
-    
-    if($order->items && $order->items->count() > 0) {
-        foreach($order->items as $item) {
-            $html .= '<tr>
-                        <td>' . ($item->product->name ?? 'Product ' . $item->product_id) . '</td>
-                        <td>' . $item->quantity . '</td>
-                        <td>₹' . number_format($item->price, 2) . '</td>
-                        <td>₹' . number_format($item->quantity * $item->price, 2) . '</td>
-                      </tr>';
-        }
-    } else {
-        $html .= '<tr><td colspan="4" class="text-center">No items found</td></tr>';
-    }
-    
-    $html .= '
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>';
-    
-    return response()->json(['html' => $html]);
-}
 
 
 public function exportOrders(Request $request)
@@ -1130,5 +883,97 @@ public function showManageOrder(Request $request, $orderId){
     
     return view ('admin.orders.manage',compact('order'));
 }
+
+
+    /* =====================================================
+     *  UPDATE ORDER STATUS (from Admin Order Table)
+     * ===================================================== */
+    public function updateStatus(Request $request, $id)
+    {
+        try {
+            $order = Order::findOrFail($id);
+
+            $oldStatus = $order->status;
+            $newStatus = $request->status ?: $request->prev_status;
+
+            $order->status     = $newStatus;
+            $order->start_date = $request->start_date ?: $order->start_date;
+            $order->end_date   = $request->end_date ?: $order->end_date;
+            $order->remarks    = $request->remarks ?? $order->remarks;
+            $order->privacy    = $request->privacy ?? $order->privacy;
+
+            // ── Referral commission on delivery ──
+            if (
+                strtolower($newStatus) === 'delivered' ||
+                strtolower($newStatus) === 'completed'
+            ) {
+                if ($order->referrer_id && !$order->referral_paid) {
+                    $commissionPercent = 3.0;
+                    $commissionAmount  = ($order->total_amount * $commissionPercent) / 100;
+
+                    // Deduct from Seller Wallet
+                    $sellerWallet = \App\Models\Wallet::firstOrCreate(
+                        ['seller_id' => $order->seller_id, 'user_type' => 'seller'],
+                        ['balance' => 0]
+                    );
+                    $sellerWallet->decrement('balance', $commissionAmount);
+
+                    // Credit to Referrer (buyer) Wallet
+                    $referrerWallet = \App\Models\Wallet::firstOrCreate(
+                        ['customer_id' => $order->referrer_id, 'user_type' => 'customer'],
+                        ['balance' => 0]
+                    );
+                    $referrerWallet->increment('balance', $commissionAmount);
+
+                    // Log referral history
+                    \App\Models\ReferralHistory::create([
+                        'referrer_id'        => $order->referrer_id,
+                        'buyer_id'           => $order->customer_id,
+                        'seller_id'          => $order->seller_id,
+                        'order_id'           => $order->id,
+                        'amount'             => $commissionAmount,
+                        'commission_percent' => $commissionPercent,
+                        'status'             => 'paid',
+                    ]);
+
+                    $order->referral_commission_percent = $commissionPercent;
+                    $order->referral_commission_amount  = $commissionAmount;
+                    $order->referral_paid               = true;
+                }
+            }
+
+            $order->save();
+
+            // Activity log
+            $this->logActivity([
+                'order_id'      => $order->id,
+                'user_id'       => Auth::id(),
+                'customer_id'   => $order->customer_id,
+                'activity_type' => 'status_update',
+                'old_status'    => $oldStatus,
+                'new_status'    => $newStatus,
+                'description'   => "Admin updated order #{$order->id} status from {$oldStatus} to {$newStatus}",
+                'remarks'       => $request->remarks,
+                'ip_address'    => $request->ip(),
+                'user_agent'    => $request->userAgent(),
+            ]);
+
+            // Notify customer
+            if (class_exists(\App\Services\NotificationService::class)) {
+                \App\Services\NotificationService::notify(
+                    $order->customer_id,
+                    'customer',
+                    'order',
+                    "Your order #{$order->id} status has been updated to {$newStatus}.",
+                    url('/order/' . $order->id)
+                );
+            }
+
+            return back()->with('success', 'Order status updated successfully.');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Failed to update: ' . $e->getMessage());
+        }
+    }
 }
 

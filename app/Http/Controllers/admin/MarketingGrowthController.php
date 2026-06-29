@@ -14,6 +14,15 @@ class MarketingGrowthController extends Controller
         return view('admin.marketing.referrals');
     }
 
+    public function referralHistory()
+    {
+        $referrals = \App\Models\ReferralHistory::with(['referrer', 'buyer', 'order.items.product', 'seller'])
+            ->latest()
+            ->paginate(20);
+
+        return view('admin.marketing.referral-history', compact('referrals'));
+    }
+
     public function getSystemStats()
     {
         $totalReferrals = \App\Models\Customer::whereNotNull('referred_by')->count();
@@ -36,7 +45,9 @@ class MarketingGrowthController extends Controller
             'active_referrers'    => number_format($activeReferrers),
             'orders_via_referral' => number_format($ordersViaReferral),
             'referral_revenue'    => '₹' . number_format($referralRevenue, 2),
-            'payouts_made'        => '₹' . number_format($payoutsMade, 2)
+            'payouts_made'        => '₹' . number_format($payoutsMade, 2),
+            'referral_revenue_raw' => $referralRevenue,
+            'payouts_made_raw'     => $payoutsMade
         ]);
     }
 
@@ -70,11 +81,19 @@ class MarketingGrowthController extends Controller
 
     public function getCampaigns()
     {
-        if (\Illuminate\Support\Facades\Schema::hasTable('referral_campaigns')) {
-            $campaigns = \App\Models\ReferralCampaign::orderByDesc('id')->get();
-            return response()->json($campaigns);
-        }
-        return response()->json([]);
+        $campaigns = \App\Models\PromotionCampaign::orderByDesc('id')->get()->map(function($c) {
+            $meta = json_decode($c->meta_data, true) ?? [];
+            return [
+                'name' => $c->name,
+                'type' => $c->type,
+                'start_date' => $c->start_date,
+                'end_date' => $c->end_date,
+                'budget' => $meta['budget'] ?? 0,
+                'conversions' => $c->used_count ?? 0,
+                'status' => $c->status
+            ];
+        });
+        return response()->json($campaigns);
     }
 
     public function storeCampaign(Request $request)
@@ -88,19 +107,19 @@ class MarketingGrowthController extends Controller
             'reward' => 'nullable|numeric',
         ]);
 
-        if (\Illuminate\Support\Facades\Schema::hasTable('referral_campaigns')) {
-            \App\Models\ReferralCampaign::create([
-                'name' => $request->name,
-                'type' => $request->type,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-                'budget' => $request->budget ?? 0,
-                'reward' => $request->reward ?? 0,
-                'status' => 'active'
-            ]);
-            return response()->json(['success' => true]);
-        }
-        return response()->json(['success' => false, 'message' => 'Table not migrated']);
+        \App\Models\PromotionCampaign::create([
+            'name' => $request->name,
+            'slug' => \Illuminate\Support\Str::slug($request->name) . '-' . time(),
+            'type' => $request->type,
+            'discount_type' => 'percentage',
+            'discount_value' => $request->reward ?? 0,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'meta_data' => json_encode(['budget' => $request->budget ?? 0]),
+            'status' => 'active'
+        ]);
+        
+        return response()->json(['success' => true]);
     }
 
     public function campaignTracking()
@@ -171,6 +190,13 @@ class MarketingGrowthController extends Controller
     {
         return response()->json(
             DB::table('products')->select('id', 'name')->orderBy('name')->get()
+        );
+    }
+
+    public function getSellers()
+    {
+        return response()->json(
+            DB::table('sellers')->select('id', 'name', 'org_name')->orderBy('name')->get()
         );
     }
 
@@ -528,10 +554,57 @@ class MarketingGrowthController extends Controller
         if ($existing) {
             DB::table('referral_configurations')->where('id', $existing->id)->update($data);
         } else {
-            $data['created_at'] = now();
-            DB::table('referral_configurations')->insert($data);
+            DB::table('referral_configurations')->insert(array_merge($data, ['created_at' => now()]));
         }
 
-        return response()->json(['success' => true, 'message' => 'Payout settings saved.']);
+        return response()->json(['success' => true, 'message' => 'Payout settings updated successfully']);
+    }
+
+    public function getReferralConfigurations()
+    {
+        $configs = DB::table('referral_configurations')
+            ->whereIn('type', ['buyer_to_buyer', 'seller_to_seller'])
+            ->orderBy('id', 'desc')
+            ->get();
+        return response()->json($configs);
+    }
+
+    public function saveReferralConfigurations(Request $request)
+    {
+        $configs = $request->input('configs');
+        
+        if (!$configs || !is_array($configs)) {
+            return response()->json(['success' => false, 'message' => 'No configurations provided']);
+        }
+
+        DB::beginTransaction();
+        try {
+            foreach ($configs as $config) {
+                // Ensure required fields
+                if (empty($config['type']) || empty($config['reference_id']) || !isset($config['commission_percentage'])) {
+                    continue; // Skip invalid rows
+                }
+
+                $extraDesc = json_encode([
+                    'referee_discount' => $config['referee_discount'] ?? 0
+                ]);
+
+                DB::table('referral_configurations')->insert([
+                    'type' => $config['type'],
+                    'reference_id' => $config['reference_id'], // Seller ID or Product ID
+                    'reward_type' => 'percentage',
+                    'commission_percentage' => $config['commission_percentage'], // Reward for Buyer A / Seller
+                    'description' => $extraDesc,
+                    'status' => 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Referral Configurations saved successfully']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Failed to save configurations: ' . $e->getMessage()]);
+        }
     }
 }

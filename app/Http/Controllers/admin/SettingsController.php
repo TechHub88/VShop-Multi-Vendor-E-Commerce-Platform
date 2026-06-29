@@ -8,6 +8,14 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Setting;
+use App\Models\BoostedListing;
+
+use Illuminate\Support\Facades\Validator;
+
+use App\Models\Seller; // or User with role
+use App\Models\MarketplaceCategory;
+use App\Models\Product;
+
 use App\Models\InvoiceLog;
 use App\Models\UserDeletionRequest;
 use Carbon\Carbon;
@@ -51,12 +59,249 @@ class SettingsController extends Controller
         return redirect()->route('admin.settings.index')->with('success', 'Settings saved successfully.');
     }
 
-    public function masterControl()
+   
+   
+
+  public function masterControl()
     {
         $settingsData = $this->getMasterSettingsData();
+
+        // Override boosts with fresh data from DB (compute per_day and days)
+        $settingsData['boosts'] = BoostedListing::with(['product', 'seller', 'category'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($boost) {
+                $start = Carbon::parse($boost->start_date);
+                $end = Carbon::parse($boost->end_date);
+                $days = $start->diffInDays($end) + 1; // inclusive
+                $perDay = $boost->boost_amount / $days;
+
+                return [
+                    'id'                => $boost->id,
+                    'product_id'        => $boost->product_id,
+                    'seller_id'         => $boost->seller_id,
+                    'category_id'       => $boost->category_id ?? $boost->product->category_id ?? null,
+                    'boost_amount'      => $boost->boost_amount,
+                    'start_date'        => $boost->start_date,
+                    'end_date'          => $boost->end_date,
+                    'days'              => $days,
+                    'per_day'           => $perDay,
+                    'status'            => $boost->status,
+                    'impressions'       => $boost->impressions,
+                    'clicks'            => $boost->clicks,
+                    'enquiries'         => $boost->enquiries,
+                    'conversions'       => $boost->conversions,
+                    'revenue_generated' => $boost->revenue_generated,
+                    'created_at'        => $boost->created_at->format('d M Y H:i'),
+                ];
+            })->toArray();
+
+        // Dropdown data – unique categories by name
+        $categories = MarketplaceCategory::select('id', 'name')
+            ->orderBy('name')
+            ->get()
+            ->groupBy('name')
+            ->map(fn($group) => (object) ['id' => $group->first()->id, 'name' => $group->first()->name])
+            ->values();
+
+        $settingsData['sellers']    = Seller::select('id', 'name')->get();
+        $settingsData['categories'] = $categories;
+        
+        $settingsData['products']   = Product::select('id', 'name', 'category_id', 'created_by_id')
+            ->with('category:id,name') // Eager load category to get its name
+            ->orderBy('name')
+            ->get();
+
         return view('admin.settings.master', compact('settingsData'));
     }
 
+   
+
+    // ---------------------------
+    // BOOST CRUD METHODS
+    // ---------------------------
+
+    public function storeBoost(Request $request)
+    {
+        // Handle both single submission and array submission
+        $isMultiple = is_array($request->input('per_day'));
+
+        if (!$isMultiple) {
+            // Transform to array for consistent processing
+            $request->merge([
+                'seller_id' => [$request->input('seller_id')],
+                'category_id' => [$request->input('category_id')],
+                'product_id' => [$request->input('product_id')],
+                'per_day' => [$request->input('per_day')],
+                'days' => [$request->input('days')],
+                'status' => [$request->input('status')],
+            ]);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'seller_id'      => 'array',
+            'seller_id.*'    => 'nullable|exists:sellers,id',
+            'category_id'    => 'array',
+            'category_id.*'  => 'nullable|exists:marketplace_categories,id',
+            'product_id'     => 'array',
+            'product_id.*'   => 'nullable|exists:products,id',
+            'per_day'        => 'required|array',
+            'per_day.*'      => 'required|numeric|min:0',
+            'days'           => 'array',
+            'days.*'         => 'nullable|integer|min:1',
+            'status'         => 'array',
+            'status.*'       => 'nullable|in:active,inactive,rule',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $perDays = $request->input('per_day');
+        foreach ($perDays as $index => $perDay) {
+            $sellerId   = $request->input("seller_id.$index");
+            $categoryId = $request->input("category_id.$index");
+            $productId  = $request->input("product_id.$index");
+            $days       = $request->input("days.$index");
+            $status     = $request->input("status.$index");
+
+            $isRule = empty($days) || $status === 'rule';
+
+            $boostAmount = 0;
+            $startDate = null;
+            $endDate = null;
+
+            if (!$isRule) {
+                $boostAmount = $perDay * $days;
+                $startDate = Carbon::today()->toDateString();
+                $endDate = Carbon::today()->addDays((int)$days)->toDateString();
+                
+                if (empty($categoryId) && !empty($productId)) {
+                    $product = Product::find($productId);
+                    if ($product) {
+                        $categoryId = $product->category_id;
+                        $sellerId = $product->created_by_id;
+                    }
+                } else {
+                    $product = Product::find($productId);
+                    $sellerId = $product ? $product->created_by_id : ($sellerId ?? null);
+                }
+            } else {
+                $status = 'rule';
+            }
+
+            $sellerId   = empty($sellerId) ? null : $sellerId;
+            $categoryId = empty($categoryId) ? null : $categoryId;
+            $productId  = empty($productId) ? null : $productId;
+
+            BoostedListing::create([
+                'product_id'    => $productId,
+                'category_id'   => $categoryId,
+                'seller_id'     => $sellerId,
+                'per_day'       => $perDay ?? 0,
+                'boost_amount'  => $boostAmount,
+                'start_date'    => $startDate,
+                'end_date'      => $endDate,
+                'status'        => $status ?? 'active',
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Boost(s) created successfully.');
+    }
+
+    public function updateBoost(Request $request, $id)
+    {
+        $boost = BoostedListing::findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'seller_id'    => 'nullable|exists:sellers,id',
+            'product_id'   => 'nullable|exists:products,id',
+            'category_id'  => 'nullable|exists:marketplace_categories,id',
+            'per_day'      => 'required|numeric|min:0',
+            'days'         => 'nullable|integer|min:1',
+            'status'       => 'in:active,inactive,rule',
+            'impressions'  => 'nullable|integer|min:0',
+            'clicks'       => 'nullable|integer|min:0',
+            'enquiries'    => 'nullable|integer|min:0',
+            'conversions'  => 'nullable|integer|min:0',
+            'revenue_generated' => 'nullable|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        $data = $request->all();
+
+        if (!empty($data['per_day']) && !empty($data['days']) && ($data['status'] ?? '') !== 'rule') {
+            $perDay = $request->per_day;
+            $days = $request->days;
+            $data['boost_amount'] = $perDay * $days;
+            $data['start_date'] = Carbon::today()->toDateString();
+            $data['end_date'] = Carbon::today()->addDays((int)$days)->toDateString();
+        } else {
+            $data['boost_amount'] = 0;
+            $data['start_date'] = null;
+            $data['end_date'] = null;
+        }
+
+        if (empty($data['category_id']) && !empty($data['product_id'])) {
+            $product = Product::find($data['product_id']);
+            if ($product) {
+                $data['category_id'] = $product->category_id;
+                $data['seller_id'] = $product->created_by_id;
+            }
+        } else {
+            $product = Product::find($data['product_id'] ?? null);
+            $data['seller_id'] = $product ? $product->created_by_id : ($data['seller_id'] ?? null);
+        }
+
+        $data['seller_id']   = empty($data['seller_id']) ? null : $data['seller_id'];
+        $data['category_id'] = empty($data['category_id']) ? null : $data['category_id'];
+        $data['product_id']  = empty($data['product_id']) ? null : $data['product_id'];
+
+        $boost->update([
+            'product_id'    => $data['product_id'],
+            'category_id'   => $data['category_id'],
+            'seller_id'     => $data['seller_id'],
+            'per_day'       => $data['per_day'] ?? 0,
+            'boost_amount'  => $data['boost_amount'],
+            'start_date'    => $data['start_date'],
+            'end_date'      => $data['end_date'],
+            'status'        => $data['status'] ?? 'active',
+            'impressions'   => $data['impressions'] ?? 0,
+            'clicks'        => $data['clicks'] ?? 0,
+            'enquiries'     => $data['enquiries'] ?? 0,
+            'conversions'   => $data['conversions'] ?? 0,
+            'revenue_generated' => $data['revenue_generated'] ?? 0,
+        ]);
+
+        return redirect()->back()->with('success', 'Boost updated successfully.');
+    }
+
+    public function deleteBoost($id)
+    {
+        $boost = BoostedListing::findOrFail($id);
+        $boost->delete();
+
+        return redirect()->back()->with('success', 'Boost deleted successfully.');
+    }
+
+   
+
+
+public function toggleBoostStatus(Request $request, $id)
+{
+    $boost = BoostedListing::findOrFail($id);
+    $boost->status = ($boost->status === 'active') ? 'inactive' : 'active';
+    $boost->save();
+
+    if ($request->ajax() || $request->wantsJson()) {
+        return response()->json(['success' => true, 'status' => $boost->status, 'message' => 'Status toggled to ' . $boost->status]);
+    }
+
+    return redirect()->back()->with('success', 'Status toggled to ' . $boost->status);
+}
     public function saveMasterConfig(Request $request)
     {
         try {

@@ -3,33 +3,78 @@
 @section('title', 'My Account')
 
 @section('content')
-<div class="container-fluid px-4 py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+<style>
+    body {
+        background-color: #f1f3f6 !important;
+    }
+    .myaccount-container {
+        max-width: 1300px;
+        margin: 0 auto;
+    }
+    .custom-account-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+        background: #fff !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        padding: 8px !important;
+        border-radius: 12px;
+        scrollbar-width: none; /* Firefox */
+    }
+    .custom-account-tabs::-webkit-scrollbar {
+        display: none; /* Safari and Chrome */
+    }
+    .custom-account-tabs .nav-link {
+        color: #4b5563;
+        font-weight: 600;
+        font-size: 14px;
+        border: none;
+        margin-right: 6px;
+        padding: 10px 20px !important;
+        transition: all 0.3s ease;
+    }
+    .custom-account-tabs .nav-link.active {
+        background: #2874f0 !important;
+        color: #fff !important;
+        box-shadow: 0 4px 10px rgba(40,116,240,0.25);
+    }
+    .custom-account-tabs .nav-link:hover:not(.active) {
+        background: #f3f4f6;
+        color: #2874f0;
+    }
+    .myaccount-container .card {
+        border: none !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03) !important;
+        border-radius: 16px !important;
+        background: #fff;
+    }
+</style>
+
+<div class="container-fluid px-2 px-md-4 py-4 myaccount-container">
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2 px-2">
         <div>
             <h1 class="h3 mb-1 fw-bold text-dark">My Account</h1>
-            <span class="text-muted small">Welcome back, <strong>{{ $profile->name }}</strong></span>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-            {{-- ===== RAISE COMPLAINT BUTTON ===== --}}
-           
+            <span class="text-muted small">Welcome back, <strong class="text-dark">{{ $profile->name }}</strong></span>
         </div>
     </div>
 
     <!-- Tabs -->
-    <div>
-        <div>
-            <ul class="nav nav-tabs border-0 bg-light rounded-3 p-1" id="myAccountTabs" role="tablist">
-        <li class="nav-item"><button class="nav-link active px-4 py-2 rounded-pill" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile">Profile</button></li>
-        <li class="nav-item"><button class="nav-link px-4 py-2 rounded-pill" id="addresses-tab" data-bs-toggle="tab" data-bs-target="#addresses">Addresses</button></li>
-        <li class="nav-item"><button class="nav-link px-4 py-2 rounded-pill" id="wallet-tab" data-bs-toggle="tab" data-bs-target="#wallet">Wallet</button></li>
-        <li class="nav-item"><button class="nav-link px-4 py-2 rounded-pill" id="rewards-tab" data-bs-toggle="tab" data-bs-target="#rewards">Rewards</button></li>
-        <li class="nav-item"><button class="nav-link px-4 py-2 rounded-pill" id="membership-tab" data-bs-toggle="tab" data-bs-target="#membership">Membership</button></li>
-        <li class="nav-item"><button class="nav-link px-4 py-2 rounded-pill" id="referral-tab" data-bs-toggle="tab" data-bs-target="#referral">Referral</button></li>
-        <li class="nav-item"><button class="nav-link px-4 py-2 rounded-pill" id="enquiries-tab" data-bs-toggle="tab" data-bs-target="#enquiries">My Enquiries</button></li>
-        {{-- ===== NEW TAB: MY COMPLAINTS ===== --}}
-        <li class="nav-item"><button class="nav-link px-4 py-2 rounded-pill" id="complaints-tab" data-bs-toggle="tab" data-bs-target="#complaints">My Complaints</button></li>
-        <li class="nav-item"><button class="nav-link px-4 py-2 rounded-pill" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings">Settings</button></li>
-    </ul>
+    <div class="mb-4">
+        <ul class="nav nav-tabs border-0 custom-account-tabs" id="myAccountTabs" role="tablist">
+            <li class="nav-item"><button class="nav-link active rounded-pill" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile">Profile</button></li>
+            <li class="nav-item"><button class="nav-link rounded-pill" id="bank-tab" data-bs-toggle="tab" data-bs-target="#bank">Bank Account</button></li>
+            <li class="nav-item"><button class="nav-link rounded-pill" id="addresses-tab" data-bs-toggle="tab" data-bs-target="#addresses">Addresses</button></li>
+            <li class="nav-item"><button class="nav-link rounded-pill" id="wallet-tab" data-bs-toggle="tab" data-bs-target="#wallet">Wallet</button></li>
+            <li class="nav-item"><button class="nav-link rounded-pill" id="rewards-tab" data-bs-toggle="tab" data-bs-target="#rewards">Rewards</button></li>
+            <li class="nav-item"><button class="nav-link rounded-pill" id="membership-tab" data-bs-toggle="tab" data-bs-target="#membership">Membership</button></li>
+            <li class="nav-item"><button class="nav-link rounded-pill" id="referral-tab" data-bs-toggle="tab" data-bs-target="#referral">Referral</button></li>
+            <li class="nav-item"><button class="nav-link rounded-pill" id="enquiries-tab" data-bs-toggle="tab" data-bs-target="#enquiries">My Enquiries</button></li>
+            <li class="nav-item"><button class="nav-link rounded-pill" id="complaints-tab" data-bs-toggle="tab" data-bs-target="#complaints">My Complaints</button></li>
+            <li class="nav-item"><button class="nav-link rounded-pill" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings">Settings</button></li>
+        </ul>
+    </div>
 
     <div class="tab-content mt-4">
         
@@ -86,6 +131,43 @@
                                     <button type="submit" class="btn btn-primary btn-lg px-5">Save Profile</button>
                                 </div>
                             </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= BANK ACCOUNT TAB ================= -->
+        <div class="tab-pane fade" id="bank">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-lg-5">
+                    <h3 class="h4 mb-4">Bank Account Details</h3>
+                    <form id="bankAccountForm">
+                        @csrf
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted">Bank Name</label>
+                                <input type="text" name="bank_name" class="form-control form-control-lg" value="{{ old('bank_name', $profile->bank_name ?? '') }}" placeholder="Enter bank name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted">Account Holder Name</label>
+                                <input type="text" name="account_holder" class="form-control form-control-lg" value="{{ old('account_holder', $profile->account_holder ?? '') }}" placeholder="Enter account holder name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted">Account Number</label>
+                                <input type="text" name="account_number" class="form-control form-control-lg" value="{{ old('account_number', $profile->account_number ?? '') }}" placeholder="Enter account number">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted">IFSC Code</label>
+                                <input type="text" name="ifsc_code" class="form-control form-control-lg" value="{{ old('ifsc_code', $profile->ifsc_code ?? '') }}" placeholder="Enter IFSC code">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold text-muted">UPI ID (Optional)</label>
+                                <input type="text" name="upi_id" class="form-control form-control-lg" value="{{ old('upi_id', $profile->upi_id ?? '') }}" placeholder="Enter UPI ID">
+                            </div>
+                        </div>
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">Save Bank Details</button>
                         </div>
                     </form>
                 </div>
@@ -172,10 +254,12 @@
                         <div class="card-body p-4">
                             <h5 class="text-dark mb-2">Available Balance</h5>
                             <h2 class="display-5 fw-bold mb-3 text-dark" id="walletBalance">₹{{ number_format($walletBalance,2) }}</h2>
+                            {{-- Commented out Add Money option as per request
                             <div class="input-group mb-3">
                                 <input type="number" id="rechargeAmount" class="form-control form-control-lg" placeholder="Enter amount">
                                 <button class="btn btn-primary btn-lg" id="rechargeBtn">Add Money</button>
                             </div>
+                            --}}
                             <button class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#giftCardModal"><i class="bi bi-gift-fill"></i> Redeem Gift Card</button>
                         </div>
                     </div>
@@ -191,8 +275,10 @@
                                         @forelse($transactions as $tx)
                                         <tr>
                                             <td>{{ $tx->created_at->format('d M Y') }}</td>
-                                            <td>{{ $tx->description }}</td>
-                                            <td class="{{ $tx->type=='credit' ? 'text-success fw-bold' : 'text-danger' }}">{{ ($tx->type=='credit'?'+':'-').$tx->amount }}</td>
+                                            <td>{{ preg_replace('/\s*\(Platform Commission.*?\)/i', '', $tx->description) }}</td>
+                                            <td class="{{ $tx->credit > 0 ? 'text-success fw-bold' : 'text-danger' }}">
+                                                {{ $tx->credit > 0 ? '+' : '-' }}₹{{ number_format($tx->credit > 0 ? $tx->credit : $tx->debit, 2) }}
+                                            </td>
                                             <td><span class="badge bg-{{ $tx->status=='success'?'success':'danger' }} rounded-pill">{{ ucfirst($tx->status) }}</span></td>
                                         </tr>
                                         @empty
@@ -369,8 +455,42 @@
                     <div class="bg-light p-3 rounded-3 d-flex align-items-center justify-content-between"><code class="fs-4 fw-bold" id="referralCode">{{ $referralCode }}</code><button class="btn btn-sm btn-primary" id="copyLinkBtn">Copy</button></div>
                     <div class="input-group mt-3"><input type="text" id="referralLink" class="form-control" value="{{ url('/register?ref='.$referralCode) }}" readonly><button class="btn btn-secondary" id="whatsappShareBtn">WhatsApp</button><button class="btn btn-info text-white" id="emailShareBtn">Email</button></div>
                     <h5 class="mt-4">Referral History</h5>
-                    <table class="table"><tr><th>Referred User</th><th>Status</th><th>Reward Earned</th></tr>@forelse($referralHistory as $ref)<tr><td>{{ $ref->referredCustomer->name ?? 'N/A' }}</td><td>{{ ucfirst($ref->status) }}</td><td>₹{{ $ref->reward_amount }}</td></tr>@empty<tr><td colspan="3">No referrals yet</td></tr>@endforelse</table>
-                    <div class="alert alert-secondary">Terms: ₹10 cashback per successful referral, max ₹500/month.</div>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Referred User</th>
+                                    <th>Status</th>
+                                    <th>Orders Placed</th>
+                                    <th>Reward Earned</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($referralHistory as $ref)
+                                <tr>
+                                    <td class="fw-medium">{{ $ref->referredCustomer->name ?? 'Unknown' }}</td>
+                                    <td>
+                                        @if(strtolower($ref->status) == 'successful')
+                                            <span class="badge bg-success rounded-pill px-3">Successful</span>
+                                        @else
+                                            <span class="badge bg-warning text-dark rounded-pill px-3">{{ ucfirst($ref->status) }}</span>
+                                        @endif
+                                    </td>
+                                    <td><span class="badge bg-primary rounded-pill px-3">{{ $ref->referredCustomer->orders_count ?? 0 }}</span></td>
+                                    <td class="text-success fw-bold">₹{{ number_format($ref->reward_amount, 2) }}</td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-4">No referrals yet. Share your code to earn rewards!</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-secondary mt-3 d-flex align-items-center">
+                        <i class="fa-solid fa-circle-info me-2 text-primary"></i> 
+                        Terms: ₹10 cashback per successful referral, max ₹500/month.
+                    </div>
                 </div>
             </div>
         </div>
@@ -1125,6 +1245,23 @@ $(document).ready(function() {
                 if(res.success) {
                     showToast('success', 'Profile updated!');
                     if(res.photo) $('#profilePhoto').attr('src', res.photo);
+                } else showToast('error', 'Update failed');
+            },
+            error: function() { showToast('error', 'Error occurred'); }
+        });
+    });
+
+    // Bank Account update
+    $('#bankAccountForm').on('submit', function(e) {
+        e.preventDefault();
+        var formData = $(this).serialize();
+        $.ajax({
+            url: '{{ route("vshop.myaccount.update-bank-details") }}',
+            method: 'POST',
+            data: formData,
+            success: function(res) {
+                if(res.success) {
+                    showToast('success', 'Bank details updated!');
                 } else showToast('error', 'Update failed');
             },
             error: function() { showToast('error', 'Error occurred'); }

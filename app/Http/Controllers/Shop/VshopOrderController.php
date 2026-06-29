@@ -21,6 +21,7 @@ use App\Services\NotificationService;
 
 
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Schema;
 
 class VshopOrderController extends Controller
 {
@@ -58,17 +59,19 @@ class VshopOrderController extends Controller
 
 
 
-private function notifySeller($sellerId, $type, $message, $route = null)
+private function notifySeller($sellerId, $type, $message, $route = null, $hash = '')
 {
     try {
         if(!$sellerId) return;
+
+        $link = $route ? route($route) . $hash : null;
 
         NotificationService::notify(
             $sellerId,
             'seller',
             $type,
             $message,
-            $route ? route($route) : null
+            $link
         );
     } catch (\Exception $e) {
         \Log::error('Notification Error: '.$e->getMessage());
@@ -209,6 +212,19 @@ public function placeOrder(Request $request)
 
         if (!$customer) {
             return back()->with('error', 'Please login first');
+        }
+
+        $referrerId = $customer->referred_by ?? null;
+        if ($request->filled('referral_code')) {
+            $referrer = \App\Models\Customer::where('referral_code', $request->referral_code)
+                ->where('id', '!=', $customer->id)
+                ->first();
+                
+            if ($referrer) {
+                $referrerId = $referrer->id;
+            } else {
+                return back()->with('error', 'Invalid referral code provided.');
+            }
         }
 
         $primaryPaymentMethod = is_array($request->payment_method) ? ($request->payment_method[0] ?? 'cod') : $request->payment_method;
@@ -359,7 +375,7 @@ public function placeOrder(Request $request)
             if ($request->payment_method === 'wallet') {
                 throw new \Exception("Not have sufficient balance, use another method");
             } elseif (in_array($request->payment_method, ['upi', 'card'])) {
-                // Verify Razorpay payment signature
+                
                 $razorpayPaymentId = $request->razorpay_payment_id;
                 $razorpayOrderId = $request->razorpay_order_id;
                 $razorpaySignature = $request->razorpay_signature;
@@ -387,8 +403,8 @@ public function placeOrder(Request $request)
             }
         }
 
-        $paymentStatus = in_array($request->payment_method, ['upi', 'card']) || $grandTotal == 0 ? 'paid' : 'pending';
-        $orderStatus = 'pending'; // Initial order status should be pending or processing
+        $paymentStatus = in_array($request->payment_method, ['upi', 'card', 'cod']) || $grandTotal == 0 ? 'paid' : 'pending';
+        $orderStatus = ($request->payment_method === 'cod') ? 'delivered' : 'pending'; // Initial order status should be pending or processing
 
         // ================= CREATE ORDER =================
         $order = Order::create([
@@ -406,7 +422,21 @@ public function placeOrder(Request $request)
             'delivery_address_id' => $deliveryId,
             'billing_address_id'  => $billingId,
             'order_date'          => now(),
+            'referrer_id'         => $referrerId,
         ]);
+
+        // Record Referral History immediately so seller sees it
+        if ($referrerId) {
+            \App\Models\ReferralHistory::create([
+                'referrer_id' => $referrerId,
+                'buyer_id' => $customer->id,
+                'seller_id' => $sellerId,
+                'order_id' => $order->id,
+                'amount' => 0, // Commission calculated later on delivery
+                'commission_percent' => 0,
+                'status' => 'pending',
+            ]);
+        }
 
         // Record Wallet Transaction if wallet was used
         if ($useWallet && $walletDeduction > 0) {
@@ -495,6 +525,56 @@ $this->notifySeller(
     'New Order Received (#'.$order->id.')',
     'seller.orders.index'
 );
+
+        // 🟢 AUTO-SEND INVOICE ON WHATSAPP VIA TWILIO
+        try {
+            if ($customer->phone) {
+                $toNumber = $customer->phone;
+                // Normalize phone number to international format
+                $toNumber = preg_replace('/[^0-9]/', '', $toNumber);
+                if (strlen($toNumber) == 10) {
+                    $toNumber = '91' . $toNumber; // India country code
+                }
+
+                $invoiceUrl = route('vshop.order.invoice', $order->id);
+                $body = "Hi {$customer->name},\n\n";
+                $body .= "✅ Your order *#{$order->id}* from *VRIDHEE INNOVATIONS PRIVATE LIMITED* has been placed successfully!\n\n";
+                if ($order->payment_method === 'cod') {
+                    $body .= "💰 Payment: Cash on Delivery (Marked as Paid & Delivered)\n";
+                }
+                $body .= "📄 Download Invoice: {$invoiceUrl}\n\n";
+                $body .= "Thank you for shopping with us! 🛍️";
+
+                // Generate wa.me fallback link for confirmation page
+                $waLink = 'https://wa.me/' . $toNumber . '?text=' . urlencode($body);
+                session(['order_whatsapp_link' => $waLink]);
+
+                // Auto-send via Twilio API (free trial)
+                $sid = env('TWILIO_SID');
+                $token = env('TWILIO_AUTH_TOKEN');
+                $from = env('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886');
+
+                if ($sid && $token) {
+                    $response = \Illuminate\Support\Facades\Http::asForm()
+                        ->withBasicAuth($sid, $token)
+                        ->post("https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json", [
+                            'From' => $from,
+                            'To'   => 'whatsapp:+' . $toNumber,
+                            'Body' => $body,
+                        ]);
+
+                    if ($response->successful()) {
+                        \Illuminate\Support\Facades\Log::info("✅ WhatsApp sent for Order #{$order->id} to +{$toNumber}");
+                    } else {
+                        \Illuminate\Support\Facades\Log::warning("⚠️ Twilio response for Order #{$order->id}: " . $response->body());
+                    }
+                } else {
+                    \Illuminate\Support\Facades\Log::info("Twilio credentials not set. wa.me fallback link: {$waLink}");
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("WhatsApp Send Error: " . $e->getMessage());
+        }
 
         /* ================= GLOBAL COMMISSION SETTINGS ================= */
 
@@ -1060,6 +1140,19 @@ public function orderAction(Request $request)
             'updated_at' => now(),
         ];
 
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            
+            $destinationPath = public_path('uploads/returns');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0777, true);
+            }
+            
+            $file->move($destinationPath, $filename);
+            $data['attachment'] = 'uploads/returns/' . $filename;
+        }
+
         if (Schema::hasColumn('order_returns', 'refund_mode')) {
             $data['refund_mode'] = $refundMode;
         }
@@ -1085,12 +1178,54 @@ public function orderAction(Request $request)
             $order->seller_id,
             'order',
             ucfirst($actionType) . ' Request for Order #' . $order->id,
-            'seller.orders.index'
+            'seller.paymenthandle'
         );
 
         return response()->json([
             'message' => ucfirst($actionType) . ' request submitted successfully. Scheduled pickup on ' . $pickupDate
         ]);
+    }
+
+    // ========== RATE / REVIEW ==========
+    if ($request->type == 'rate') {
+        $customer = Auth::guard('customer')->user();
+        if (!$customer) {
+            return response()->json(['message' => 'Please login to submit review'], 401);
+        }
+
+        $productId = $request->product_id;
+        $rating = (int)$request->rating;
+        $review = $request->review;
+
+        if ($rating < 1 || $rating > 5) {
+            return response()->json(['message' => 'Invalid rating value'], 422);
+        }
+
+        // Check if already reviewed
+        $existing = \App\Models\ProductReview::where('product_id', $productId)
+            ->where('customer_id', $customer->id)
+            ->first();
+
+        if ($existing) {
+            $existing->update([
+                'rating' => $rating,
+                'comment' => $review,
+            ]);
+            return response()->json(['message' => 'Review updated successfully!']);
+        }
+
+        \App\Models\ProductReview::create([
+            'product_id' => $productId,
+            'customer_id' => $customer->id,
+            'user_name' => $customer->name,
+            'user_email' => $customer->email ?? '',
+            'rating' => $rating,
+            'comment' => $review,
+            'is_approved' => true,
+            'is_verified_purchase' => true,
+        ]);
+
+        return response()->json(['message' => 'Review submitted successfully! Thank you.']);
     }
 
         return response()->json(['message' => 'Invalid action type'], 400);

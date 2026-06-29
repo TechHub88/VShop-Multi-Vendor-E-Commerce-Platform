@@ -518,7 +518,7 @@ class SellermanagementController extends Controller
             $query->whereDate('created_at', '<=', $request->date_to);
         }
         
-        $auditLogs = $query->latest()->paginate(30);
+        $auditLogs = $query->latest()->paginate(6);
         $sellers = Seller::select('id', 'name', 'org_name', 'email')->get();
         
         return view('admin.audit-logs.index', compact('auditLogs', 'sellers'));

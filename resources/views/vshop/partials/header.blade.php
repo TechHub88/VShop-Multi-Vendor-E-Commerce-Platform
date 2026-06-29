@@ -289,27 +289,82 @@
         }
     }
     @media (max-width: 768px) {
+        .dashboard-top-bar {
+            padding: 8px 10px;
+            flex-wrap: wrap;
+        }
         .dashboard-top-bar .left-side {
-            width: 100px;
+            width: auto;
+            flex-shrink: 0;
         }
         .dashboard-top-bar .right-side {
-            width: calc(100% - 100px) !important;
+            flex: 1;
+            width: auto !important;
+        }
+        .dashboardTopBar .container-fluid {
+            padding-left: 0;
+            padding-right: 0;
+        }
+        .dashboardTopBar .d-flex.justify-content-between {
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end !important;
+            width: 100%;
         }
         .top-search-bar-sec {
-            margin: 0 10px;
+            display: none !important;
         }
-        .amazon-search-select {
-            min-width: 80px;
-            padding: 0 5px;
-            font-size: 12px;
+        .left-side {
+            gap: 8px !important;
         }
-        .amazon-search-input {
-            padding: 6px 8px;
-            font-size: 13px;
+        .logo-sec img {
+            height: 38px !important;
+            width: auto !important;
+            margin-top: 2px;
         }
-        .amazon-search-btn {
-            padding: 0 12px;
+        .right-side .gap-3 {
+            gap: 8px !important;
+            order: 2;
+            margin-left: auto;
+            justify-content: flex-end;
         }
+        .location-box .right-part {
+            display: none !important;
+        }
+        .location-box {
+            padding: 0;
+        }
+        .location-box .left-part i {
+            font-size: 16px;
+        }
+        .cart-icon a i, .bell-icon i {
+            font-size: 16px !important;
+        }
+        .cart-icon a span, .bell-icon span {
+            width: 15px;
+            height: 15px;
+            font-size: 10px;
+            top: -5px;
+            right: -2px;
+        }
+        .dashboard-profile-sec .profile-box img {
+            width: 25px;
+            height: 25px;
+        }
+    }
+    
+    @media (max-width: 991px) {
+        .dashboardPagesContent, .dashboard-bottom-wrapper, .dashBoradPageBody {
+            width: 100% !important;
+            max-width: 100vw !important;
+            overflow-x: hidden !important;
+        }
+    }
+    
+    /* Global fix for horizontal scroll */
+    html, body {
+        overflow-x: hidden;
+        max-width: 100vw;
     }
 </style>
 
@@ -370,7 +425,10 @@ if($customerLoggedIn){
 }
 @endphp
 
-<div class="left-side">
+<div class="left-side d-flex align-items-center gap-2">
+    <button class="sidebar-trigger toggle-tooltips" style="background: none; border: none; font-size: 20px;">
+        <i class="fa-solid fa-bars"></i>
+    </button>
     <div class="logo-sec">
         <a href="{{ $customerLoggedIn ? url('/') : route('vshoplogin') }}">
             <img src="https://vshop.zelofx.com/public/images/new-logo-vridhee.png" alt="Boost Now" style="width: 100px; height: 60px; display: block;">
@@ -385,13 +443,11 @@ if($customerLoggedIn){
             <div class="container-fluid">
 
                 {{-- ===== SINGLE ROW: search + category links + icons ===== --}}
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
 
                     {{-- CENTER: Full Size Amazon Style Search Bar --}}
                     <div class="d-flex align-items-center top-search-bar-sec">
-                        <button class="sidebar-trigger toggle-tooltips me-3" style="background: none; border: none; font-size: 20px;">
-                            <i class="fa-solid fa-bars"></i>
-                        </button>
+
                         <form action="{{ route('productmanage.index') }}" method="GET" class="amazon-search-form">
                             @foreach(request()->except(['q', 'filter', 'page']) as $key => $value)
                                 @if(is_array($value))

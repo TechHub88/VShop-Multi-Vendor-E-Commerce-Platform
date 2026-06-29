@@ -301,6 +301,14 @@ a:hover {
                 <input type="password" id="regPassword" name="password" class="form-control" placeholder="At least 6 characters" required minlength="6">
             </div>
 
+            <div class="mb-3">
+                <label class="form-label">Referral Code <span style="font-size: 12px; color: #94a3b8;">(Optional)</span></label>
+                <div class="d-flex gap-2 align-items-center">
+                    <i class="bi bi-gift" style="font-size: 18px; color: #2563eb;"></i>
+                    <input type="text" id="regReferralCode" name="referral_code" class="form-control" placeholder="Enter referral code (e.g. VSHOP-XXXXXX)" maxlength="20" style="text-transform: uppercase;">
+                </div>
+            </div>
+
             <button type="submit" class="verify-btn" id="submitRegisterBtn">Create Account</button>
         </form>
 
@@ -374,6 +382,7 @@ $('#registerForm').submit(function(e){
     let email = $('#regEmail').val().trim();
     let mobile = $('#regMobile').val().trim();
     let password = $('#regPassword').val();
+    let referralCode = $('#regReferralCode').val().trim().toUpperCase();
 
     let regex = /^[6-9]\d{9}$/;
     if (!regex.test(mobile)) {
@@ -391,7 +400,8 @@ $('#registerForm').submit(function(e){
         name: name,
         email: email,
         mobile: mobile,
-        password: password
+        password: password,
+        referral_code: referralCode
     }, function(res){
         
         if(res.status) {

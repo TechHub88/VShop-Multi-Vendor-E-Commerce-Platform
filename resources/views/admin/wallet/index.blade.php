@@ -9,9 +9,7 @@
 
 <div class="container-fluid">
 
-    {{-- ══════════════════════════════════════════════════════════════
-         BREADCRUMB
-    ══════════════════════════════════════════════════════════════ --}}
+    
     <div class="row mb-3">
         <div class="col-12">
             <div class="page-title-box d-flex align-items-center justify-content-between">
@@ -43,13 +41,14 @@
         {{-- DASHBOARD TAB --}}
         <div class="tab-pane fade show active" id="pane-dashboard" role="tabpanel">
             <div class="row g-3 mb-3">
-                <div class="col-xl-4 col-md-6"><div class="wallet-stat-card stat-total"><div class="stat-icon-wrap"><div class="stat-icon"><i class="mdi mdi-wallet-outline"></i></div></div><div class="stat-info"><span class="stat-label">Total Balance</span><h3 class="stat-value" id="totalBalance">₹{{ number_format($totalBalance, 2) }}</h3></div></div></div>
-                <div class="col-xl-4 col-md-6"><div class="wallet-stat-card stat-seller"><div class="stat-icon-wrap"><div class="stat-icon"><i class="mdi mdi-store-outline"></i></div></div><div class="stat-info"><span class="stat-label">Seller Balance</span><h3 class="stat-value" id="sellerBalance">₹{{ number_format($sellerBalance, 2) }}</h3></div></div></div>
-                <div class="col-xl-4 col-md-6"><div class="wallet-stat-card stat-buyer"><div class="stat-icon-wrap"><div class="stat-icon"><i class="mdi mdi-account-cash-outline"></i></div></div><div class="stat-info"><span class="stat-label">Buyer Balance</span><h3 class="stat-value" id="buyerBalance">₹{{ number_format($buyerBalance, 2) }}</h3></div></div></div>
+                <div class="col-xl-4 col-md-6"><div class="wallet-stat-card stat-total"><div class="stat-icon-wrap"><div class="stat-icon"><i class="mdi mdi-wallet-outline"></i></div></div><div class="stat-info"><span class="stat-label">Total Balance</span><h3 class="stat-value money" id="totalBalance" data-amount="{{ $totalBalance }}">₹{{ number_format($totalBalance, 2) }}</h3></div></div></div>
+                <div class="col-xl-4 col-md-6"><div class="wallet-stat-card stat-seller"><div class="stat-icon-wrap"><div class="stat-icon"><i class="mdi mdi-store-outline"></i></div></div><div class="stat-info"><span class="stat-label">Seller Balance</span><h3 class="stat-value money" id="sellerBalance" data-amount="{{ $sellerBalance }}">₹{{ number_format($sellerBalance, 2) }}</h3></div></div></div>
+                <div class="col-xl-4 col-md-6"><div class="wallet-stat-card stat-buyer"><div class="stat-icon-wrap"><div class="stat-icon"><i class="mdi mdi-account-cash-outline"></i></div></div><div class="stat-info"><span class="stat-label">Buyer Balance</span><h3 class="stat-value money" id="buyerBalance" data-amount="{{ $buyerBalance }}">₹{{ number_format($buyerBalance, 2) }}</h3></div></div></div>
             </div>
             <div class="row g-3 mb-4">
-                <div class="col-xl-4 col-md-6"><div class="wallet-stat-card stat-frozen"><div class="stat-icon-wrap"><div class="stat-icon"><i class="mdi mdi-snowflake"></i></div></div><div class="stat-info"><span class="stat-label">Frozen Amount</span><h3 class="stat-value" id="frozenAmount">₹{{ number_format($frozenAmount, 2) }}</h3></div></div></div>
-                <div class="col-xl-4 col-md-6"><div class="wallet-stat-card stat-pending"><div class="stat-icon-wrap"><div class="stat-icon"><i class="mdi mdi-clock-outline"></i></div></div><div class="stat-info"><span class="stat-label">Pending Withdrawals</span><h3 class="stat-value" id="pendingWithdrawalsAmount">₹{{ number_format($pendingWithdrawals, 2) }}</h3><span class="stat-badge" id="pendingWithdrawalsCount">{{ $pendingWithdrawalsCount }} Requests</span></div></div></div>
+                <div class="col-xl-4 col-md-6"><div class="wallet-stat-card stat-frozen"><div class="stat-icon-wrap"><div class="stat-icon"><i class="mdi mdi-snowflake"></i></div></div><div class="stat-info"><span class="stat-label">Frozen Amount</span><h3 class="stat-value money" id="frozenAmount" data-amount="{{ $frozenAmount }}">₹{{ number_format($frozenAmount, 2) }}</h3></div></div></div>
+                <div class="col-xl-4 col-md-6"><div class="wallet-stat-card stat-pending"><div class="stat-icon-wrap"><div class="stat-icon"><i class="mdi mdi-clock-outline"></i></div></div><div class="stat-info"><span class="stat-label">Pending Withdrawals</span><h3 class="stat-value money" id="pendingWithdrawalsAmount" data-amount="{{ $pendingWithdrawals }}">₹{{ number_format($pendingWithdrawals, 2) }}</h3><span class="stat-badge" id="pendingWithdrawalsCount">{{ $pendingWithdrawalsCount }} Requests</span></div></div></div>
+                <div class="col-xl-4 col-md-6"><div class="wallet-stat-card" style="background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: #fff;"><div class="stat-icon-wrap"><div class="stat-icon" style="background: rgba(255,255,255,0.2);"><i class="mdi mdi-bank" style="color: #fff;"></i></div></div><div class="stat-info"><span class="stat-label" style="color: rgba(255,255,255,0.8);">Platform Wallet</span><h3 class="stat-value money" id="platformBalance" style="color: #fff;" data-amount="{{ $platformBalance ?? 0 }}">₹{{ number_format($platformBalance ?? 0, 2) }}</h3><span class="stat-badge" style="background: rgba(255,255,255,0.2); color: #fff;">Commission Earnings</span></div></div></div>
             </div>
             <div class="row g-3"><div class="col-xl-5 col-lg-6"><div class="card wallet-card h-100"><div class="card-header"><h5 class="card-title mb-0">Wallet Summary Overview</h5></div><div class="card-body"><div id="walletDonutChart" style="width:100%;min-height:320px;"></div></div></div></div>
             <div class="col-xl-7 col-lg-6"><div class="card wallet-card h-100"><div class="card-header"><h5 class="card-title mb-0">Wallet Balance Trend (Last 7 Days)</h5></div><div class="card-body"><div id="walletTrendChart" style="width:100%;min-height:320px;"></div></div></div></div></div>
@@ -65,7 +64,7 @@
                     <div class="col-md-3"><label class="form-label small mb-1">Date Range</label><div class="d-flex gap-1"><input type="date" class="form-control form-control-sm" id="startDate" value="{{ date('Y-m-d', strtotime('-30 days')) }}"><input type="date" class="form-control form-control-sm" id="endDate" value="{{ date('Y-m-d') }}"></div></div>
                     <div class="col-md-3"><div class="d-flex gap-2"><button type="button" class="btn btn-primary btn-sm px-3" id="filterBtn"><i class="mdi mdi-filter-outline me-1"></i>Filter</button><button type="button" class="btn btn-outline-secondary btn-sm px-3" id="resetFilterBtn">Reset</button></div></div>
                 </div></div>
-                <div class="card-body pt-2"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th>Date & Time</th><th>User</th><th>User Type</th><th>Type</th><th>Credit (₹)</th><th>Debit (₹)</th><th>Balance (₹)</th><th>Description</th><th>Reference ID</th></tr></thead><tbody id="transactionsTableBody">@foreach($transactions as $transaction)</td><td class="text-nowrap"><small>{{ $transaction->created_at->format('d M Y h:i A') }}</small></td><td>{{ $transaction->user_name }}</td><td><span class="badge bg-soft-{{ $transaction->user_type == 'seller' ? 'primary' : 'success' }}">{{ ucfirst($transaction->user_type) }}</span></td><td><span class="badge bg-soft-{{ $transaction->badge_color }}">{{ ucfirst(str_replace('_', ' ', $transaction->transaction_type)) }}</span></td><td>@if($transaction->credit > 0)<span class="text-success fw-semibold">{{ number_format($transaction->credit, 2) }}</span>@else-@endif</td><td>@if($transaction->debit > 0)<span class="text-danger fw-semibold">{{ number_format($transaction->debit, 2) }}</span>@else-@endif</td><td>{{ number_format($transaction->balance_after, 2) }}</td><td>{{ $transaction->description }}</td><td><code>{{ $transaction->reference_id ?? 'N/A' }}</code></td>
+                <div class="card-body pt-2"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th>Date & Time</th><th>User</th><th>User Type</th><th>Type</th><th>Credit <span class="currency-label">(₹)</span></th><th>Debit <span class="currency-label">(₹)</span></th><th>Balance <span class="currency-label">(₹)</span></th><th>Description</th><th>Reference ID</th></tr></thead><tbody id="transactionsTableBody">@foreach($transactions as $transaction)</td><td class="text-nowrap"><small>{{ $transaction->created_at->format('d M Y h:i A') }}</small></td><td>{{ $transaction->user_name }}</td><td><span class="badge bg-soft-{{ $transaction->user_type == 'seller' ? 'primary' : 'success' }}">{{ ucfirst($transaction->user_type) }}</span></td><td><span class="badge bg-soft-{{ $transaction->badge_color }}">{{ ucfirst(str_replace('_', ' ', $transaction->transaction_type)) }}</span></td><td>@if($transaction->credit > 0)<span class="text-success fw-semibold money" data-amount="{{ $transaction->credit }}">₹{{ number_format($transaction->credit, 2) }}</span>@else-@endif</td><td>@if($transaction->debit > 0)<span class="text-danger fw-semibold money" data-amount="{{ $transaction->debit }}">₹{{ number_format($transaction->debit, 2) }}</span>@else-@endif</td><td><span class="money" data-amount="{{ $transaction->balance_after }}">₹{{ number_format($transaction->balance_after, 2) }}</span></td><td>{{ $transaction->description }}</td><td><code>{{ $transaction->reference_id ?? 'N/A' }}</code></td>
                 </tr>@endforeach</tbody></table></div>
                 <div class="d-flex justify-content-between align-items-center mt-3"><small class="text-muted" id="transactionInfo">Showing {{ $transactions->firstItem() ?? 0 }} to {{ $transactions->lastItem() ?? 0 }} of {{ $transactions->total() ?? 0 }} entries</small><nav><ul class="pagination pagination-sm mb-0" id="transactionPagination">{{ $transactions->links('pagination::bootstrap-4') }}</ul></nav></div></div>
             </div>
@@ -74,7 +73,7 @@
         {{-- WITHDRAWAL MANAGEMENT TAB --}}
         <div class="tab-pane fade" id="pane-withdrawals" role="tabpanel">
             <div class="card wallet-card"><div class="card-header"><ul class="nav nav-tabs card-header-tabs withdrawal-sub-tabs" id="withdrawalTabs"><li class="nav-item"><button class="nav-link active" data-status="pending" data-bs-toggle="tab" data-bs-target="#wd-pending">Pending <span class="badge bg-danger ms-1" id="pendingBadge">{{ $pendingWithdrawalsCount }}</span></button></li><li class="nav-item"><button class="nav-link" data-status="approved" data-bs-toggle="tab" data-bs-target="#wd-approved">Approved</button></li><li class="nav-item"><button class="nav-link" data-status="rejected" data-bs-toggle="tab" data-bs-target="#wd-rejected">Rejected</button></li></ul></div>
-            <div class="card-body"><div class="tab-content"><div class="tab-pane fade show active" id="wd-pending"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th>Request ID</th><th>User</th><th>Type</th><th>Amount</th><th>Requested Date</th><th>Bank Details</th><th>Status</th><th>Actions</th></tr></thead><tbody id="pendingWithdrawalsBody">@foreach($pendingWithdrawalsList as $withdrawal)<tr><td><code>{{ $withdrawal->request_id }}</code></td><td>{{ $withdrawal->user_name }}</td><td><span class="badge bg-soft-primary">{{ ucfirst($withdrawal->user_type) }}</span></td><td class="fw-semibold">{{ number_format($withdrawal->amount, 2) }}</td><td><small>{{ $withdrawal->created_at->format('d M Y h:i A') }}</small></td><td><small>{{ $withdrawal->bank_name }}<br>{{ $withdrawal->bank_account_number }}</small></td><td><span class="badge bg-soft-warning">Pending</span></td><td><div class="d-flex gap-1"><button class="btn btn-sm btn-success approve-withdrawal" data-id="{{ $withdrawal->id }}">Approve</button><button class="btn btn-sm btn-danger reject-withdrawal" data-id="{{ $withdrawal->id }}">Reject</button></div></td>
+            <div class="card-body"><div class="tab-content"><div class="tab-pane fade show active" id="wd-pending"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th>Request ID</th><th>User</th><th>Type</th><th>Amount</th><th>Requested Date</th><th>Bank Details</th><th>Status</th><th>Actions</th></tr></thead><tbody id="pendingWithdrawalsBody">@foreach($pendingWithdrawalsList as $withdrawal)<tr><td><code>{{ $withdrawal->request_id }}</code></td><td>{{ $withdrawal->user_name }}</td><td><span class="badge bg-soft-primary">{{ ucfirst($withdrawal->user_type) }}</span></td><td class="fw-semibold"><span class="money" data-amount="{{ $withdrawal->amount }}">₹{{ number_format($withdrawal->amount, 2) }}</span></td><td><small>{{ $withdrawal->created_at->format('d M Y h:i A') }}</small></td><td><small>{{ $withdrawal->bank_name }}<br>{{ $withdrawal->bank_account_number }}</small></td><td><span class="badge bg-soft-warning">Pending</span></td><td><div class="d-flex gap-1"><button class="btn btn-sm btn-success approve-withdrawal" data-id="{{ $withdrawal->id }}">Approve</button><button class="btn btn-sm btn-danger reject-withdrawal" data-id="{{ $withdrawal->id }}">Reject</button></div></td>
                 </tr>@endforeach</tbody></table></div><div class="d-flex justify-content-between mt-3"><small class="text-muted" id="pendingWithdrawalInfo">Showing {{ $pendingWithdrawalsList->firstItem() ?? 0 }} to {{ $pendingWithdrawalsList->lastItem() ?? 0 }} of {{ $pendingWithdrawalsList->total() ?? 0 }} entries</small><nav><ul class="pagination pagination-sm mb-0" id="pendingWithdrawalPagination">{{ $pendingWithdrawalsList->links('pagination::bootstrap-4') }}</ul></nav></div></div>
             <div class="tab-pane fade" id="wd-approved"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th>Request ID</th><th>User</th><th>Type</th><th>Amount</th><th>Requested Date</th><th>Approved Date</th><th>Bank Details</th><th>Status</th></tr></thead><tbody id="approvedWithdrawalsBody"><tr><td colspan="8" class="text-center py-5 text-muted"><i class="mdi mdi-check-circle-outline" style="font-size:48px"></i><h5>Loading...</h5></td></tr></tbody></table></div></div>
             <div class="tab-pane fade" id="wd-rejected"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th>Request ID</th><th>User</th><th>Type</th><th>Amount</th><th>Requested Date</th><th>Rejected Date</th><th>Bank Details</th><th>Status</th></tr></thead><tbody id="rejectedWithdrawalsBody"><tr><td colspan="8" class="text-center py-5 text-muted"><i class="mdi mdi-close-circle-outline" style="font-size:48px"></i><h5>Loading...</h5></td></tr></tbody></table></div></div>
@@ -89,9 +88,44 @@
             <div class="col-md-2"><label class="form-label small mb-1">Order ID</label><input type="text" class="form-control form-control-sm" id="refundOrderFilter" placeholder="Search Order ID"></div>
             <div class="col-md-3"><label class="form-label small mb-1">Date Range</label><div class="d-flex gap-1"><input type="date" class="form-control form-control-sm" id="refundStartDate" value="{{ date('Y-m-d', strtotime('-30 days')) }}"><input type="date" class="form-control form-control-sm" id="refundEndDate" value="{{ date('Y-m-d') }}"></div></div>
             <div class="col-md-3"><div class="d-flex gap-2"><button class="btn btn-primary btn-sm" id="filterRefundsBtn"><i class="mdi mdi-filter-outline me-1"></i>Filter</button><button class="btn btn-outline-secondary btn-sm" id="resetRefundsFilterBtn">Reset</button></div></div></div></div>
-            <div class="card-body pt-2"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th><input type="checkbox" id="selectAllRefunds"></th><th>Order ID</th><th>Buyer ID</th><th>Buyer Name</th><th>Amount</th><th>Reason</th><th>Request Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="refundsTableBody">@php $refundsData = App\Models\Refund::with('customer')->orderBy('created_at','desc')->paginate(10); @endphp @forelse($refundsData as $refund)<tr><td><input type="checkbox" class="refund-checkbox" data-id="{{ $refund->id }}"></td><td><code class="order-id-clickable" data-order-id="{{ $refund->order_id }}" data-refund-id="{{ $refund->id }}" style="cursor:pointer; color:#4e73df; text-decoration:underline;">{{ $refund->order_id ?? '#ORD-'.str_pad($refund->id,4,'0',STR_PAD_LEFT) }}</code></td><td><code>#CUST-{{ str_pad($refund->customer_id,3,'0',STR_PAD_LEFT) }}</code></td><td>{{ $refund->customer->name ?? 'Unknown' }}</td><td class="fw-semibold">{{ number_format($refund->amount,2) }}</td><td><span class="badge bg-soft-{{ $refund->reason_color }}">{{ $refund->reason }}</span></td><td><small>{{ $refund->created_at->format('d M Y h:i A') }}</small></td><td>@if($refund->status=='pending')<span class="badge bg-soft-warning">Pending</span>@elseif($refund->status=='approved')<span class="badge bg-soft-info">Approved</span>@elseif($refund->status=='rejected')<span class="badge bg-soft-danger">Rejected</span>@else<span class="badge bg-soft-success">Refunded</span>@endif</td><td><div class="d-flex gap-1">@if($refund->status=='pending')<button class="btn btn-sm btn-success approve-refund" data-id="{{ $refund->id }}">Issue Refund</button><button class="btn btn-sm btn-danger decline-refund" data-id="{{ $refund->id }}">Decline</button>@endif<button class="btn btn-sm btn-info view-refund-detail" data-order-id="{{ $refund->order_id }}" data-refund-id="{{ $refund->id }}"><i class="mdi mdi-eye me-1"></i>View Order</button></div></td>
-            </tr>@empty<tr><td colspan="9" class="text-center py-5 text-muted">No refund requests found</td></tr>@endforelse</tbody></table></div>
-            <div class="d-flex justify-content-between align-items-center mt-3"><div><small class="text-muted" id="refundInfo">Showing {{ $refundsData->firstItem() ?? 0 }} to {{ $refundsData->lastItem() ?? 0 }} of {{ $refundsData->total() ?? 0 }} entries</small><button class="btn btn-sm btn-outline-primary ms-3" id="bulkApproveRefunds" style="display:none;"><i class="mdi mdi-check-all me-1"></i> Bulk Approve</button></div><nav>{{ $refundsData->links('pagination::bootstrap-4') }}</nav></div></div></div>
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th><input type="checkbox" id="selectAllRefunds"></th><th>Order ID</th><th>Buyer ID</th><th>Buyer Name</th><th>Amount <span class="currency-label">(₹)</span></th><th>Reason</th><th>Request Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="refundsTableBody">
+            @forelse($refundsData as $refund)
+            <tr>
+                <td><input type="checkbox" class="refund-checkbox" data-id="{{ $refund->id }}"></td>
+                <td><code class="order-id-clickable" data-order-id="{{ $refund->order_id }}" data-refund-id="{{ $refund->id }}" style="cursor:pointer; color:#4e73df; text-decoration:underline;">#{{ $refund->order_id }}</code></td>
+                <td><code>#CUST-{{ str_pad($refund->customer_id, 3, '0', STR_PAD_LEFT) }}</code></td>
+                <td>{{ $refund->buyer_name ?? 'Unknown' }}</td>
+                <td class="fw-semibold"><span class="money" data-amount="{{ $refund->total_amount }}">₹{{ number_format($refund->total_amount, 2) }}</span></td>
+                <td><span class="badge bg-soft-secondary">{{ $refund->reason ?? 'N/A' }}</span></td>
+                <td><small>{{ \Carbon\Carbon::parse($refund->created_at)->format('d M Y h:i A') }}</small></td>
+                <td>
+                    @if($refund->status == 'requested')
+                        <span class="badge bg-soft-warning">Requested</span>
+                    @elseif($refund->status == 'approved')
+                        <span class="badge bg-soft-info">Pending Refund</span>
+                    @elseif($refund->status == 'rejected')
+                        <span class="badge bg-soft-danger">Rejected</span>
+                    @elseif($refund->status == 'refunded')
+                        <span class="badge bg-soft-success">Refunded</span>
+                    @else
+                        <span class="badge bg-soft-secondary">{{ ucfirst($refund->status) }}</span>
+                    @endif
+                </td>
+                <td>
+                    <div class="d-flex gap-1">
+                        @if($refund->status == 'approved')
+                            <button class="btn btn-sm btn-success approve-refund" data-id="{{ $refund->id }}">Issue Refund</button>
+                            <button class="btn btn-sm btn-danger decline-refund" data-id="{{ $refund->id }}">Decline</button>
+                        @endif
+                        <button class="btn btn-sm btn-info view-refund-detail" data-order-id="{{ $refund->order_id }}" data-refund-id="{{ $refund->id }}"><i class="mdi mdi-eye me-1"></i>View</button>
+                    </div>
+                </td>
+            </tr>
+            @empty
+            <tr><td colspan="9" class="text-center py-5 text-muted">No refund requests found</td></tr>
+            @endforelse
+            </tbody></table></div>
+            <div class="d-flex justify-content-between align-items-center mt-3"><div><small class="text-muted" id="refundInfo">Showing {{ $refundsData->firstItem() ?? 0 }} to {{ $refundsData->lastItem() ?? 0 }} of {{ $refundsData->total() ?? 0 }} entries</small></div><nav>{{ $refundsData->links('pagination::bootstrap-4') }}</nav></div></div></div>
         </div>
 
         {{-- WALLET CONTROLS TAB --}}
@@ -183,8 +217,8 @@
             <!-- Available Balance Alert -->
             <div class="alert alert-info alert-sm mb-3">
                 <i class="mdi mdi-wallet me-1"></i>
-                Available Balance: <strong id="selfAvailableBalance">₹{{ number_format($adminBalance ?? 0, 2) }}</strong>
-                | Minimum Withdrawal: ₹500
+                Available Balance: <strong id="selfAvailableBalance" class="money" data-amount="{{ $adminBalance ?? 0 }}">₹{{ number_format($adminBalance ?? 0, 2) }}</strong>
+                | Minimum Withdrawal: <span class="money" data-amount="500">₹500.00</span>
             </div>
             
             <!-- Select Bank Account Dropdown -->
@@ -369,13 +403,33 @@
 
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
 let donutChart, trendChart;
 let salaryTransactions = [];
 let refundModal = null;
+
+// Global currency helper - reads from localStorage (set by topbar currency switcher)
+const _exchangeRates = { INR: 1, USD: 0.012, EUR: 0.011, GBP: 0.0096 };
+const _currencySymbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
+function getActiveCurrency() { return localStorage.getItem('selectedCurrency') || 'INR'; }
+function getActiveSymbol() { return _currencySymbols[getActiveCurrency()] || '₹'; }
+function getActiveRate() { return _exchangeRates[getActiveCurrency()] || 1; }
+function formatMoney(amountINR) {
+    let c = getActiveCurrency(), r = getActiveRate(), s = getActiveSymbol();
+    let converted = parseFloat(amountINR) * r;
+    return s + ' ' + converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function moneySpan(amountINR, extraClass) {
+    extraClass = extraClass || '';
+    return '<span class="money ' + extraClass + '" data-amount="' + amountINR + '">' + formatMoney(amountINR) + '</span>';
+}
+// Listen for currency change from topbar and re-render dynamic JS content
+window.addEventListener('currencyChanged', function(e) {
+  
+    document.querySelectorAll('.currency-label').forEach(function(el) {
+        el.textContent = '(' + e.detail.symbol + ')';
+    });
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     const modalElement = document.getElementById('refundDetailModal');
@@ -418,9 +472,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     $('#selfWithdrawBtn').click(function() {
         let amount = $('#selfWithdrawAmount').val(), bank = $('#selfWithdrawBank').val();
-        if (!amount || amount < 500) { Swal.fire('Error!', 'Amount must be at least ₹500', 'error'); return; }
+        if (!amount || amount < 500) { Swal.fire('Error!', 'Amount must be at least ' + formatMoney(500), 'error'); return; }
         if (!bank) { Swal.fire('Error!', 'Select bank account', 'error'); return; }
-        Swal.fire({ title: 'Confirm Withdrawal?', text: `Request withdrawal of ₹${Number(amount).toLocaleString('en-IN')}?`, icon: 'question', showCancelButton: true }).then(result => {
+        Swal.fire({ title: 'Confirm Withdrawal?', text: `Request withdrawal of ${formatMoney(amount)}?`, icon: 'question', showCancelButton: true }).then(result => {
             if (result.isConfirmed) {
                 let newTransaction = { id: 'WDR' + Date.now(), date: new Date().toISOString().slice(0,19).replace('T',' '), type: 'Withdrawal', to: 'Self (Admin)', amount: parseFloat(amount), method: $('#selfWithdrawBank option:selected').text(), status: 'pending', remarks: $('#selfWithdrawRemark').val() || 'Self withdrawal request', members: 1 };
                 salaryTransactions.unshift(newTransaction);
@@ -554,7 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     $(document).on('click', '.view-salary-detail', function() {
         let transaction = salaryTransactions.find(t => t.id === $(this).data('id'));
-        if (transaction) Swal.fire({ title: 'Transaction Details', html: `<div class="text-start"><p><strong>Transaction ID:</strong> ${transaction.id}</p><p><strong>Date:</strong> ${new Date(transaction.date).toLocaleString()}</p><p><strong>Type:</strong> ${transaction.type}</p><p><strong>From/To:</strong> ${transaction.to}</p><p><strong>Amount:</strong> ₹${transaction.amount.toLocaleString('en-IN')}</p><p><strong>Payment Method:</strong> ${transaction.method}</p><p><strong>Status:</strong> ${transaction.status.toUpperCase()}</p><p><strong>Remarks:</strong> ${transaction.remarks}</p></div>`, icon: 'info' });
+        if (transaction) Swal.fire({ title: 'Transaction Details', html: `<div class="text-start"><p><strong>Transaction ID:</strong> ${transaction.id}</p><p><strong>Date:</strong> ${new Date(transaction.date).toLocaleString()}</p><p><strong>Type:</strong> ${transaction.type}</p><p><strong>From/To:</strong> ${transaction.to}</p><p><strong>Amount:</strong> ${formatMoney(transaction.amount)}</p><p><strong>Payment Method:</strong> ${transaction.method}</p><p><strong>Status:</strong> ${transaction.status.toUpperCase()}</p><p><strong>Remarks:</strong> ${transaction.remarks}</p></div>`, icon: 'info' });
     });
     
     function renderSalaryHistory(transactions) {
@@ -566,7 +620,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td><small>${new Date(t.date).toLocaleString()}</small></td>
                     <td>${t.type === 'Salary' ? '<span class="badge bg-soft-primary">Salary</span>' : '<span class="badge bg-soft-info">Withdrawal</span>'}</td>
                     <td>${t.to}${t.members > 1 ? ` <span class="badge bg-soft-secondary">${t.members} members</span>` : ''}</td>
-                    <td class="fw-semibold">₹${t.amount.toLocaleString('en-IN')}</td>
+                    <td class="fw-semibold">${moneySpan(t.amount)}</td>
                     <td><small>${t.method}</small></td>
                     <td>${t.status === 'completed' ? '<span class="badge bg-soft-success">Completed</span>' : '<span class="badge bg-soft-warning">Pending</span>'}</td>
                     <td><small>${t.remarks}</small></td>
@@ -584,9 +638,9 @@ document.addEventListener('DOMContentLoaded', function() {
         <td>${t.user_name}</td>
         <td><span class="badge bg-soft-${t.user_type == 'seller' ? 'primary' : 'success'}">${t.user_type}</span></td>
         <td><span class="badge bg-soft-${t.badge_color || 'secondary'}">${t.transaction_type.replace('_', ' ').toUpperCase()}</span></td>
-        <td>${t.credit > 0 ? '<span class="text-success">' + Number(t.credit).toLocaleString('en-IN') + '</span>' : '-'}</td>
-        <td>${t.debit > 0 ? '<span class="text-danger">' + Number(t.debit).toLocaleString('en-IN') + '</span>' : '-'}</td>
-        <td>${Number(t.balance_after).toLocaleString('en-IN')}</td>
+        <td>${t.credit > 0 ? moneySpan(t.credit, 'text-success') : '-'}</td>
+        <td>${t.debit > 0 ? moneySpan(t.debit, 'text-danger') : '-'}</td>
+        <td>${moneySpan(t.balance_after)}</td>
         <td>${t.description || '-'}</td>
         <td><code>${t.reference_id || 'N/A'}</code></td>
     </tr>`; }); $('#transactionsTableBody').html(html); $('#transactionInfo').text(`Showing ${data.from || 0} to ${data.to || 0} of ${data.total || 0} entries`); }
@@ -600,7 +654,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <td><code>${w.request_id}</code></td>
             <td>${w.user_name}</td>
             <td><span class="badge bg-soft-primary">${w.user_type}</span></td>
-            <td class="fw-semibold">${Number(w.amount).toLocaleString('en-IN')}</td>
+            <td class="fw-semibold">${moneySpan(w.amount)}</td>
             <td><small>${new Date(w.created_at).toLocaleString()}</small></td>
             <td><small>${w.bank_name}<br>${w.bank_account_number}</small></td>
             <td><span class="badge bg-soft-warning">Pending</span></td>
@@ -610,7 +664,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <td><code>${w.request_id}</code></td>
             <td>${w.user_name}</td>
             <td><span class="badge bg-soft-primary">${w.user_type}</span></td>
-            <td>${Number(w.amount).toLocaleString('en-IN')}</td>
+            <td>${moneySpan(w.amount)}</td>
             <td><small>${new Date(w.created_at).toLocaleString()}</small></td>
             <td><small>${w.processed_at ? new Date(w.processed_at).toLocaleString() : '-'}</small></td>
             <td><small>${w.bank_name}</small></td>
@@ -620,7 +674,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <td><code>${w.request_id}</code></td>
             <td>${w.user_name}</td>
             <td><span class="badge bg-soft-primary">${w.user_type}</span></td>
-            <td>${Number(w.amount).toLocaleString('en-IN')}</td>
+            <td>${moneySpan(w.amount)}</td>
             <td><small>${new Date(w.created_at).toLocaleString()}</small></td>
             <td><small>${w.processed_at ? new Date(w.processed_at).toLocaleString() : '-'}</small></td>
             <td><small>${w.bank_name}</small></td>
@@ -638,7 +692,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <td><code class="order-id-clickable" data-order-id="${r.order_id}" data-refund-id="${r.id}" style="cursor:pointer; color:#4e73df; text-decoration:underline;">${r.order_id}</code></td>
             <td><code>${r.buyer_id}</code></td>
             <td>${r.buyer_name}</td>
-            <td class="fw-semibold">${Number(r.amount).toLocaleString('en-IN')}</td>
+            <td class="fw-semibold">${moneySpan(r.amount)}</td>
             <td><span class="badge bg-soft-${r.reason_color || 'secondary'}">${r.reason}</span></td>
             <td><small>${new Date(r.created_at).toLocaleString()}</small></td>
             <td>${r.status === 'pending' ? '<span class="badge bg-soft-warning">Pending</span>' : (r.status === 'refunded' ? '<span class="badge bg-soft-success">Refunded</span>' : '<span class="badge bg-soft-danger">Rejected</span>')}</td>
@@ -649,171 +703,110 @@ document.addEventListener('DOMContentLoaded', function() {
     $(document).on('click', '.view-refund-detail, .order-id-clickable', function(e) {
         e.preventDefault();
         e.stopPropagation();
-        
         let orderId = $(this).data('order-id');
         let refundId = $(this).data('refund-id');
+        if (!orderId) { Swal.fire('Error', 'Order ID not found', 'error'); return; }
         
-        console.log('Opening modal - Order ID:', orderId, 'Refund ID:', refundId);
-        
-        if (!orderId) {
-            Swal.fire('Error', 'Order ID not found', 'error');
-            return;
-        }
-        
-        // Get modal element
         let modalElement = document.getElementById('refundDetailModal');
-        if (!modalElement) {
-            console.error('Modal element not found');
-            Swal.fire('Error', 'Modal component not found', 'error');
-            return;
-        }
+        if (!modalElement) { Swal.fire('Error', 'Modal not found', 'error'); return; }
         
-        // Set loading content
-        let modalBody = document.getElementById('refundModalBody');
-        if (modalBody) {
-            modalBody.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-2">Loading order details for Order ID: ${orderId}...</p>
-                </div>
-            `;
-        }
-        
-        // Show modal using Bootstrap
-        let modal = bootstrap.Modal.getInstance(modalElement);
-        if (!modal) {
-            modal = new bootstrap.Modal(modalElement);
-        }
+        $('#refundModalBody').html('<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-2">Loading...</p></div>');
+        let modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
         modal.show();
-        
-        // Load order details after short delay
-        setTimeout(function() {
-            loadOrderDetailsInModal(orderId, refundId);
-        }, 300);
+
+        $.get(`{{ url("admin/wallet/get-order-details") }}`, { order_id: orderId, refund_id: refundId }, function(res) {
+            if (res.success && res.data) {
+                let d = res.data;
+                let orderDate = d.order_date ? new Date(d.order_date).toLocaleString() : 'N/A';
+                let refundDate = d.refund_request_date ? new Date(d.refund_request_date).toLocaleString() : 'N/A';
+                let statusClass = d.refund_status === 'approved' ? 'bg-info' : (d.refund_status === 'refunded' ? 'bg-success' : 'bg-warning');
+                
+                let itemsHtml = '';
+                let total = 0;
+                if (d.items && d.items.length) {
+                    d.items.forEach(i => { let t = i.quantity * i.price; total += t;
+                        itemsHtml += `<tr><td><img src="${i.image}" class="rounded" width="45" height="45" style="object-fit:cover"></td><td><strong>${i.name}</strong><br><small class="text-muted">SKU: ${i.sku}</small></td><td class="text-center">${i.quantity}</td><td class="text-end">${formatMoney(i.price)}</td><td class="text-end">${formatMoney(t)}</td></tr>`;
+                    });
+                } else { itemsHtml = '<tr><td colspan="5" class="text-center text-muted">No items</td></tr>'; }
+
+                $('#refundModalBody').html(`
+                <div class="row g-3">
+                    <div class="col-md-6"><div class="card border mb-0"><div class="card-header bg-light py-2"><strong>📦 Order Info</strong></div><div class="card-body p-3">
+                        <p class="mb-1"><strong>Order ID:</strong> <code>#${d.order_id}</code></p>
+                        <p class="mb-1"><strong>Date:</strong> ${orderDate}</p>
+                        <p class="mb-1"><strong>Total:</strong> <span class="fw-bold text-primary">${formatMoney(d.total_amount)}</span></p>
+                        <p class="mb-1"><strong>Payment:</strong> ${d.payment_method || 'N/A'} <span class="badge bg-${d.payment_status==='paid'?'success':'warning'} ms-1">${d.payment_status||'N/A'}</span></p>
+                        <p class="mb-0"><strong>Status:</strong> <span class="badge bg-info">${d.order_status||'N/A'}</span></p>
+                    </div></div></div>
+                    <div class="col-md-6"><div class="card border mb-0"><div class="card-header bg-light py-2"><strong>👤 Customer</strong></div><div class="card-body p-3">
+                        <p class="mb-1"><strong>Name:</strong> ${d.customer?.name||'N/A'}</p>
+                        <p class="mb-1"><strong>Email:</strong> ${d.customer?.email||'N/A'}</p>
+                        <p class="mb-1"><strong>Phone:</strong> ${d.customer?.phone||'N/A'}</p>
+                        <p class="mb-0"><strong>Address:</strong> ${d.customer?.address||'N/A'}</p>
+                    </div></div></div>
+                    <div class="col-md-6"><div class="card border mb-0"><div class="card-header bg-light py-2"><strong>🔄 Refund Info</strong></div><div class="card-body p-3">
+                        <p class="mb-1"><strong>Refund ID:</strong> <code>${d.refund_id||'N/A'}</code></p>
+                        <p class="mb-1"><strong>Date:</strong> ${refundDate}</p>
+                        <p class="mb-1"><strong>Reason:</strong> ${d.refund_reason||'N/A'}</p>
+                        <p class="mb-1"><strong>Refund Amount:</strong> <span class="fw-bold text-success">${formatMoney(d.refund_amount||0)}</span></p>
+                        <p class="mb-0"><strong>Status:</strong> <span class="badge ${statusClass}">${d.refund_status||'N/A'}</span></p>
+                        ${d.refund_attachment ? `<p class="mb-0 mt-2"><strong>Attachment:</strong> <a href="/public/${d.refund_attachment}" target="_blank" class="text-primary"><i class="fa-solid fa-image"></i> View Image</a></p>` : ''}
+                    </div></div></div>
+                    <div class="col-md-6"><div class="card border mb-0"><div class="card-header bg-light py-2"><strong>💰 Commission</strong></div><div class="card-body p-3">
+                        <p class="mb-1"><strong>Platform:</strong> <span class="badge bg-primary">${d.commission?.platform_pct||0}%</span> = <span class="text-danger fw-bold">${formatMoney(d.commission?.platform_cut||0)}</span></p>
+                        <p class="mb-1"><strong>Seller:</strong> <span class="badge bg-success">${d.commission?.seller_pct||0}%</span></p>
+                        <p class="mb-1"><strong>Referrer:</strong> <span class="badge bg-info">${d.commission?.referrer_pct||0}%</span></p>
+                        <hr class="my-2"><p class="mb-1"><strong>Customer Gets:</strong> <span class="text-success fw-bold fs-6">${formatMoney(d.refund_amount||0)}</span></p>
+                        <p class="mb-0"><strong>Platform Keeps:</strong> <span class="text-danger fw-bold">${formatMoney(d.commission?.platform_cut||0)}</span></p>
+                    </div></div></div>
+                    <div class="col-12"><div class="card border mb-0"><div class="card-header bg-light py-2"><strong>🛒 Order Items</strong></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Image</th><th>Product</th><th class="text-center">Qty</th><th class="text-end">Price</th><th class="text-end">Total</th></tr></thead><tbody>${itemsHtml}</tbody><tfoot><tr><td colspan="4" class="text-end fw-bold">Total:</td><td class="text-end fw-bold text-primary">${formatMoney(total)}</td></tr></tfoot></table></div></div></div></div>
+                </div>`);
+            } else {
+                $('#refundModalBody').html('<div class="alert alert-danger text-center">Failed to load: '+(res.message||'Unknown error')+'</div>');
+            }
+        }).fail(function() {
+            $('#refundModalBody').html('<div class="alert alert-danger text-center">Error fetching order details.</div>');
+        });
+    });
+
+    // Issue Refund button
+    $(document).on('click', '.approve-refund', function() {
+        let id = $(this).data('id');
+        Swal.fire({ title: 'Issue Refund?', text: 'Platform commission will be deducted and remaining amount credited to buyer wallet.', icon: 'question', showCancelButton: true, confirmButtonText: 'Yes, Issue Refund' }).then(result => {
+            if (result.isConfirmed) {
+                $.ajax({ url: `{{ url("admin/wallet/refund") }}/${id}/approve`, method: 'POST', data: { _token: '{{ csrf_token() }}' },
+                    success: (res) => { Swal.fire('Success!', res.message || 'Refund issued successfully', 'success').then(() => location.reload()); },
+                    error: (xhr) => { let msg = xhr.responseJSON?.message || 'Failed to process refund'; Swal.fire('Error', msg, 'error'); }
+                });
+            }
+        });
+    });
+
+    // Decline Refund button
+    $(document).on('click', '.decline-refund', function() {
+        let id = $(this).data('id');
+        Swal.fire({ title: 'Decline Refund?', text: 'This refund request will be rejected.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Yes, Decline' }).then(result => {
+            if (result.isConfirmed) { Swal.fire('Declined', 'Refund declined', 'success').then(() => location.reload()); }
+        });
     });
     
-    // Function to load order details in modal
-    function loadOrderDetailsInModal(orderId, refundId) {
-        let demoItems = [
-            { name: 'Wireless Bluetooth Headphones', sku: 'WH-001', quantity: 1, price: 899.00, image: 'https://placehold.co/60x60?text=Product' },
-            { name: 'Fast Charging USB-C Cable', sku: 'UC-002', quantity: 2, price: 99.00, image: 'https://placehold.co/60x60?text=Cable' },
-            { name: 'Premium Screen Protector', sku: 'SP-003', quantity: 1, price: 153.00, image: 'https://placehold.co/60x60?text=Screen' }
-        ];
-        
-        let itemsHtml = '';
-        demoItems.forEach(item => {
-            itemsHtml += `
-                <tr>
-                    <td><img src="${item.image}" class="rounded" width="50" height="50" style="object-fit: cover;"></td>
-                    <td><strong>${item.name}</strong><br><small class="text-muted">SKU: ${item.sku}</small></td>
-                    <td class="text-center">${item.quantity}</td>
-                    <td class="text-end">₹${item.price.toLocaleString('en-IN')}</td>
-                    <td class="text-end">₹${(item.quantity * item.price).toLocaleString('en-IN')}</td>
-                </tr>
-            `;
-        });
-        
-        let totalAmount = demoItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-        
-        let modalHtml = `
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card border mb-3">
-                        <div class="card-header bg-light">
-                            <strong>📦 Order Information</strong>
-                        </div>
-                        <div class="card-body p-3">
-                            <p><strong>Order ID:</strong> <code class="fw-bold">${orderId}</code></p>
-                            <p><strong>Order Date:</strong> ${new Date().toLocaleString()}</p>
-                            <p><strong>Total Amount:</strong> <span class="fw-bold text-primary">₹${totalAmount.toLocaleString('en-IN')}</span></p>
-                            <p><strong>Payment Method:</strong> Credit Card / Online Banking</p>
-                            <p><strong>Order Status:</strong> <span class="badge bg-success">Delivered</span></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card border mb-3">
-                        <div class="card-header bg-light">
-                            <strong>👤 Customer Information</strong>
-                        </div>
-                        <div class="card-body p-3">
-                            <p><strong>Name:</strong> John Doe</p>
-                            <p><strong>Email:</strong> john.doe@example.com</p>
-                            <p><strong>Phone:</strong> +91 98765 43210</p>
-                            <p><strong>Address:</strong> 123, Main Street, Mumbai - 400001</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card border mb-3">
-                        <div class="card-header bg-light">
-                            <strong>🔄 Refund Information</strong>
-                        </div>
-                        <div class="card-body p-3">
-                            <p><strong>Refund ID:</strong> <code>${refundId || 'REF001'}</code></p>
-                            <p><strong>Request Date:</strong> ${new Date().toLocaleString()}</p>
-                            <p><strong>Reason:</strong> Product defective / Damaged</p>
-                            <p><strong>Refund Amount:</strong> <span class="fw-bold text-danger">₹899.00</span></p>
-                            <p><strong>Status:</strong> <span class="badge bg-warning">Pending</span></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12">
-                    <div class="card border">
-                        <div class="card-header bg-light">
-                            <strong>🛒 Order Items</strong>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-sm mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Image</th>
-                                            <th>Product</th>
-                                            <th class="text-center">Qty</th>
-                                            <th class="text-end">Unit Price</th>
-                                            <th class="text-end">Total</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>${itemsHtml}</tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="4" class="text-end fw-bold">Total:</td>
-                                            <td class="text-end fw-bold text-primary">₹${totalAmount.toLocaleString('en-IN')}</td>
-                                        </tr>
-                                    </tfoot>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        let modalBody = document.getElementById('refundModalBody');
-        if (modalBody) {
-            modalBody.innerHTML = modalHtml;
-        }
-    }
-    
-    $(document).on('click', '.approve-refund', function() { let id = $(this).data('id'); Swal.fire({ title: 'Issue Refund?', text: 'Amount will be credited back to buyer\'s wallet', icon: 'question', showCancelButton: true }).then(result => { if (result.isConfirmed) { $.ajax({ url: `{{ url("admin/wallet/refund") }}/${id}/approve`, method: 'POST', data: { _token: '{{ csrf_token() }}' }, success: () => { Swal.fire('Success!', 'Refund issued', 'success'); loadRefunds(); refreshDashboardSummary(); } }); } }); });
-    $(document).on('click', '.decline-refund', function() { Swal.fire({ title: 'Decline Refund?', icon: 'warning', showCancelButton: true }).then(result => { if (result.isConfirmed) { Swal.fire('Declined', 'Refund request declined', 'success'); loadRefunds(); } }); });
-    $('#filterRefundsBtn').click(() => loadRefunds()); $('#resetRefundsFilterBtn').click(() => { $('#refundStatusFilter, #refundBuyerFilter, #refundOrderFilter').val(''); $('#refundStartDate, #refundEndDate').val(''); loadRefunds(); });
+    $('#filterRefundsBtn').click(() => location.reload());
+    $('#resetRefundsFilterBtn').click(() => { $('#refundStatusFilter, #refundBuyerFilter, #refundOrderFilter').val(''); $('#refundStartDate, #refundEndDate').val(''); location.reload(); });
     
     function refreshDashboardSummary() { $.ajax({ url: '{{ route("admin.wallet.dashboard-summary") }}', method: 'GET', success: res => { if (res.success) { 
-        $('#totalBalance').text('₹' + Number(res.data.total_balance).toLocaleString('en-IN')); 
-        $('#sellerBalance').text('₹' + Number(res.data.seller_balance).toLocaleString('en-IN')); 
-        $('#buyerBalance').text('₹' + Number(res.data.buyer_balance).toLocaleString('en-IN')); 
-        $('#frozenAmount').text('₹' + Number(res.data.frozen_amount).toLocaleString('en-IN')); 
-        $('#pendingWithdrawalsAmount').text('₹' + Number(res.data.pending_withdrawals).toLocaleString('en-IN')); 
+        $('#totalBalance').attr('data-amount', res.data.total_balance).text(formatMoney(res.data.total_balance)); 
+        $('#sellerBalance').attr('data-amount', res.data.seller_balance).text(formatMoney(res.data.seller_balance)); 
+        $('#buyerBalance').attr('data-amount', res.data.buyer_balance).text(formatMoney(res.data.buyer_balance)); 
+        $('#frozenAmount').attr('data-amount', res.data.frozen_amount).text(formatMoney(res.data.frozen_amount)); 
+        $('#pendingWithdrawalsAmount').attr('data-amount', res.data.pending_withdrawals).text(formatMoney(res.data.pending_withdrawals)); 
         $('#pendingWithdrawalsCount').text(res.data.pending_withdrawals_count + ' Requests'); 
         
         // Update persistent balance card if it exists
         if ($('#persistentTotalBalance').length) {
-            $('#persistentTotalBalance').text('₹' + Number(res.data.total_balance).toLocaleString('en-IN'));
-            $('#persistentSellerBalance').text('₹' + Number(res.data.seller_balance).toLocaleString('en-IN'));
-            $('#persistentBuyerBalance').text('₹' + Number(res.data.buyer_balance).toLocaleString('en-IN'));
-            $('#persistentFrozenAmount').text('₹' + Number(res.data.frozen_amount).toLocaleString('en-IN'));
+            $('#persistentTotalBalance').attr('data-amount', res.data.total_balance).text(formatMoney(res.data.total_balance));
+            $('#persistentSellerBalance').attr('data-amount', res.data.seller_balance).text(formatMoney(res.data.seller_balance));
+            $('#persistentBuyerBalance').attr('data-amount', res.data.buyer_balance).text(formatMoney(res.data.buyer_balance));
+            $('#persistentFrozenAmount').attr('data-amount', res.data.frozen_amount).text(formatMoney(res.data.frozen_amount));
         }
         
         if (donutChart) donutChart.updateSeries([res.data.donut_data.seller, res.data.donut_data.buyer, res.data.donut_data.frozen, res.data.donut_data.pending]); 

@@ -236,8 +236,8 @@
                         @forelse($orders as $order)
                         <tr>
                             <td>#{{ $order->id }}</td>
-                            <td>{{ $order->invoice_no ?? 'INV-' . str_pad($order->id, 8, '0', STR_PAD_LEFT) }}</td>
-                            <td>{{ $order->customer->name ?? $order->recipient_name ?? 'N/A' }}</td>
+                            <td>{{ $order->invoice_no ?? ('INV-' . str_pad($order->id, 8, '0', STR_PAD_LEFT)) }}</td>
+                            <td>{{ $order->customer?->name ?? ($order->recipient_name ?? 'N/A') }}</td>
                             <td class="fw-bold">₹{{ number_format($order->total_amount ?? 0, 2) }}</td>
                             <td>{{ ucfirst(str_replace('_', ' ', $order->payment_type ?? 'N/A')) }}</td>
                             <td><code>{{ $order->transaction_id ?? 'N/A' }}</code></td>
@@ -260,17 +260,17 @@
                                 <small>{{ $fraudScore }}%</small>
                             </td>
                             <td>
-                                <span class="badge bg-{{ $order->fraud_status == 'clean' ? 'success' : ($order->fraud_status == 'suspicious' ? 'warning' : 'danger') }}">
+                                <span class="badge bg-{{ ($order->fraud_status ?? 'clean') == 'clean' ? 'success' : (($order->fraud_status ?? '') == 'suspicious' ? 'warning' : 'danger') }}">
                                     {{ ucfirst($order->fraud_status ?? 'Clean') }}
                                 </span>
                             </td>
                             <td>{{ $order->created_at ? $order->created_at->format('Y-m-d H:i:s') : 'N/A' }}</td>
                             <td>
-                                <div class="btn-group">
-                                    <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <div class="dropdown">
+                                    <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false">
                                         Actions
                                     </button>
-                                    <ul class="dropdown-menu">
+                                    <ul class="dropdown-menu dropdown-menu-end shadow">
                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="viewPaymentDetails({{ $order->id }})">View Details</a></li>
                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="validateInvoice({{ $order->id }})">Validate Invoice</a></li>
                                         <li><hr class="dropdown-divider"></li>
@@ -330,6 +330,16 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+$(document).ready(function() {
+    $(document).on('click', '.dropdown-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var dropdownEl = this;
+        var dropdown = bootstrap.Dropdown.getOrCreateInstance(dropdownEl);
+        dropdown.toggle();
+    });
+});
+
 // Apply filters - Reload page with filter parameters
 function applyFilters() {
     const params = new URLSearchParams();
@@ -393,11 +403,15 @@ function viewPaymentDetails(orderId) {
         method: 'GET',
         success: function(response) {
             Swal.close();
-            $('#paymentDetailsContent').html(response.html);
-            $('#paymentDetailsModal').modal('show');
+            if (response.success) {
+                $('#paymentDetailsContent').html(response.html);
+                $('#paymentDetailsModal').modal('show');
+            } else {
+                Swal.fire('Error', response.message || 'Failed to load payment details', 'error');
+            }
         },
-        error: function() {
-            Swal.fire('Error', 'Failed to load payment details', 'error');
+        error: function(xhr) {
+            Swal.fire('Error', xhr.responseJSON?.message || 'Failed to load payment details', 'error');
         }
     });
 }
@@ -554,9 +568,6 @@ function refundPayment(orderId) {
 .table-responsive {
     overflow-x: auto;
 }
-.table th, .table td {
-    white-space: nowrap;
-}
 .badge {
     font-size: 0.75rem;
     padding: 0.35rem 0.65rem;
@@ -614,28 +625,28 @@ function refundPayment(orderId) {
     font-size: 0.7rem;
 }
 
-/* Table Header */
+/* Table Header & Compact Rows */
 .table thead th {
     background: #004392 !important;
     color: #ffffff !important;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border-bottom: none !important;
-    padding: 14px 12px;
-    white-space: nowrap;
+    padding: 8px 10px;
 }
 .table {
     border-collapse: separate;
     border-spacing: 0;
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
 }
 .table td {
-    padding: 12px;
+    padding: 8px 10px;
     vertical-align: middle;
     border-color: #eef2f6;
+    font-size: 0.82rem;
 }
 .table tr:hover td {
     background-color: #f8fafc;

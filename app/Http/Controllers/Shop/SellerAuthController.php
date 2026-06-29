@@ -50,10 +50,11 @@ class SellerAuthController extends Controller
     // Store registration data + OTP in session for verification
     session([
         'seller_register_data' => [
-            'name'     => $request->name,
-            'mobile'   => $request->mobile,
-            'email'    => $request->email,
-            'password' => $request->password,
+            'name'          => $request->name,
+            'mobile'        => $request->mobile,
+            'email'         => $request->email,
+            'password'      => $request->password,
+            'referral_code' => $request->referral_code,
         ],
         'seller_register_otp'    => $otp,
         'seller_register_otp_at' => now(),
@@ -110,12 +111,30 @@ class SellerAuthController extends Controller
         }
 
         // ✅ OTP verified — create seller
-        $seller = Seller::create([
+        $sellerData = [
             'name'     => $registerData['name'],
             'mobile'   => $registerData['mobile'],
             'email'    => $registerData['email'],
             'password' => Hash::make($registerData['password']),
             'status'   => 'pending',
+        ];
+
+        // Check if referral code was provided and find referring seller
+        if (!empty($registerData['referral_code'])) {
+            $referrer = Seller::where('referral_code', $registerData['referral_code'])->first();
+            if ($referrer) {
+                $sellerData['referred_by'] = $referrer->id;
+            }
+        }
+
+        $seller = Seller::create($sellerData);
+
+        // ✅ Initialize Wallet with 50k
+        \App\Models\Wallet::create([
+            'seller_id' => $seller->id,
+            'user_type' => 'seller',
+            'balance'   => 50000,
+            'is_frozen' => 0,
         ]);
 
         // Clear session

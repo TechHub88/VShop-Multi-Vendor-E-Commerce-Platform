@@ -78,6 +78,26 @@
 
                         </div>
 
+                        {{-- ===== WHATSAPP SHARE INVOICE ===== --}}
+                        @php $waLink = session('order_whatsapp_link'); @endphp
+                        @if($waLink)
+                        <div class="whatsapp-share-sec" style="margin-top: 20px;">
+                            <a href="{{ $waLink }}" target="_blank" class="btn-whatsapp" id="waShareBtn">
+                                <i class="fa-brands fa-whatsapp me-2"></i> Share Invoice on WhatsApp
+                            </a>
+                            <p style="font-size: 12px; color: #888; margin-top: 8px;">
+                                Click above to send the invoice link to your WhatsApp number.
+                            </p>
+                        </div>
+                        @endif
+
+                        {{-- ===== DOWNLOAD INVOICE ===== --}}
+                        <div style="margin-top: 15px;">
+                            <a href="{{ route('vshop.order.invoice', $order->id) }}" class="btn-invoice">
+                                <i class="fa-solid fa-file-invoice me-2"></i> Download Invoice PDF
+                            </a>
+                        </div>
+
                     </div>
                 </div>
 
@@ -183,5 +203,52 @@
     border-radius:30px;
     text-decoration:none;
 }
+
+.btn-whatsapp{
+    display:inline-flex;
+    align-items:center;
+    background:#25D366;
+    color:#fff;
+    padding:12px 24px;
+    border-radius:30px;
+    text-decoration:none;
+    font-weight:600;
+    font-size:15px;
+    transition: all 0.3s;
+}
+.btn-whatsapp:hover{
+    background:#1ebe5d;
+    color:#fff;
+    transform:scale(1.03);
+}
+
+.btn-invoice{
+    display:inline-flex;
+    align-items:center;
+    background:#f1f5f9;
+    color:#334155;
+    padding:10px 20px;
+    border-radius:30px;
+    text-decoration:none;
+    font-weight:500;
+    font-size:14px;
+    border:1px solid #e2e8f0;
+    transition: all 0.3s;
+}
+.btn-invoice:hover{
+    background:#e2e8f0;
+    color:#1e293b;
+}
 </style>
+@endpush
+
+@push('scripts')
+<script>
+    // Auto-open WhatsApp share link after 2 seconds
+    @if(session('order_whatsapp_link'))
+    setTimeout(function() {
+        window.open("{{ session('order_whatsapp_link') }}", '_blank');
+    }, 2000);
+    @endif
+</script>
 @endpush

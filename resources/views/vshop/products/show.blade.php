@@ -324,6 +324,61 @@
     .add-cart-btn:hover {
         background: #003377;
     }
+    
+    .view-similar-btn {
+        background: #004392;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.3s;
+        text-decoration: none;
+        height: auto !important;
+    }
+    .view-similar-btn:hover {
+        background: #002e66;
+        color: #fff;
+    }
+    
+    /* Mobile responsive fix for product layout */
+    @media (max-width: 768px) {
+        .product-list-box-top {
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        .product-list-box-left {
+            width: 100% !important;
+            margin-bottom: 20px;
+        }
+        .product-list-box-right {
+            width: 100% !important;
+            padding-left: 0 !important;
+        }
+        
+        .product-heading h3 {
+            font-size: 18px !important;
+        }
+        
+        .price-sec .new-rupess {
+            font-size: 22px !important;
+        }
+        
+        /* Ensure thumbnails container wraps */
+        .custom-product-image-wrapper-two {
+            overflow-x: auto;
+            display: flex;
+            gap: 10px;
+            padding-bottom: 5px;
+        }
+        
+        .custom-product-image-wrapper-two .product-image-two-box {
+            flex-shrink: 0;
+        }
+    }
 </style>
 @endpush
 
@@ -347,7 +402,7 @@
                     <div class="row">
 
                         {{-- LEFT SIDE --}}
-                        <div class="col-lg-9">
+                        <div class="col-lg-9 col-8">
                             <div class="product-details-left">
                                 <div class="product-list-box">
                                     <div class="product-list-box-top">
@@ -567,26 +622,7 @@
                                                 </div>
                                             </div>
 
-                                            <div class="variant-wrapper">
-                                                @foreach($attributeOptions as $attrName => $options)
-                                                <div class="variant-row">
-                                                    <div class="variant-label">{{ ucfirst($attrName) }}</div>
-                                                    <div class="variant-options">
-                                                        @foreach($options as $option)
-                                                        <label class="variant-pill">
-                                                            <input type="radio" name="{{ $attrName }}" value="{{ $option['term_name'] }}"
-                                                                data-term-id="{{ $option['term_id'] }}"
-                                                                data-price="{{ $option['price'] }}"
-                                                                data-regular-price="{{ $option['regular_price'] }}"
-                                                                data-stock="{{ $option['stock'] }}"
-                                                                data-combination="{{ $option['combination_key'] }}" {{ $loop->first ? 'checked' : '' }}>
-                                                            <span>{{ $option['term_name'] }}</span>
-                                                        </label>
-                                                        @endforeach
-                                                    </div>
-                                                </div>
-                                                @endforeach
-                                            </div>
+                                         
                                             
                                             <!--<div class="quantity-sec">-->
                                             <!--    <label class="quantity-box"><input type="radio" name="radio1" checked=""><span>8 mm</span></label>-->
@@ -665,11 +701,14 @@
                         </div>
 
                         {{-- RIGHT AD SECTION --}}
-                        <div class="col-lg-3">
+                        <div class="col-lg-3 col-4">
                             <div class="product-advatice-sec">
                                 <div class="right-product-img">
                                     <img id="mainProductImage" src="{{ asset($product->thumbnail) }}" alt="{{ $product->name }}">
                                 </div>
+                                <a href="{{ $product->seller && $product->seller->id ? route('vshop.store.show', $product->seller->id) : '#' }}" class="btn view-similar-btn mt-2 w-100">
+                                    <i class="fa-solid fa-layer-group me-1"></i> View Similar
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -1422,7 +1461,7 @@
 
                     {{-- RELATED PRODUCTS --}}
                     @if($relatedProducts->isNotEmpty())
-                    <div class="product-details-bottom-box">
+                    <div class="product-details-bottom-box" id="related-products-section">
                         <div class="product-details-bottom-box-header"><h3>Related Products</h3></div>
                         <div class="other-product-sec">
                             <div class="other-product-wrapper owl-carousel">

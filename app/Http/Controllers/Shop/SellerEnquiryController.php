@@ -312,10 +312,10 @@ class SellerEnquiryController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        $totalEnquiries = Enquiry::where('seller_id', $sellerId)->count() ?: 1245;
-        $todaysEnquiries = Enquiry::where('seller_id', $sellerId)->whereDate('created_at', today())->count() ?: 34;
-        $pendingFollowups = Enquiry::where('seller_id', $sellerId)->where('status', 'Follow-up')->count() ?: 55;
-        $convertedLeads = Enquiry::where('seller_id', $sellerId)->where('status', 'Converted')->count() ?: 210;
+        $totalEnquiries = Enquiry::where('seller_id', $sellerId)->count();
+        $todaysEnquiries = Enquiry::where('seller_id', $sellerId)->whereDate('created_at', today())->count();
+        $pendingFollowups = Enquiry::where('seller_id', $sellerId)->where('status', 'Follow-up')->count();
+        $convertedLeads = Enquiry::where('seller_id', $sellerId)->where('status', 'Converted')->count();
 
         return view('vshop.seller.enquiry.mis', compact(
             'statusWise',

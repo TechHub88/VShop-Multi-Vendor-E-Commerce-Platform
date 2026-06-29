@@ -250,15 +250,23 @@ input:checked + .slider:before{transform:translateX(24px);}
 
     <div class="d-flex align-items-center gap-3">
         <select id="regionSwitcher" class="form-select w-auto">
-            <option value="IN" {{ ($region ?? 'IN') == 'IN' ? 'selected' : '' }}>India</option>
-            <option value="US" {{ ($region ?? 'IN') == 'US' ? 'selected' : '' }}>USA</option>
-            <option value="EU" {{ ($region ?? 'IN') == 'EU' ? 'selected' : '' }}>Europe</option>
+            @foreach($taxes as $tax)
+                <option value="{{ $tax->region }}" {{ ($region ?? '') == $tax->region ? 'selected' : '' }}>
+                    {{ $tax->region }}
+                </option>
+            @endforeach
+            @if(!count($taxes))
+                <option value="India" {{ ($region ?? '') == 'India' ? 'selected' : '' }}>India</option>
+            @endif
         </select>
 
         <select id="currencySwitcher" class="form-select w-auto">
             <option value="INR" {{ ($currency ?? 'INR') == 'INR' ? 'selected' : '' }}>₹ INR</option>
             <option value="USD" {{ ($currency ?? 'INR') == 'USD' ? 'selected' : '' }}>$ USD</option>
             <option value="EUR" {{ ($currency ?? 'INR') == 'EUR' ? 'selected' : '' }}>€ EUR</option>
+            <option value="GBP" {{ ($currency ?? 'INR') == 'GBP' ? 'selected' : '' }}>£ GBP</option>
+            <option value="AED" {{ ($currency ?? 'INR') == 'AED' ? 'selected' : '' }}>د.إ AED</option>
+            <option value="AUD" {{ ($currency ?? 'INR') == 'AUD' ? 'selected' : '' }}>A$ AUD</option>
         </select>
 
         <div class="d-flex align-items-center gap-2">
@@ -290,21 +298,21 @@ input:checked + .slider:before{transform:translateX(24px);}
 </div>
 
 <div class="row g-3">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card">
             <b>NET EARNINGS (After Deductions)</b>
             <div class="big-kpi money" data-base="{{ $balance ?? 0 }}" id="netEarnings"></div>
         </div>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="card">
             <b>Refund Deduction Impact</b>
             <div class="big-kpi text-danger money" data-base="{{ $refund ?? 0 }}" id="refundImpact"></div>
         </div>
     </div>
 
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="card">
             <b>Platform Fees</b>
             <div class="big-kpi money" data-base="{{ $fees ?? 0 }}" id="platformFees"></div>
@@ -327,32 +335,16 @@ input:checked + .slider:before{transform:translateX(24px);}
             <div id="categoryChart" class="chart-box"></div>
         </div>
     </div>
+</div>
 
-    <div class="col-md-8">
-        <div class="card">
-            <b>Net Earnings Trend</b>
-            <div id="netChart" class="chart-box"></div>
-        </div>
-    </div>
-
+<div class="row g-3 mt-2">
     <div class="col-md-4">
         <div class="card">
             <b>Performance</b>
             <div id="barChart" class="chart-box"></div>
         </div>
     </div>
-</div>
-
-{{-- REVENUE BREAKDOWN & DISPUTE WALLET HOLD TRACKER (SIDE BY SIDE) --}}
-<div class="row g-3 mt-2">
-    <div class="col-md-6">
-        <div class="card">
-            <b>Revenue Breakdown</b>
-            <div id="pieChart" class="chart-box"></div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
+    <div class="col-md-8">
         <div class="card">
             <b>DISPUTE WALLET HOLD TRACKER</b>
             
@@ -395,9 +387,8 @@ input:checked + .slider:before{transform:translateX(24px);}
     </div>
 </div>
 
-{{-- ================= COMMISSION BREAKDOWN VIEW ================= --}}
 <div class="row g-3 mt-3">
-    <div class="col-lg-9">
+    <div class="col-lg-12">
         <div class="commission-card">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                 <div>
@@ -405,19 +396,22 @@ input:checked + .slider:before{transform:translateX(24px);}
                     <small class="text-muted">Detailed commission & deduction tracking</small>
                 </div>
 
-                <div class="d-flex gap-2">
-                    <select id="commissionDateFilter" class="form-select form-select-sm commission-filter">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <div class="d-flex gap-2 me-2">
+                        <button class="btn btn-sm btn-primary" onclick="exportData('csv')"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                        <button class="btn btn-sm btn-success" onclick="exportData('excel')"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                        <button class="btn btn-sm btn-danger" onclick="exportData('pdf')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                    </div>
+
+                    <select id="commissionDateFilter" class="form-select form-select-sm commission-filter w-auto">
                         <option value="this_month">This Month</option>
                         <option value="last_month">Last Month</option>
                         <option value="this_year">This Year</option>
                         <option value="all">All Time</option>
                     </select>
 
-                    <select id="commissionSourceFilter" class="form-select form-select-sm commission-filter">
+                    <select id="commissionSourceFilter" class="form-select form-select-sm commission-filter w-auto">
                         <option value="all">All Sources</option>
-                        <option value="direct">Direct</option>
-                        <option value="referral">Referral</option>
-                        <option value="ads">Ads</option>
                     </select>
                 </div>
             </div>
@@ -427,7 +421,8 @@ input:checked + .slider:before{transform:translateX(24px);}
                     <thead>
                         <tr>
                             <th>Date</th>
-                            <th>Source</th>
+                            <th>Platform</th>
+                            <th>Product/Services</th>
                             <th>Order ID</th>
                             <th>Revenue</th>
                             <th>Referral Income</th>
@@ -439,47 +434,6 @@ input:checked + .slider:before{transform:translateX(24px);}
                     </thead>
                     <tbody id="commissionTableBody"></tbody>
                 </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-3">
-        <div class="commission-export-card">
-            <div class="mb-3">
-                <h6 class="fw-bold mb-0">COMMISSION EXPORT</h6>
-                <small class="text-muted">Download earning reports</small>
-            </div>
-
-            <div class="d-grid gap-3">
-                <button class="export-btn csv-btn" onclick="exportData('csv')">
-                    <div class="export-left">
-                        <div class="export-icon">
-                            <i class="fa-regular fa-file-lines"></i>
-                        </div>
-                        <span>Export: CSV</span>
-                    </div>
-                    <i class="fa-solid fa-download"></i>
-                </button>
-
-                <button class="export-btn excel-btn" onclick="exportData('excel')">
-                    <div class="export-left">
-                        <div class="export-icon">
-                            <i class="fa-regular fa-file-excel"></i>
-                        </div>
-                        <span>Export: Excel</span>
-                    </div>
-                    <i class="fa-solid fa-download"></i>
-                </button>
-
-                <button class="export-btn pdf-btn" onclick="exportData('pdf')">
-                    <div class="export-left">
-                        <div class="export-icon">
-                            <i class="fa-regular fa-file-pdf"></i>
-                        </div>
-                        <span>Export: PDF</span>
-                    </div>
-                    <i class="fa-solid fa-download"></i>
-                </button>
             </div>
         </div>
     </div>
@@ -499,20 +453,29 @@ let currentRegion = '{{ $region ?? "IN" }}';
 let taxEnabled = {{ isset($taxEnabled) && $taxEnabled ? 'true' : 'false' }};
 
 /* ================= SETTINGS ================= */
-const rates = {INR: 1, USD: 0.012, EUR: 0.011};
-const symbols = {INR: '₹', USD: '$', EUR: '€'};
-const regionTax = {IN: 0.18, US: 0.07, EU: 0.20};
+const rates = {INR: 1, USD: 0.012, EUR: 0.011, GBP: 0.009, AED: 0.044, AUD: 0.018};
+const symbols = {INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'د.إ', AUD: 'A$'};
+const regionTax = {
+    @foreach($taxes as $tax)
+    "{{ $tax->region }}": {{ $tax->rate / 100 }},
+    @endforeach
+};
 
 // Commission Data Store
-let commissionData = [
-    {date: '01 Nov 2023', source: 'Product A', order_id: '#12345', revenue: 1500, referral: 10, lead_charges: 0, boost_spend: 0, refund: 7, net: 1250},
-    {date: '15 Nov 2023', source: 'Product B', order_id: '#12346', revenue: 1350, referral: 9, lead_charges: 0, boost_spend: 0, refund: 7, net: 1350},
-    {date: '20 Nov 2023', source: 'Product C', order_id: '#12301', revenue: 1350, referral: 7, lead_charges: 0, boost_spend: 0, refund: 7, net: 1350},
-    {date: '25 Nov 2023', source: 'Product B', order_id: '#12345', revenue: 1350, referral: 7, lead_charges: 0, boost_spend: 0, refund: 7, net: 1350},
-    {date: '28 Nov 2023', source: 'Product A', order_id: '#12301', revenue: 1450, referral: 6, lead_charges: 0, boost_spend: 0, refund: 7, net: 1450},
-    {date: '05 Dec 2023', source: 'Product D', order_id: '#12389', revenue: 2000, referral: 15, lead_charges: 0, boost_spend: 0, refund: 10, net: 2005},
-    {date: '10 Dec 2023', source: 'Product E', order_id: '#12390', revenue: 800, referral: 5, lead_charges: 0, boost_spend: 0, refund: 3, net: 802}
-];
+let commissionData = @json($commissionsData ?? []);
+
+// Populate Platform filter dropdown dynamically
+let sourceFilterSelect = document.getElementById('commissionSourceFilter');
+if (sourceFilterSelect && commissionData.length > 0) {
+    let uniquePlatforms = [...new Set(commissionData.map(item => item.platform))].filter(Boolean);
+    sourceFilterSelect.innerHTML = '<option value="all">All Sources</option>';
+    uniquePlatforms.forEach(platform => {
+        let opt = document.createElement('option');
+        opt.value = platform.toLowerCase();
+        opt.textContent = platform;
+        sourceFilterSelect.appendChild(opt);
+    });
+}
 
 /* ================= MONEY UPDATE FUNCTION ================= */
 function updateMoney() {
@@ -609,7 +572,8 @@ function renderCommissionTable() {
     
     if(sourceFilter !== 'all') {
         filteredData = filteredData.filter(function(item) {
-            return item.source.toLowerCase().includes(sourceFilter);
+            return (item.product && item.product.toLowerCase().includes(sourceFilter)) || 
+                   (item.platform && item.platform.toLowerCase().includes(sourceFilter));
         });
     }
     
@@ -628,11 +592,14 @@ function renderCommissionTable() {
         row.innerHTML = `
             <td>${item.date}</td>
             <td>
+                <span class="badge bg-primary rounded-pill text-white" style="font-weight: 500;">${item.platform}</span>
+            </td>
+            <td>
                 <div class="d-flex align-items-center gap-2">
                     <div class="source-img">
                         <img src="https://cdn-icons-png.flaticon.com/512/3081/3081559.png" alt="icon">
                     </div>
-                    <span>${item.source}</span>
+                    <span>${item.product}</span>
                 </div>
             </td>
             <td><a href="#" class="order-link">${item.order_id}</a></td>
@@ -648,7 +615,7 @@ function renderCommissionTable() {
 
 /* ================= EXPORT FUNCTIONALITY ================= */
 function exportData(type) {
-    let headers = ['Date', 'Source', 'Order ID', 'Revenue', 'Referral Income', 'Lead Charges', 'Boost Spend', 'Refund Deduction', 'Net Income'];
+    let headers = ['Date', 'Platform', 'Product/Services', 'Order ID', 'Revenue', 'Referral Income', 'Lead Charges', 'Boost Spend', 'Refund Deduction', 'Net Income'];
     let rows = [];
     
     let trs = document.querySelectorAll('#commissionTableBody tr');
@@ -698,18 +665,25 @@ function exportData(type) {
 /* ================= SWITCHERS ================= */
 document.getElementById('currencySwitcher').onchange = function() {
     currency = this.value;
-    let url = new URL(window.location.href);
-    url.searchParams.set('currency', currency);
-    url.searchParams.set('region', currentRegion);
-    window.location.href = url.toString();
+    updateMoney();
 };
 
 document.getElementById('regionSwitcher').onchange = function() {
     currentRegion = this.value;
-    let url = new URL(window.location.href);
-    url.searchParams.set('region', currentRegion);
-    url.searchParams.set('currency', currency);
-    window.location.href = url.toString();
+    
+    // Auto-detect currency based on region name
+    let guess = 'USD';
+    let lowerRegion = currentRegion.toLowerCase();
+    if(lowerRegion.includes('india')) guess = 'INR';
+    else if(lowerRegion.includes('uk') || lowerRegion.includes('united kingdom')) guess = 'GBP';
+    else if(lowerRegion.includes('uae') || lowerRegion.includes('emirates')) guess = 'AED';
+    else if(lowerRegion.includes('australia')) guess = 'AUD';
+    else if(lowerRegion.includes('europe') || lowerRegion.includes('germany') || lowerRegion.includes('france')) guess = 'EUR';
+    
+    currency = guess;
+    document.getElementById('currencySwitcher').value = guess;
+    
+    updateMoney();
 };
 
 document.getElementById('taxToggle').onchange = function() {
@@ -767,7 +741,7 @@ if(trendData.length > 0) {
     let netValues = trendData.map(function(d) { return d.total * 0.8; });
     
     echarts.init(document.getElementById('trendChart')).setOption({
-        tooltip: {trigger: 'axis'},
+        tooltip: {show: false},
         xAxis: {type: 'category', data: chartDates},
         yAxis: {type: 'value'},
         series: [
@@ -776,11 +750,7 @@ if(trendData.length > 0) {
         ]
     });
     
-    echarts.init(document.getElementById('netChart')).setOption({
-        xAxis: {type: 'category', data: chartDates},
-        yAxis: {type: 'value'},
-        series: [{data: netValues, type: 'line', smooth: true, areaStyle: {}, name: 'Net Earnings'}]
-    });
+
 }
 
 echarts.init(document.getElementById('barChart')).setOption({
@@ -798,9 +768,7 @@ if(pieChartData.length > 0) {
         series: [{type: 'pie', radius: ['50%', '70%'], data: pieFormatted}]
     });
     
-    echarts.init(document.getElementById('pieChart')).setOption({
-        series: [{type: 'pie', radius: ['50%', '70%'], data: pieFormatted}]
-    });
+
 }
 
 /* ================= INITIAL RENDER ================= */

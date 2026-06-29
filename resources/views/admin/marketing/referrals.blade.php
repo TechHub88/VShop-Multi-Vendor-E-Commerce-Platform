@@ -2,25 +2,26 @@
 
 @section('content')
 <style>
-    /* Base styles (same as reward config) */
+    /* Base styles */
     .ref-container {
         font-family: 'Inter', sans-serif;
-        background-color: #f8f9fc;
+        background-color: #f0f2f8;
         padding: 24px;
         min-height: 100vh;
     }
     .ref-page-header {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
-        border-radius: 12px;
-        padding: 20px 28px;
+        border-radius: 14px;
+        padding: 22px 30px;
         margin-bottom: 28px;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        box-shadow: 0 4px 20px rgba(15,23,42,0.25);
     }
     .ref-page-title {
         color: white;
-        font-size: 20px;
+        font-size: 21px;
         font-weight: 800;
         letter-spacing: 1px;
         margin: 0;
@@ -28,96 +29,139 @@
         align-items: center;
         gap: 12px;
     }
+
+    /* ── KPI Stat Cards ── */
     .ref-stats-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 18px;
         margin-bottom: 28px;
     }
+    @media (max-width: 1200px) { .ref-stats-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) { .ref-stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .ref-stats-grid { grid-template-columns: 1fr; } }
+
     .ref-stat-card {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        background: #fff;
+        border-radius: 14px;
+        padding: 22px 20px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
         border: 1px solid #e2e8f0;
-        text-align: center;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        position: relative;
+        overflow: hidden;
     }
+    .ref-stat-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 5px;
+        border-radius: 14px 0 0 14px;
+    }
+    .ref-stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 24px rgba(0,0,0,0.1);
+    }
+    .ref-stat-card .stat-icon-box {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .ref-stat-card .stat-icon-box i {
+        font-size: 26px;
+        color: #fff;
+    }
+    .ref-stat-info { flex: 1; }
     .ref-stat-value {
-        font-size: 28px;
+        font-size: 26px;
         font-weight: 800;
         color: #0f172a;
+        line-height: 1.1;
     }
     .ref-stat-label {
-        font-size: 13px;
+        font-size: 12px;
         color: #64748b;
-        margin-top: 8px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 4px;
     }
+
+    /* Card accent colors matching sidebar theme */
+    .ref-stat-card.card-referrals::before { background: #3b82f6; }
+    .ref-stat-card.card-referrals .stat-icon-box { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .ref-stat-card.card-active::before { background: #10b981; }
+    .ref-stat-card.card-active .stat-icon-box { background: linear-gradient(135deg, #10b981, #059669); }
+    .ref-stat-card.card-orders::before { background: #8b5cf6; }
+    .ref-stat-card.card-orders .stat-icon-box { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+    .ref-stat-card.card-revenue::before { background: #f59e0b; }
+    .ref-stat-card.card-revenue .stat-icon-box { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .ref-stat-card.card-payouts::before { background: #ef4444; }
+    .ref-stat-card.card-payouts .stat-icon-box { background: linear-gradient(135deg, #ef4444, #dc2626); }
+
+    /* ── Tabs ── */
     .ref-tabs {
         display: flex;
-        gap: 8px;
-        border-bottom: 1px solid #e2e8f0;
+        gap: 6px;
+        border-bottom: 2px solid #e2e8f0;
         margin-bottom: 24px;
         flex-wrap: wrap;
     }
     .ref-tab-btn {
-        padding: 10px 20px;
+        padding: 11px 22px;
         background: none;
         border: none;
-        font-size: 14px;
+        font-size: 13.5px;
         font-weight: 600;
         color: #64748b;
         cursor: pointer;
-        border-radius: 8px 8px 0 0;
+        border-radius: 10px 10px 0 0;
         transition: all 0.2s;
+        position: relative;
     }
+    .ref-tab-btn:hover { color: #1e3a8a; background: #f1f5f9; }
     .ref-tab-btn.active {
-        color: #5b45f4;
-        border-bottom: 2px solid #5b45f4;
-        background: #f8fafc;
+        color: #1e3a8a;
+        background: #fff;
+        border-bottom: 3px solid #1e3a8a;
     }
-    .ref-tab-pane {
-        display: none;
-    }
-    .ref-tab-pane.active {
-        display: block;
-    }
+    .ref-tab-pane { display: none; }
+    .ref-tab-pane.active { display: block; }
     .btn-primary-custom {
-        background: #5b45f4;
+        background: linear-gradient(135deg, #0f172a, #1e3a8a);
         color: white;
         border: none;
-        padding: 6px 14px;
+        padding: 8px 18px;
         border-radius: 8px;
         font-size: 13px;
-        font-weight: 500;
-    }
-    .btn-primary-custom:hover { background: #4a36d9; }
-    .table-action-icons {
-        display: flex;
-        gap: 10px;
-    }
-    .table-action-icons iconify-icon {
-        font-size: 18px;
-        cursor: pointer;
-        color: #94a3b8;
-    }
-    .table-action-icons iconify-icon:hover { color: #5b45f4; }
-    .status-badge {
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
         font-weight: 600;
-        display: inline-block;
+        transition: all 0.2s;
     }
+    .btn-primary-custom:hover { background: linear-gradient(135deg, #1e3a8a, #3b82f6); transform: translateY(-1px); }
+    .table-action-icons { display: flex; gap: 10px; }
+    .table-action-icons iconify-icon { font-size: 18px; cursor: pointer; color: #94a3b8; }
+    .table-action-icons iconify-icon:hover { color: #1e3a8a; }
+    .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
     .status-active { background: #ecfdf5; color: #10b981; border: 1px solid #a7f3d0; }
     .status-inactive { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
-    .fraud-metric {
-        background: #f8fafc;
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 20px;
-    }
+    .fraud-metric { background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
     .fraud-metric h4 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
     canvas { max-height: 300px; }
+
+    /* Card & table refinements */
+    .card { border: none; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.05); }
+    .card-header { background: #fff !important; border-bottom: 1px solid #e2e8f0; padding: 16px 20px; font-size: 15px; }
+    .table th { font-size: 12px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; font-weight: 700; }
+    .table td { font-size: 13.5px; vertical-align: middle; }
 </style>
 
 <div class="ref-container">
@@ -129,13 +173,43 @@
         </h2>
     </div>
 
-    <!-- Stats Cards (populated from backend) -->
+    <!-- KPI Stats Cards -->
     <div class="ref-stats-grid" id="statsGrid">
-        <div class="ref-stat-card"><div class="ref-stat-value" id="totalReferrals">-</div><div class="ref-stat-label">Total Referrals</div></div>
-        <div class="ref-stat-card"><div class="ref-stat-value" id="activeReferrers">-</div><div class="ref-stat-label">Active Referrers</div></div>
-        <div class="ref-stat-card"><div class="ref-stat-value" id="ordersViaReferral">-</div><div class="ref-stat-label">Orders via Referral</div></div>
-        <div class="ref-stat-card"><div class="ref-stat-value" id="referralRevenue">-</div><div class="ref-stat-label">Referral Revenue</div></div>
-        <div class="ref-stat-card"><div class="ref-stat-value" id="payoutsMade">-</div><div class="ref-stat-label">Payouts Made</div></div>
+        <div class="ref-stat-card card-referrals">
+            <div class="stat-icon-box"><i class="mdi mdi-account-group-outline"></i></div>
+            <div class="ref-stat-info">
+                <div class="ref-stat-value" id="totalReferrals">0</div>
+                <div class="ref-stat-label">Total Referrals</div>
+            </div>
+        </div>
+        <div class="ref-stat-card card-active">
+            <div class="stat-icon-box"><i class="mdi mdi-account-check-outline"></i></div>
+            <div class="ref-stat-info">
+                <div class="ref-stat-value" id="activeReferrers">0</div>
+                <div class="ref-stat-label">Active Referrers</div>
+            </div>
+        </div>
+        <div class="ref-stat-card card-orders">
+            <div class="stat-icon-box"><i class="mdi mdi-cart-check"></i></div>
+            <div class="ref-stat-info">
+                <div class="ref-stat-value" id="ordersViaReferral">0</div>
+                <div class="ref-stat-label">Orders via Referral</div>
+            </div>
+        </div>
+        <div class="ref-stat-card card-revenue">
+            <div class="stat-icon-box"><i class="mdi mdi-cash-multiple"></i></div>
+            <div class="ref-stat-info">
+                <div class="ref-stat-value money" id="referralRevenue" data-amount="0">₹0</div>
+                <div class="ref-stat-label">Referral Revenue</div>
+            </div>
+        </div>
+        <div class="ref-stat-card card-payouts">
+            <div class="stat-icon-box"><i class="mdi mdi-bank-transfer-out"></i></div>
+            <div class="ref-stat-info">
+                <div class="ref-stat-value money" id="payoutsMade" data-amount="0">₹0</div>
+                <div class="ref-stat-label">Payouts Made</div>
+            </div>
+        </div>
     </div>
 
     <!-- Main Tabs -->
@@ -144,6 +218,8 @@
         <button class="ref-tab-btn" data-tab="reward-config">Reward Configuration</button>
         <button class="ref-tab-btn" data-tab="campaigns">Campaign Management</button>
         <button class="ref-tab-btn" data-tab="fraud-analytics">Fraud Analytics</button>
+        <button class="ref-tab-btn" data-tab="transactions">Referral Transactions</button>
+        <button class="ref-tab-btn" data-tab="configurations">Referral Configurations</button>
     </div>
 
     <!-- ==================== TAB 1: OVERVIEW ==================== -->
@@ -157,6 +233,31 @@
                     </thead>
                     <tbody id="topReferrersTable">
                         <tr><td colspan="3" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB: TRANSACTIONS ==================== -->
+    <div id="tab-transactions" class="ref-tab-pane">
+        <div class="card">
+            <div class="card-header bg-white fw-bold">Detailed Referral Transactions</div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Referrer (Buyer A)</th>
+                            <th>Customer (Buyer B)</th>
+                            <th>Seller</th>
+                            <th>Order ID</th>
+                            <th>Commission</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="referralTransactionsTable">
+                        <tr><td colspan="7" class="text-center">Loading transactions...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -269,6 +370,56 @@
             </table>
         </div>
     </div>
+
+    <!-- ==================== TAB 5: REFERRAL CONFIGURATIONS ==================== -->
+    <div id="tab-configurations" class="ref-tab-pane">
+        <div class="card">
+            <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+                <span>⚙️ Referral Configurations (Buyer-to-Buyer / Seller-to-Seller)</span>
+                <button type="button" class="btn btn-sm btn-primary" onclick="addRefConfigRow()">+ Add Row</button>
+            </div>
+            <div class="card-body p-0">
+                <form id="refConfigForm">
+                    <table class="table table-hover mb-0" id="refConfigTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Type</th>
+                                <th>Target (Seller/Product)</th>
+                                <th>Referrer Reward (Buyer A / Seller)</th>
+                                <th>Referee Discount (Buyer B)</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic rows will be inserted here -->
+                        </tbody>
+                    </table>
+                    <div class="p-3 text-end">
+                        <button type="button" class="btn btn-success" onclick="saveRefConfigs()">Save Configurations</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header bg-white fw-bold">Existing Configurations</div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Type</th>
+                            <th>Target Seller (ID & Name)</th>
+                            <th>Referrer Reward</th>
+                            <th>Referee Discount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="existingRefConfigsList">
+                        <tr><td colspan="4" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ========== MODALS ========== -->
@@ -298,7 +449,7 @@
             <div class="modal-body">
                 <input type="hidden" id="catEditId">
                 <div class="mb-3"><label>Category</label><select id="catSelect" class="form-select"><option>Loading...</option></select></div>
-                <div class="mb-3"><label>Reward Type</label><div><label><input type="radio" name="catRewardType" value="fixed" checked> Fixed</label>&nbsp;&nbsp;<label><input type="radio" name="catRewardType" value="percentage"> Percentage</label></div></div>
+                <div class="mb-3"><label>Reward Type</label><div><label><input type="radio" name="catRewardType" value="fixed" checked> Fixed Amount</label>&nbsp;&nbsp;<label><input type="radio" name="catRewardType" value="percentage"> Percentage</label></div></div>
                 <div class="mb-3"><label>Reward Value</label><input type="number" id="catRewardValue" class="form-control"></div>
                 <div class="mb-3"><label>Status</label><select id="catStatus" class="form-select"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
             </div>
@@ -315,7 +466,7 @@
             <div class="modal-body">
                 <input type="hidden" id="prodEditId">
                 <div class="mb-3"><label>Product</label><select id="prodSelect" class="form-select"><option>Loading...</option></select></div>
-                <div class="mb-3"><label>Reward (₹)</label><input type="number" id="prodReward" class="form-control"></div>
+                <div class="mb-3"><label>Reward Value</label><input type="number" id="prodReward" class="form-control"></div>
                 <div class="mb-3"><label>Start Date</label><input type="date" id="prodStart" class="form-control"></div>
                 <div class="mb-3"><label>End Date</label><input type="date" id="prodEnd" class="form-control"></div>
                 <div class="mb-3"><label>Status</label><select id="prodStatus" class="form-select"><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
@@ -352,7 +503,7 @@
                 <div class="mb-3"><label>Type</label><select id="campaignType" class="form-select"><option>Standard</option><option>Limited Time</option><option>First Purchase</option></select></div>
                 <div class="mb-3"><label>Start Date</label><input type="date" id="campaignStart" class="form-control"></div>
                 <div class="mb-3"><label>End Date</label><input type="date" id="campaignEnd" class="form-control"></div>
-                <div class="mb-3"><label>Budget</label><input type="number" id="campaignBudget" class="form-control"></div>
+                <div class="mb-3"><label>Budget Value</label><input type="number" id="campaignBudget" class="form-control"></div>
                 <div class="mb-3"><label>Reward Per Referral</label><input type="number" id="campaignReward" class="form-control"></div>
             </div>
             <div class="modal-footer"><button class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn-primary-custom" id="saveCampaignBtn">Save Campaign</button></div>
@@ -378,12 +529,41 @@ async function apiRequest(endpoint, method, data = null) {
 
 function showToast(msg, isErr = false) {
     let toast = document.getElementById('toastMsg');
-    if (!toast) { toast = document.createElement('div'); toast.id = 'toastMsg'; toast.style.cssText = 'position:fixed; bottom:20px; right:20px; background:#0f172a; color:white; padding:12px 24px; border-radius:8px; z-index:9999; display:none;'; document.body.appendChild(toast); }
+    if (!toast) { 
+        toast = document.createElement('div'); 
+        toast.id = 'toastMsg'; 
+        toast.style.cssText = 'position:fixed; top:20px; right:20px; background:#198754; color:white; padding:12px 24px; border-radius:8px; z-index:9999; display:none; font-weight:500; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'; 
+        document.body.appendChild(toast); 
+    }
     toast.textContent = msg;
-    toast.style.backgroundColor = isErr ? '#dc2626' : '#0f172a';
+    toast.style.backgroundColor = isErr ? '#dc2626' : '#198754';
     toast.style.display = 'block';
     setTimeout(() => toast.style.display = 'none', 3000);
 }
+
+// ========== Helper: Format Money ==========
+function formatLocalMoneyElements() {
+    const savedCurrency = localStorage.getItem('selectedCurrency') || 'INR';
+    const rates = { INR: 1, USD: 0.012, EUR: 0.011, GBP: 0.0096 };
+    const symbols = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
+    const r = rates[savedCurrency] || 1, s = symbols[savedCurrency] || '₹';
+    document.querySelectorAll('.money').forEach(el => {
+        let amt = parseFloat(el.getAttribute('data-amount'));
+        if (!isNaN(amt)) {
+            el.innerText = s + ' ' + (amt * r).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    });
+}
+
+// Listen for global currency changes from topbar
+window.addEventListener('currencyChanged', function(e) {
+    document.querySelectorAll('.money').forEach(el => {
+        let amt = parseFloat(el.getAttribute('data-amount'));
+        if (!isNaN(amt)) {
+            el.innerText = e.detail.symbol + ' ' + (amt * e.detail.rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+    });
+});
 
 // ========== Load Overview Data ==========
 async function loadStatsAndTopReferrers() {
@@ -394,8 +574,16 @@ async function loadStatsAndTopReferrers() {
             document.getElementById('totalReferrals').innerText = data.total_referrals || '0';
             document.getElementById('activeReferrers').innerText = data.active_referrers || '0';
             document.getElementById('ordersViaReferral').innerText = data.orders_via_referral || '0';
-            document.getElementById('referralRevenue').innerText = data.referral_revenue || '₹0';
-            document.getElementById('payoutsMade').innerText = data.payouts_made || '₹0';
+            
+            // Set raw amount for currency conversion
+            const revenueEl = document.getElementById('referralRevenue');
+            const payoutsEl = document.getElementById('payoutsMade');
+            revenueEl.setAttribute('data-amount', data.referral_revenue_raw || 0);
+            payoutsEl.setAttribute('data-amount', data.payouts_made_raw || 0);
+            revenueEl.innerText = data.referral_revenue || '₹0';
+            payoutsEl.innerText = data.payouts_made || '₹0';
+            
+            formatLocalMoneyElements();
         }
     } catch(e) { console.warn(e); }
     try {
@@ -436,10 +624,11 @@ async function loadCategoryRewards() {
     data.forEach(item => {
         const cat = categories.find(c => c.id == item.category_id);
         const catName = cat ? cat.name : item.category_name;
+        const rewardText = item.reward_type === 'fixed' ? `<span class="money" data-amount="${item.reward_value}">₹${item.reward_value}</span>` : `${item.reward_value}%`;
         tbody.innerHTML += `<tr>
             <td>${catName}</td>
             <td>${item.reward_type === 'fixed' ? 'Fixed' : 'Percentage'}</td>
-            <td>${item.reward_type === 'fixed' ? '₹'+item.reward_value : item.reward_value+'%'}</td>
+            <td>${rewardText}</td>
             <td><span class="status-badge status-${item.status}">${item.status}</span></td>
             <td class="table-action-icons">
                 <iconify-icon icon="mdi:pencil" class="edit-cat" data-id="${item.id}" data-cat="${item.category_id}" data-type="${item.reward_type}" data-value="${item.reward_value}" data-status="${item.status}"></iconify-icon>
@@ -447,6 +636,7 @@ async function loadCategoryRewards() {
             </td>
         </tr>`;
     });
+    formatLocalMoneyElements();
     attachCatActions();
 }
 
@@ -647,9 +837,10 @@ async function loadCampaigns() {
                 tbody.innerHTML = '<tr><td colspan="8" class="text-center">No campaigns found. Create one!</td></tr>';
             } else {
                 campaigns.forEach(c => {
-                    tbody.innerHTML += `<tr><td>${c.name}</td><td>${c.type}</td><td>${c.start_date}</td><td>${c.end_date || '-'}</td><td>₹${c.budget}</td><td>${c.conversions}</td><td><span class="status-badge status-${c.status}">${c.status}</span></td><td class="table-action-icons"><iconify-icon icon="mdi:pencil"></iconify-icon><iconify-icon icon="mdi:delete"></iconify-icon></td></tr>`;
+                    tbody.innerHTML += `<tr><td>${c.name}</td><td>${c.type}</td><td>${c.start_date}</td><td>${c.end_date || '-'}</td><td><span class="money" data-amount="${c.budget}">₹${c.budget}</span></td><td>${c.conversions}</td><td><span class="status-badge status-${c.status}">${c.status}</span></td><td class="table-action-icons"><iconify-icon icon="mdi:pencil"></iconify-icon><iconify-icon icon="mdi:delete"></iconify-icon></td></tr>`;
                 });
             }
+            formatLocalMoneyElements();
         }
     } catch(e) { console.warn(e); }
 }
@@ -659,6 +850,34 @@ document.getElementById('saveCampaignBtn').onclick = async () => {
     bootstrap.Modal.getInstance(document.getElementById('addCampaignModal')).hide();
     loadCampaigns();
 };
+
+// ========== Transactions Management ==========
+async function loadTransactions() {
+    try {
+        const res = await fetch(baseUrl + '/transactions');
+        if (res.ok) {
+            const txns = await res.json();
+            const tbody = document.getElementById('referralTransactionsTable');
+            tbody.innerHTML = '';
+            if (txns.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">No transactions found.</td></tr>';
+            } else {
+                txns.forEach(t => {
+                    tbody.innerHTML += `<tr>
+                        <td>${new Date(t.created_at).toLocaleDateString()}</td>
+                        <td><div class="fw-bold">${t.referrer?.name || 'N/A'}</div><div class="small">${t.referrer?.email || ''}</div></td>
+                        <td><div class="fw-bold">${t.buyer?.name || 'N/A'}</div><div class="small">${t.buyer?.email || ''}</div></td>
+                        <td><div class="fw-bold">${t.seller?.company_name || t.seller?.contact_persons || 'N/A'}</div></td>
+                        <td>#${t.order_id}</td>
+                        <td class="text-success fw-bold"><span class="money" data-amount="${t.amount}">₹${parseFloat(t.amount).toFixed(2)}</span></td>
+                        <td><span class="badge bg-success">${t.status}</span></td>
+                    </tr>`;
+                });
+            }
+            formatLocalMoneyElements();
+        }
+    } catch(e) { console.warn(e); }
+}
 
 // ========== Fraud Analytics ==========
 async function loadFraudAnalytics() {
@@ -682,6 +901,7 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
         document.getElementById(`tab-${tabId}`).classList.add('active');
         if (tabId === 'campaigns') loadCampaigns();
         if (tabId === 'fraud-analytics') loadFraudAnalytics();
+        if (tabId === 'transactions') loadTransactions();
     });
 });
 
@@ -694,6 +914,135 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
     await loadCategoryRewards();
     await loadProductCampaigns();
     await loadLevelCommissions();
+    document.querySelectorAll('.ref-tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.ref-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.ref-tab-pane').forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+            if (this.dataset.tab === 'configurations') {
+                loadExistingRefConfigs();
+            }
+        });
+    });
+
+    window.sellersList = [];
+    window.loadSellers = async function() {
+        if (window.sellersList.length === 0) {
+            try {
+                const res = await fetch(baseUrl + '/sellers');
+                if (res.ok) window.sellersList = await res.json();
+            } catch(e) { console.warn(e); }
+        }
+    };
+
+    window.addRefConfigRow = async function() {
+        await window.loadSellers();
+        let sellerOptions = '<option value="">Select Seller</option>';
+        window.sellersList.forEach(s => {
+            sellerOptions += `<option value="${s.id}">${s.name || s.org_name || 'Seller ' + s.id}</option>`;
+        });
+
+        const tbody = document.querySelector('#refConfigTable tbody');
+        const rowCount = tbody.children.length;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <select name="configs[${rowCount}][type]" class="form-select form-select-sm ref-config-type" required>
+                    <option value="buyer_to_buyer">Buyer to Buyer</option>
+                    <option value="seller_to_seller">Seller to Seller</option>
+                </select>
+            </td>
+            <td>
+                <select name="configs[${rowCount}][reference_id]" class="form-select form-select-sm" required>
+                    ${sellerOptions}
+                </select>
+            </td>
+            <td>
+                <div class="input-group input-group-sm">
+                    <input type="number" name="configs[${rowCount}][commission_percentage]" class="form-control" placeholder="Reward % (e.g. 3)" required>
+                    <span class="input-group-text">%</span>
+                </div>
+            </td>
+            <td>
+                <div class="input-group input-group-sm">
+                    <input type="number" name="configs[${rowCount}][referee_discount]" class="form-control" placeholder="Discount % (e.g. 3)" required>
+                    <span class="input-group-text">%</span>
+                </div>
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()"><i class="mdi mdi-delete"></i></button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    };
+
+    window.saveRefConfigs = async function() {
+        const form = document.getElementById('refConfigForm');
+        const formData = new FormData(form);
+        
+        try {
+            const res = await fetch(baseUrl + '/referral-configurations/save', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': refCsrfToken,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showToast(data.message || 'Configurations saved successfully');
+                document.querySelector('#refConfigTable tbody').innerHTML = ''; // clear form
+                window.loadExistingRefConfigs();
+            } else {
+                showToast(data.message || 'Failed to save', true);
+            }
+        } catch(e) {
+            console.error(e);
+            showToast('Something went wrong', true);
+        }
+    };
+
+    window.loadExistingRefConfigs = async function() {
+        try {
+            await window.loadSellers();
+            const res = await fetch(baseUrl + '/referral-configurations');
+            const data = await res.json();
+            let html = '';
+            if (data.length) {
+                data.forEach(item => {
+                    let extra = {};
+                    try { extra = JSON.parse(item.description) || {}; } catch(e) {}
+                    
+                    let targetDisplay = item.reference_id || 'N/A';
+                    if (item.reference_id) {
+                        const seller = window.sellersList.find(s => s.id == item.reference_id);
+                        if (seller) {
+                            const sName = seller.name || seller.org_name || '';
+                            targetDisplay = sName ? `${item.reference_id} - ${sName}` : item.reference_id;
+                        }
+                    }
+
+                    html += `<tr>
+                        <td>${item.type === 'buyer_to_buyer' ? 'Buyer to Buyer' : (item.type === 'seller_to_seller' ? 'Seller to Seller' : item.type)}</td>
+                        <td>${targetDisplay}</td>
+                        <td>${item.commission_percentage || 0}%</td>
+                        <td>${extra.referee_discount || 0}%</td>
+                    </tr>`;
+                });
+            } else {
+                html = '<tr><td colspan="4" class="text-center text-muted">No configurations found</td></tr>';
+            }
+            document.getElementById('existingRefConfigsList').innerHTML = html;
+        } catch(e) {
+            console.error(e);
+            document.getElementById('existingRefConfigsList').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Failed to load</td></tr>';
+        }
+    };
+
+    // Add initial row on load
+    window.addRefConfigRow();
 })();
 </script>
 @endsection

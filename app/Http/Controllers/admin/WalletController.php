@@ -61,10 +61,28 @@ class WalletController extends Controller
             $withdrawal->user_name = $this->getWithdrawalUserName($withdrawal);
         }
         $buyers = Customer::select('id', 'name')->orderBy('name')->get();
+        
+        // Platform wallet balance
+        $platformBalance = Wallet::where('user_type', 'platform')->sum('balance');
+        
+        // Refunds data from order_returns table (all buyers' requests)
+        $refundsData = DB::table('order_returns')
+            ->join('orders', 'order_returns.order_id', '=', 'orders.id')
+            ->leftJoin('customers', 'order_returns.customer_id', '=', 'customers.id')
+            ->select(
+                'order_returns.*',
+                'orders.total_amount',
+                'orders.seller_id',
+                'customers.name as buyer_name'
+            )
+            ->orderBy('order_returns.created_at', 'desc')
+            ->paginate(10);
+
         return view('admin.wallet.index', compact(
             'totalBalance', 'sellerBalance', 'buyerBalance', 'frozenAmount',
             'pendingWithdrawals', 'pendingWithdrawalsCount', 'donutData',
-            'trendData', 'transactions', 'pendingWithdrawalsList','buyers'
+            'trendData', 'transactions', 'pendingWithdrawalsList', 'buyers',
+            'platformBalance', 'refundsData'
         ));
     }
     
@@ -602,11 +620,13 @@ class WalletController extends Controller
      */
     public function getRefunds(Request $request)
     {
-        // Build query for refunds
-        $query = DB::table('refunds')
-            ->leftJoin('customers', 'refunds.customer_id', '=', 'customers.id')
+        // Build query for all return/refund requests across all buyers
+        $query = DB::table('order_returns')
+            ->join('orders', 'order_returns.order_id', '=', 'orders.id')
+            ->leftJoin('customers', 'order_returns.customer_id', '=', 'customers.id')
             ->select(
-                'refunds.*',
+                'order_returns.*',
+                'orders.total_amount as amount',
                 'customers.name as buyer_name',
                 'customers.id as customer_id',
                 'customers.email as customer_email'
@@ -614,39 +634,47 @@ class WalletController extends Controller
         
         // Apply filters
         if ($request->status && $request->status != '') {
-            $query->where('refunds.status', $request->status);
+            $query->where('order_returns.status', $request->status);
         }
         
         if ($request->buyer_id && $request->buyer_id != '') {
-            $query->where('refunds.customer_id', $request->buyer_id);
+            $query->where('order_returns.customer_id', $request->buyer_id);
         }
         
         if ($request->order_id && $request->order_id != '') {
-            $query->where('refunds.order_id', 'LIKE', '%' . $request->order_id . '%');
+            $query->where('order_returns.order_id', 'LIKE', '%' . $request->order_id . '%');
         }
         
         if ($request->start_date && $request->end_date) {
-            $query->whereBetween('refunds.created_at', [
+            $query->whereBetween('order_returns.created_at', [
                 $request->start_date . ' 00:00:00',
                 $request->end_date . ' 23:59:59'
             ]);
         }
         
         // Get paginated results
-        $refunds = $query->orderBy('refunds.created_at', 'desc')
+        $refunds = $query->orderBy('order_returns.created_at', 'desc')
             ->paginate(10);
         
         // Transform data for frontend
         $refunds->getCollection()->transform(function ($refund) {
+            
+            // Map the order_returns status to admin refund status terminology
+            $displayStatus = $refund->status;
+            if ($refund->status == 'requested') $displayStatus = 'requested';
+            else if ($refund->status == 'approved') $displayStatus = 'pending'; // Approved by seller, pending admin refund
+            else if ($refund->status == 'rejected') $displayStatus = 'rejected';
+            else if ($refund->status == 'refunded') $displayStatus = 'refunded';
+
             return [
-                'id' => $refund->id,
+                'id' => $refund->id, // This is order_returns.id
                 'order_id' => $refund->order_id ?? '#ORD-' . str_pad($refund->id, 4, '0', STR_PAD_LEFT),
                 'buyer_id' => '#CUST-' . str_pad($refund->customer_id, 3, '0', STR_PAD_LEFT),
                 'buyer_name' => $refund->buyer_name ?? 'Unknown Customer',
                 'amount' => (float) $refund->amount,
                 'reason' => $refund->reason ?? 'Not specified',
                 'reason_color' => $this->getRefundReasonColor($refund->reason),
-                'status' => $refund->status,
+                'status' => $displayStatus,
                 'created_at' => $refund->created_at
             ];
         });
@@ -665,52 +693,94 @@ class WalletController extends Controller
         DB::beginTransaction();
         
         try {
-            // Get refund details
-            $refund = DB::table('refunds')->where('id', $id)->first();
+            // Get return details from order_returns (which acts as our refund requests table)
+            $orderReturn = DB::table('order_returns')->where('id', $id)->first();
             
-            if (!$refund) {
-                return response()->json(['success' => false, 'message' => 'Refund not found'], 404);
+            if (!$orderReturn) {
+                return response()->json(['success' => false, 'message' => 'Refund request not found'], 404);
             }
             
-            if ($refund->status !== 'pending') {
-                return response()->json(['success' => false, 'message' => 'Refund is not pending'], 400);
+            // In our system, the seller must approve it first. If status is 'approved', it's ready for admin refund.
+            if ($orderReturn->status !== 'approved') {
+                return response()->json(['success' => false, 'message' => 'Refund cannot be processed. Ensure the seller has approved the return first.'], 400);
             }
             
-            // Find buyer's wallet
-            $wallet = Wallet::where('user_type', 'customer')
-                ->where('customer_id', $refund->customer_id)
-                ->first();
-            
-            if (!$wallet) {
-                return response()->json(['success' => false, 'message' => 'Buyer wallet not found'], 404);
+            $order = DB::table('orders')->where('id', $orderReturn->order_id)->first();
+            if (!$order) {
+                return response()->json(['success' => false, 'message' => 'Associated order not found'], 404);
             }
+
+            // Get platform commission from commission_management table
+            $commissionRules = DB::table('commission_management')->get();
+            $sellerId = $order->seller_id;
+            $appType = 'vshop';
+            $platformComm = 30; // default fallback
+
+            // Priority 1: Exact seller + app match
+            $specificRule = $commissionRules->first(function ($rule) use ($sellerId, $appType) {
+                return $rule->seller_id == $sellerId && strtolower($rule->app_type) == $appType;
+            });
+
+            if ($specificRule) {
+                $platformComm = $specificRule->platform_commission;
+            } else {
+                $appRule = $commissionRules->filter(function ($rule) use ($appType) {
+                    return is_null($rule->seller_id) && strtolower($rule->app_type) == $appType;
+                })->first();
+                if ($appRule) {
+                    $platformComm = $appRule->platform_commission;
+                } else {
+                    $generalRule = $commissionRules->whereNull('seller_id')->first();
+                    if ($generalRule) {
+                        $platformComm = $generalRule->platform_commission;
+                    }
+                }
+            }
+
+            $platformCut = ($order->total_amount * $platformComm) / 100;
+            $refundAmount = $order->total_amount - $platformCut;
+            if ($refundAmount < 0) $refundAmount = 0;
+
+            // 1. Update Customer's wallet_balance column directly
+            $customer = \App\Models\Customer::find($orderReturn->customer_id);
+            if ($customer) {
+                $customer->wallet_balance = ($customer->wallet_balance ?? 0) + $refundAmount;
+                $customer->save();
+            }
+
+            // Also maintain the Wallet & WalletTransaction for history
+            $wallet = \App\Models\Wallet::firstOrCreate(
+                ['user_type' => 'customer', 'customer_id' => $orderReturn->customer_id],
+                ['balance' => 0]
+            );
             
-            // Credit amount to buyer's wallet
-            $oldBalance = $wallet->balance;
-            $wallet->balance += $refund->amount;
+            $wallet->balance += $refundAmount;
             $wallet->save();
             
-            // Create transaction record
-            WalletTransaction::create([
+            // Create transaction record for buyer
+            \App\Models\WalletTransaction::create([
                 'wallet_id' => $wallet->id,
                 'seller_id' => null,
-                'customer_id' => $refund->customer_id,
+                'customer_id' => $orderReturn->customer_id,
                 'user_type' => 'customer',
                 'transaction_type' => 'refund',
-                'credit' => $refund->amount,
+                'credit' => $refundAmount,
                 'debit' => 0,
-                'balance_after' => $wallet->balance,
-                'description' => 'Refund for order - ' . ($refund->order_id ?? 'Order #' . $refund->id),
-                'reference_id' => 'REF_' . $refund->id . '_' . time(),
+                'balance_after' => $customer ? $customer->wallet_balance : $wallet->balance,
+                'description' => "Refund for Order #{$orderReturn->order_id}",
+                'reference_id' => 'REF_' . $orderReturn->id . '_' . time(),
                 'status' => 'completed'
             ]);
             
-            // Update refund status
-            DB::table('refunds')->where('id', $id)->update([
-                'status' => 'refunded',
-                'processed_at' => now(),
-                'processed_by' => auth()->id(),
-                'updated_at' => now()
+            // 3. Update the order return status to 'refunded'/ Update order and order return status
+            \App\Models\Order::where('id', $order->id)->update([
+                'refund_status' => 'completed',
+                'status' => 'returned',
+                'refund_completed_at' => now()
+            ]);
+            
+            DB::table('order_returns')->where('id', $id)->update([
+                'status' => 'refunded'
             ]);
             
             DB::commit();
@@ -828,49 +898,130 @@ public function getOrderDetails(Request $request)
     $orderId = $request->input('order_id');
     $refundId = $request->input('refund_id');
     
-    // Fetch order from your orders table
-    $order = \App\Models\Order::where('order_id', $orderId)->orWhere('id', $orderId)->first();
+    // Fetch order from orders table
+    $order = \App\Models\Order::with(['items.product', 'customer'])->where('id', $orderId)->first();
     
     if (!$order) {
         return response()->json(['success' => false, 'message' => 'Order not found']);
     }
     
-    // Fetch refund details
-    $refund = \App\Models\Refund::where('id', $refundId)->orWhere('order_id', $orderId)->first();
+    // Fetch refund/return details from order_returns
+    $refund = \App\Models\OrderReturn::where('id', $refundId)->orWhere('order_id', $orderId)->first();
     
-    // Fetch order items with product images
+    // Fetch order items with product details
     $items = [];
     foreach ($order->items as $item) {
+        $productName = $item->product ? $item->product->name : 'Unknown Product';
+        $productImage = '';
+        if ($item->product && $item->product->thumbnail) {
+            $thumb = $item->product->thumbnail;
+            if (strpos($thumb, 'http') === 0) {
+                $productImage = $thumb;
+            } else {
+                $productImage = url('/public/' . ltrim($thumb, '/'));
+            }
+        } else {
+            $productImage = 'https://placehold.co/60x60?text=No+Image';
+        }
+        $sku = $item->product ? ($item->product->sku ?? 'N/A') : 'N/A';
+        
         $items[] = [
-            'name' => $item->product_name,
-            'sku' => $item->sku ?? 'N/A',
+            'name' => $productName,
+            'sku' => $sku,
             'quantity' => $item->quantity,
             'price' => $item->price,
-            'image' => $item->product->image ?? 'https://placehold.co/60x60'
+            'image' => $productImage
         ];
     }
     
+    // Get platform commission from commission_management table
+    $commissionRules = DB::table('commission_management')->get();
+    $sellerId = $order->seller_id;
+    $appType = 'vshop';
+    $platformComm = 30; // default fallback
+    $sellerComm = 60;
+    $referrerComm = 10;
+
+    // Priority 1: Exact seller + app match
+    $specificRule = $commissionRules->first(function ($rule) use ($sellerId, $appType) {
+        return $rule->seller_id == $sellerId && strtolower($rule->app_type) == $appType;
+    });
+
+    if ($specificRule) {
+        $sellerComm = $specificRule->seller_commission;
+        $referrerComm = $specificRule->referrer_commission;
+        $platformComm = $specificRule->platform_commission;
+    } else {
+        // Priority 2: App type match (no specific seller)
+        $appRule = $commissionRules->filter(function ($rule) use ($appType) {
+            return is_null($rule->seller_id) && strtolower($rule->app_type) == $appType;
+        })->first();
+        if ($appRule) {
+            $sellerComm = $appRule->seller_commission;
+            $referrerComm = $appRule->referrer_commission;
+            $platformComm = $appRule->platform_commission;
+        } else {
+            // Priority 3: General fallback
+            $generalRule = $commissionRules->whereNull('seller_id')->first();
+            if ($generalRule) {
+                $sellerComm = $generalRule->seller_commission;
+                $referrerComm = $generalRule->referrer_commission;
+                $platformComm = $generalRule->platform_commission;
+            }
+        }
+    }
+
+    $platformCut = ($order->total_amount * $platformComm) / 100;
+    $refundAmount = $order->total_amount - $platformCut;
+    if ($refundAmount < 0) $refundAmount = 0;
+
+    // Customer details from the customers table
+    $customer = $order->customer;
+    
+    // Delivery address
+    $address = 'N/A';
+    if ($order->delivery_address_id) {
+        $addr = DB::table('addresses')->where('id', $order->delivery_address_id)->first();
+        if ($addr) {
+            $address = trim(($addr->address_line_1 ?? '') . ', ' . ($addr->city ?? '') . ', ' . ($addr->state ?? '') . ' - ' . ($addr->pincode ?? ''));
+        }
+    }
+    if ($address === 'N/A' && $customer) {
+        $address = $customer->address ?? 'N/A';
+    }
+
     return response()->json([
         'success' => true,
         'data' => [
-            'order_id' => $order->order_id ?? '#ORD-'.$order->id,
+            'order_id' => $order->id,
             'order_date' => $order->created_at,
             'total_amount' => $order->total_amount,
+            'sub_total' => $order->sub_total,
+            'gst_amount' => $order->gst_amount ?? 0,
+            'courier_charge' => $order->courier_charge ?? 0,
+            'discount_amount' => $order->discount_amount ?? 0,
             'payment_method' => $order->payment_method,
+            'payment_status' => $order->payment_status,
             'order_status' => $order->status,
-            'shipping_charges' => $order->shipping_charges ?? 0,
             'customer' => [
-                'name' => $order->customer->name ?? 'N/A',
-                'email' => $order->customer->email ?? 'N/A',
-                'phone' => $order->customer->phone ?? 'N/A',
-                'address' => $order->shipping_address ?? $order->customer->address ?? 'N/A'
+                'name' => $customer->name ?? 'N/A',
+                'email' => $customer->email ?? 'N/A',
+                'phone' => $customer->phone ?? 'N/A',
+                'address' => $address
             ],
             'items' => $items,
+            'commission' => [
+                'platform_pct' => $platformComm,
+                'seller_pct' => $sellerComm,
+                'referrer_pct' => $referrerComm,
+                'platform_cut' => $platformCut,
+            ],
             'refund_id' => $refund->id ?? $refundId,
             'refund_request_date' => $refund->created_at ?? null,
             'refund_reason' => $refund->reason ?? 'N/A',
-            'refund_amount' => $refund->amount ?? null,
-            'refund_status' => $refund->status ?? 'pending'
+            'refund_amount' => $refundAmount,
+            'refund_status' => $refund->status ?? 'pending',
+            'refund_attachment' => $refund->attachment ?? null
         ]
     ]);
 }

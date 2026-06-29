@@ -196,7 +196,72 @@ public function placeOrder(Request $request)
         }
     }
 
-    $totalDiscount = $cartItems->sum('discount_amount');
+    // --- BUYER-TO-BUYER REFERRAL LOGIC ---
+    $customer = Auth::guard('customer')->user();
+    $referredBy = $customer->referred_by;
+    $referralDiscounts = 0;
+
+    if ($referredBy) {
+        $itemsBySeller = $cartItems->groupBy(function($item) {
+            return $item->product->created_by_id ?? null;
+        });
+
+        foreach($itemsBySeller as $sellerId => $items) {
+            if (!$sellerId) continue;
+
+            $hasOrderedBefore = DB::table('order_items')
+                ->join('orders', 'order_items.order_id', '=', 'orders.id')
+                ->join('products', 'order_items.product_id', '=', 'products.id')
+                ->where('orders.customer_id', $customer_id)
+                ->where('products.created_by_id', $sellerId)
+                ->exists();
+
+            if (!$hasOrderedBefore) {
+                $config = DB::table('referral_configurations')
+                    ->where('type', 'buyer_to_buyer')
+                    ->where('reference_id', $sellerId)
+                    ->where('status', 1)
+                    ->first();
+
+                if ($config) {
+                    $configExtra = json_decode($config->description, true);
+                    $refereeDiscountPercent = $configExtra['referee_discount'] ?? 0;
+                    $commissionPercent = $config->commission_percentage ?? 0;
+
+                    if ($refereeDiscountPercent > 0 || $commissionPercent > 0) {
+                        $sellerSubtotal = 0;
+                        foreach($items as $item) {
+                            $itemPrice = $item->combo_id 
+                                ? (($item->main_product_price ?? 0) * ($item->main_product_quantity ?? 1) + ($item->combo_product_price ?? 0) * ($item->combo_product_quantity ?? 1))
+                                : (($item->main_product_price ?? 0) * ($item->main_product_quantity ?? 1));
+                            $sellerSubtotal += $itemPrice;
+                        }
+
+                        $discountAmount = $sellerSubtotal * ($refereeDiscountPercent / 100);
+                        $referralDiscounts += $discountAmount;
+
+                        if ($commissionPercent > 0) {
+                            $rewardAmount = $sellerSubtotal * ($commissionPercent / 100);
+                            $rewardPoints = (int) $rewardAmount;
+                            
+                            \App\Models\Reward::create([
+                                'customer_id' => $referredBy,
+                                'type' => 'points',
+                                'points' => $rewardPoints,
+                                'amount' => $rewardAmount,
+                                'description' => "Buyer-to-Buyer referral commission for Customer #{$customer_id}'s first purchase from Seller #{$sellerId}",
+                                'status' => 'active',
+                                'expiry_date' => now()->addDays(365)
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // -------------------------------------
+
+    $totalDiscount = $cartItems->sum('discount_amount') + $referralDiscounts;
     $baseTotal = $totalSubtotal + $totalEmbroideryPrice + $totalGST;
     $baseTotalAfterDiscount = max(0, $baseTotal - $totalDiscount);
 

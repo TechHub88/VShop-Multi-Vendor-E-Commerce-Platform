@@ -78,6 +78,23 @@ $address = $editContact['address'] ?? [];
 <a href="{{ route('seller.contact.list') }}" class="btn btn-outline-primary btn-sm">Go to List</a>
 </div>
 
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs mb-4" id="contactTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="org-tab" data-bs-toggle="tab" data-bs-target="#org-details" type="button" role="tab" aria-selected="true">Organization Details</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="address-tab" data-bs-toggle="tab" data-bs-target="#address-details" type="button" role="tab" aria-selected="false">Address Details</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="persons-tab" data-bs-toggle="tab" data-bs-target="#contact-persons" type="button" role="tab" aria-selected="false">Contact Persons</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="contactTabsContent">
+        <!-- Organization Tab -->
+        <div class="tab-pane fade show active p-2" id="org-details" role="tabpanel">
+
 {{-- ORGANIZATION SECTION --}}
 <div class="border p-3 mb-4 bg-light">
     <h6 class="text-primary mb-3">Organization Details <span class="text-danger">*</span></h6>
@@ -107,6 +124,10 @@ $address = $editContact['address'] ?? [];
         </div>
     </div>
 </div>
+        </div> <!-- End Organization Tab -->
+        
+        <!-- Address Tab -->
+        <div class="tab-pane fade p-2" id="address-details" role="tabpanel">
 
 {{-- ADDRESS SECTION --}}
 <div class="border p-3 mb-4 bg-light">
@@ -157,6 +178,10 @@ $address = $editContact['address'] ?? [];
         @enderror
     </div>
 </div>
+        </div> <!-- End Address Tab -->
+
+        <!-- Contact Persons Tab -->
+        <div class="tab-pane fade p-2" id="contact-persons" role="tabpanel">
 
 {{-- CONTACTS SECTION --}}
 <div id="contactWrapper">
@@ -360,6 +385,9 @@ Only PDF allowed, Max 2MB
 
 <button type="button" id="addContactBtn" class="btn btn-outline-primary mb-3">+ Add Another Contact</button>
 
+        </div> <!-- End Contact Persons Tab -->
+    </div> <!-- End Tab Content -->
+
 <div class="text-end">
     <button type="submit" class="btn btn-success px-4">{{ $editContact ? 'Update & Continue' : 'Save & Continue' }}</button>
 </div>
@@ -459,7 +487,7 @@ $('#addContactBtn').click(function() {
     let i = $('.contact-block').length;
     let newIndex = i;
     
-    $('#contactWrapper').append(`
+    let $newBlock = $(`
         <div class="contact-block border p-3 mb-3 bg-white">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="text-secondary mb-0">Contact Person ${i+1}</h6>
@@ -524,7 +552,16 @@ $('#addContactBtn').click(function() {
                 </div>
             </div>
         </div>
-    `);
+    `).hide();
+
+    $('#contactWrapper').append($newBlock);
+    
+    // Smooth load animation
+    $newBlock.slideDown('slow', function() {
+        $('html, body').animate({
+            scrollTop: $newBlock.offset().top - 100
+        }, 'slow');
+    });
 });
 
 // ======================

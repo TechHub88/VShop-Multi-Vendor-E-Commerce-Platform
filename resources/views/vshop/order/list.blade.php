@@ -19,7 +19,7 @@
                     </div>
                     <div class="date-short-sec d-flex align-items-center gap-3">
                         <!-- ===== RAISE COMPLAINT BUTTON ===== -->
-                        <button class="btn btn-danger btn-sm rounded-pill px-3" id="openComplaintPopupFromOrders">
+                        <button class="btn btn-danger btn-sm rounded-pill px-2 py-1" style="font-size: 11px; font-weight: 600;" id="openComplaintPopupFromOrders">
                             <i class="bi bi-flag-fill"></i> Raise Complaint
                         </button>
 
@@ -94,13 +94,70 @@
                                     </div>
                                     <p class="grandtotal">
                                         Grand Total :
-                                        <span class="{{ in_array($order->status, ['cancelled','return']) ? 'redColor' : 'blueColor' }}">
+                                        <span class="{{ in_array(strtolower($order->status), ['cancelled','return','returned']) ? 'redColor' : 'blueColor' }}">
                                             ₹ {{ number_format($order->total_amount, 2) }}
                                         </span>
                                     </p>
 
+                                    @if(in_array(strtolower($order->status), ['cancelled', 'return', 'returned']))
+                                        @php
+                                            $orderReturn = DB::table('order_returns')->where('order_id', $order->id)->first();
+                                            $isCancelled = strtolower($order->status) === 'cancelled';
+                                            
+                                            $rStatus = 'requested';
+                                            $dispStatus = 'Processing';
+                                            $statusColor = 'warning';
+                                            
+                                            if ($orderReturn) {
+                                                $rStatus = strtolower($orderReturn->status);
+                                            } elseif ($isCancelled) {
+                                                // If it's just cancelled without a formal return, we check transactions directly
+                                                $rStatus = 'cancelled';
+                                                $dispStatus = 'Cancelled';
+                                                $statusColor = 'danger';
+                                            }
+                                            
+                                            if($rStatus == 'approved') { $dispStatus = 'Pending Refund'; $statusColor = 'info'; }
+                                            if($rStatus == 'rejected') { $dispStatus = 'Rejected'; $statusColor = 'danger'; }
+                                            if($rStatus == 'refunded' || $isCancelled) {
+                                                // Check for actual refund transaction
+                                                $txn = DB::table('wallet_transactions')
+                                                    ->where('customer_id', auth()->id())
+                                                    ->where('transaction_type', 'refund')
+                                                    ->where('description', 'LIKE', '%Order #%' . $order->id . '%')
+                                                    ->first();
+                                                    
+                                                if ($txn) {
+                                                    $rStatus = 'refunded';
+                                                    $dispStatus = 'Refunded Successfully';
+                                                    $statusColor = 'success';
+                                                    $rAmount = $txn->credit;
+                                                } elseif ($rStatus == 'refunded') {
+                                                    $dispStatus = 'Refund Processed';
+                                                    $statusColor = 'success';
+                                                    $rAmount = $orderReturn ? $orderReturn->refund_amount : $order->total_amount;
+                                                }
+                                            }
+                                        @endphp
+                                        
+                                        @if(isset($rAmount) || $rStatus != 'cancelled')
+                                        <div class="mt-3 p-2 rounded" style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid var(--bs-{{ $statusColor }});">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span style="font-size:12px; font-weight:600; color:#495057;">Refund Status:</span>
+                                                <span class="badge bg-{{ $statusColor }}" style="font-size:11px;">{{ $dispStatus }}</span>
+                                            </div>
+                                            @if(isset($rAmount) && $rAmount > 0)
+                                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                                <span style="font-size:12px; font-weight:600; color:#495057;">Refund Amount:</span>
+                                                <span class="fw-bold" style="font-size:13px; color:#198754;">₹{{ number_format($rAmount, 2) }}</span>
+                                            </div>
+                                            @endif
+                                        </div>
+                                        @endif
+                                    @endif
+
                                     {{-- DETAILS BUTTON --}}
-                                    <a href="{{ route('vshop.order.details', $order->id) }}" class="btn-view mt-2">
+                                    <a href="{{ route('vshop.order.details', $order->id) }}" class="btn btn-sm btn-outline-primary mt-3 rounded-pill px-4" style="font-weight: 500;">
                                         View Details
                                     </a>
                                 </div>
@@ -138,6 +195,62 @@
     border-radius: 20px;
     font-size: 13px;
     font-weight: 600;
+}
+
+.order-item {
+    list-style: none;
+    margin-bottom: 20px;
+}
+
+.order-list-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    transition: box-shadow 0.3s ease;
+}
+
+.order-list-wrapper:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.order-list-box {
+    flex: 1;
+}
+
+.order-list-box:nth-child(2) {
+    text-align: center;
+}
+
+.order-list-box:nth-child(3) {
+    text-align: right;
+}
+
+.order-list-box h3 a {
+    color: #333;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.order-list-box h3 a:hover {
+    color: #0d6efd;
+}
+
+.total-order-sec p, .total-time-sec p {
+    margin: 0;
+    font-size: 14px;
+    color: #555;
+}
+
+.grandtotal {
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 8px;
 }
 
 .order-badge.delivered { background: #d4edda; color: #155724; }

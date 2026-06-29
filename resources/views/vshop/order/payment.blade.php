@@ -88,7 +88,18 @@
                                      </div>
                                  </div>
 
-                                <div class="address-left-bottom payment-table">
+                                 {{-- REFERRAL CODE INPUT --}}
+                                 @if(empty(auth('customer')->user()->referred_by))
+                                 <div class="referral-code-section" style="margin-top: 15px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 12px 15px;">
+                                     <label style="font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px; display: block;">Have a Referral Code?</label>
+                                     <div style="display: flex; gap: 10px;">
+                                         <input type="text" name="referral_code" placeholder="Enter code here" style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; text-transform: uppercase;">
+                                     </div>
+                                     <p style="font-size: 11px; color: #64748b; margin-top: 6px; margin-bottom: 0;">Support a fellow buyer by entering their referral code.</p>
+                                 </div>
+                                 @endif
+
+                                <div class="address-left-bottom payment-table" style="margin-top: 20px;">
                                     <table>
                                         <thead class="payment-table-top">
                                             <tr>

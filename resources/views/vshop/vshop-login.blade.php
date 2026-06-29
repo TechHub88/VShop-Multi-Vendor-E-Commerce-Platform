@@ -26,7 +26,7 @@
             width: 50%;
             height: 100%;
             padding: 80px;
-            background-image: url(https://img.freepik.com/free-photo/copy-space-cosmetic-skin-care-products_23-2148317615.jpg?t=st=1773403401~exp=1773407001~hmac=c55fcfca1d3f05bd276fbc991cfac47f632ceb6f1db723cb5bf047ee2aeb5b4b&w=1060);
+            background-image: url("{{ asset('images/vshop_all_categories_bg.png') }}");
             background-repeat: no-repeat;
             background-size: cover;
             background-position: top;

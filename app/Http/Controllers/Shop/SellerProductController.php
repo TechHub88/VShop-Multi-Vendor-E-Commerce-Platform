@@ -38,55 +38,142 @@ class SellerProductController extends Controller
         }
     }
 
-    public function getBoostProducts()
-    {
+
+
+public function getBoostProducts()
+{
+    try {
         $sellerId = auth('seller')->id();
         $products = Product::where('created_by_id', $sellerId)
-            ->select('id', 'name', 'slug', 'sku', 'is_boosted', 'price', 'thumbnail')
+            ->select('id', 'name', 'sku', 'category_id', 'is_boosted', 'price', 'thumbnail', 'sold', 'popularity')
+            ->orderByDesc('sold')
+            ->orderByDesc('popularity')
             ->get();
 
-        $data = $products->map(function($product) {
+        $boostRules = \App\Models\BoostedListing::all();
+
+        $data = $products->values()->map(function($product, $index) use ($boostRules, $sellerId) {
+            $boostPerDay = $this->calculateBoostPerDay($product, $sellerId, $boostRules);
+
             return [
                 'id' => $product->id,
                 'name' => $product->name,
                 'sku' => $product->sku ?? 'N/A',
                 'price' => $product->price ?? 0,
                 'is_boosted' => $product->is_boosted,
+                'per_day' => $boostPerDay,
+                'is_top' => $index < 2 && ($product->sold > 0 || $product->popularity > 0),
                 'image_url' => $product->thumbnail ? asset($product->thumbnail) : asset('images/no-image.png')
             ];
         });
 
+        // Ensure wallet exists or fetch it
+        $wallet = \App\Models\Wallet::firstOrCreate(
+            ['user_type' => 'seller', 'seller_id' => $sellerId],
+            ['balance' => 0]
+        );
+        $walletBalance = $wallet ? $wallet->balance : 0;
+
         return response()->json([
             'success' => true, 
             'data' => $data,
-            'wallet_balance' => session('seller_dummy_wallet', 15450.00)
+            'wallet_balance' => $walletBalance
         ]);
+    } catch (\Throwable $e) {
+        \Log::error('Boost Products Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+private function calculateBoostPerDay($product, $sellerId, $boostRules)
+{
+    // 1. Exact Product Match
+    $rule = $boostRules->first(function ($r) use ($product) {
+        return $r->product_id && $r->product_id == $product->id;
+    });
+
+    // 2. Category + Seller Match
+    if (!$rule) {
+        $rule = $boostRules->first(function ($r) use ($product, $sellerId) {
+            return empty($r->product_id) && $r->category_id && $r->category_id == $product->category_id && $r->seller_id && $r->seller_id == $sellerId;
+        });
     }
 
-    public function submitBoost(Request $request)
-    {
+    // 3. Category + Global Match
+    if (!$rule) {
+        $rule = $boostRules->first(function ($r) use ($product) {
+            return empty($r->product_id) && $r->category_id && $r->category_id == $product->category_id && empty($r->seller_id);
+        });
+    }
+
+    // 4. Global Seller Match
+    if (!$rule) {
+        $rule = $boostRules->first(function ($r) use ($sellerId) {
+            return empty($r->product_id) && empty($r->category_id) && $r->seller_id && $r->seller_id == $sellerId;
+        });
+    }
+
+    // 5. Absolute Global Match
+    if (!$rule) {
+        $rule = $boostRules->first(function ($r) {
+            return empty($r->product_id) && empty($r->category_id) && empty($r->seller_id);
+        });
+    }
+
+    return $rule ? (float)$rule->per_day : null;
+}
+
+public function submitBoost(Request $request)
+{
+    try {
         $sellerId = auth('seller')->id();
         $productIds = $request->input('product_ids', []);
+        $days = (int)$request->input('days', 1);
+        if ($days < 1) {
+            $days = 1;
+        }
 
-        // Count how many products will be boosted
-        $boostCount = count($productIds);
-        $perProductCost = 30.00;
-        $totalCost = $boostCount * $perProductCost;
+        $boostRules = \App\Models\BoostedListing::all();
+        $products = Product::where('created_by_id', $sellerId)
+            ->whereIn('id', $productIds)
+            ->get();
 
-        $walletBalance = session('seller_dummy_wallet', 15450.00);
+        $totalCost = 0;
+        foreach ($products as $product) {
+            $perDay = $this->calculateBoostPerDay($product, $sellerId, $boostRules);
+            $totalCost += ($perDay * $days);
+        }
 
-        if ($walletBalance < $totalCost) {
+        // Get the wallet record from DB
+        $wallet = \App\Models\Wallet::where('seller_id', $sellerId)
+                    ->where('user_type', 'seller')
+                    ->first();
+
+        if (!$wallet) {
             return response()->json([
-                'success' => false, 
-                'message' => 'Insufficient wallet balance! You need ₹' . number_format($totalCost, 2) . ' but only have ₹' . number_format($walletBalance, 2)
+                'success' => false,
+                'message' => 'Wallet not found for this seller.'
             ]);
         }
 
-        // Deduct from wallet balance
-        $newBalance = $walletBalance - $totalCost;
-        session(['seller_dummy_wallet' => $newBalance]);
+        if ($wallet->balance < $totalCost) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Insufficient wallet balance! You need ₹' . number_format($totalCost, 2) . ' but have ₹' . number_format($wallet->balance, 2)
+            ]);
+        }
 
-        // First set all products to not boosted, then only boost selected ones
+        // Deduct from database wallet balance
+        $wallet->balance -= $totalCost;
+        $wallet->save();
+
+        // Also update session to keep header consistent for current request
+        session(['seller_dummy_wallet' => $wallet->balance]);
+
+        // First set all products to not boosted, then boost selected ones
         Product::where('created_by_id', $sellerId)->update(['is_boosted' => 0]);
 
         if (!empty($productIds)) {
@@ -97,12 +184,17 @@ class SellerProductController extends Controller
 
         return response()->json([
             'success' => true, 
-            'message' => 'Successfully boosted ' . $boostCount . ' product(s)! Charged ₹' . number_format($totalCost, 2),
-            'new_balance' => $newBalance
+            'message' => 'Successfully boosted ' . count($productIds) . ' product(s)! Charged ₹' . number_format($totalCost, 2),
+            'new_balance' => $wallet->balance
         ]);
+    } catch (\Throwable $e) {
+        \Log::error('Submit Boost Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+        return response()->json([
+            'success' => false,
+            'message' => 'Error: ' . $e->getMessage()
+        ], 500);
     }
-
-
+}
 
 
 public function index(Request $request)
@@ -1580,11 +1672,18 @@ public function price(Product $product = null)
     // Fetch Location Data for Target Audience
     $countries = \App\Models\Country::all();
     $states = \App\Models\State::all();
-    $cities = \App\Models\City::all();
+    $cities = $product->target_state
+        ? \App\Models\City::where('state_id', $product->target_state)->orderBy('name')->get()
+        : collect();
+
+    // Calculate boost per day amount from rules table
+    $sellerId = auth('seller')->id() ?? ($product->created_by_id ?? null);
+    $boostRules = \App\Models\BoostedListing::all();
+    $boostPerDay = $this->calculateBoostPerDay($product, $sellerId, $boostRules);
 
     return view(
         'vshop.seller.products.steps.price',
-        compact('product', 'attributes', 'combinations', 'taxes', 'countries', 'states', 'cities')
+        compact('product', 'attributes', 'combinations', 'taxes', 'countries', 'states', 'cities', 'boostPerDay')
     );
 }
 
@@ -1848,6 +1947,122 @@ public function savePrice(Request $request, Product $product)
     $this->createLog($product->id, 'price_update', null, $priceData);
 
     return redirect()->route('seller.products.faq', $product->id)->with('success', 'Pricing saved successfully!');
+}
+
+public function getAiRecommendation(Request $request, Product $product)
+{
+    $this->checkOwner($product);
+
+    $categoryName = $product->category ? $product->category->name : 'General';
+    
+    // Get variant price range if combinations exist
+    $combinations = DB::table('product_attribute')
+        ->where('proid', $product->id)
+        ->get();
+    
+    $minPrice = $product->price;
+    $maxPrice = $product->price;
+    
+    if ($combinations->isNotEmpty()) {
+        $prices = $combinations->pluck('price')->filter()->all();
+        if (!empty($prices)) {
+            $minPrice = min($prices);
+            $maxPrice = max($prices);
+        }
+    }
+
+    $goal = $request->input('goal', 'enquiries');
+
+    $prompt = "You are a professional digital marketing budget estimator. Calculate a recommended daily advertising boost budget, expected daily reach range, and expected daily enquiries range for the following product:
+Product Name: {$product->name}
+Category: {$categoryName}
+Price Range: INR {$minPrice} to INR {$maxPrice}
+Marketing Goal: {$goal}
+
+Based on these details, generate a realistic daily budget, estimated daily reach range (number of people reached), estimated daily enquiries range (number of leads/enquiries generated), and 3 recommended target cities in India that are best suited for this product.
+Keep in mind:
+- Higher priced products should have a slightly higher daily budget, lower estimated reach but high-quality enquiries.
+- Lower priced products should have a lower/moderate daily budget, higher estimated reach, and higher number of enquiries.
+
+You MUST respond ONLY with a raw JSON object and nothing else. Do not include markdown code block formatting (like ```json), no markdown backticks, no comments, and no extra text.
+The JSON must follow this structure exactly:
+{
+  \"budget\": 500,
+  \"reach_min\": 5000,
+  \"reach_max\": 7500,
+  \"enquiries_min\": 10,
+  \"enquiries_max\": 25,
+  \"recommended_cities\": [\"Kolkata\", \"Delhi\", \"Mumbai\"]
+}";
+
+    $apiKey = env('OPENROUTER_API_KEY', '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');
+
+    try {
+        $response = \Illuminate\Support\Facades\Http::withHeaders([
+            'Authorization' => 'Bearer ' . $apiKey,
+            'Content-Type' => 'application/json',
+            'HTTP-Referer' => url('/'),
+            'X-Title' => 'VShop Admin',
+        ])->post('https://openrouter.ai/api/v1/chat/completions', [
+            'model' => 'meta-llama/llama-3-8b-instruct',
+            'messages' => [
+                ['role' => 'user', 'content' => $prompt]
+            ],
+            'temperature' => 0.7,
+        ]);
+
+        if ($response->successful()) {
+            $content = $response->json('choices.0.message.content');
+            // Clean markdown code blocks if Llama added them
+            $cleanContent = trim(preg_replace('/^```json|```$/m', '', $content));
+            $data = json_decode($cleanContent, true);
+            
+            if (json_last_error() === JSON_ERROR_NONE && isset($data['budget'])) {
+                // Resolve recommended city names to IDs
+                $recommendedCityData = [];
+                $cityNames = $data['recommended_cities'] ?? [];
+                if (!empty($cityNames)) {
+                    $citiesDb = \App\Models\City::whereIn('name', $cityNames)->get(['id', 'name', 'state_id']);
+                    foreach ($citiesDb as $c) {
+                        $recommendedCityData[] = [
+                            'id' => $c->id,
+                            'name' => $c->name,
+                            'state_id' => $c->state_id
+                        ];
+                    }
+                }
+                
+                // If database cities didn't match (e.g. empty DB or spelling difference), fall back to raw names with generated temp IDs
+                if (empty($recommendedCityData)) {
+                    foreach ($cityNames as $index => $name) {
+                        $recommendedCityData[] = [
+                            'id' => 'raw-' . strtolower(str_replace(' ', '-', $name)),
+                            'name' => $name,
+                            'state_id' => null
+                        ];
+                    }
+                }
+                
+                $data['recommended_cities_info'] = $recommendedCityData;
+
+                return response()->json([
+                    'success' => true,
+                    'recommendation' => $data
+                ]);
+            }
+        }
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to parse AI response. Raw output: ' . ($response->body() ?? 'No response')
+        ], 500);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'API Call Error: ' . $e->getMessage()
+        ], 500);
+    }
 }
 /* ===================================================
 PRODUCT PREVIEW

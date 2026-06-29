@@ -73,10 +73,10 @@ $orderPercent = $cartAbandon > 0 ? ($orders / $cartAbandon) * 100 : 0;
 <div class="row mb-4">
 
 @foreach([
-    ['Visitors',$visits],
-    ['Cart Users',$cartAbandon],
-    ['Orders',$orders],
-    ['Conversion',$conversionRate.'%']
+    ['Visitors', $visits],
+    ['Cart Users', $cartAbandon],
+    ['Orders', $orders],
+    ['Conversion', number_format($conversionRate, 2) . '%']
 ] as $k)
 <div class="col-md-3">
 <div class="card p-3 text-center shadow-sm border-0">

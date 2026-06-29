@@ -37,7 +37,7 @@
             <div class="pro-card">
                 <p>Total Sales</p>
                 <h4 class="money" data-amount="{{ $totalSales ?? 0 }}">
-                    ₹ {{ number_format($totalSales ?? 0, 2) }}
+                    ₹{{ number_format($totalSales ?? 0, 2) }}
                 </h4>
                 <div class="pro-card-meta">
                     <span class="badge-success">▲ 16.8%</span>
@@ -72,7 +72,7 @@
             <div class="pro-card">
                 <p>Total Income</p>
                 <h4 class="money" data-amount="{{ $totalIncome ?? 0 }}">
-                    ₹ {{ number_format($totalIncome ?? 0, 2) }}
+                    ₹{{ number_format($totalIncome ?? 0, 2) }}
                 </h4>
                 <div class="pro-card-meta">
                     <span class="badge-success">▲ 9.1%</span>
@@ -85,7 +85,7 @@
             <div class="pro-card">
                 <p>Total Returns</p>
                 <h4 class="money" data-amount="{{ $totalReturns ?? 0 }}">
-                    ₹ {{ number_format($totalReturns ?? 0, 2) }}
+                    ₹{{ number_format($totalReturns ?? 0, 2) }}
                 </h4>
                 <div class="pro-card-meta">
                     <span class="badge-success">▲ 16.8%</span>
@@ -508,40 +508,58 @@
    METRIC CARD (PRO CARD)
 ========================================================= */
 .pro-card {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: 20px;
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: radial-gradient(circle at top right, #ffffff, #f8fafc);
+    border-radius: 20px;
+    padding: 22px;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     height: 100%;
     position: relative;
+    overflow: hidden;
+}
+
+.pro-card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; width: 100px; height: 100px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(30%, -30%);
 }
 
 .pro-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-6px);
     border-color: #3b82f6 !important;
-    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.08), 0 4px 6px -4px rgba(59, 130, 246, 0.08);
+    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.08);
 }
 
 .pro-card p {
-    margin: 0 0 6px 0;
+    margin: 0 0 8px 0;
     color: #64748b;
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
+    position: relative;
+    z-index: 1;
 }
 
 .pro-card h4 {
-    margin: 0 0 8px 0;
-    font-size: 22px;
-    font-weight: 700;
+    margin: 0 0 12px 0;
+    font-size: 24px;
+    font-weight: 800;
     color: #0f172a;
     font-family: 'Outfit', sans-serif !important;
+    letter-spacing: -0.5px;
+    position: relative;
+    z-index: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* =========================================================
@@ -604,37 +622,55 @@
    BOOST PERFORMANCE CARD
 ========================================================= */
 .boost-card {
-    border: 1px solid #e2e8f0 !important;
-    background: linear-gradient(to bottom, #ffffff, #f8fafc) !important;
-    border-radius: 16px !important;
-    padding: 24px 20px !important;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #3b82f6 100%) !important;
+    border: none !important;
+    border-radius: 20px !important;
+    padding: 28px 24px !important;
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    box-shadow: 0 15px 35px rgba(30, 58, 138, 0.2) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.boost-card::after {
+    content: '';
+    position: absolute;
+    bottom: -50px; right: -50px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    border-radius: 50%;
 }
 
 .boost-card p.fw-bold {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 12px !important;
-    letter-spacing: 0.5px;
-    color: #475569 !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    letter-spacing: 1px;
+    color: #ffffff !important;
     text-transform: uppercase;
+    position: relative;
+    z-index: 1;
 }
 
 .boost-card span {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 13px !important;
-    color: #64748b;
+    font-size: 14px !important;
+    color: #cbd5e1 !important;
+    position: relative;
+    z-index: 1;
 }
 
 .boost-card .fw-bold {
-    color: #0f172a !important;
+    color: #ffffff !important;
     font-family: 'Outfit', sans-serif !important;
+    font-size: 16px !important;
 }
 
 .boost-card .text-success {
-    color: #166534 !important;
+    color: #34d399 !important;
 }
 
 .boost-icon-wrapper {
@@ -658,31 +694,37 @@
 ========================================================= */
 .dashboard-card {
     background: #ffffff;
-    border-radius: 16px;
-    border: 1px solid #e2e8f0 !important;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+    border-radius: 20px;
+    border: 1px solid rgba(226, 232, 240, 0.6) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
     overflow: hidden;
-    margin-bottom: 24px;
+    margin-bottom: 28px;
+    transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.05);
 }
 
 .dashboard-card .card-header {
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-weight: 600;
-    font-size: 15px;
+    font-family: 'Outfit', sans-serif !important;
+    font-weight: 700;
+    font-size: 16px;
     color: #0f172a;
-    background: #ffffff;
+    background: transparent;
     border-bottom: 1px solid #f1f5f9;
-    padding: 18px 24px;
+    padding: 22px 28px;
+    letter-spacing: -0.3px;
 }
 
 .dashboard-card .card-body {
-    padding: 24px;
+    padding: 28px;
 }
 
 .dashboard-card .card-footer {
-    background: #ffffff;
+    background: transparent;
     border-top: 1px solid #f1f5f9;
-    padding: 14px 24px;
+    padding: 18px 28px;
 }
 
 /* =========================================================
@@ -736,39 +778,41 @@ canvas {
    PREMIUM TABLES
 ========================================================= */
 .table-responsive {
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
+    border-radius: 16px;
     margin-bottom: 0;
+    padding: 0 28px 20px 28px;
 }
 
 .table {
     width: 100%;
     margin-bottom: 0;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .table th {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-weight: 600 !important;
-    font-size: 11px !important;
-    letter-spacing: 0.5px !important;
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    letter-spacing: 0.8px !important;
     text-transform: uppercase !important;
-    color: #004392 !important;
-    background-color: #f0f7ff !important;
+    color: #ffffff !important;
+    background-color: #0b4582 !important;
     border: none !important;
-    border-bottom: 2px solid #dbeafe !important;
-    padding: 14px 20px !important;
+    border-bottom: 2px solid #083463 !important;
+    padding: 18px 20px !important;
 }
 
 .table tbody td {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
-    font-size: 13px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
     color: #334155 !important;
     border: none !important;
-    border-bottom: 1px solid #f1f5f9 !important;
-    padding: 14px 20px !important;
+    border-bottom: 1px solid #f8fafc !important;
+    padding: 18px 20px !important;
     vertical-align: middle !important;
-    background: #ffffff !important;
+    background: transparent !important;
 }
 
 .table tbody tr:last-child td {
@@ -1051,84 +1095,64 @@ document.addEventListener("DOMContentLoaded", function(){
     }
 });
 
-// Filter handling
+// Filter & Pagination handling (AJAX Smooth Load)
 document.addEventListener("DOMContentLoaded", function(){
-    document.querySelectorAll('.filter-form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const sectionId = this.dataset.section;
-            const select = this.querySelector('.filter-dropdown');
-            const filterName = select.name;
-            const filterValue = select.value;
-            if (!sectionId) return;
-            const targetSection = document.getElementById(sectionId);
-            if (!targetSection) return;
-            const urlParams = new URLSearchParams(window.location.search);
-            urlParams.set(filterName, filterValue);
-            urlParams.delete('page');
-            fetch(window.location.pathname + '?' + urlParams.toString(), {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newSection = doc.getElementById(sectionId);
-                if (newSection) {
-                    targetSection.innerHTML = newSection.innerHTML;
-                    attachFormListeners(targetSection);
-                } else {
-                    window.location.href = window.location.pathname + '?' + urlParams.toString();
-                }
-            })
-            .catch(() => {
-                window.location.href = window.location.pathname + '?' + urlParams.toString();
-            });
-        });
+    function fetchAndReplace(url, sectionId) {
+        const targetSection = document.getElementById(sectionId);
+        if (!targetSection) return;
         
-        const select = form.querySelector('.filter-dropdown');
-        if (select) {
-            select.addEventListener('change', function() {
-                form.dispatchEvent(new Event('submit'));
-            });
-        }
-    });
-    
+        targetSection.style.opacity = '0.5';
+        targetSection.style.pointerEvents = 'none';
+
+        fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => response.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newSection = doc.getElementById(sectionId);
+            if (newSection) {
+                targetSection.innerHTML = newSection.innerHTML;
+                attachFormListeners(targetSection);
+            } else {
+                window.location.href = url;
+            }
+        })
+        .catch(() => {
+            window.location.href = url;
+        })
+        .finally(() => {
+            targetSection.style.opacity = '1';
+            targetSection.style.pointerEvents = 'auto';
+        });
+    }
+
     function attachFormListeners(container) {
+        // Handle filter dropdowns
         container.querySelectorAll('.filter-form').forEach(form => {
             const newForm = form.cloneNode(true);
             form.parentNode.replaceChild(newForm, form);
+            
             newForm.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const sectionId = this.dataset.section;
                 const select = this.querySelector('.filter-dropdown');
-                const filterName = select.name;
-                const filterValue = select.value;
-                if (!sectionId) return;
-                const targetSection = document.getElementById(sectionId);
-                if (!targetSection) return;
-                const urlParams = new URLSearchParams(window.location.search);
-                urlParams.set(filterName, filterValue);
-                urlParams.delete('page');
-                fetch(window.location.pathname + '?' + urlParams.toString(), {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                })
-                .then(response => response.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const newSection = doc.getElementById(sectionId);
-                    if (newSection) {
-                        targetSection.innerHTML = newSection.innerHTML;
-                        attachFormListeners(targetSection);
-                    } else {
-                        window.location.href = window.location.pathname + '?' + urlParams.toString();
+                if (!sectionId || !select) return;
+                
+                const url = new URL(window.location.href);
+                url.searchParams.set(select.name, select.value);
+                // Ensure other filters in the document are preserved
+                document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+                    if (dropdown.name !== select.name && dropdown.value) {
+                        url.searchParams.set(dropdown.name, dropdown.value);
                     }
-                })
-                .catch(() => {
-                    window.location.href = window.location.pathname + '?' + urlParams.toString();
                 });
+                
+                url.searchParams.delete('page'); // reset page on filter change
+                fetchAndReplace(url.toString(), sectionId);
             });
+            
             const newSelect = newForm.querySelector('.filter-dropdown');
             if (newSelect) {
                 newSelect.addEventListener('change', function() {
@@ -1136,8 +1160,33 @@ document.addEventListener("DOMContentLoaded", function(){
                 });
             }
         });
+
+        // Handle pagination links
+        container.querySelectorAll('.pagination a').forEach(link => {
+            const newLink = link.cloneNode(true);
+            link.parentNode.replaceChild(newLink, link);
+            newLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                const section = this.closest('.dashboard-card');
+                if(!section || !section.id) {
+                    window.location.href = this.href;
+                    return;
+                }
+                
+                // Preserve existing filters in pagination URLs
+                const url = new URL(this.href);
+                document.querySelectorAll('.filter-dropdown').forEach(dropdown => {
+                    if (dropdown.value) {
+                        url.searchParams.set(dropdown.name, dropdown.value);
+                    }
+                });
+                
+                fetchAndReplace(url.toString(), section.id);
+            });
+        });
     }
-    
+
+    // Initialize on all relevant sections
     const sections = ['star-products-section', 'slow-movers-section', 'grievances-section', 'reviews-section', 'tour-services-section', 'booking-trends-section'];
     sections.forEach(sectionId => {
         const section = document.getElementById(sectionId);

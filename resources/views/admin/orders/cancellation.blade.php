@@ -335,16 +335,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($orders ?? [] as $order)
+                        @forelse($returns ?? [] as $request)
                         @php
-                            $requestType = $order->cancellation_requested ? 'cancellation' : ($order->return_requested ? 'return' : null);
-                            $requestStatus = $order->cancellation_requested ? ($order->cancellation_status ?? 'pending') : ($order->return_status ?? 'pending');
+                            $requestType = $request->return_type ?? 'return';
+                            $requestStatus = $request->status ?? 'pending';
                         @endphp
-                        @if($requestType)
                         <tr>
                             <td class="align-middle">
-                                <a href="javascript:void(0)" class="text-primary text-decoration-none fw-semibold" onclick="showOrderDetails({{ $order->id }})">
-                                    #{{ $order->id }}
+                                <a href="javascript:void(0)" class="text-primary text-decoration-none fw-semibold" onclick="showOrderDetails({{ $request->order_id }})">
+                                    #{{ $request->order_id }}
                                 </a>
                             </td>
                             <td class="align-middle">
@@ -355,59 +354,58 @@
                             </td>
                             <td class="align-middle">
                                 <div class="d-flex flex-column">
-                                    <span class="fw-semibold">{{ $order->customer->name ?? 'N/A' }}</span>
-                                    <small class="text-muted">{{ $order->customer->email ?? '' }}</small>
+                                    <span class="fw-semibold">{{ $request->customer->name ?? 'N/A' }}</span>
+                                    <small class="text-muted">{{ $request->customer->email ?? '' }}</small>
                                 </div>
                             </td>
                             <td class="align-middle">
-                                <span class="small">{{ $order->items->first()->product->name ?? 'N/A' }}</span>
-                                <small class="d-block text-muted">Qty: {{ $order->items->first()->quantity ?? 1 }}</small>
+                                <span class="small">{{ $request->order->items->first()->product->name ?? 'N/A' }}</span>
+                                <small class="d-block text-muted">Qty: {{ $request->order->items->first()->quantity ?? 1 }}</small>
                             </td>
                             <td class="align-middle">
-                                <span class="fw-semibold">₹{{ number_format($order->total_amount ?? $order->total ?? 0, 2) }}</span>
+                                <span class="fw-semibold">₹{{ number_format($request->order->total_amount ?? $request->order->total ?? 0, 2) }}</span>
                             </td>
                             <td class="align-middle">
                                 <div class="d-flex flex-column">
-                                    <span>{{ $order->created_at ? $order->created_at->format('d M Y') : '-' }}</span>
-                                    <small class="text-muted">{{ $order->created_at ? $order->created_at->format('h:i A') : '-' }}</small>
+                                    <span>{{ $request->created_at ? $request->created_at->format('d M Y') : '-' }}</span>
+                                    <small class="text-muted">{{ $request->created_at ? $request->created_at->format('h:i A') : '-' }}</small>
                                 </div>
                             </td>
                             <td class="align-middle">
-                                @if($requestStatus == 'pending')
+                                @if($requestStatus == 'pending' || $requestStatus == 'requested')
                                     <span class="badge-pending"><i class="ri-time-line"></i> Pending</span>
-                                @elseif($requestStatus == 'approved')
-                                    <span class="badge-approved"><i class="ri-checkbox-circle-line"></i> Approved</span>
+                                @elseif($requestStatus == 'approved' || $requestStatus == 'refunded' || $requestStatus == 'completed')
+                                    <span class="badge-approved"><i class="ri-checkbox-circle-line"></i> {{ ucfirst($requestStatus) }}</span>
                                 @else
-                                    <span class="badge-rejected"><i class="ri-close-circle-line"></i> Rejected</span>
+                                    <span class="badge-rejected"><i class="ri-close-circle-line"></i> {{ ucfirst($requestStatus) }}</span>
                                 @endif
                             </td>
                             <td class="align-middle">
                                 <div class="d-flex gap-1">
                                     <!-- View Button -->
-                                    <button type="button" class="btn-action btn-view" onclick="showOrderDetails({{ $order->id }})" title="View Details">
+                                    <button type="button" class="btn-action btn-view" onclick="showOrderDetails({{ $request->order_id }})" title="View Details">
                                         <i class="ri-eye-line"></i>
                                     </button>
                                     
                                     <!-- Approve Button (only for pending requests) -->
-                                    @if($requestStatus == 'pending')
-                                        <button type="button" class="btn-action btn-approve" onclick="showApproveModal({{ $order->id }}, '{{ $requestType }}', {{ $order->total_amount ?? $order->total ?? 0 }})" title="Approve Request">
+                                    @if($requestStatus == 'pending' || $requestStatus == 'requested')
+                                        <button type="button" class="btn-action btn-approve" onclick="showApproveModal({{ $request->order_id }}, '{{ $requestType }}', {{ $request->order->total_amount ?? $request->order->total ?? 0 }})" title="Approve Request">
                                             <i class="ri-check-line"></i>
                                         </button>
-                                        <button type="button" class="btn-action btn-reject" onclick="showRejectModal({{ $order->id }}, '{{ $requestType }}')" title="Reject Request">
+                                        <button type="button" class="btn-action btn-reject" onclick="showRejectModal({{ $request->order_id }}, '{{ $requestType }}')" title="Reject Request">
                                             <i class="ri-close-line"></i>
                                         </button>
                                     @endif
                                     
                                     <!-- Process Refund Button -->
-                                    @if($requestStatus == 'approved' && ($order->refund_status ?? 'pending') != 'completed')
-                                        <button type="button" class="btn-action btn-refund" onclick="processRefund({{ $order->id }})" title="Process Refund">
+                                    @if($requestStatus == 'approved' && ($request->order->refund_status ?? 'pending') != 'completed')
+                                        <button type="button" class="btn-action btn-refund" onclick="processRefund({{ $request->order_id }})" title="Process Refund">
                                             <i class="ri-bank-card-line"></i>
                                         </button>
                                     @endif
                                 </div>
                             </td>
                         </tr>
-                        @endif
                         @empty
                         <tr>
                             <td colspan="8" class="text-center py-5">
@@ -419,9 +417,9 @@
                     </tbody>
                 </table>
             </div>
-            @if(method_exists($orders, 'links'))
+            @if(method_exists($returns ?? [], 'links'))
             <div class="p-3 bg-light border-top">
-                {{ $orders->links() }}
+                {{ $returns->links() }}
             </div>
             @endif
         </div>
@@ -535,7 +533,7 @@
 
 <script>
 // Store orders data
-let ordersData = @json($orders instanceof \Illuminate\Pagination\LengthAwarePaginator ? $orders->items() : $orders);
+let ordersData = @json($returns instanceof \Illuminate\Pagination\LengthAwarePaginator ? $returns->items() : $returns);
 
 // Show Toast Notification
 function showToast(message, type = 'success') {
@@ -557,11 +555,11 @@ function updateStats() {
     let rejected = 0;
     
     if(ordersData && ordersData.length > 0) {
-        ordersData.forEach(order => {
-            let status = order.cancellation_requested ? (order.cancellation_status || 'pending') : (order.return_status || 'pending');
-            if(status == 'pending') pending++;
-            else if(status == 'approved') approved++;
-            else if(status == 'rejected') rejected++;
+        ordersData.forEach(request => {
+            let status = request.status || 'pending';
+            if(status == 'pending' || status == 'requested') pending++;
+            else if(status == 'approved' || status == 'refunded' || status == 'completed') approved++;
+            else if(status == 'rejected' || status == 'cancelled') rejected++;
         });
     }
     
@@ -573,9 +571,15 @@ function updateStats() {
 
 // Show Order Details
 function showOrderDetails(orderId) {
-    let order = ordersData.find(o => o.id == orderId);
+    let request = ordersData.find(o => o.order_id == orderId);
+    if(!request) {
+        console.log('Order Return Request not found:', orderId);
+        return;
+    }
+    
+    let order = request.order;
     if(!order) {
-        console.log('Order not found:', orderId);
+        console.log('Order details not attached:', orderId);
         return;
     }
     
@@ -599,9 +603,9 @@ function showOrderDetails(orderId) {
                 <i class="ri-user-line text-muted me-2"></i>
                 <span class="small fw-semibold">Customer Information</span>
             </div>
-            <p class="mb-1 small"><strong>Name:</strong> ${order.customer?.name || 'N/A'}</p>
-            <p class="mb-1 small"><strong>Email:</strong> ${order.customer?.email || 'N/A'}</p>
-            <p class="mb-0 small"><strong>Phone:</strong> ${order.customer?.phone || 'N/A'}</p>
+            <p class="mb-1 small"><strong>Name:</strong> ${request.customer?.name || order.customer?.name || 'N/A'}</p>
+            <p class="mb-1 small"><strong>Email:</strong> ${request.customer?.email || order.customer?.email || 'N/A'}</p>
+            <p class="mb-0 small"><strong>Phone:</strong> ${request.customer?.phone || order.customer?.phone || 'N/A'}</p>
         </div>
         <div class="mb-3 pb-2 border-bottom">
             <div class="d-flex align-items-center mb-2">
@@ -609,6 +613,14 @@ function showOrderDetails(orderId) {
                 <span class="small fw-semibold">Order Items</span>
             </div>
             ${itemsHtml}
+        </div>
+        <div class="mb-3 pb-2 border-bottom">
+            <div class="d-flex align-items-center mb-2">
+                <i class="ri-file-text-line text-muted me-2"></i>
+                <span class="small fw-semibold">Request Details</span>
+            </div>
+            <p class="mb-1 small"><strong>Reason:</strong> ${request.reason || 'N/A'}</p>
+            <p class="mb-1 small"><strong>Note:</strong> ${request.note || 'N/A'}</p>
         </div>
         <div>
             <div class="d-flex justify-content-between mb-1">

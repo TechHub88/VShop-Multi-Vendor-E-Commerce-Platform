@@ -1046,7 +1046,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.querySelectorAll('.money').forEach(el => {
             let amount = parseFloat(el.getAttribute('data-amount'));
-            if (!isNaN(amount) && amount > 0) {
+            if (!isNaN(amount)) {
                 el.innerText = symbol + ' ' + (amount * rate).toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
@@ -1071,8 +1071,19 @@ document.addEventListener('DOMContentLoaded', function() {
         option.addEventListener('click', function(e) {
             e.preventDefault();
             const currency = this.getAttribute('data-currency');
-            localStorage.setItem('selectedCurrency', currency);
-            window.location.href = `/admin/change-currency/${currency}`;
+            
+            // Smoothly update backend session without reloading the page
+            fetch(`/admin/change-currency/${currency}`, {
+                method: 'GET',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(() => {
+                localStorage.setItem('selectedCurrency', currency);
+                convertAllCurrencies(currency);
+            })
+            .catch(error => {
+                console.error("Error updating currency session", error);
+            });
         });
     });
 });

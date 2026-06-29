@@ -3959,7 +3959,7 @@ button.btn-primary.w-100.mt-2:active {
 }
 </style>
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+
 <script>
 // Data preloads for dynamic interactivity
 const exchangeRates = { INR: 1, USD: 83.5, EUR: 91.2, GBP: 104.5 };
@@ -6750,8 +6750,6 @@ function addCommissionRow() {
                     <option value="vtravel">vTravel</option>
                     <option value="vcampus">vCampus</option>
                     <option value="vedge">vEdge</option>
-                    <option value="wellness">Wellness</option>
-                    <option value="marketplace">Marketplace</option>
                 </select>
               </td>
             <td>
@@ -6809,6 +6807,7 @@ function removeCommissionRow(btn) {
         });
         rowCounter = document.querySelectorAll('#commissionTableBody tr').length;
         updateSummary();
+        if (typeof saveAllCommissionsSilent === 'function') saveAllCommissionsSilent();
     }
 }
 
@@ -6825,13 +6824,8 @@ function calculateTotalCommission(input) {
     const platform = parseFloat(row.querySelector('.platform-commission').value) || 0;
     const total = seller + referrer + platform;
     
-    if (Math.abs(total - 100) > 0.01) {
-        row.classList.add('table-danger');
-        row.classList.remove('table-success');
-    } else {
-        row.classList.remove('table-danger');
-        row.classList.add('table-success');
-    }
+    row.classList.remove('table-danger');
+    row.classList.add('table-success');
     
     updateSummary();
 }
@@ -6941,10 +6935,38 @@ function addNewSeller() {
     });
 }
 
+// Silent save for on-change auto-save
+function saveAllCommissionsSilent() {
+    const commissions = [];
+    document.querySelectorAll('#commissionTableBody tr').forEach(row => {
+        const sellerId = row.querySelector('.seller-select').value;
+        if (!sellerId) return;
+        commissions.push({
+            seller_id: sellerId,
+            app_type: row.querySelector('.app-type-select').value,
+            sell_type: row.querySelector('.sell-type-select').value,
+            total_sales: row.querySelector('.total-sales').value || 0,
+            commission_type: row.querySelector('.commission-type-select').value,
+            seller_commission: parseFloat(row.querySelector('.seller-commission').value) || 0,
+            referrer_commission: parseFloat(row.querySelector('.referrer-commission').value) || 0,
+            platform_commission: parseFloat(row.querySelector('.platform-commission').value) || 0,
+            referral_id: row.querySelector('.referral-select').value
+        });
+    });
+    
+    fetch('{{ route("admin.save.commissions") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ commissions: commissions })
+    }).then(r => r.json()).catch(e => console.log('Silent save error:', e));
+}
+
 // Save all commissions
 function saveAllCommissions() {
     const commissions = [];
-    let isValid = true;
     
     document.querySelectorAll('#commissionTableBody tr').forEach(row => {
         const sellerId = row.querySelector('.seller-select').value;
@@ -6953,11 +6975,6 @@ function saveAllCommissions() {
         const seller = parseFloat(row.querySelector('.seller-commission').value) || 0;
         const referrer = parseFloat(row.querySelector('.referrer-commission').value) || 0;
         const platform = parseFloat(row.querySelector('.platform-commission').value) || 0;
-        
-        if (Math.abs(seller + referrer + platform - 100) > 0.01) {
-            isValid = false;
-            row.classList.add('table-danger');
-        }
         
         commissions.push({
             seller_id: sellerId,
@@ -6971,11 +6988,6 @@ function saveAllCommissions() {
             referral_id: row.querySelector('.referral-select').value
         });
     });
-    
-    if (!isValid) {
-        Swal.fire('Error', 'Please ensure all commission totals are 100%', 'error');
-        return;
-    }
     
     fetch('{{ route("admin.save.commissions") }}', {
         method: 'POST',
@@ -7004,30 +7016,11 @@ function saveAllCommissions() {
 
 // Validate all commissions
 function validateAllCommissions() {
-    let allValid = true;
-    let errorRows = [];
-    
     document.querySelectorAll('#commissionTableBody tr').forEach((row, idx) => {
-        const seller = parseFloat(row.querySelector('.seller-commission').value) || 0;
-        const referrer = parseFloat(row.querySelector('.referrer-commission').value) || 0;
-        const platform = parseFloat(row.querySelector('.platform-commission').value) || 0;
-        const total = seller + referrer + platform;
-        
-        if (Math.abs(total - 100) > 0.01) {
-            allValid = false;
-            errorRows.push(`Row ${idx + 1}: ${total}%`);
-            row.classList.add('table-danger');
-        } else {
-            row.classList.remove('table-danger');
-            row.classList.add('table-success');
-        }
+        row.classList.remove('table-danger');
+        row.classList.add('table-success');
     });
-    
-    if (allValid) {
-        Swal.fire('Success', 'All commission rules are valid (sum = 100%)', 'success');
-    } else {
-        Swal.fire('Validation Failed', `The following rows have invalid commission totals:\n${errorRows.join('\n')}`, 'error');
-    }
+    Swal.fire('Success', 'All commission rules are saved and valid.', 'success');
 }
 
 // Bulk update commissions
@@ -7151,7 +7144,26 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('#commissionTableBody tr').forEach(row => {
         const inputs = row.querySelectorAll('.seller-commission, .referrer-commission, .platform-commission');
         inputs.forEach(input => {
-            input.addEventListener('change', () => calculateTotalCommission(input));
+            input.addEventListener('change', () => {
+                calculateTotalCommission(input);
+                if (typeof saveAllCommissionsSilent === 'function') saveAllCommissionsSilent();
+            });
+        });
+    });
+    
+    // Restore active tab from localStorage
+    const activeTabId = localStorage.getItem('financeActiveTab');
+    if (activeTabId) {
+        const tabTrigger = document.querySelector(`button[data-bs-target="${activeTabId}"]`);
+        if (tabTrigger) {
+            new bootstrap.Tab(tabTrigger).show();
+        }
+    }
+
+    // Listen for tab changes
+    document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(event) {
+            localStorage.setItem('financeActiveTab', event.target.getAttribute('data-bs-target'));
         });
     });
 });
@@ -7914,8 +7926,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- Include Bootstrap JS for modals -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>

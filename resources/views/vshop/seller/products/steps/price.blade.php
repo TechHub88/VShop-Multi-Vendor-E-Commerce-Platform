@@ -630,10 +630,11 @@
                 <div class="pricing-section-title">SECTION 2: BUDGETING</div>
                 <div class="row g-2 mb-3">
                     <div class="col-6">
-                        <label style="font-size:10px; font-weight:600;">Daily Budget</label>
+                        <label style="font-size:10px; font-weight:600;">Daily Budget (Admin Rate)</label>
                         <div class="budget-input-group">
                             <span class="currency">₹</span>
-                            <input type="number" name="daily_budget" id="dailyBudget" value="{{ old('daily_budget', $product->daily_budget ?? 700) }}">
+                             <input type="number" id="dailyBudget" value="{{ $boostPerDay !== null ? number_format($boostPerDay, 2, '.', '') : '' }}" readonly style="background-color: #f1f5f9;">
+                             <input type="hidden" name="daily_budget" value="{{ $boostPerDay ?? '' }}">
                         </div>
                     </div>
                     <div class="col-6">
@@ -644,12 +645,12 @@
                         </div>
                     </div>
                     <div class="col-12">
-                        <label style="font-size:10px; font-weight:600;">Total Budget</label>
+                        <label style="font-size:10px; font-weight:600;">Total Budget (Cost)</label>
                         <div class="budget-input-group">
                             <span class="currency">₹</span>
-                            <input type="number" name="total_budget" id="totalBudget" value="{{ old('total_budget', $product->total_budget ?? 0) }}">
+                            <input type="number" name="total_budget" id="totalBudget" value="{{ old('total_budget', $product->total_budget ?? 0) }}" readonly style="background-color: #f1f5f9;">
                         </div>
-                        <small class="text-muted" style="font-size: 9px;">Your daily spend can exceed your daily limit on high activity days, but not your total budget.</small>
+                        <small class="text-muted" style="font-size: 9px;">This amount will be deducted from your wallet if you enable boost.</small>
                     </div>
                 </div>
             </div>
@@ -1217,6 +1218,25 @@ $(document).ready(function(){
     });
     updateBoostSections();
 
+    // ================= BOOST DURATION & BUDGET =================
+    $('.btn-boost-duration').on('click', function() {
+        $('.btn-boost-duration').removeClass('active');
+        $(this).addClass('active');
+        let days = $(this).data('days');
+        $('#boostDuration').val(days);
+        
+        // Calculate Total Budget
+        let dailyBudget = parseFloat($('#dailyBudget').val()) || 0;
+        let total = dailyBudget * days;
+        $('#totalBudget').val(total.toFixed(2));
+    });
+    
+    // Initialize default total budget if there is a selected duration
+    if ($('#boostDuration').val()) {
+        let days = $('#boostDuration').val();
+        $('.btn-boost-duration[data-days="'+days+'"]').trigger('click');
+    }
+
     // ================= PROMOTION GOAL SELECTION =================
     $('.goal-option').on('click', function() {
         $('.goal-option').removeClass('active');
@@ -1482,46 +1502,134 @@ $(document).ready(function(){
     const applyAiBtn = $('#applyAiBtn');
     const resetAiBtn = $('#resetAiBtn');
 
+    let currentAiRecommendedCities = [];
+
     openAiBtn.on('click', function() {
-        let currentBudget = $('#dailyBudget').val();
-        $('#modalBudget').val(currentBudget);
-        
-        let currentReach = $('#aiReach').text().split(' - ');
-        $('#modalReachMin').val(currentReach[0].replace(/,/g, ''));
-        $('#modalReachMax').val(currentReach[1].replace(/,/g, ''));
-        
-        let currentEnq = $('#aiEnquiries').text().split(' - ');
-        $('#modalEnqMin').val(currentEnq[0].replace(/,/g, ''));
-        $('#modalEnqMax').val(currentEnq[1].replace(/,/g, ''));
-        
-        let currentCities = $('#aiCities').text().split(', ');
-        $('.modal-city-checkbox').each(function() {
-            $(this).prop('checked', currentCities.includes($(this).val()));
+        // Show SweetAlert loading box
+        Swal.fire({
+            title: 'Generating AI Recommendation...',
+            text: 'Please wait while we calculate the target budget and audience reach.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
         });
-        updateModalSelectedCitiesText();
-        
-        aiModal.css('display', 'flex');
+
+        let currentGoal = $('#promotionGoal').val() || 'enquiries';
+
+        $.ajax({
+            url: "{{ route('seller.price.ai-recommend', $product->id ?? 0) }}",
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                goal: currentGoal
+            },
+            dataType: 'json',
+            success: function(res) {
+                Swal.close();
+                if (res.success && res.recommendation) {
+                    let rec = res.recommendation;
+                    currentAiRecommendedCities = rec.recommended_cities_info || [];
+                    
+                    // Populate modal inputs
+                    $('#modalBudget').val(rec.budget);
+                    $('#modalReachMin').val(rec.reach_min);
+                    $('#modalReachMax').val(rec.reach_max);
+                    $('#modalEnqMin').val(rec.enquiries_min);
+                    $('#modalEnqMax').val(rec.enquiries_max);
+                    
+                    // Uncheck all existing modal checkboxes
+                    $('.modal-city-checkbox').prop('checked', false);
+                    
+                    // Recommended city names from API
+                    let cityNames = rec.recommended_cities || [];
+                    
+                    cityNames.forEach(cityName => {
+                        let matched = false;
+                        $('.modal-city-checkbox').each(function() {
+                            if ($(this).val().toLowerCase() === cityName.toLowerCase()) {
+                                $(this).prop('checked', true);
+                                matched = true;
+                            }
+                        });
+                        
+                        // Append if not found
+                        if (!matched) {
+                            let newHtml = `<label class="city-option">
+                                <input type="checkbox" value="${cityName}" class="modal-city-checkbox" checked>
+                                <span>${cityName}</span>
+                            </label>`;
+                            $('#modalCityOptionsList').append(newHtml);
+                        }
+                    });
+                    
+                    updateModalSelectedCitiesText();
+                    aiModal.css('display', 'flex');
+                } else {
+                    Swal.fire('Error', res.message || 'Could not parse recommendation', 'error');
+                }
+            },
+            error: function(xhr) {
+                Swal.close();
+                let errMsg = 'Failed to fetch AI recommendation. Please try again.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errMsg = xhr.responseJSON.message;
+                }
+                Swal.fire('Error', errMsg, 'error');
+            }
+        });
     });
     
     closeAiBtn.on('click', function() { aiModal.hide(); });
     $(window).on('click', function(e) { if($(e.target).is(aiModal)) aiModal.hide(); });
 
     applyAiBtn.on('click', function() {
-        $('#dailyBudget').val($('#modalBudget').val());
-        $('#aiBudget').text('₹' + $('#modalBudget').val());
+        let budgetVal = $('#modalBudget').val();
+        $('#dailyBudget').val(budgetVal);
+        $('input[name="daily_budget"]').val(budgetVal);
+        
+        $('#aiBudget').text('₹' + budgetVal);
         $('#aiReach').text($('#modalReachMin').val() + ' - ' + $('#modalReachMax').val());
         $('#aiEnquiries').text($('#modalEnqMin').val() + ' - ' + $('#modalEnqMax').val());
         
-        let selectedCities = [];
+        let selectedCitiesNames = [];
         $('.modal-city-checkbox:checked').each(function() {
-            selectedCities.push($(this).val());
+            let cityName = $(this).val();
+            selectedCitiesNames.push(cityName);
+            
+            // Sync with main form Section 3
+            // Find in currentAiRecommendedCities
+            let matchedCity = currentAiRecommendedCities.find(c => c.name.toLowerCase() === cityName.toLowerCase());
+            let cityId = matchedCity ? matchedCity.id : cityName; // fall back to name if no ID found
+            
+            // Look for matching checkbox in the main form
+            let mainCheckbox = $('.city-checkbox').filter(function() {
+                return $(this).val() == cityId || $(this).siblings('span').text().trim().toLowerCase() === cityName.toLowerCase();
+            });
+            
+            if (mainCheckbox.length > 0) {
+                mainCheckbox.prop('checked', true);
+            } else {
+                // If the placeholder text is there, clear it first
+                if ($('#cityOptionsList p').length > 0) {
+                    $('#cityOptionsList').empty();
+                }
+                // Append checked checkbox to Section 3
+                let mainHtml = `<label class="city-option">
+                    <input type="checkbox" name="target_city[]" value="${cityId}" class="city-checkbox" checked>
+                    <span>${cityName}</span>
+                </label>`;
+                $('#cityOptionsList').append(mainHtml);
+            }
         });
-        if(selectedCities.length > 0) {
-            $('#aiCities').text(selectedCities.join(', '));
+        
+        if(selectedCitiesNames.length > 0) {
+            $('#aiCities').text(selectedCitiesNames.join(', '));
         } else {
             $('#aiCities').text('No cities selected');
         }
         
+        updateSelectedCitiesText();
         calculateNetTotal();
         aiModal.hide();
     });

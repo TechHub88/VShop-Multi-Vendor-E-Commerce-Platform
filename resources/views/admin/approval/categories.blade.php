@@ -31,19 +31,53 @@
                         @forelse($items as $cat)
                         <tr id="row-{{ $cat->id }}">
                             <td>{{ $loop->iteration }}</td>
-                            <td>{{ $cat->name ?? '-' }}</td>
+                            <td>
+                                <div class="fw-bold text-dark fs-14">{{ $cat->name ?? '-' }}</div>
+                                <span class="badge bg-primary-subtle text-primary mt-1 px-2 py-0.5" style="font-size: 11px; font-weight: 600;">
+                                    <i class="fa-solid fa-users me-1"></i> {{ $cat->seller_count ?? 1 }} {{ Str::plural('Seller', $cat->seller_count ?? 1) }}
+                                </span>
+                            </td>
                             <td>
                                 <span class="badge {{ $cat->type === 'travel' ? 'bg-info' : 'bg-warning' }}">
                                     {{ ucfirst($cat->type ?? '-') }}
                                 </span>
                             </td>
                             <td>
-                                @if($cat->seller)
+                                @if(isset($cat->sellers) && count($cat->sellers) > 0)
+                                    @foreach($cat->sellers as $s)
+                                        <div class="{{ !$loop->last ? 'mb-2 pb-2 border-bottom border-light' : '' }}">
+                                            <div class="fw-semibold text-dark fs-13">
+                                                {{ $s->name ?? $s->email ?? 'N/A' }}
+                                            </div>
+                                            @php
+                                                $approved = is_string($s->approved_platforms ?? null) ? json_decode($s->approved_platforms, true) : ($s->approved_platforms ?? []);
+                                                if(!is_array($approved)) $approved = [];
+                                            @endphp
+                                            <div class="mt-1 d-flex gap-1 flex-wrap">
+                                                @if(count($approved) > 0)
+                                                    @foreach($approved as $p)
+                                                        @if ($p == 'product')
+                                                            <span class="badge bg-info-subtle text-info px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Shop</span>
+                                                        @elseif ($p == 'travel')
+                                                            <span class="badge bg-success-subtle text-success px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Travel</span>
+                                                        @elseif (($s->app_v_campus ?? false) || $p == 'vcampus')
+                                                            <span class="badge bg-warning-subtle text-warning px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Campus</span>
+                                                        @else
+                                                            <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">{{ ucfirst($p) }}</span>
+                                                        @endif
+                                                    @endforeach
+                                                @else
+                                                    <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">No Platform</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                @elseif($cat->seller)
                                     <div>
                                         {{ $cat->seller->name ?? $cat->seller->email ?? 'N/A' }}
                                     </div>
                                     @php
-                                        $approved = is_string($cat->seller->approved_platforms) ? json_decode($cat->seller->approved_platforms, true) : ($cat->seller->approved_platforms ?? []);
+                                        $approved = is_string($cat->seller->approved_platforms ?? null) ? json_decode($cat->seller->approved_platforms, true) : ($cat->seller->approved_platforms ?? []);
                                         if(!is_array($approved)) $approved = [];
                                     @endphp
                                     <div class="mt-1 d-flex gap-1 flex-wrap">
@@ -53,7 +87,7 @@
                                                     <span class="badge bg-info-subtle text-info px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Shop</span>
                                                 @elseif ($p == 'travel')
                                                     <span class="badge bg-success-subtle text-success px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Travel</span>
-                                                @elseif ($cat->seller->app_v_campus || $p == 'vcampus')
+                                                @elseif (($cat->seller->app_v_campus ?? false) || $p == 'vcampus')
                                                     <span class="badge bg-warning-subtle text-warning px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Campus</span>
                                                 @else
                                                     <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">{{ ucfirst($p) }}</span>

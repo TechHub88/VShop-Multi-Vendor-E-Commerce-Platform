@@ -6,12 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class OrderReturn extends Model
 {
-      protected $fillable = [
+    protected $fillable = [
         'order_id',
         'customer_id',
         'reason',
         'note',
         'status',
+        'attachment',
     ];
 
     // Relationship to Order

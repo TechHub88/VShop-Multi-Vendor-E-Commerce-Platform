@@ -34,6 +34,50 @@
     border: 0 !important;
     padding: 8px 6px;
 }
+.btn-approve-wallet {
+    background: #10b981 !important;
+    color: #fff !important;
+    border: none !important;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+}
+.btn-approve-wallet:hover {
+    background: #059669 !important;
+    transform: translateY(-1px);
+}
+.btn-approve-bank {
+    background: #3b82f6 !important;
+    color: #fff !important;
+    border: none !important;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+}
+.btn-approve-bank:hover {
+    background: #2563eb !important;
+    transform: translateY(-1px);
+}
+.btn-reject {
+    background: #ef4444 !important;
+    color: #fff !important;
+    border: none !important;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+}
+.btn-reject:hover {
+    background: #dc2626 !important;
+    transform: translateY(-1px);
+}
+.btn-select {
+    background: #6b7280 !important;
+    color: #fff !important;
+    border: none !important;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+}
+.btn-select:hover {
+    background: #4b5563 !important;
+    transform: translateY(-1px);
+}
 </style>
 
 @section('content')
@@ -128,8 +172,8 @@
 
 <div class="row">
 
-    <!-- ================= LEFT ================= -->
-    <div class="col-md-6">
+    <!-- ================= RETURN WORKFLOW ================= -->
+    <div class="col-md-12" id="return-workflow">
 
         <h6>Return Workflow</h6>
 
@@ -146,35 +190,6 @@
             <tbody id="workflowBody"></tbody>
 
         </table>
-
-    </div>
-
-    <!-- ================= RIGHT ================= -->
-    <div class="col-md-6">
-
-        <h6>Refund Request</h6>
-
-        <!-- SELECTED ORDER -->
-        <div class="alert alert-info py-2 mb-2">
-            Selected Order :
-            <strong id="selectedRefundOrder">None</strong>
-        </div>
-
-        <input type="hidden" id="refundOrderId">
-
-        <textarea
-            id="refundReason"
-            class="form-control mb-2"
-            placeholder="Enter refund reason"
-            rows="3"></textarea>
-
-        <button class="btn btn-warning btn-sm"
-                onclick="submitRefundReason()">
-            Submit Reason
-        </button>
-
-        <small id="refundMsg"
-               class="text-success d-block mt-2"></small>
 
     </div>
 
@@ -250,6 +265,35 @@ Order & Shipping Details
 <div class="modal-footer">
 <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 <button class="btn btn-warning" onclick="submitReminder()">Send</button>
+</div>
+
+</div>
+</div>
+</div>
+
+{{-- ================= ACTION MODAL ================= --}}
+<div class="modal fade" id="returnActionModal" tabindex="-1">
+<div class="modal-dialog modal-dialog-centered modal-sm">
+<div class="modal-content border-0 shadow" style="border-radius: 12px;">
+
+<div class="modal-body text-center p-4">
+<button type="button" class="btn-close position-absolute" style="top: 15px; right: 15px;" data-bs-dismiss="modal"></button>
+
+<div class="mb-3" style="color: #6366f1;">
+    <i class="fa-solid fa-circle-question fa-3x"></i>
+</div>
+
+<h5 class="fw-bold mb-2">Process Return</h5>
+
+<input type="hidden" id="modalReturnId">
+<input type="hidden" id="modalOrderId">
+
+<p class="small text-muted mb-4">Please choose how you want to process this return request.</p>
+
+<div class="d-flex flex-column gap-2" id="modalActionButtons">
+    <!-- Buttons will be dynamically inserted here based on status -->
+</div>
+
 </div>
 
 </div>
@@ -547,136 +591,64 @@ $('#transactionBody').html(rows);
 // =====================================================
 let wf='';
 
-data.orders.forEach(o=>{
+if (data.returnRequests && data.returnRequests.length > 0) {
+    data.returnRequests.forEach(rr=>{
+        let statusBadge = '';
+        if(rr.status === 'requested') statusBadge = '<span class="badge bg-warning">Requested</span>';
+        else if(rr.status === 'approved') statusBadge = '<span class="badge bg-info">Approved</span>';
+        else if(rr.status === 'rejected') statusBadge = '<span class="badge bg-danger">Rejected</span>';
+        else if(rr.status === 'refunded') statusBadge = '<span class="badge bg-success">Refunded</span>';
 
-// ONLY SHOW REAL REFUND REQUESTS
-if(
-    o.refund_reason ||
-    o.return_requested_at
-){
+        let actionButtons = '';
+        if(rr.status === 'requested') {
+            actionButtons = `
+                <button class="btn btn-primary btn-sm px-2 py-1" onclick="openActionModal(${rr.id}, ${rr.order_id}, 'requested')">
+                    <i class="fa-solid fa-gears"></i> Process
+                </button>
+            `;
+        } else if(rr.status === 'approved') {
+            actionButtons = `
+                <span class="badge bg-secondary p-2"><i class="fa-solid fa-clock"></i> Waiting for Admin Refund</span>
+            `;
+        } else {
+            actionButtons = `<span class="text-muted small"><i class="fa-solid fa-circle-info"></i> Processed</span>`;
+        }
 
-let status='';
+        let attachmentHtml = '';
+        if (rr.attachment) {
+            attachmentHtml = `<br><a href="/public/${rr.attachment}" target="_blank" class="text-primary small"><i class="fa-solid fa-paperclip"></i> View Image</a>`;
+        }
 
-// REQUESTED
-if(o.status == 'return_requested'){
-
-status = `
-<span class="badge bg-warning">
-Requested
-</span>
-`;
-
+        wf += `
+        <tr>
+            <td>
+                <strong>#${rr.order_id}</strong>
+                <div class="small text-muted">${rr.customer_name ?? ''}</div>
+            </td>
+            <td>
+                <div><b>Reason:</b> ${rr.reason}</div>
+                ${rr.note ? `<div class="small text-muted"><b>Note:</b> ${rr.note}</div>` : ''}
+                ${attachmentHtml}
+            </td>
+            <td>${formatDate(rr.created_at)}</td>
+            <td>
+                <div class="mb-1">${statusBadge}</div>
+                <div class="d-flex gap-1 flex-wrap align-items-center">${actionButtons}</div>
+            </td>
+        </tr>
+        `;
+    });
 }
-
-// APPROVED
-if(o.status == 'return_approved'){
-
-status = `
-<span class="badge bg-info">
-Approved
-</span>
-`;
-
-}
-
-// PROCESSING
-if(o.refund_status == 'processing'){
-
-status = `
-<span class="badge bg-primary">
-Processing
-</span>
-`;
-
-}
-
-// COMPLETED
-if(o.refund_status == 'completed'){
-
-status = `
-<span class="badge bg-success">
-Refunded
-</span>
-`;
-
-}
-
-// FAILED
-if(o.refund_status == 'failed'){
-
-status = `
-<span class="badge bg-danger">
-Rejected
-</span>
-`;
-
-}
-
-wf += `
-<tr>
-
-<td>
-<strong>#${o.id}</strong>
-</td>
-
-<td>
-${o.refund_reason
-? o.refund_reason
-: '-'}
-</td>
-
-<td>
-${o.return_requested_at
-? formatDate(o.return_requested_at)
-: '-'}
-</td>
-
-<td>
-
-<div class="mb-1">
-${status}
-</div>
-
-<div class="d-flex gap-1 flex-wrap">
-
-<button class="btn btn-primary btn-sm"
-onclick="setOrder(${o.id})">
-Select
-</button>
-
-<button class="btn btn-success btn-sm"
-onclick="setOrder(${o.id}); approve(${o.id})">
-Approve
-</button>
-
-<button class="btn btn-danger btn-sm"
-onclick="setOrder(${o.id}); reject(${o.id})">
-Reject
-</button>
-
-</div>
-
-</td>
-
-</tr>
-`;
-
-}
-
-});
 
 // EMPTY STATE
 if(wf == ''){
-
-wf = `
-<tr>
-<td colspan="4"
-class="text-center text-muted">
-No refund requests found
-</td>
-</tr>
-`;
-
+    wf = `
+    <tr>
+    <td colspan="4" class="text-center text-muted">
+    No refund requests found
+    </td>
+    </tr>
+    `;
 }
 
 $('#workflowBody').html(wf);
@@ -875,42 +847,6 @@ loadLogs();
 }
 
 
-// ================= SELECT ORDER =================
-function setOrder(id){
-
-currentOrderId = id;
-
-// HIDDEN INPUT
-$('#refundOrderId').val(id);
-
-// SELECTED ORDER TEXT
-$('#selectedRefundOrder').html('#' + id);
-
-// ROW HIGHLIGHT
-$('#workflowBody tr')
-.removeClass('table-warning');
-
-$('#workflowBody tr').each(function(){
-
-let rowText = $(this)
-.find('td:first')
-.text()
-.trim();
-
-if(rowText === '#' + id){
-
-$(this).addClass('table-warning');
-
-}
-
-});
-
-// FOCUS
-$('#refundReason').focus();
-
-}
-
-
 // ================= REMINDER =================
 function openReminder(id){
 
@@ -960,38 +896,67 @@ loadData($('.payment-tab.active').data('type'));
 
 
 // ================= APPROVE / REJECT =================
-function approve(id){
-
-actionCall('/seller/orders/return/approve',id);
-
+function approveReturn(id, refundMode){
+    $.post('/seller/orders/return/approve',{
+        id: id,
+        refund_mode: refundMode,
+        _token: $('meta[name="csrf-token"]').attr('content')
+    }, function(){
+        loadData($('.payment-tab.active').data('type'));
+    });
 }
 
-function reject(id){
-
-actionCall('/seller/orders/return/reject',id);
-
+function rejectReturn(id){
+    $.post('/seller/orders/return/reject',{
+        id: id,
+        _token: $('meta[name="csrf-token"]').attr('content')
+    }, function(){
+        loadData($('.payment-tab.active').data('type'));
+    });
 }
 
-function verify(id){
-
-actionCall('/seller/orders/return/verify',id);
-
+function verifyReturn(id){
+    $.post('/seller/orders/return/verify',{
+        id: id,
+        _token: $('meta[name="csrf-token"]').attr('content')
+    }, function(){
+        loadData($('.payment-tab.active').data('type'));
+    });
 }
 
-function actionCall(url,id){
+// Legacy compatibility
+function approve(id){ approveReturn(id, 'wallet'); }
+function reject(id){ rejectReturn(id); }
+function verify(id){ verifyReturn(id); }
 
-$.post(url,{
+// ================= ACTION MODAL =================
+function openActionModal(returnId, orderId, status) {
+    $('#modalReturnId').val(returnId);
+    $('#modalOrderId').val(orderId);
+    
+    let buttonsHtml = '';
+    
+    if (status === 'requested') {
+        buttonsHtml = `
+            <button class="btn btn-success btn-sm w-100 mb-2" onclick="modalApproveReturn()"><i class="fa-solid fa-check"></i> Approve Return</button>
+            <button class="btn btn-danger btn-sm w-100" onclick="modalRejectReturn()"><i class="fa-solid fa-xmark"></i> Reject Return</button>
+        `;
+    }
+    
+    $('#modalActionButtons').html(buttonsHtml);
+    $('#returnActionModal').modal('show');
+}
 
-id:id,
+function modalApproveReturn() {
+    let returnId = $('#modalReturnId').val();
+    approveReturn(returnId);
+    $('#returnActionModal').modal('hide');
+}
 
-_token:$('meta[name="csrf-token"]').attr('content')
-
-},function(){
-
-loadData($('.payment-tab.active').data('type'));
-
-});
-
+function modalRejectReturn() {
+    let returnId = $('#modalReturnId').val();
+    rejectReturn(returnId);
+    $('#returnActionModal').modal('hide');
 }
 
 
@@ -1045,73 +1010,6 @@ $(this).addClass('active');
 loadData($(this).data('type'));
 
 });
-
-
-// ================= REFUND REQUEST =================
-function submitRefundReason(){
-
-let id = $('#refundOrderId').val();
-
-let reason = $('#refundReason').val();
-
-if(!id){
-
-alert('Please select order');
-
-return;
-
-}
-
-if(!reason.trim()){
-
-alert('Enter refund reason');
-
-return;
-
-}
-
-$.post('/seller/orders/refund-reason',{
-
-id:id,
-
-reason:reason,
-
-_token:$('meta[name="csrf-token"]').attr('content')
-
-},function(res){
-
-if(res.status){
-
-$('#refundMsg')
-.removeClass('text-danger')
-.addClass('text-success')
-.text('Reason saved successfully');
-
-$('#refundReason').val('');
-
-loadData($('.payment-tab.active').data('type'));
-
-}else{
-
-$('#refundMsg')
-.removeClass('text-success')
-.addClass('text-danger')
-.text(res.message ?? 'Failed');
-
-}
-
-}).fail(function(xhr){
-
-$('#refundMsg')
-.removeClass('text-success')
-.addClass('text-danger')
-.text('Server error');
-
-console.log(xhr.responseText);
-
-});
-
-}
 
 
 // ================= INIT =================

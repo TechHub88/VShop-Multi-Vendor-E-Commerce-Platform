@@ -72,16 +72,23 @@ public function vshophome(Request $request)
         ->pluck('product_id')
         ->toArray();
 
-    if (!empty($trendingProductIds)) {
-        $trendingProducts = Product::where($baseFilter)
-            ->whereIn('id', $trendingProductIds)
-            ->paginate(10, ['*'], 'trending_page');
-    } else {
-        $trendingProducts = Product::where($baseFilter)->latest()->paginate(10, ['*'], 'trending_page');
-    }
+    $trendingProducts = Product::where($baseFilter)
+        ->where(function($q) use ($trendingProductIds) {
+            if (!empty($trendingProductIds)) {
+                $q->whereIn('id', $trendingProductIds)
+                  ->orWhere('boost_status', 1);
+            } else {
+                $q->where('boost_status', 1);
+            }
+        })
+        ->orderBy('boost_status', 'desc')
+        ->paginate(10, ['*'], 'trending_page');
 
     if ($trendingProducts->isEmpty()) {
-        $trendingProducts = Product::where($baseFilter)->latest()->paginate(10, ['*'], 'trending_page');
+        $trendingProducts = Product::where($baseFilter)
+            ->orderBy('boost_status', 'desc')
+            ->latest()
+            ->paginate(10, ['*'], 'trending_page');
     }
 
     // ========== 2. New Arrivals ==========
@@ -89,9 +96,15 @@ public function vshophome(Request $request)
     
     // ========== 3. Discount Products ==========
     $discountProducts = Product::where($baseFilter)
-        ->whereNotNull('regular_price')
-        ->whereColumn('regular_price', '>', 'price')
-        ->orderByRaw('(regular_price - price) DESC')
+        ->where(function($q) {
+            $q->where(function($sub) {
+                $sub->whereNotNull('regular_price')
+                    ->whereColumn('regular_price', '>', 'price');
+            })
+            ->orWhere('boost_status', 1);
+        })
+        ->orderBy('boost_status', 'desc')
+        ->orderByRaw('COALESCE(regular_price - price, 0) DESC')
         ->paginate(10, ['*'], 'deals_page');
 
     // ========== 4. Categories with product counts (Vshop only) ==========
@@ -163,36 +176,27 @@ public function vshophome(Request $request)
         }])
         ->paginate(10, ['*'], 'top_page');
 
-    // ========== 8. Recommendations (simple – based on user's order history) ==========
-    $recommendations = collect();
-    $customer = Auth::guard('customer')->user();
-    if ($customer) {
-        // Get categories of products the user has bought
-        $purchasedCategories = Order::where('customer_id', $customer->id)
-            ->where('status', 'completed')
-            ->with('items.product')
-            ->get()
-            ->pluck('items.*.product.category_id')
-            ->flatten()
-            ->unique()
-            ->toArray();
-
-        if (!empty($purchasedCategories)) {
-            $recommendations = Product::where($baseFilter)
-                ->whereIn('category_id', $purchasedCategories)
-                ->whereNotIn('id', function($q) use ($customer) {
-                    // Exclude already purchased products
-                    $q->select('product_id')
-                      ->from('order_items')
-                      ->whereIn('order_id', function($sub) use ($customer) {
-                          $sub->select('id')
-                              ->from('orders')
-                              ->where('customer_id', $customer->id);
-                      });
-                })
-                ->orderBy('id', 'desc')
-                ->paginate(10, ['*'], 'rec_page');
+    // ========== 8. Recommendations (based on RecommendationRule table) ==========
+    $recommendedIds = [];
+    $rules = \App\Models\RecommendationRule::active()->get();
+    
+    foreach ($rules as $rule) {
+        if (!empty($rule->targets)) {
+            $targets = is_array($rule->targets) ? $rule->targets : json_decode($rule->targets, true);
+            if (is_array($targets)) {
+                $recommendedIds = array_merge($recommendedIds, $targets);
+            }
         }
+    }
+    
+    $recommendedIds = array_unique($recommendedIds);
+    $recommendations = collect();
+
+    if (!empty($recommendedIds)) {
+        $recommendations = Product::where($baseFilter)
+            ->whereIn('id', $recommendedIds)
+            ->orderByRaw('FIELD(id, ' . implode(',', $recommendedIds) . ') DESC')
+            ->paginate(10, ['*'], 'rec_page');
     }
 
     // Fallback: if no recommendations, show latest products

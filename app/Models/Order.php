@@ -92,8 +92,11 @@ class Order extends Model
         'fraud_reason',
         'refund_amount',
         'refund_reason',
-        'refunded_at','discount_amount'
-        
+        'refunded_at','discount_amount',
+        'referrer_id',
+        'referral_commission_percent',
+        'referral_commission_amount',
+        'referral_paid'
     ];
 
     /*

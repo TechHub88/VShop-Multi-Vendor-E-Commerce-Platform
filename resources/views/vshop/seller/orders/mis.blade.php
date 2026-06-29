@@ -314,48 +314,38 @@ body{
                     </tr>
                 </thead>
                 <tbody>
-                    <tr data-base-amount="13.00" data-recipient="Seller" data-purpose="Core Commission" data-log-id="R-001">
-                        <td>01 Nov 2023</td>
-                        <td>Seller</td>
-                        <td class="text-success commission-amount">$13.00</td>
-                        <td>Core Commission</td>
-                        <td><a href="#" class="view-log-btn" data-log-id="R-001">View Log R-001</a></td>
-                    </tr>
-                    <tr data-base-amount="13.00" data-recipient="Platform" data-purpose="Platform Fee" data-log-id="R-002">
-                        <td>01 Nov 2023</td>
-                        <td>Platform</td>
-                        <td class="text-success commission-amount">$13.00</td>
-                        <td>Platform Fee</td>
-                        <td><a href="#" class="view-log-btn" data-log-id="R-002">View Log R-002</a></td>
-                    </tr>
-                    <tr data-base-amount="7.00" data-recipient="Referral" data-purpose="Affiliate Fee" data-log-id="R-003">
-                        <td>01 Nov 2023</td>
-                        <td>Referral</td>
-                        <td class="text-danger commission-amount">$7.00</td>
-                        <td>Affiliate Fee</td>
-                        <td><a href="#" class="view-log-btn" data-log-id="R-003">View Log R-003</a></td>
-                    </tr>
-                    <tr data-base-amount="13.00" data-recipient="Seller" data-purpose="Core Commission" data-log-id="R-004">
-                        <td>01 Nov 2023</td>
-                        <td>Seller</td>
-                        <td class="text-success commission-amount">$13.00</td>
-                        <td>Core Commission</td>
-                        <td><a href="#" class="view-log-btn" data-log-id="R-004">View Log R-004</a></td>
-                    </tr>
-                    <tr data-base-amount="13.00" data-recipient="Platform" data-purpose="Platform Fee" data-log-id="R-005">
-                        <td>01 Nov 2023</td>
-                        <td>Platform</td>
-                        <td class="text-success commission-amount">$13.00</td>
-                        <td>Platform Fee</td>
-                        <td><a href="#" class="view-log-btn" data-log-id="R-005">View Log R-005</a></td>
-                    </tr>
-                    <tr data-base-amount="7.00" data-recipient="Referral" data-purpose="Affiliate Fee" data-log-id="R-006">
-                        <td>01 Nov 2023</td>
-                        <td>Referral</td>
-                        <td class="text-danger commission-amount">$7.00</td>
-                        <td>Affiliate Fee</td>
-                        <td><a href="#" class="view-log-btn" data-log-id="R-006">View Log R-006</a></td>
-                    </tr>
+                    @forelse(($orders ?? []) as $order)
+                        @php
+                            $split = $order->commission_split;
+                            $orderLabel = '#' . ($order->id ?? 'ORD');
+                            $dateStr = $order->created_at ? $order->created_at->format('d M Y') : ($order->order_date ?? 'N/A');
+                        @endphp
+                        <tr data-base-amount="{{ $split->seller ?? 0 }}" data-recipient="Seller" data-purpose="Core Commission ({{ $split->seller_pct ?? 60 }}%)" data-log-id="R-{{ $order->id }}-1">
+                            <td>{{ $orderLabel }} <small class="text-muted d-block">{{ $dateStr }}</small></td>
+                            <td>Seller</td>
+                            <td class="text-success commission-amount">₹ {{ number_format($split->seller ?? 0, 2) }}</td>
+                            <td>Core Commission ({{ $split->seller_pct ?? 60 }}%)</td>
+                            <td><a href="#" class="view-log-btn" data-log-id="R-{{ $order->id }}-1">View Log R-{{ $order->id }}-1</a></td>
+                        </tr>
+                        <tr data-base-amount="{{ $split->platform ?? 0 }}" data-recipient="Platform" data-purpose="Platform Fee ({{ $split->platform_pct ?? 30 }}%)" data-log-id="R-{{ $order->id }}-2">
+                            <td>{{ $orderLabel }} <small class="text-muted d-block">{{ $dateStr }}</small></td>
+                            <td>Platform</td>
+                            <td class="text-success commission-amount">₹ {{ number_format($split->platform ?? 0, 2) }}</td>
+                            <td>Platform Fee ({{ $split->platform_pct ?? 30 }}%)</td>
+                            <td><a href="#" class="view-log-btn" data-log-id="R-{{ $order->id }}-2">View Log R-{{ $order->id }}-2</a></td>
+                        </tr>
+                        <tr data-base-amount="{{ $split->referrer ?? 0 }}" data-recipient="Referral" data-purpose="Affiliate Fee ({{ $split->referrer_pct ?? 10 }}%)" data-log-id="R-{{ $order->id }}-3">
+                            <td>{{ $orderLabel }} <small class="text-muted d-block">{{ $dateStr }}</small></td>
+                            <td>Referral</td>
+                            <td class="text-danger commission-amount">₹ {{ number_format($split->referrer ?? 0, 2) }}</td>
+                            <td>Affiliate Fee ({{ $split->referrer_pct ?? 10 }}%)</td>
+                            <td><a href="#" class="view-log-btn" data-log-id="R-{{ $order->id }}-3">View Log R-{{ $order->id }}-3</a></td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">No commission split data available.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -617,12 +607,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 // Dynamic remarks based on log ID
                 let remarks = 'Auto settlement completed successfully.';
-                if (logId === 'R-001') remarks = 'Commission credited to seller account. Settlement ID: TXN-98765.';
-                if (logId === 'R-002') remarks = 'Platform fee deducted as per slab 5%. Reference: PLAT-FEE-23.';
-                if (logId === 'R-003') remarks = 'Affiliate commission paid. Referral program - Tier 2.';
-                if (logId === 'R-004') remarks = 'Seller core commission - Order #ORD-1122.';
-                if (logId === 'R-005') remarks = 'Platform service fee - settled via automatic clearing.';
-                if (logId === 'R-006') remarks = 'Affiliate payout completed to referral ID: REF-7788.';
+                if (logId.endsWith('-1')) remarks = 'Commission credited to seller account. Settlement ID: TXN-' + logId;
+                else if (logId.endsWith('-2')) remarks = 'Platform fee deducted as per slab rate.';
+                else if (logId.endsWith('-3')) remarks = 'Affiliate commission allocated for referral payout.';
                 
                 document.getElementById('modalRemarks').innerText = remarks;
                 document.getElementById('modalDate').innerText = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });

@@ -550,12 +550,16 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($locations->take(3) as $index => $loc)
+                            @forelse($locations->take(3) as $index => $loc)
                             <tr style="border-bottom:1px solid #f1f5f9;">
                                 <td class="py-1 text-start" style="font-weight: 500;">{{ $index+1 }}. {{ $loc->label }}</td>
                                 <td class="py-1 text-end" style="font-weight: 700;">{{ number_format($loc->value) }}</td>
                             </tr>
-                            @endforeach
+                            @empty
+                            <tr>
+                                <td colspan="2" class="text-center text-muted py-2 fw-normal">No location data found</td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -601,9 +605,9 @@
                     <h5 class="fw-bold mt-3" style="font-weight: 700;">Need Help?</h5>
                     <p class="text-muted" style="font-size: 13px; line-height: 1.5;">Check out our guide for maximizing your conversion strategy and resolving audits.</p>
                 </div>
-                <button class="help-center-btn">
+                <a href="{{ route('seller.grievance.list') }}" class="help-center-btn" style="text-decoration: none;">
                     <i class="fa-solid fa-lightbulb"></i> Help Center
-                </button>
+                </a>
             </div>
         </div>
     </div>
@@ -628,32 +632,19 @@
                     <tr>
                         <th>Date</th>
                         <th>Service</th>
-                        <th>Interaction Type</th>
+                        <th>Platform</th>
                         <th>Buyer Source</th>
                         <th>Charge Amount</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($billingHistory as $b)
+                    @forelse($billingHistory as $b)
                     <tr>
                         <td>{{ $b->date }}</td>
                         <td style="font-weight: 600;">{{ $b->service }}</td>
                         <td>
-                            <div class="icon-box-interaction">
-                                @if($b->interaction == 'View Contact')
-                                    <i class="fa-solid fa-address-book" style="color:var(--info);"></i>
-                                @elseif($b->interaction == 'WhatsApp Click')
-                                    <i class="fa-brands fa-whatsapp" style="color:var(--success);"></i>
-                                @elseif($b->interaction == 'Call Click')
-                                    <i class="fa-solid fa-phone" style="color:var(--primary);"></i>
-                                @elseif($b->interaction == 'Website Visit')
-                                    <i class="fa-solid fa-globe" style="color:var(--warning);"></i>
-                                @else
-                                    <i class="fa-solid fa-download" style="color:var(--text-secondary);"></i>
-                                @endif
-                                <span>{{ $b->interaction }}</span>
-                            </div>
+                            <span class="badge bg-primary rounded-pill text-white" style="font-weight: 500; padding: 5px 12px;">Vshop</span>
                         </td>
                         <td>
                             <span class="fw-bold" style="display:inline-flex; align-items:center; gap:6px;">
@@ -678,7 +669,11 @@
                             </span>
                         </td>
                     </tr>
-                    @endforeach
+                    @empty
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4 fw-semibold">No lead or click billing history found for this seller.</td>
+                    </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

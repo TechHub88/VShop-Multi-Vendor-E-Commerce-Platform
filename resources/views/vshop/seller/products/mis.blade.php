@@ -2704,12 +2704,12 @@ boostPerformanceChart.setOption({
     yAxis: [
         {
             type: 'value',
-            name: 'Ad Spend ($)',
+            name: 'Ad Spend (₹)',
             min: 0,
             max: 800,
             interval: 200,
             axisLabel: {
-                formatter: '${value}'
+                formatter: '₹{value}'
             }
         },
         {

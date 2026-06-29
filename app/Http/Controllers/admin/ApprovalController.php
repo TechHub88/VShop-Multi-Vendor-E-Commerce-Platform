@@ -113,10 +113,43 @@ public function products(Request $request)
         $types = ['product'];
     }
 
-    $items = MarketplaceCategory::with('seller')
+    $rawCategories = MarketplaceCategory::with('seller')
                 ->whereIn('type', $types)
                 ->latest()
                 ->get();
+
+    // Group categories by distinct trimmed name
+    $grouped = $rawCategories->groupBy(function($cat) {
+        return trim($cat->name ?? 'Uncategorized');
+    });
+
+    $items = collect();
+
+    foreach ($grouped as $categoryName => $group) {
+        $first = $group->first();
+        $sellers = $group->pluck('seller')->filter()->unique('id')->values();
+        $sellerCount = $sellers->count();
+        
+        $statuses = $group->map(fn($c) => $c->approval_status)->toArray();
+        if (in_array('pending', $statuses)) {
+            $groupStatus = 'pending';
+        } elseif (in_array('approved', $statuses)) {
+            $groupStatus = 'approved';
+        } else {
+            $groupStatus = 'rejected';
+        }
+
+        $item = new \stdClass();
+        $item->id = $first->id;
+        $item->name = $categoryName;
+        $item->type = $first->type;
+        $item->approval_status = $groupStatus;
+        $item->seller_count = $sellerCount;
+        $item->sellers = $sellers;
+        $item->seller = $first->seller;
+
+        $items->push($item);
+    }
 
     return view('admin.approval.categories', compact('items'));
 }
@@ -157,17 +190,21 @@ public function products(Request $request)
             ], 400);
         }
 
-        $model->approval_status = $request->status;
-        $model->save();
+        // Update all categories with the same name across all sellers
+        $matchingCategories = MarketplaceCategory::where('name', $model->name)->get();
+        foreach ($matchingCategories as $catItem) {
+            $catItem->approval_status = $request->status;
+            $catItem->save();
 
-        if ($model->seller_id) {
-            NotificationService::notify(
-                $model->seller_id,
-                'seller',
-                'product',
-                "Your category '{$model->name}' has been " . $request->status . " by admin.",
-                route('seller.categories.index')
-            );
+            if ($catItem->seller_id) {
+                NotificationService::notify(
+                    $catItem->seller_id,
+                    'seller',
+                    'product',
+                    "Your category '{$catItem->name}' has been " . $request->status . " by admin.",
+                    route('seller.categories.index')
+                );
+            }
         }
 
         return response()->json(['success' => true]);
@@ -409,7 +446,9 @@ public function products(Request $request)
             return response()->json([
                 'success' => true,
                 'message' => 'Product ' . $newStatus . ' successfully',
-                'redirect' => route('admin.approval.products')
+                'status' => $newStatus,
+                'status_text' => ucfirst($newStatus),
+                'redirect' => route('admin.approval.verify', $product->id)
             ]);
             
         } catch (\Exception $e) {
@@ -1292,6 +1331,71 @@ public function saveAdminNotes(Request $request, $id)
     $product->save();
     
     return response()->json(['success' => true]);
+}
+
+// Auto save verification checklist & update product status
+public function autoSaveChecklist(Request $request, $id)
+{
+    $product = Product::findOrFail($id);
+
+    $checklist = [
+        'basic_check' => [
+            'title_quality' => $request->title_quality ?? null,
+            'description_quality' => $request->description_quality ?? null,
+            'category_correctness' => $request->category_correctness ?? null,
+            'organizer_authenticity' => $request->organizer_authenticity ?? null,
+        ],
+        'media_validation' => [
+            'image_quality' => $request->image_quality ?? null,
+            'video_link_validity' => $request->video_link_validity ?? null,
+            'content_compliance' => $request->content_compliance ?? null,
+        ],
+        'details_validation' => [
+            'itinerary_clarity' => $request->itinerary_clarity ?? null,
+            'inclusion_exclusion' => $request->inclusion_exclusion ?? null,
+            'refund_policy_clarity' => $request->refund_policy_clarity ?? null,
+        ],
+        'seo_check' => [
+            'tags_relevance' => $request->tags_relevance ?? null,
+            'keyword_quality' => $request->keyword_quality ?? null,
+            'no_spam' => $request->no_spam ?? null,
+        ],
+        'pricing_validation' => [
+            'price_reasonability' => $request->price_reasonability ?? null,
+            'discount_logic' => $request->discount_logic ?? null,
+            'tax_calculation' => $request->tax_calculation ?? null,
+            'net_total_correctness' => $request->net_total_correctness ?? null,
+        ]
+    ];
+
+    $product->verification_checklist = json_encode($checklist);
+    
+    $totalChecks = 0;
+    $passedChecks = 0;
+    foreach ($checklist as $group) {
+        foreach ($group as $val) {
+            $totalChecks++;
+            if ($val === 'pass') $passedChecks++;
+        }
+    }
+    
+    // Auto update status to approved when parameters are approved
+    if ($passedChecks > 0) {
+        $product->status = 'approved';
+        $product->verification_status = 'verified';
+        $product->verified_at = now();
+        $product->verified_by = auth()->id();
+    }
+    
+    $product->save();
+
+    return response()->json([
+        'success' => true,
+        'status' => $product->status,
+        'status_text' => ucfirst($product->status),
+        'passed_count' => $passedChecks,
+        'total_count' => $totalChecks
+    ]);
 }
 
 // Validate auto order

@@ -260,17 +260,59 @@ series:[{type:'pie',radius:'70%',data:[
 
 /* AOV */
 echarts.init(document.getElementById('aovChart')).setOption({
-series:[{type:'gauge',progress:{show:true},detail:{formatter:'₹ {value}'},data:[{value:2500}]}]
+    series: [{
+        type: 'gauge',
+        startAngle: 180, endAngle: 0,
+        min: 0, max: 10000,
+        radius: '100%',
+        center: ['50%', '75%'],
+        pointer: { show: true, length: '60%', width: 4 },
+        progress: { show: true, width: 12, itemStyle: {color: '#4e73df'} },
+        axisLine: { lineStyle: { width: 12, color: [[1, '#eaecf4']] } },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        detail: { fontSize: 22, offsetCenter: [0, '20%'], formatter: '₹ {value}', color: '#333', fontWeight: '800' },
+        data: [{value: 2500}]
+    }]
 });
 
 /* REFUND */
 echarts.init(document.getElementById('refundChart')).setOption({
-series:[{type:'gauge',progress:{show:true},detail:{formatter:'{value}%'},data:[{value:3.1}]}]
+    series: [{
+        type: 'gauge',
+        startAngle: 180, endAngle: 0,
+        min: 0, max: 10,
+        radius: '100%',
+        center: ['50%', '75%'],
+        pointer: { show: true, length: '60%', width: 4 },
+        progress: { show: true, width: 12, itemStyle: {color: '#e74a3b'} },
+        axisLine: { lineStyle: { width: 12, color: [[1, '#eaecf4']] } },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        detail: { fontSize: 22, offsetCenter: [0, '20%'], formatter: '{value}%', color: '#333', fontWeight: '800' },
+        data: [{value: 3.1}]
+    }]
 });
 
 /* CANCEL */
 echarts.init(document.getElementById('cancelChart')).setOption({
-series:[{type:'gauge',progress:{show:true},detail:{formatter:'{value}%'},data:[{value:2.4}]}]
+    series: [{
+        type: 'gauge',
+        startAngle: 180, endAngle: 0,
+        min: 0, max: 10,
+        radius: '100%',
+        center: ['50%', '75%'],
+        pointer: { show: true, length: '60%', width: 4 },
+        progress: { show: true, width: 12, itemStyle: {color: '#f6c23e'} },
+        axisLine: { lineStyle: { width: 12, color: [[1, '#eaecf4']] } },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: { show: false },
+        detail: { fontSize: 22, offsetCenter: [0, '20%'], formatter: '{value}%', color: '#333', fontWeight: '800' },
+        data: [{value: 2.4}]
+    }]
 });
 
 /* PROMO */

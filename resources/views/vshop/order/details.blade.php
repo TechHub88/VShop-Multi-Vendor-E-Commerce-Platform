@@ -91,43 +91,164 @@
                         <div class="payment-method-sec">
     <div class="row align-items-center">
 
-        {{-- Payment Method --}}
-        <div class="col-md-4">
-            <p><strong>Payment Method:</strong> {{ ucfirst($order->payment_method) }}</p>
+        <div class="col-md-3">
+            <p style="font-size: 13px;"><strong>Payment Method:</strong> {{ ucfirst($order->payment_method) }}</p>
         </div>
 
-        {{-- Payment Status --}}
-        <div class="col-md-4">
-            <p><strong>Payment Status:</strong> 
-                <span class="badge text-black {{ $paymentStatusClasses[$order->payment_status] ?? 'badge-secondary' }}">
+        <div class="col-md-3">
+            <p style="font-size: 13px;"><strong>Payment Status:</strong> 
+                <span class="badge text-black {{ $paymentStatusClasses[$order->payment_status] ?? 'badge-secondary' }}" style="font-size: 11px;">
                     {{ ucfirst($order->payment_status) }}
                 </span>
             </p>
         </div>
 
-       <div class="col-md-4 text-md-end">
+       <div class="col-md-6 text-md-end">
     
-    <div class="d-inline-flex align-items-center gap-2">
+    <div class="d-inline-flex align-items-center gap-2 flex-nowrap" style="overflow-x: auto; white-space: nowrap; padding-bottom: 5px;">
 
         {{-- Invoice --}}
-        <button class="invoice-btn" onclick="downloadInvoice({{ $order->id }})">
-            <i class="fa-regular fa-file-pdf me-2"></i>Download Invoice
+        <button class="btn btn-primary btn-sm invoice-btn rounded-pill px-3 fw-bold" style="font-size:12px;" onclick="downloadInvoice({{ $order->id }})">
+            <i class="fa-regular fa-file-pdf me-1"></i>Invoice
         </button>
 
-        {{-- Cancel --}}
-        @if(in_array($order->status, ['pending','paid','shipped']))
-        <button class="btn btn-danger btn-sm cancelOrderBtn" data-id="{{ $order->id }}">
-            Cancel Order
+        {{-- ===== CANCEL ORDER BUTTON ===== --}}
+        @php
+            $statusLower = strtolower($order->status);
+            $canCancel = in_array($statusLower, ['pending', 'processing', 'approved', 'paid', 'confirmed']);
+            $isOutForDelivery = in_array($statusLower, ['out for delivery', 'out_for_delivery', 'shipped', 'dispatched']);
+            $isDelivered = in_array($statusLower, ['delivered', 'completed']);
+        @endphp
+
+        @if($canCancel)
+        <button class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold" style="font-size:12px;" data-id="{{ $order->id }}">
+            <i class="fa-solid fa-ban me-1"></i> Cancel
+        </button>
+        @elseif($isOutForDelivery)
+        <button class="btn btn-danger btn-sm cancelOrderBtn rounded-pill px-3" style="font-size:12px;" onclick="showCancelNotPossible()">
+            <i class="fa-solid fa-ban me-1"></i> Cancel
         </button>
         @endif
 
-        {{-- Return --}}
-        @if($order->status == 'delivered')
-        <button class="btn btn-warning btn-sm returnOrderBtn" data-id="{{ $order->id }}">
-            Return Order
-        </button>
-        @endif
+         {{-- ================= RETURN / RATE ORDER (Global Buttons) ================= --}}
+         @if(in_array($order->status, ['delivered', 'shipped']))
+             <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#returnOrderModal">
+                 <i class="fa-solid fa-arrow-rotate-left me-1"></i> Return
+             </button>
+             <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#rateOrderModal">
+                 <i class="fa-solid fa-star me-1"></i> Rate
+             </button>
+         {{-- MODALS FOR ENTIRE ORDER --}}
+         <!-- Return Modal -->
+         <div class="modal fade" id="returnOrderModal" tabindex="-1" aria-hidden="true">
+             <div class="modal-dialog modal-dialog-centered">
+                 <div class="modal-content shadow-lg border-0" style="border-radius: 16px;">
+                     <div class="modal-header border-0 pb-0 pt-4 px-4 text-center d-block position-relative">
+                         <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+                         <div class="mb-3">
+                             <div class="d-inline-flex align-items-center justify-content-center bg-warning text-white rounded-circle" style="width: 60px; height: 60px; font-size: 24px;">
+                                 <i class="fa-solid fa-arrow-rotate-left"></i>
+                             </div>
+                         </div>
+                         <h4 class="modal-title fw-bold">Return Items</h4>
+                         <p class="text-muted small mb-0">Select the item you wish to return from this order</p>
+                     </div>
+                     <div class="modal-body p-4">
+                         <form action="{{ route('vshop.order.action') }}" method="POST" enctype="multipart/form-data" class="ajax-action-form">
+                             @csrf
+                             <input type="hidden" name="order_id" value="{{ $order->id }}">
+                             <input type="hidden" name="type" value="return">
+                             
+                             <div class="mb-3">
+                                 <label class="form-label fw-semibold text-dark" style="font-size: 14px;">Select Product to Return</label>
+                                 <select name="product_id" class="form-select bg-light" required style="border-radius: 8px;">
+                                     <option value="">-- Choose Product --</option>
+                                     @foreach($order->items as $prodItem)
+                                         <option value="{{ $prodItem->product_id }}">{{ $prodItem->product_name ?? $prodItem->product->name ?? 'Item' }} (Qty: {{ $prodItem->quantity }})</option>
+                                     @endforeach
+                                 </select>
+                             </div>
 
+                             <div class="mb-3">
+                                 <label class="form-label fw-semibold text-dark" style="font-size: 14px;">Reason for Return</label>
+                                 <select name="reason" class="form-select bg-light" required style="border-radius: 8px;">
+                                     <option value="">-- Select Reason --</option>
+                                     <option value="Damaged Product">Damaged Product</option>
+                                     <option value="Wrong Item">Wrong Item</option>
+                                     <option value="Other">Other</option>
+                                 </select>
+                             </div>
+                             
+                             <div class="mb-3">
+                                 <label class="form-label fw-semibold text-dark" style="font-size: 14px;">Attachment (If damaged)</label>
+                                 <input type="file" name="attachment" class="form-control bg-light" style="border-radius: 8px;">
+                             </div>
+                             
+                             <div class="mb-4">
+                                 <label class="form-label fw-semibold text-dark" style="font-size: 14px;">Additional Note</label>
+                                 <textarea name="note" class="form-control bg-light" rows="2" style="border-radius: 8px;" placeholder="Tell us more about the issue..."></textarea>
+                             </div>
+                             
+                             <button type="submit" class="btn btn-warning w-100 fw-bold py-2 text-dark" style="border-radius: 8px; font-size: 16px;">Submit Return Request</button>
+                         </form>
+                     </div>
+                 </div>
+             </div>
+         </div>
+
+         <!-- Rate Modal -->
+         <div class="modal fade" id="rateOrderModal" tabindex="-1" aria-hidden="true">
+             <div class="modal-dialog modal-dialog-centered">
+                 <div class="modal-content shadow-lg border-0" style="border-radius: 16px;">
+                     <div class="modal-header border-0 pb-0 pt-4 px-4 text-center d-block position-relative">
+                         <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+                         <div class="mb-3">
+                             <div class="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-circle" style="width: 60px; height: 60px; font-size: 24px;">
+                                 <i class="fa-solid fa-star"></i>
+                             </div>
+                         </div>
+                         <h4 class="modal-title fw-bold">Rate a Product</h4>
+                         <p class="text-muted small mb-0">Share your experience with us!</p>
+                     </div>
+                     <div class="modal-body p-4">
+                         <form action="{{ route('vshop.order.action') }}" method="POST" class="ajax-action-form">
+                             @csrf
+                             <input type="hidden" name="order_id" value="{{ $order->id }}">
+                             <input type="hidden" name="type" value="rate">
+                             <input type="hidden" name="rating" class="rating-value" value="5">
+                             
+                             <div class="mb-4">
+                                 <label class="form-label fw-semibold text-dark" style="font-size: 14px;">Select Product to Rate</label>
+                                 <select name="product_id" class="form-select bg-light" required style="border-radius: 8px;">
+                                     @foreach($order->items as $prodItem)
+                                         <option value="{{ $prodItem->product_id }}">{{ $prodItem->product_name ?? $prodItem->product->name ?? 'Item' }}</option>
+                                     @endforeach
+                                 </select>
+                             </div>
+
+                             <div class="mb-4 text-center">
+                                 <h6 class="fw-semibold mb-2 text-dark">Your Rating</h6>
+                                 <span class="rating-stars d-inline-block p-2 rounded" style="font-size: 28px; cursor: pointer; background: #f8f9fa;">
+                                     <i class="fa-solid fa-star text-warning" data-val="1"></i>
+                                     <i class="fa-solid fa-star text-warning" data-val="2"></i>
+                                     <i class="fa-solid fa-star text-warning" data-val="3"></i>
+                                     <i class="fa-solid fa-star text-warning" data-val="4"></i>
+                                     <i class="fa-solid fa-star text-warning" data-val="5"></i>
+                                 </span>
+                             </div>
+                             
+                             <div class="mb-4">
+                                 <label class="form-label fw-semibold text-dark" style="font-size: 14px;">Write a Review</label>
+                                 <textarea name="review" class="form-control bg-light" rows="3" style="border-radius: 8px;" placeholder="Tell us what you think..."></textarea>
+                             </div>
+                             
+                             <button type="submit" class="btn btn-primary w-100 fw-bold py-2" style="border-radius: 8px; font-size: 16px;">Submit Review</button>
+                         </form>
+                     </div>
+                 </div>
+             </div>
+         </div>
+         @endif
     </div>
 
 </div>
@@ -285,47 +406,7 @@
                                 </div>
                             </div>
 
-                            {{-- ================= RETURN/REPLACE/RATING SECTION ================= --}}
-                            @if(in_array($order->status, ['delivered', 'shipped']))
-                            <div class="return-replace-sec">
-                                <ul class="tabs">
-                                    <li data-tab-target="#return-{{ $item->id }}" class="active tab">Return</li>
-                                    <li data-tab-target="#replace-{{ $item->id }}" class="tab">Replace</li>
-                                    <li data-tab-target="#rate-{{ $item->id }}" class="tab">
-                                        Rate this Product 
-                                        <span class="rating-stars">
-                                            <i class="fa-regular fa-star"></i>
-                                            <i class="fa-regular fa-star"></i>
-                                            <i class="fa-regular fa-star"></i>
-                                            <i class="fa-regular fa-star"></i>
-                                            <i class="fa-regular fa-star"></i>
-                                        </span>
-                                    </li>
-                                    <li>
-                                        <button class="re-order-btn" onclick="reorderItem({{ $item->product_id }})">
-                                            <i class="fa-regular fa-rotate-right me-2"></i>Re-Order
-                                        </button>
-                                    </li>
-                                </ul>
-
-                                <div class="tab-content">
-                                    {{-- RETURN TAB --}}
-                                    <div id="return-{{ $item->id }}" data-tab-content class="active">
-                                        @include('vshop.order.partials.return-form', ['item' => $item, 'type' => 'return'])
-                                    </div>
-
-                                    {{-- REPLACE TAB --}}
-                                    <div id="replace-{{ $item->id }}" data-tab-content>
-                                        @include('vshop.order.partials.return-form', ['item' => $item, 'type' => 'replace'])
-                                    </div>
-
-                                    {{-- RATING TAB --}}
-                                    <div id="rate-{{ $item->id }}" data-tab-content>
-                                        @include('vshop.order.partials.rating-form', ['item' => $item])
-                                    </div>
-                                </div>
-                            </div>
-                            @endif
+                          
 
                             {{-- ================= RETURN STATUS (if returned) ================= --}}
                             @if($item->return_status ?? false)
@@ -405,33 +486,7 @@
 
                      
 
-{{-- If billing address is same as shipping address, show this message instead --}}
-@if($order->shippingAddress && (!$order->billingAddress || $order->billingAddress->id == $order->shippingAddress->id))
-<div class="billing-address-sec mt-4">
-    <div class="address-header">
-        <h4><i class="fa-solid fa-file-invoice"></i>Billing Address</h4>
-        <span class="address-type-badge badge-same">
-            <i class="fa-solid fa-circle-check"></i>Same as Shipping
-        </span>
-    </div>
-    
-    <div class="address-content p-3 bg-light rounded">
-        <p class="mb-0">
-            <i class="fa-solid fa-circle-check"></i>
-            Billing address is the same as shipping address.
-        </p>
-        @if($order->shippingAddress->gstin)
-        <p class="mb-0 mt-2">
-            <span class="gst-badge">
-                <i class="fa-solid fa-file-invoice"></i>GSTIN: {{ $order->shippingAddress->gstin }}
-            </span>
-        </p>
-        @endif
-    </div>
-</div>
-@endif
 
-<!-- TRACK ORDER MODAL -->
 <div class="modal fade" id="trackOrderModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content shadow-lg border-0 rounded-3">
@@ -484,22 +539,30 @@
                             <small class="text-muted">{{ $order->updated_at->format('d M, h:i A') }}</small>
                         </div>
                     @else
-                        <div class="track-box {{ in_array($order->status, ['pending', 'paid', 'confirmed', 'processing', 'shipped', 'dispatched', 'delivered', 'return_requested', 'return_approved', 'returned', 'replacement_requested', 'replacement_approved']) ? 'active' : '' }}">
+                        @php
+                            $st = strtolower($order->status);
+                            $confirmedStatuses = ['pending','paid','confirmed','processing','approved','shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved'];
+                            $packedStatuses = ['processing','approved','shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved'];
+                            $shippedStatuses = ['shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved'];
+                            $deliveredStatuses = ['delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved'];
+                            $allDone = in_array($st, ['delivered','completed']);
+                        @endphp
+                        <div class="track-box {{ in_array($st, $confirmedStatuses) ? 'active' : '' }} {{ $allDone ? 'completed-green' : '' }}">
                             <div class="track-icon"><i class="fa-solid fa-clipboard-check"></i></div>
                             <p class="mt-2 fw-semibold">Confirmed</p>
                             <small class="text-muted">{{ $order->created_at->format('d M, h:i A') }}</small>
                         </div>
-                        <div class="track-box {{ in_array($order->status, ['processing', 'shipped', 'dispatched', 'delivered', 'return_requested', 'return_approved', 'returned', 'replacement_requested', 'replacement_approved']) ? 'active' : '' }}">
+                        <div class="track-box {{ in_array($st, $packedStatuses) ? 'active' : '' }} {{ $allDone ? 'completed-green' : '' }}">
                             <div class="track-icon"><i class="fa-solid fa-box-open"></i></div>
                             <p class="mt-2 fw-semibold">Packed</p>
                             <small class="text-muted">{{ $order->updated_at->format('d M') }}</small>
                         </div>
-                        <div class="track-box {{ in_array($order->status, ['shipped', 'dispatched', 'delivered', 'return_requested', 'return_approved', 'returned', 'replacement_requested', 'replacement_approved']) ? 'active' : '' }}">
+                        <div class="track-box {{ in_array($st, $shippedStatuses) ? 'active' : '' }} {{ $allDone ? 'completed-green' : '' }}">
                             <div class="track-icon"><i class="fa-solid fa-truck-fast"></i></div>
                             <p class="mt-2 fw-semibold">Shipped</p>
                             <small class="text-muted">{{ $order->shipped_at ? $order->shipped_at->format('d M, h:i A') : 'Pending' }}</small>
                         </div>
-                        <div class="track-box {{ in_array($order->status, ['delivered', 'return_requested', 'return_approved', 'returned', 'replacement_requested', 'replacement_approved']) ? 'active' : '' }}">
+                        <div class="track-box {{ in_array($st, $deliveredStatuses) ? 'active' : '' }} {{ $allDone ? 'completed-green' : '' }}">
                             <div class="track-icon"><i class="fa-solid fa-house-chimney"></i></div>
                             <p class="mt-2 fw-semibold">Delivered</p>
                             <small class="text-muted">{{ $order->delivered_at ? $order->delivered_at->format('d M, h:i A') : 'Pending' }}</small>
@@ -556,7 +619,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            <form id="orderActionForm">
+            <form id="orderActionForm" enctype="multipart/form-data">
                 @csrf
 
                 <input type="hidden" name="order_id" id="modal_order_id">
@@ -568,18 +631,39 @@
                     {{-- REASON --}}
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Select Reason</label>
-                        <select name="reason" class="form-select shadow-sm">
-                            <option value="">-- Choose Reason --</option>
-                            <option value="Changed mind">Changed mind</option>
-                            <option value="Wrong item ordered">Wrong item ordered</option>
-                            <option value="Found cheaper elsewhere">Found cheaper elsewhere</option>
-                            <option value="Product damaged">Product damaged</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <div class="list-group">
+                            <label class="list-group-item d-flex gap-2">
+                                <input class="form-check-input flex-shrink-0 reason-radio" type="radio" name="reason" value="Changed mind">
+                                <span>Changed mind</span>
+                            </label>
+                            <label class="list-group-item d-flex gap-2">
+                                <input class="form-check-input flex-shrink-0 reason-radio" type="radio" name="reason" value="Wrong item ordered">
+                                <span>Wrong item ordered</span>
+                            </label>
+                            <label class="list-group-item d-flex gap-2">
+                                <input class="form-check-input flex-shrink-0 reason-radio" type="radio" name="reason" value="Found cheaper elsewhere">
+                                <span>Found cheaper elsewhere</span>
+                            </label>
+                            <label class="list-group-item d-flex gap-2">
+                                <input class="form-check-input flex-shrink-0 reason-radio" type="radio" name="reason" value="Product damaged">
+                                <span>Product damaged</span>
+                            </label>
+                            <label class="list-group-item d-flex gap-2">
+                                <input class="form-check-input flex-shrink-0 reason-radio" type="radio" name="reason" value="Other">
+                                <span>Other</span>
+                            </label>
+                        </div>
                     </div>
 
-                    {{-- NOTE --}}
-                    <div class="mb-2">
+                    {{-- FILE UPLOAD (Hidden by default, shown for Damaged) --}}
+                    <div class="mb-3 d-none" id="attachmentWrapper">
+                        <label class="form-label fw-semibold">Attach Image/File</label>
+                        <input type="file" name="attachment" class="form-control shadow-sm" accept="image/*,application/pdf">
+                        <small class="text-muted">Please attach proof (image/pdf) of the damaged product.</small>
+                    </div>
+
+                    {{-- NOTE (Hidden by default, shown for Other) --}}
+                    <div class="mb-2 d-none" id="noteWrapper">
                         <label class="form-label fw-semibold">Additional Note</label>
                         <textarea name="note" class="form-control shadow-sm" rows="3"
                             placeholder="Write your reason or additional details..."></textarea>
@@ -610,22 +694,64 @@
 
 @push('scripts')
 <style>
+.order-list-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+    transition: box-shadow 0.3s ease;
+}
 
-/* SAME SIZE BUTTON FIX */
+.order-list-wrapper:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.order-list-box {
+    flex: 1;
+}
+
+.order-list-box:nth-child(2) {
+    text-align: center;
+}
+
+.order-list-box:nth-child(3) {
+    text-align: right;
+}
+
+.order-list-box h3 a {
+    color: #333;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.order-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.order-badge.delivered { background: #d4edda; color: #155724; }
+.order-badge.dispatched { background: #cce5ff; color: #004085; }
+.order-badge.pending { background: #fff3cd; color: #856404; }
+.order-badge.cancelled { background: #f8d7da; color: #721c24; }
+.order-badge.return { background: #f8d7da; color: #721c24; }
+/* SMALL BUTTONS FIX */
 .invoice-btn,
-.cancelOrderBtn {
-    height: 42px;
-    padding: 0 16px;
+.cancelOrderBtn,
+.returnOrderBtn {
+    height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     white-space: nowrap;
-}
-
-/* OPTIONAL: width same karna ho */
-.invoice-btn,
-.cancelOrderBtn {
-    min-width: 140px;
 }
 .cart-list-left-img{
     width:200x;
@@ -812,10 +938,27 @@ $(document).ready(function(){
         $('#orderActionModal').modal('show');
     });
 
-    // SUBMIT FORM (AJAX)
-    $('#orderActionForm').submit(function(e){
+    // REASON RADIO CHANGE
+    $('.reason-radio').change(function() {
+        const val = $(this).val();
+        if (val === 'Other') {
+            $('#noteWrapper').removeClass('d-none');
+            $('#attachmentWrapper').addClass('d-none');
+        } else if (val === 'Product damaged') {
+            $('#noteWrapper').addClass('d-none');
+            $('#attachmentWrapper').removeClass('d-none');
+        } else {
+            $('#noteWrapper').addClass('d-none');
+            $('#attachmentWrapper').addClass('d-none');
+        }
+    });
+
+    // SUBMIT FORM (AJAX with FormData)
+    $('.ajax-action-form').on('submit', function(e){
         e.preventDefault();
         
+        let formData = new FormData(this);
+
         Swal.fire({
             title: 'Processing...',
             text: 'Sending your request',
@@ -828,7 +971,9 @@ $(document).ready(function(){
         $.ajax({
             url: "{{ route('vshop.order.action') }}",
             type: "POST",
-            data: $(this).serialize(),
+            data: formData,
+            contentType: false,
+            processData: false,
             success: function(res){
                 Swal.fire({
                     icon: 'success',
@@ -904,18 +1049,30 @@ $(document).ready(function() {
 
     // Rating stars click
     $('.rating-stars i').click(function() {
-        var rating = $(this).index() + 1;
-        $(this).parent().find('i').each(function(i) {
-            if(i < rating) {
-                $(this).removeClass('fa-regular').addClass('fa-solid text-warning');
+        var clickedRating = parseInt($(this).attr('data-val'));
+        
+        // Update the visual stars
+        $(this).parent().find('i').each(function() {
+            var currentVal = parseInt($(this).attr('data-val'));
+            if(currentVal <= clickedRating) {
+                $(this).removeClass('fa-regular text-muted').addClass('fa-solid text-warning');
             } else {
-                $(this).removeClass('fa-solid text-warning').addClass('fa-regular');
+                $(this).removeClass('fa-solid text-warning').addClass('fa-regular text-muted');
             }
         });
-        // Store rating value in a hidden input
-        $(this).closest('.tab').find('.rating-value').val(rating);
+        
+        // Store rating value in the hidden input of the closest form
+        $(this).closest('form').find('.rating-value').val(clickedRating);
     });
 });
+
+function showCancelNotPossible() {
+    Swal.fire({
+        icon: 'error',
+        title: 'Cancellation Not Available',
+        text: 'Order cancellation is not available as your order is already out for delivery.'
+    });
+}
 
 // Download invoice function
 function downloadInvoice(orderId) {

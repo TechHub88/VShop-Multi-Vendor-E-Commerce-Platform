@@ -369,10 +369,10 @@
                                 @endif
                             </td>
                             <td id="payment-{{ $order->id }}">
-                                @if($order->payment_completed_at)
+                                @if(in_array(strtolower($order->payment_status), ['paid', 'completed', 'success']))
                                     <span class="stage-completed">
                                         <i class="fa-regular fa-credit-card me-1"></i>
-                                        {{ \Carbon\Carbon::parse($order->payment_completed_at)->format('d M Y') }}
+                                        {{ $order->updated_at->format('d M Y') }}
                                     </span>
                                     <small class="d-block text-muted">
                                         {{ $order->payment_method ?? $order->payment_type ?? 'N/A' }}
@@ -387,13 +387,13 @@
                                 @endif
                             </td>
                             <td id="dispatch-{{ $order->id }}">
-                                @if($order->dispatched_at)
+                                @if($order->shipped_at || in_array(strtolower($order->status), ['shipped', 'out_for_delivery', 'delivered', 'completed']))
                                     <span class="stage-completed">
                                         <i class="fa-solid fa-truck-fast me-1"></i>
-                                        {{ $order->dispatched_at->format('d M Y') }}
+                                        {{ $order->shipped_at ? \Carbon\Carbon::parse($order->shipped_at)->format('d M Y') : $order->updated_at->format('d M Y') }}
                                     </span>
                                     <small class="d-block text-muted">
-                                        {{ $order->courier ?? 'N/A' }}
+                                        {{ $order->courier_name ?? $order->shipping_method ?? 'Standard' }}
                                         @if($order->tracking_id)
                                             <br>Tracking: {{ $order->tracking_id }}
                                         @endif
@@ -405,13 +405,13 @@
                                 @endif
                             </td>
                             <td id="delivery-{{ $order->id }}">
-                                @if($order->delivered_at)
+                                @if($order->delivered_at || in_array(strtolower($order->status), ['delivered', 'completed']))
                                     <span class="stage-completed">
                                         <i class="fa-regular fa-circle-check me-1"></i>
-                                        {{ \Carbon\Carbon::parse($order->delivered_at)->format('d M Y') }}
+                                        {{ $order->delivered_at ? \Carbon\Carbon::parse($order->delivered_at)->format('d M Y') : $order->updated_at->format('d M Y') }}
                                     </span>
                                     <small class="d-block text-muted">
-                                        Received by: {{ $order->received_by ?? 'Customer' }}
+                                        Received by: Customer
                                     </small>
                                 @else
                                     <span class="stage-missing">
@@ -420,10 +420,10 @@
                                 @endif
                             </td>
                             <td id="closure-{{ $order->id }}">
-                                @if($order->closed_at)
+                                @if(in_array(strtolower($order->status), ['delivered', 'completed']))
                                     <span class="stage-completed">
                                         <i class="fa-regular fa-circle-check me-1"></i>
-                                        {{ \Carbon\Carbon::parse($order->closed_at)->format('d M Y') }}
+                                        Closed
                                     </span>
                                 @elseif($order->status == 'cancelled')
                                     <span class="stage-missing">
@@ -596,7 +596,7 @@ function renderTable(orders) {
             if(order.status === 'delivered' || order.status === 'completed') {
                 statusClass = 'status-delivered';
                 statusText = 'Delivered';
-            } else if(order.status === 'shipped') {
+            } else if(order.status === 'shipped' || order.status === 'out_for_delivery') {
                 statusClass = 'status-shipped';
                 statusText = 'Shipped';
             } else if(order.status === 'processing') {
@@ -607,15 +607,21 @@ function renderTable(orders) {
                 statusText = 'Cancelled';
             }
             
+            let paymentIsDone = ['paid', 'completed', 'success'].includes((order.payment_status || '').toLowerCase());
+            let dispatchIsDone = order.shipped_at || ['shipped', 'out_for_delivery', 'delivered', 'completed'].includes((order.status || '').toLowerCase());
+            let deliveryIsDone = order.delivered_at || ['delivered', 'completed'].includes((order.status || '').toLowerCase());
+            let isClosed = ['delivered', 'completed'].includes((order.status || '').toLowerCase());
+            let isCancelled = order.status == 'cancelled';
+            
             html += `
                 <tr class="order-row" data-order-id="${order.id}" onclick="showOrderDetails(${order.id})">
                     <td><span class="fw-semibold text-primary">#${order.id}</span><small class="d-block text-muted">${order.order_number || 'N/A'}</small></td>
                     <td><div>${order.customer?.name || 'N/A'}</div><small class="text-muted">${order.customer?.phone || ''}</small></td>
                     <td>${order.created_at ? `<span class="stage-completed"><i class="fa-regular fa-calendar-check me-1"></i>${new Date(order.created_at).toLocaleDateString()}</span><small class="d-block text-muted">${new Date(order.created_at).toLocaleTimeString()}</small>` : '<span class="stage-missing"><i class="fa-regular fa-clock me-1"></i>Not recorded</span>'}</td>
-                    <td>${order.payment_completed_at ? `<span class="stage-completed"><i class="fa-regular fa-credit-card me-1"></i>${new Date(order.payment_completed_at).toLocaleDateString()}</span><small class="d-block text-muted">${order.payment_method || order.payment_type || 'N/A'}${order.transaction_id ? '<br>ID: '+order.transaction_id : ''}</small>` : '<span class="stage-missing"><i class="fa-regular fa-hourglass-half me-1"></i>Pending</span>'}</td>
-                    <td>${order.dispatched_at ? `<span class="stage-completed"><i class="fa-solid fa-truck-fast me-1"></i>${new Date(order.dispatched_at).toLocaleDateString()}</span><small class="d-block text-muted">${order.courier || 'N/A'}${order.tracking_id ? '<br>Tracking: '+order.tracking_id : ''}</small>` : '<span class="stage-missing"><i class="fa-regular fa-hourglass-half me-1"></i>Not dispatched</span>'}</td>
-                    <td>${order.delivered_at ? `<span class="stage-completed"><i class="fa-regular fa-circle-check me-1"></i>${new Date(order.delivered_at).toLocaleDateString()}</span><small class="d-block text-muted">Received by: ${order.received_by || 'Customer'}</small>` : '<span class="stage-missing"><i class="fa-regular fa-hourglass-half me-1"></i>Not delivered</span>'}</td>
-                    <td>${order.closed_at ? `<span class="stage-completed"><i class="fa-regular fa-circle-check me-1"></i>${new Date(order.closed_at).toLocaleDateString()}</span>` : (order.status == 'cancelled' ? '<span class="stage-missing"><i class="fa-regular fa-circle-xmark me-1"></i>Cancelled</span>' : '<span class="stage-pending"><i class="fa-regular fa-hourglass-half me-1"></i>Open</span>')}</td>
+                    <td>${paymentIsDone ? `<span class="stage-completed"><i class="fa-regular fa-credit-card me-1"></i>${new Date(order.updated_at).toLocaleDateString()}</span><small class="d-block text-muted">${order.payment_method || order.payment_type || 'N/A'}${order.transaction_id ? '<br>ID: '+order.transaction_id : ''}</small>` : '<span class="stage-missing"><i class="fa-regular fa-hourglass-half me-1"></i>Pending</span>'}</td>
+                    <td>${dispatchIsDone ? `<span class="stage-completed"><i class="fa-solid fa-truck-fast me-1"></i>${order.shipped_at ? new Date(order.shipped_at).toLocaleDateString() : new Date(order.updated_at).toLocaleDateString()}</span><small class="d-block text-muted">${order.courier_name || order.shipping_method || 'Standard'}${order.tracking_id ? '<br>Tracking: '+order.tracking_id : ''}</small>` : '<span class="stage-missing"><i class="fa-regular fa-hourglass-half me-1"></i>Not dispatched</span>'}</td>
+                    <td>${deliveryIsDone ? `<span class="stage-completed"><i class="fa-regular fa-circle-check me-1"></i>${order.delivered_at ? new Date(order.delivered_at).toLocaleDateString() : new Date(order.updated_at).toLocaleDateString()}</span><small class="d-block text-muted">Received by: Customer</small>` : '<span class="stage-missing"><i class="fa-regular fa-hourglass-half me-1"></i>Not delivered</span>'}</td>
+                    <td>${isClosed ? `<span class="stage-completed"><i class="fa-regular fa-circle-check me-1"></i>Closed</span>` : (isCancelled ? '<span class="stage-missing"><i class="fa-regular fa-circle-xmark me-1"></i>Cancelled</span>' : '<span class="stage-pending"><i class="fa-regular fa-hourglass-half me-1"></i>Open</span>')}</td>
                     <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                 </tr>
             `;
@@ -636,6 +642,16 @@ function showOrderDetails(orderId) {
     $('#modalOrderTitle').text(`Order #${order.id}`);
     $('#modalOrderSubtitle').text(order.order_number || `Placed on ${new Date(order.created_at).toLocaleDateString()}`);
     
+    let paymentIsDone = ['paid', 'completed', 'success'].includes((order.payment_status || '').toLowerCase());
+    let dispatchIsDone = order.shipped_at || ['shipped', 'out_for_delivery', 'delivered', 'completed'].includes((order.status || '').toLowerCase());
+    let deliveryIsDone = order.delivered_at || ['delivered', 'completed'].includes((order.status || '').toLowerCase());
+    let isClosed = ['delivered', 'completed'].includes((order.status || '').toLowerCase());
+    
+    let paymentDate = paymentIsDone ? new Date(order.updated_at).toLocaleString() : 'Awaiting payment';
+    let dispatchDate = dispatchIsDone ? (order.shipped_at ? new Date(order.shipped_at).toLocaleString() : new Date(order.updated_at).toLocaleString()) : (paymentIsDone ? 'Ready to dispatch' : 'Waiting for payment');
+    let deliveryDate = deliveryIsDone ? (order.delivered_at ? new Date(order.delivered_at).toLocaleString() : new Date(order.updated_at).toLocaleString()) : (dispatchIsDone ? 'In transit' : 'Not dispatched yet');
+    let closureDate = isClosed ? (order.delivered_at ? new Date(order.delivered_at).toLocaleString() : new Date(order.updated_at).toLocaleString()) : (deliveryIsDone ? 'Ready to close' : (order.status == 'cancelled' ? 'Order cancelled' : 'Order in progress'));
+    
     let timelineHtml = `
         <div class="mb-4">
             <h6 class="fw-bold mb-3"><i class="fa-regular fa-timeline me-2"></i>Lifecycle Timeline</h6>
@@ -654,12 +670,12 @@ function showOrderDetails(orderId) {
             
             <!-- Payment -->
             <div class="timeline-item">
-                <div class="timeline-icon ${order.payment_completed_at ? 'completed' : 'pending'}">
+                <div class="timeline-icon ${paymentIsDone ? 'completed' : 'pending'}">
                     <i class="fa-regular fa-credit-card"></i>
                 </div>
                 <div class="timeline-content">
-                    <div class="timeline-title">Payment ${order.payment_completed_at ? 'Completed' : 'Pending'}</div>
-                    <div class="timeline-date">${order.payment_completed_at ? new Date(order.payment_completed_at).toLocaleString() : 'Awaiting payment'}</div>
+                    <div class="timeline-title">Payment ${paymentIsDone ? 'Completed' : 'Pending'}</div>
+                    <div class="timeline-date">${paymentDate}</div>
                     ${order.payment_method ? `<div class="timeline-detail">Method: ${order.payment_method} | ${order.payment_type || 'N/A'}</div>` : ''}
                     ${order.transaction_id ? `<div class="timeline-detail">Transaction ID: ${order.transaction_id}</div>` : ''}
                 </div>
@@ -667,38 +683,38 @@ function showOrderDetails(orderId) {
             
             <!-- Dispatch -->
             <div class="timeline-item">
-                <div class="timeline-icon ${order.dispatched_at ? 'completed' : (order.payment_completed_at ? 'pending' : 'missing')}">
+                <div class="timeline-icon ${dispatchIsDone ? 'completed' : (paymentIsDone ? 'pending' : 'missing')}">
                     <i class="fa-solid fa-truck"></i>
                 </div>
                 <div class="timeline-content">
                     <div class="timeline-title">Dispatch</div>
-                    <div class="timeline-date">${order.dispatched_at ? new Date(order.dispatched_at).toLocaleString() : (order.payment_completed_at ? 'Ready to dispatch' : 'Waiting for payment')}</div>
-                    ${order.courier ? `<div class="timeline-detail">Courier: ${order.courier}</div>` : ''}
+                    <div class="timeline-date">${dispatchDate}</div>
+                    ${order.courier_name || order.shipping_method ? `<div class="timeline-detail">Courier: ${order.courier_name || order.shipping_method || 'Standard'}</div>` : ''}
                     ${order.tracking_id ? `<div class="timeline-detail">Tracking ID: ${order.tracking_id}</div>` : ''}
                 </div>
             </div>
             
             <!-- Delivery -->
             <div class="timeline-item">
-                <div class="timeline-icon ${order.delivered_at ? 'completed' : (order.dispatched_at ? 'pending' : 'missing')}">
+                <div class="timeline-icon ${deliveryIsDone ? 'completed' : (dispatchIsDone ? 'pending' : 'missing')}">
                     <i class="fa-regular fa-circle-check"></i>
                 </div>
                 <div class="timeline-content">
                     <div class="timeline-title">Delivery</div>
-                    <div class="timeline-date">${order.delivered_at ? new Date(order.delivered_at).toLocaleString() : (order.dispatched_at ? 'In transit' : 'Not dispatched yet')}</div>
-                    ${order.received_by ? `<div class="timeline-detail">Received by: ${order.received_by}</div>` : ''}
+                    <div class="timeline-date">${deliveryDate}</div>
+                    <div class="timeline-detail">Received by: Customer</div>
                     ${order.delivery_notes ? `<div class="timeline-detail">Notes: ${order.delivery_notes}</div>` : ''}
                 </div>
             </div>
             
             <!-- Closure -->
             <div class="timeline-item">
-                <div class="timeline-icon ${order.closed_at ? 'completed' : (order.delivered_at ? 'pending' : 'missing')}">
+                <div class="timeline-icon ${isClosed ? 'completed' : (deliveryIsDone ? 'pending' : 'missing')}">
                     <i class="fa-regular fa-file-lines"></i>
                 </div>
                 <div class="timeline-content">
                     <div class="timeline-title">Order Closure</div>
-                    <div class="timeline-date">${order.closed_at ? new Date(order.closed_at).toLocaleString() : (order.delivered_at ? 'Ready to close' : (order.status == 'cancelled' ? 'Order cancelled' : 'Order in progress'))}</div>
+                    <div class="timeline-date">${closureDate}</div>
                 </div>
             </div>
         </div>
@@ -719,7 +735,7 @@ function showOrderDetails(orderId) {
                         <div class="small text-muted mb-2">Order Summary</div>
                         <div class="d-flex justify-content-between mb-1">
                             <span>Total Amount:</span>
-                            <span class="fw-semibold">₹${(order.total || 0).toLocaleString()}</span>
+                            <span class="fw-semibold">₹${(order.total_amount || order.total || 0).toLocaleString()}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-1">
                             <span>Payment Type:</span>

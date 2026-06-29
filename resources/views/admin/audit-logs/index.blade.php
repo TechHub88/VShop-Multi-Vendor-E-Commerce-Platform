@@ -98,7 +98,8 @@
                                             'bank_approved' => 'success',
                                             'reverification_triggered' => 'secondary',
                                             'deactivated' => 'danger',
-                                            default => 'light'
+                                            'platforms_approved' => 'info',
+                                            default => 'secondary'
                                         };
                                     @endphp
                                     <span class="badge bg-{{ $actionBadge }}">
@@ -115,50 +116,6 @@
                                     </button>
                                 </td>
                             </tr>
-                            
-                            <!-- View Log Modal -->
-                            <div class="modal fade" id="viewLogModal{{ $log->id }}" tabindex="-1">
-                                <div class="modal-dialog modal-lg">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Audit Log Details - #{{ $log->id }}</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <p><strong>Action:</strong> {{ ucfirst($log->action) }}</p>
-                                                    <p><strong>Description:</strong></p>
-                                                    <p class="alert alert-secondary">{{ $log->description }}</p>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <p><strong>Performed By:</strong> {{ $log->user->name ?? 'System' }}</p>
-                                                    <p><strong>IP Address:</strong> {{ $log->ip_address ?? 'N/A' }}</p>
-                                                    <p><strong>User Agent:</strong> <small>{{ Str::limit($log->user_agent, 50) }}</small></p>
-                                                </div>
-                                            </div>
-                                            @if($log->old_data || $log->new_data)
-                                            <hr>
-                                            <h6>Data Changes:</h6>
-                                            <div class="row">
-                                                @if($log->old_data)
-                                                <div class="col-md-6">
-                                                    <p><strong>Old Data:</strong></p>
-                                                    <pre class="bg-light p-2">{{ json_encode(json_decode($log->old_data), JSON_PRETTY_PRINT) }}</pre>
-                                                </div>
-                                                @endif
-                                                @if($log->new_data)
-                                                <div class="col-md-6">
-                                                    <p><strong>New Data:</strong></p>
-                                                    <pre class="bg-light p-2">{{ json_encode(json_decode($log->new_data), JSON_PRETTY_PRINT) }}</pre>
-                                                </div>
-                                                @endif
-                                            </div>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                             @empty
                             <tr>
                                 <td colspan="8" class="text-center">No audit logs found.</td>
@@ -168,12 +125,90 @@
                     </table>
                 </div>
                 <div class="mt-3">
-                    {{ $auditLogs->appends(request()->query())->links() }}
+                    {{ $auditLogs->appends(request()->query())->links('pagination::bootstrap-5') }}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modals -->
+@foreach($auditLogs as $log)
+<div class="modal fade" id="viewLogModal{{ $log->id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Audit Log Details - #{{ $log->id }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Action:</strong> {{ ucfirst($log->action) }}</p>
+                        <p><strong>Description:</strong></p>
+                        <p class="alert alert-secondary">{{ $log->description }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Performed By:</strong> {{ $log->user->name ?? 'System' }}</p>
+                        <p><strong>IP Address:</strong> {{ $log->ip_address ?? 'N/A' }}</p>
+                        <p><strong>User Agent:</strong> <small>{{ Str::limit($log->user_agent, 50) }}</small></p>
+                    </div>
+                </div>
+                @if($log->old_data || $log->new_data)
+                <hr>
+                <h6>Data Changes:</h6>
+                <div class="row">
+                    @if($log->old_data)
+                    <div class="col-md-6">
+                        <p><strong>Old Data:</strong></p>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            @php
+                                $oldDataArr = json_decode($log->old_data, true);
+                            @endphp
+                            @if(is_array($oldDataArr))
+                                <table class="table table-sm table-bordered table-striped" style="font-size: 13px;">
+                                    @foreach($oldDataArr as $key => $value)
+                                        <tr>
+                                            <th class="text-nowrap" style="width: 30%;">{{ ucfirst(str_replace('_', ' ', $key)) }}</th>
+                                            <td style="word-break: break-all;">{{ is_array($value) ? json_encode($value) : (is_bool($value) ? ($value ? 'true' : 'false') : $value) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </table>
+                            @else
+                                <pre class="bg-light p-2">{{ $log->old_data }}</pre>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+                    @if($log->new_data)
+                    <div class="col-md-6">
+                        <p><strong>New Data:</strong></p>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            @php
+                                $newDataArr = json_decode($log->new_data, true);
+                            @endphp
+                            @if(is_array($newDataArr))
+                                <table class="table table-sm table-bordered table-striped" style="font-size: 13px;">
+                                    @foreach($newDataArr as $key => $value)
+                                        <tr>
+                                            <th class="text-nowrap" style="width: 30%;">{{ ucfirst(str_replace('_', ' ', $key)) }}</th>
+                                            <td style="word-break: break-all;">{{ is_array($value) ? json_encode($value) : (is_bool($value) ? ($value ? 'true' : 'false') : $value) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </table>
+                            @else
+                                <pre class="bg-light p-2">{{ $log->new_data }}</pre>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+@endforeach
 
 <style>
     .table th {

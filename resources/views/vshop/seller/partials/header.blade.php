@@ -9,6 +9,27 @@
 @php
 /*
 |--------------------------------------------------------------------------
+| WALLET BALANCES SYNC
+|--------------------------------------------------------------------------
+*/
+$seller = auth()->guard('seller')->user();
+if ($seller) {
+    $sellerWallet = \App\Models\Wallet::where('seller_id', $seller->id)->where('user_type', 'seller')->first();
+    if ($sellerWallet) {
+        session(['seller_dummy_wallet' => $sellerWallet->balance]);
+    } else {
+        $sellerWallet = \App\Models\Wallet::create([
+            'seller_id' => $seller->id,
+            'user_type' => 'seller',
+            'balance' => 15450.00,
+            'frozen_balance' => 0
+        ]);
+        session(['seller_dummy_wallet' => 15450.00]);
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
 | MODULE TYPES
 |--------------------------------------------------------------------------
 */
@@ -118,12 +139,21 @@ if ($seller) {
                             </div>
                         </div>
 
-                        <!-- DUMMY WALLET -->
+                        <!-- WALLET -->
+                        @php
+                        $walletBalance = 0;
+                        if (auth()->guard('seller')->check()) {
+                            $wallet = \App\Models\Wallet::where('seller_id', auth()->guard('seller')->id())->first();
+                            if ($wallet) {
+                                $walletBalance = $wallet->balance;
+                            }
+                        }
+                        @endphp
                         <div class="header-wallet-sec d-flex align-items-center cursor-pointer me-2" title="Wallet Balance" style="background: #f8f9fa; padding: 5px 12px; border-radius: 20px; border: 1px solid #e0e0e0;">
                             <i class="fa-solid fa-wallet text-primary me-2" style="font-size: 16px;"></i>
                             <div class="d-flex flex-column" style="line-height: 1.2;">
                                 <span class="text-muted" style="font-size: 9px; text-transform: uppercase;">Wallet Balance</span>
-                                <span class="fw-bold text-dark" id="headerWalletBalance" style="font-size: 13px;">₹ {{ number_format(session('seller_dummy_wallet', 15450.00), 2) }}</span>
+                                <span class="fw-bold text-dark" id="headerWalletBalance" style="font-size: 13px;">₹ {{ number_format($walletBalance, 2) }}</span>
                             </div>
                         </div>
 
@@ -267,6 +297,19 @@ if ($seller) {
                         </label>
                     </div>
 
+                    {{-- YOUR REFERRAL CODE --}}
+                    <div class="ref-form-group" style="margin-top: 15px;">
+                        <label class="ref-form-label" style="margin-bottom: 8px; display: block;">Your Referral Code</label>
+                        <div style="display: flex; align-items: center; gap: 10px; background: #f0f9ff; border: 2px dashed #2563eb; border-radius: 10px; padding: 12px 16px;">
+                            <i class="fa-solid fa-ticket" style="font-size: 20px; color: #2563eb;"></i>
+                            <span id="sellerReferralCode" style="font-size: 18px; font-weight: 700; color: #1e3a8a; letter-spacing: 2px; flex: 1;">{{ $seller->referral_code ?? 'N/A' }}</span>
+                            <button type="button" onclick="copyReferralCode()" style="background: #2563eb; color: #fff; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 5px; transition: all 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
+                                <i class="fa-regular fa-copy" id="refCodeCopyIcon"></i> Copy
+                            </button>
+                        </div>
+                        <p style="font-size: 11px; color: #64748b; margin-top: 6px;">Share this code with other sellers to earn rewards when they register.</p>
+                    </div>
+
                     <div class="ref-form-group">
                         <label class="ref-form-label">Referral Reward Type & Amount</label>
                         <div class="ref-radio-group mb-2">
@@ -348,8 +391,15 @@ if ($seller) {
             <div>
                 <strong>Wallet Balance:</strong> <span id="boostModalWalletBalance" class="fw-bold">₹0.00</span>
             </div>
-            <div>
-                <strong>Cost per product:</strong> <span class="fw-bold">₹30.00</span>
+            <div class="d-flex align-items-center gap-2">
+                <strong>Boost Duration:</strong>
+                <select id="boostModalDays" class="form-select form-select-sm d-inline-block w-auto" onchange="updateBoostCostCalculation()">
+                    <option value="1">1 Day</option>
+                    <option value="3">3 Days</option>
+                    <option value="7" selected>7 Days</option>
+                    <option value="15">15 Days</option>
+                    <option value="30">30 Days</option>
+                </select>
             </div>
             <div>
                 <strong>Total Selected:</strong> <span id="boostModalSelectedCount" class="badge bg-primary fs-12">0</span>
@@ -379,7 +429,7 @@ if ($seller) {
                                     <span>Product Info</span>
                                 </div>
                             </th>
-                            <th width="100" class="text-center">Price</th>
+                            <th width="120" class="text-center">Per Day Cost</th>
                             <th width="120" class="text-center">Current Status</th>
                         </tr>
                     </thead>
@@ -1947,9 +1997,14 @@ function loadNotifications() {
                 if (n.is_read == 0) unread++;
                 if (n.is_read == 0) systemUnread++;
 
+                let linkToUse = n.link;
+                if (n.message && n.message.includes('Return Request')) {
+                    linkToUse = "{{ route('seller.paymenthandle') }}";
+                }
+
                 // Build System Alerts HTML (For Alert Bell)
                 systemAlertsHtml += `
-                    <div class="alert-dropdown-item system-alert-item" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: flex-start;" onclick="markAndRedirect(${n.id}, '${n.link}')">
+                    <div class="alert-dropdown-item system-alert-item" style="padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; align-items: flex-start;" onclick="markAndRedirect(${n.id}, '${linkToUse}')">
                         ${sirenIcon}
                         <div class="alert-item-content" style="flex:1;">
                             <div class="alert-item-title" style="${n.is_read == 0 ? 'font-weight:600; color:#1f2937;' : 'font-weight:normal; color:#4b5563;'} font-size:13px; line-height:1.4;">${n.message}</div>
@@ -1960,7 +2015,7 @@ function loadNotifications() {
                 // Build Normal Notifications HTML (For Notification Bell)
                 bellHtml += `
                     <li class="${n.is_read == 0 ? 'fw-bold bg-light' : ''} d-flex align-items-start p-3" 
-                        onclick="markAndRedirect(${n.id}, '${n.link}')" style="border-bottom:1px solid #eee; cursor:pointer;">
+                        onclick="markAndRedirect(${n.id}, '${linkToUse}')" style="border-bottom:1px solid #eee; cursor:pointer;">
                         <span style="font-size: 16px; margin-right: 12px; margin-top: 2px;">${getIcon(n.type)}</span>
                         <div style="flex:1;">
                             <div style="font-size:13px; color:#1f2937; line-height:1.4; ${n.is_read == 0 ? 'font-weight:600;' : 'font-weight:normal;'}">${n.message}</div>
@@ -2570,29 +2625,35 @@ function loadBoostProducts() {
             if (res.success && res.data.length > 0) {
                 let html = '';
                 res.data.forEach(function(p) {
-                    let isChecked = p.is_boosted ? 'checked' : '';
+                    let isChecked = p.is_boosted ? 'checked disabled' : '';
                     let badge = p.is_boosted 
                                 ? '<span class="badge bg-success"><i class="fa-solid fa-check"></i> Boosted</span>'
                                 : '<span class="badge bg-secondary">Normal</span>';
+                    if (p.is_top) {
+                        badge += ' <span class="badge bg-warning text-dark ms-1"><i class="fa-solid fa-fire"></i> Top Enquiries</span>';
+                    }
                     let price = parseFloat(p.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    let perDay = p.per_day !== null && p.per_day !== undefined ? parseFloat(p.per_day) : null;
+                    let fmtPerDay = perDay !== null ? '₹' + perDay.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
+                    let isDisabled = perDay === null ? 'disabled' : '';
 
                     html += `
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="me-3">
-                                        <input class="form-check-input boost-item-checkbox" type="checkbox" name="product_ids[]" value="${p.id}" ${isChecked} style="appearance: auto !important; position: static !important; opacity: 1 !important; width: 1.2rem; height: 1.2rem; cursor: pointer; display: inline-block;">
+                                        <input class="form-check-input boost-item-checkbox" type="checkbox" name="product_ids[]" value="${p.id}" data-per-day="${perDay || 0}" ${isChecked} ${isDisabled} style="appearance: auto !important; position: static !important; opacity: 1 !important; width: 1.2rem; height: 1.2rem; cursor: pointer; display: inline-block;">
                                     </div>
                                     <div style="width: 45px; height: 45px; overflow: hidden; border-radius: 6px; border: 1px solid #e0e0e0; margin-right: 12px;">
                                         <img src="${p.image_url}" alt="Product" style="width: 100%; height: 100%; object-fit: cover;">
                                     </div>
                                     <div>
                                         <div class="fw-bold text-dark fs-14">${p.name}</div>
-                                        <div class="text-muted" style="font-size: 11px;">SKU: ${p.sku || 'N/A'}</div>
+                                        <div class="text-muted" style="font-size: 11px;">SKU: ${p.sku || 'N/A'} - Price: ₹${price}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="text-center fw-bold text-dark">₹${price}</td>
+                            <td class="text-center fw-bold text-dark">${fmtPerDay}</td>
                             <td class="text-center status-badge-cell">${badge}</td>
                         </tr>
                     `;
@@ -2611,18 +2672,23 @@ function loadBoostProducts() {
 }
 
 function updateBoostCostCalculation() {
-    let count = $('.boost-item-checkbox:checked').length;
-    let costPerProduct = 30.00;
-    let totalCost = count * costPerProduct;
+    let count = $('.boost-item-checkbox:checked:not(:disabled)').length;
+    let days = parseInt($('#boostModalDays').val()) || 1;
+    let totalCost = 0;
+    
+    $('.boost-item-checkbox:checked:not(:disabled)').each(function() {
+        let perDay = parseFloat($(this).data('per-day')) || 50.00;
+        totalCost += (perDay * days);
+    });
     
     $('#boostModalSelectedCount').text(count);
     $('#boostModalTotalCost').text('₹' + totalCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     
     let walletBalance = window.boostCurrentWalletBalance || 0;
-    if (totalCost > walletBalance) {
+    if (totalCost > walletBalance && count > 0) {
         $('#btnSubmitBoost').prop('disabled', true).addClass('btn-danger').removeClass('btn-primary').html('Insufficient Wallet <i class="fa-solid fa-triangle-exclamation ms-1"></i>');
     } else {
-        $('#btnSubmitBoost').prop('disabled', false).addClass('btn-primary').removeClass('btn-danger').html('Apply Boost <i class="fa-solid fa-bolt ms-1"></i>');
+        $('#btnSubmitBoost').prop('disabled', count === 0).addClass('btn-primary').removeClass('btn-danger').html('Apply Boost <i class="fa-solid fa-bolt ms-1"></i>');
     }
 }
 
@@ -2639,23 +2705,26 @@ $(document).on('change', '.boost-item-checkbox', function() {
 });
 
 $(document).on('change', '#boostSelectAll', function() {
-    $('.boost-item-checkbox').prop('checked', this.checked).trigger('change');
+    $('.boost-item-checkbox:not(:disabled)').prop('checked', this.checked).trigger('change');
 });
 
 function submitBoostProducts() {
     let selectedIds = [];
-    $('.boost-item-checkbox:checked').each(function() {
+    $('.boost-item-checkbox:checked:not(:disabled)').each(function() {
         selectedIds.push($(this).val());
     });
 
     $('#btnSubmitBoost').prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin"></i> Saving...');
+
+    let selectedDays = parseInt($('#boostModalDays').val()) || 1;
 
     $.ajax({
         url: "{{ route('seller.products.boost.submit') }}",
         type: "POST",
         data: {
             _token: "{{ csrf_token() }}",
-            product_ids: selectedIds
+            product_ids: selectedIds,
+            days: selectedDays
         },
         success: function(res) {
             $('#btnSubmitBoost').prop('disabled', false).html('Apply Boost <i class="fa-solid fa-bolt ms-1"></i>');

@@ -3,8 +3,46 @@
 @section('title', 'Dashboard')
 
 <style>
+    /* Global fixes for mobile gap and overflow */
+    html, body {
+        overflow-x: hidden !important;
+        max-width: 100vw;
+        background-color: #f1f3f6 !important; /* Amazon/Flipkart typical light grey background */
+    }
+    
+    .dashboardPagesContentonner {
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+    
     .home-seller-sec {
-        padding: 15px 0 !important;
+        padding: 20px !important;
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px 0 rgba(0,0,0,0.05);
+        margin-bottom: 16px;
+    }
+    
+    /* Override dark blue header for modern Flipkart/Amazon clean look */
+    .home-seller-header {
+        background: transparent !important;
+        color: #212121 !important;
+        padding: 0 0 16px 0 !important;
+        margin-bottom: 20px !important;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .home-seller-header h2 {
+        font-weight: 600 !important;
+        font-size: 22px !important;
+        color: #212121 !important;
+        margin: 0 !important;
+    }
+    
+    .home-seller-header i {
+        color: #2874f0 !important; /* Blue accent color instead of warning/danger if needed, or keep original */
     }
     .custom-pagination-wrapper {
         margin-top: 15px !important;
@@ -87,6 +125,40 @@
     .banner-wrapper {
         border-radius: 20px;
         overflow: hidden;
+        width: 100%;
+    }
+    .banner-wrapper {
+        max-width: 100%;
+    }
+    .banner-img img {
+        width: 100% !important;
+        height: 280px !important;
+        object-fit: cover !important;
+    }
+    @media (max-width: 768px) {
+        .banner-img img {
+            height: 150px !important;
+            border-radius: 12px;
+        }
+        .banner-img, .banner-wrapper {
+            border-radius: 12px;
+        }
+    }
+
+    /* Prevent layout shift/buffering on page load */
+    .owl-carousel {
+        transition: opacity 0.3s ease-in-out;
+    }
+    .owl-carousel:not(.owl-loaded) {
+        display: flex !important;
+        flex-wrap: nowrap;
+        overflow: hidden;
+        opacity: 0;
+    }
+    
+    .dashboardDtlsAreaBody {
+        max-width: 100%;
+        overflow-x: hidden;
     }
     .product-bottom {
         padding: 0 !important;

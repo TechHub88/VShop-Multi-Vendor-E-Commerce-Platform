@@ -488,6 +488,12 @@ Add Customer
     </a>
 </li>
 
+<li>
+    <a href="{{ route('seller.referrals.history') }}">
+        <i class="fa-solid fa-people-arrows"></i> Referral History
+    </a>
+</li>
+
 
                        
 

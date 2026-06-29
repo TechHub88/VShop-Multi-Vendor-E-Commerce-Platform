@@ -343,6 +343,7 @@ Breached
 
 <div class="col-12">
 
+@if($order)
 <div class="cardx shipping-box">
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -438,7 +439,7 @@ Pending
 <hr>
 
 <form method="POST"
-      action="{{ route('seller.orders.update-tracking',$order->id) }}">
+      action="{{ route('seller.orders.update-tracking', $order->id) }}">
 
 @csrf
 
@@ -449,7 +450,7 @@ Pending
 <input type="text"
        name="courier_name"
        class="form-control"
-       value="{{ $order->courier_name }}"
+       value="{{ $order->courier_name ?? '' }}"
        placeholder="Courier Name">
 
 </div>
@@ -459,7 +460,7 @@ Pending
 <input type="text"
        name="tracking_id"
        class="form-control"
-       value="{{ $order->tracking_id }}"
+       value="{{ $order->tracking_id ?? '' }}"
        placeholder="Enter Tracking ID">
 
 </div>
@@ -506,6 +507,11 @@ Update
 </form>
 
 </div>
+@else
+<div class="cardx shipping-box p-4 text-center">
+    <h6 class="text-muted mb-0">No recent orders available to update tracking.</h6>
+</div>
+@endif
 
 </div>
 

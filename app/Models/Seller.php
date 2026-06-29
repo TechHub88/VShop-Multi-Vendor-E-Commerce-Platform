@@ -133,7 +133,7 @@ class Seller extends Authenticatable
 'stripe_secret','api_key','api_secret','manual_next_date','referral_settings','role','login_type',  'is_active',
         'block_metadata',
         'deactivated_reason',
-        'deactivated_at','hold_days'
+        'deactivated_at','hold_days','referral_code','referred_by'
 
     ];
 
@@ -192,6 +192,14 @@ public function banners()
                 $seller->slug = Str::slug($seller->shop_name);
             } else {
                 $seller->slug = Str::uuid();
+            }
+
+            // Auto-generate unique referral code
+            if (empty($seller->referral_code)) {
+                do {
+                    $code = 'VSHOP-' . strtoupper(Str::random(6));
+                } while (static::where('referral_code', $code)->exists());
+                $seller->referral_code = $code;
             }
 
         });

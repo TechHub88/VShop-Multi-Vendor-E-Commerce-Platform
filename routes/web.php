@@ -68,6 +68,21 @@ Route::get('/fix-db-payment', function() {
     return "Fixed DB schema successfully";
 });
 
+Route::get('/test-tx', function() {
+    try {
+        $txs = \App\Models\WalletTransaction::latest()->take(5)->get()->toArray();
+        $cols = \Illuminate\Support\Facades\Schema::getColumnListing('wallet_transactions');
+        $output = [
+            'columns' => $cols,
+            'latest_transactions' => $txs
+        ];
+        file_put_contents(public_path('test_tx_output.json'), json_encode($output, JSON_PRETTY_PRINT));
+        return "Dumped successfully to public/test_tx_output.json";
+    } catch (\Exception $e) {
+        return $e->getMessage();
+    }
+});
+
 //Frontend
 use App\Http\Controllers\Frontend\FrontendController;
 use App\Http\Controllers\Frontend\AuthController;
@@ -109,6 +124,7 @@ use App\Http\Controllers\Shop\SellerProductController;
 use App\Http\Controllers\Shop\SellerCategoryController;
 use App\Http\Controllers\Shop\SellerAttributeController;
 use App\Http\Controllers\Shop\SellerOrderController;
+use App\Http\Controllers\Shop\SellerReferralController;
 use App\Http\Controllers\Shop\SellerReportController;
 use App\Http\Controllers\Shop\VshopRatingController;
 use App\Http\Controllers\Shop\ShopMyProfileController;
@@ -398,6 +414,10 @@ Route::post('/price/{product}',
 [SellerProductController::class,'savePrice'])
 ->name('price.update');
 
+Route::post('/price/{product}/ai-recommend',
+[SellerProductController::class,'getAiRecommendation'])
+->name('price.ai-recommend');
+
 
 Route::get('faq/{id}', [SellerProductController::class,'faq'])->name('faq');
 
@@ -538,6 +558,9 @@ Route::prefix('seller/products')->group(function(){
         Route::get('orders/failed', [SellerOrderController::class, 'failed'])->name('orders.failed');
         Route::get('orders/cancelled', [SellerOrderController::class, 'cancelled'])->name('orders.cancelled');
         Route::get('orders/cancel-request', [SellerOrderController::class, 'cancelRequest'])->name('orders.cancelrequest');
+
+        // Referral History
+        Route::get('/referrals/history', [SellerReferralController::class, 'history'])->name('referrals.history');
 
         Route::get('orders/{id}', [SellerOrderController::class, 'show'])->name('orders.show');
         Route::post('orders/{id}/status', [SellerOrderController::class, 'updateStatus'])->name('orders.updateStatus');
@@ -1387,6 +1410,7 @@ Route::post('/myaccount/update-settings', [MyAccountController::class, 'updateSe
 // Profile & Other Info
 Route::post('/myaccount/update-profile', [MyAccountController::class, 'updateProfile'])->name('myaccount.update-profile');
 Route::post('/myaccount/update-other-info', [MyAccountController::class, 'updateOtherInfo'])->name('myaccount.update-other-info');
+Route::post('/myaccount/update-bank-details', [MyAccountController::class, 'updateBankDetails'])->name('myaccount.update-bank-details');
 
 // Addresses
 Route::post('/myaccount/add-address', [MyAccountController::class, 'addAddress'])->name('myaccount.add-address');
@@ -1609,6 +1633,7 @@ Route::delete(
     
     // Marketing & Growth Routes
     Route::get('/referral-system', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'referralSystem'])->name('referrals.index');
+    Route::get('/referral-history', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'referralHistory'])->name('admin.referrals.history');
     Route::get('/campaign-tracking', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'campaignTracking'])->name('campaigns.index');
     
     // Referral System API routes
@@ -1620,10 +1645,14 @@ Route::delete(
 
         Route::get('/categories', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'getCategories']);
         Route::get('/products', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'getProducts']);
+        Route::get('/sellers', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'getSellers']);
         Route::get('/category-rewards', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'categoryRewardsList']);
         Route::post('/category-rewards', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'storeCategoryReward']);
         Route::put('/category-rewards/{id}', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'updateCategoryReward']);
         Route::delete('/category-rewards/{id}', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'deleteCategoryReward']);
+        
+        Route::get('/referral-configurations', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'getReferralConfigurations']);
+        Route::post('/referral-configurations/save', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'saveReferralConfigurations']);
         
         Route::get('/product-campaigns', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'productCampaignsList']);
         Route::post('/product-campaigns', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'storeProductCampaign']);
@@ -1664,6 +1693,12 @@ Route::delete(
     Route::get('/export-cancellation', [OrderController::class, 'exportCancellation'])->name('orders.export-cancellation');
     Route::get('orders/payment', [OrderController::class, 'payment'])
         ->name('admin.orders.payment');
+    Route::get('orders/payments/{id}', [OrderController::class, 'getPaymentDetails'])->name('orders.payment-details');
+    Route::get('orders/invoice/validate/{id}', [OrderController::class, 'validateInvoice'])->name('orders.invoice-validate');
+    Route::post('orders/payments/{id}/suspicious', [OrderController::class, 'markSuspicious'])->name('orders.payment-suspicious');
+    Route::post('orders/payments/{id}/fraud', [OrderController::class, 'flagFraud'])->name('orders.payment-fraud');
+    Route::post('orders/payments/{id}/clear-fraud', [OrderController::class, 'clearFraudFlag'])->name('orders.payment-clear-fraud');
+    Route::post('orders/payments/{id}/refund', [OrderController::class, 'refundPayment'])->name('orders.payment-refund');
     // Existing routes continue
     Route::get('orders/invoices', [OrderController::class, 'invoices'])
         ->name('orders.invoices');
@@ -2348,6 +2383,7 @@ Route::post('admin/add-seller', [AdminFinanceController::class, 'addNewSeller'])
 Route::prefix('admin/approval')->name('admin.approval.')->group(function () {
     // Product verification routes
     Route::post('/product/{id}/save-notes', [ApprovalController::class, 'saveAdminNotes']);
+    Route::post('/product/{id}/auto-save-checklist', [ApprovalController::class, 'autoSaveChecklist']);
     Route::get('/product/{id}/validate-auto-order', [ApprovalController::class, 'validateAutoOrder']);
     Route::get('/product/{id}/track-dispatch', [ApprovalController::class, 'trackDispatch']);
     Route::get('/product/{id}/monitor-sla', [ApprovalController::class, 'monitorSLA']);
@@ -2615,6 +2651,12 @@ Route::prefix('admin/settings')->name('admin.settings.')->middleware('auth:web,a
     Route::post('/tax-rate/delete', [SettingsController::class, 'deleteTaxRate'])->name('tax-rate.delete');
     Route::post('/tax-rate/toggle', [SettingsController::class, 'toggleTaxRateStatus'])->name('tax-rate.toggle');
     Route::post('/tax-rate/set-default', [SettingsController::class, 'setDefaultTaxRate'])->name('tax-rate.set-default');
+
+    // Boost Settings
+    Route::post('/boost/store', [SettingsController::class, 'storeBoost'])->name('boost.store');
+    Route::post('/boost/update/{id}', [SettingsController::class, 'updateBoost'])->name('boost.update');
+    Route::delete('/boost/delete/{id}', [SettingsController::class, 'deleteBoost'])->name('boost.delete');
+    Route::post('/boost/toggle/{id}', [SettingsController::class, 'toggleBoostStatus'])->name('boost.toggle');
 });
 
 
@@ -2634,6 +2676,11 @@ Route::prefix('admin/grievance')->name('admin.grievance.')->middleware('auth:web
     Route::delete('/escalation-rule/{id}', [\App\Http\Controllers\admin\GrievanceController::class, 'deleteEscalationRule'])->name('escalation-rule.delete');
     Route::post('/priority-settings/update', [\App\Http\Controllers\admin\GrievanceController::class, 'updatePrioritySettings'])->name('priority-settings.update');
 });
+
+// Alias route for admin.grievances.show (some views use plural 'grievances')
+Route::get('admin/grievances/get/{id}', [\App\Http\Controllers\admin\GrievanceController::class, 'show'])
+    ->name('admin.grievances.show')
+    ->middleware('auth:web,admin_staff');
 
   Route::prefix('admin/enquiry')->name('admin.enquiry.')->middleware('auth:web,admin_staff')->group(function () {
         Route::get('/', [\App\Http\Controllers\admin\EnquiryController::class, 'index'])->name('index');

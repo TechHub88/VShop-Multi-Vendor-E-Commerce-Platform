@@ -391,6 +391,44 @@ public function index(Request $request)
         $order->remarks    = $request->remarks;
         $order->privacy    = $request->privacy;
 
+        if (strtolower($finalStatus) === 'delivered' && $order->referrer_id && !$order->referral_paid) {
+            $commissionPercent = 3.0;
+            $commissionAmount = ($order->total_amount * $commissionPercent) / 100;
+
+            // Deduct from Seller Wallet
+            $sellerWallet = \App\Models\Wallet::firstOrCreate(
+                ['seller_id' => $seller->id, 'user_type' => 'seller'],
+                ['balance' => 0]
+            );
+            $sellerWallet->decrement('balance', $commissionAmount);
+
+            // Add to Referrer Wallet
+            $referrerWallet = \App\Models\Wallet::firstOrCreate(
+                ['customer_id' => $order->referrer_id, 'user_type' => 'customer'],
+                ['balance' => 0]
+            );
+            $referrerWallet->increment('balance', $commissionAmount);
+
+            // Update existing Referral History or create if missing
+            \App\Models\ReferralHistory::updateOrCreate(
+                [
+                    'order_id' => $order->id,
+                    'seller_id' => $seller->id,
+                ],
+                [
+                    'referrer_id' => $order->referrer_id,
+                    'buyer_id' => $order->customer_id,
+                    'amount' => $commissionAmount,
+                    'commission_percent' => $commissionPercent,
+                    'status' => 'paid',
+                ]
+            );
+
+            $order->referral_commission_percent = $commissionPercent;
+            $order->referral_commission_amount = $commissionAmount;
+            $order->referral_paid = true;
+        }
+
         $order->save();
 
         NotificationService::notify(
@@ -678,7 +716,33 @@ public function approveReturn(Request $request)
             return response()->json(['status'=>false,'msg'=>'ID missing']);
         }
 
-        $order = Order::find($request->id);
+        // Try finding in order_returns table first
+        $orderReturn = \App\Models\OrderReturn::find($request->id);
+        if ($orderReturn) {
+            $orderReturn->status = 'approved';
+            $orderReturn->refund_mode = $request->refund_mode ?? 'wallet';
+            $orderReturn->save();
+            $order = $orderReturn->order;
+        } else {
+            $order = Order::find($request->id);
+            // Backward compatibility: create/update order return status if not exists
+            if ($order) {
+                $orderReturn = \App\Models\OrderReturn::firstOrCreate(
+                    ['order_id' => $order->id],
+                    [
+                        'customer_id' => $order->customer_id,
+                        'reason' => 'Return requested',
+                        'status' => 'approved',
+                        'refund_mode' => $request->refund_mode ?? 'wallet'
+                    ]
+                );
+                if ($orderReturn->status !== 'approved') {
+                    $orderReturn->status = 'approved';
+                    $orderReturn->refund_mode = $request->refund_mode ?? 'wallet';
+                    $orderReturn->save();
+                }
+            }
+        }
 
         if(!$order){
             return response()->json(['status'=>false,'msg'=>'Order not found']);
@@ -711,7 +775,32 @@ public function rejectReturn(Request $request)
 {
     try {
 
-        $order = Order::find($request->id);
+        if(empty($request->id)){
+            return response()->json(['status'=>false,'msg'=>'ID missing']);
+        }
+
+        $orderReturn = \App\Models\OrderReturn::find($request->id);
+        if ($orderReturn) {
+            $orderReturn->status = 'rejected';
+            $orderReturn->save();
+            $order = $orderReturn->order;
+        } else {
+            $order = Order::find($request->id);
+            if ($order) {
+                $orderReturn = \App\Models\OrderReturn::firstOrCreate(
+                    ['order_id' => $order->id],
+                    [
+                        'customer_id' => $order->customer_id,
+                        'reason' => 'Return requested',
+                        'status' => 'rejected'
+                    ]
+                );
+                if ($orderReturn->status !== 'rejected') {
+                    $orderReturn->status = 'rejected';
+                    $orderReturn->save();
+                }
+            }
+        }
 
         if(!$order){
             return response()->json(['status'=>false]);
@@ -745,7 +834,32 @@ public function verifyReturn(Request $request)
 {
     try {
 
-        $order = Order::find($request->id);
+        if(empty($request->id)){
+            return response()->json(['status'=>false,'msg'=>'ID missing']);
+        }
+
+        $orderReturn = \App\Models\OrderReturn::find($request->id);
+        if ($orderReturn) {
+            $orderReturn->status = 'refunded';
+            $orderReturn->save();
+            $order = $orderReturn->order;
+        } else {
+            $order = Order::find($request->id);
+            if ($order) {
+                $orderReturn = \App\Models\OrderReturn::firstOrCreate(
+                    ['order_id' => $order->id],
+                    [
+                        'customer_id' => $order->customer_id,
+                        'reason' => 'Return requested',
+                        'status' => 'refunded'
+                    ]
+                );
+                if ($orderReturn->status !== 'refunded') {
+                    $orderReturn->status = 'refunded';
+                    $orderReturn->save();
+                }
+            }
+        }
 
         if(!$order){
             return response()->json(['status'=>false]);
@@ -755,6 +869,32 @@ public function verifyReturn(Request $request)
         $order->status = 'returned';
         $order->refund_completed_at = now();
         $order->save();
+
+        // Process Refund based on refund_mode
+        $refundMode = $orderReturn->refund_mode ?? 'wallet';
+        $amount = $order->total_amount;
+        if ($refundMode === 'wallet') {
+            // Deduct from Seller's Wallet in DB
+            $sellerWallet = \App\Models\Wallet::firstOrCreate([
+                'seller_id' => $order->seller_id,
+                'user_type' => 'seller'
+            ], [
+                'balance' => 15450.00,
+                'frozen_balance' => 0
+            ]);
+            $sellerWallet->balance -= $amount;
+            $sellerWallet->save();
+
+            // Sync dummy wallet in session
+            session(['seller_dummy_wallet' => $sellerWallet->balance]);
+
+            // Update Customer's wallet_balance directly (skipping wallet_transactions logic for now)
+            $customer = \App\Models\Customer::find($order->customer_id);
+            if ($customer) {
+                $customer->wallet_balance = ($customer->wallet_balance ?? 0) + $amount;
+                $customer->save();
+            }
+        }
 
         NotificationService::notify(
             $order->customer_id,
@@ -840,52 +980,7 @@ public function payment(Request $request)
     |--------------------------------------------------------------------------
     */
 
-    $query = Order::where('seller_id', $sellerId)
-
-        ->whereHas('items.product', function($q) use ($moduleType){
-
-            /*
-            |--------------------------------------------------------------------------
-            | MODULE FILTER
-            |--------------------------------------------------------------------------
-            */
-
-            if($moduleType == 'product'){
-
-                $q->where('type', 'product');
-
-            }
-            elseif($moduleType == 'service'){
-
-                $q->where('type', 'service');
-
-            }
-            elseif($moduleType == 'course'){
-
-                $q->where('type', 'course');
-
-            }
-            elseif($moduleType == 'both'){
-
-                $q->whereIn('type', ['product','service']);
-
-            }
-            elseif($moduleType == 'product_course'){
-
-                $q->whereIn('type', ['product','course']);
-
-            }
-            elseif($moduleType == 'service_course'){
-
-                $q->whereIn('type', ['service','course']);
-
-            }
-            elseif($moduleType == 'all'){
-
-                $q->whereIn('type', ['product','service','course']);
-            }
-
-        });
+    $query = Order::where('seller_id', $sellerId);
 
     /*
     |--------------------------------------------------------------------------
@@ -904,7 +999,7 @@ public function payment(Request $request)
 
     /*
     |--------------------------------------------------------------------------
-    | FETCH ORDERS
+    | FETCH ORDERS & RETURNS
     |--------------------------------------------------------------------------
     */
 
@@ -940,6 +1035,18 @@ public function payment(Request $request)
                 : $o->total_amount;
 
             return $o;
+        });
+
+    $returnRequests = \App\Models\OrderReturn::whereHas('order', function($q) use ($sellerId) {
+            $q->where('seller_id', $sellerId);
+        })
+        ->with(['order', 'customer'])
+        ->latest()
+        ->get()
+        ->map(function($rr) {
+            $rr->customer_name = optional($rr->customer)->name ?? 'N/A';
+            $rr->order_total = optional($rr->order)->total_amount ?? 0;
+            return $rr;
         });
 
     /*
@@ -1011,6 +1118,7 @@ public function payment(Request $request)
         return response()->json([
 
             'orders' => $orders,
+            'returnRequests' => $returnRequests,
 
             'totalRevenue' => $totalRevenue,
 
@@ -1038,6 +1146,7 @@ public function payment(Request $request)
         'vshop.seller.orders.partials.payment',
         compact(
             'orders',
+            'returnRequests',
             'totalRevenue',
             'revenueLoss',
             'newCustomers',

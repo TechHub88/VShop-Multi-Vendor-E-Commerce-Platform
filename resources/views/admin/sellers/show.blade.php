@@ -823,21 +823,27 @@
                         </div>
                     </div>
                     
-                    <div class="d-flex flex-wrap gap-2 mt-3 pt-2 border-top">
+                    <div class="d-flex flex-wrap gap-3 mt-3 pt-3 border-top">
                         @if($seller->logo)
-                            <a href="{{ asset($seller->logo) }}" target="_blank" class="doc-btn doc-btn-image">
-                                <i class="ri-image-line"></i> View Logo
-                            </a>
+                            <div class="d-flex align-items-center bg-light px-3 py-2 rounded-pill border shadow-sm">
+                                <i class="ri-image-line text-muted me-2"></i>
+                                <span class="small fw-semibold me-3 text-dark">Logo</span>
+                                <a href="{{ asset($seller->logo) }}" target="_blank" class="text-primary" title="View Logo"><i class="ri-eye-line fs-5"></i></a>
+                            </div>
                         @endif
                         @if($seller->trademark_file)
-                            <a href="{{ asset($seller->trademark_file) }}" target="_blank" class="doc-btn doc-btn-pdf">
-                                <i class="ri-file-pdf-line"></i> Trademark Document
-                            </a>
+                            <div class="d-flex align-items-center bg-light px-3 py-2 rounded-pill border shadow-sm">
+                                <i class="ri-file-pdf-line text-muted me-2"></i>
+                                <span class="small fw-semibold me-3 text-dark">Trademark</span>
+                                <a href="{{ asset($seller->trademark_file) }}" target="_blank" class="text-primary" title="View Trademark"><i class="ri-eye-line fs-5"></i></a>
+                            </div>
                         @endif
                         @if($seller->company_certificate)
-                            <a href="{{ asset($seller->company_certificate) }}" target="_blank" class="doc-btn doc-btn-pdf">
-                                <i class="ri-file-pdf-line"></i> Incorporation Certificate
-                            </a>
+                            <div class="d-flex align-items-center bg-light px-3 py-2 rounded-pill border shadow-sm">
+                                <i class="ri-file-pdf-line text-muted me-2"></i>
+                                <span class="small fw-semibold me-3 text-dark">Incorporation</span>
+                                <a href="{{ asset($seller->company_certificate) }}" target="_blank" class="text-primary" title="View Incorporation"><i class="ri-eye-line fs-5"></i></a>
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -857,7 +863,12 @@
                         <div class="col-md-4">
                             <div class="kyc-card">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="fw-bold mb-0">📇 PAN</h6>
+                                    <div class="d-flex align-items-center">
+                                        <h6 class="fw-bold mb-0">📇 PAN</h6>
+                                        @if($seller->pan_file)
+                                            <a href="{{ asset($seller->pan_file) }}" target="_blank" class="text-primary ms-2" title="View PAN Document"><i class="ri-eye-line fs-5"></i></a>
+                                        @endif
+                                    </div>
                                     <div class="d-flex align-items-center gap-1">
                                         @php $panStatus = strtolower($seller->pan_status ?? 'pending'); @endphp
                                         <span class="v-badge v-badge-{{ $panStatus }} py-0 px-2" style="font-size:0.65rem; line-height: 1.5; border-radius: 4px;">{{ ucfirst($panStatus) }}</span>
@@ -869,18 +880,18 @@
                                 </div>
                                 <div class="small text-muted">Number: <strong>{{ $seller->pan_number ?? '—' }}</strong></div>
                                 <div class="small text-muted mb-2">Expiry: {{ $seller->pan_expiry ? \Carbon\Carbon::parse($seller->pan_expiry)->format('d M Y') : '—' }}</div>
-                                @if($seller->pan_file)
-                                    <a href="{{ asset($seller->pan_file) }}" target="_blank" class="doc-btn doc-btn-pdf w-100 justify-content-center py-2" style="font-size:0.75rem">
-                                        <i class="ri-file-pdf-line"></i> View PAN
-                                    </a>
-                                @endif
                             </div>
                         </div>
                         {{-- GST --}}
                         <div class="col-md-4">
                             <div class="kyc-card">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="fw-bold mb-0">📑 GST</h6>
+                                    <div class="d-flex align-items-center">
+                                        <h6 class="fw-bold mb-0">📑 GST</h6>
+                                        @if($seller->gst_certificate)
+                                            <a href="{{ asset($seller->gst_certificate) }}" target="_blank" class="text-primary ms-2" title="View GST Certificate"><i class="ri-eye-line fs-5"></i></a>
+                                        @endif
+                                    </div>
                                     <div class="d-flex align-items-center gap-1">
                                         @php $gstStatus = strtolower($seller->gst_status ?? 'pending'); @endphp
                                         <span class="v-badge v-badge-{{ $gstStatus }} py-0 px-2" style="font-size:0.65rem; line-height: 1.5; border-radius: 4px;">{{ ucfirst($gstStatus) }}</span>
@@ -892,18 +903,18 @@
                                 </div>
                                 <div class="small text-muted">GSTIN: <strong>{{ $seller->gst_number ?? '—' }}</strong></div>
                                 <div class="small text-muted mb-2">Expiry: {{ $seller->gst_expiry ? \Carbon\Carbon::parse($seller->gst_expiry)->format('d M Y') : '—' }}</div>
-                                @if($seller->gst_certificate)
-                                    <a href="{{ asset($seller->gst_certificate) }}" target="_blank" class="doc-btn doc-btn-pdf w-100 justify-content-center py-2" style="font-size:0.75rem">
-                                        <i class="ri-file-pdf-line"></i> View GST
-                                    </a>
-                                @endif
                             </div>
                         </div>
                         {{-- IEC --}}
                         <div class="col-md-4">
                             <div class="kyc-card">
                                 <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h6 class="fw-bold mb-0">🌍 IEC</h6>
+                                    <div class="d-flex align-items-center">
+                                        <h6 class="fw-bold mb-0">🌍 IEC</h6>
+                                        @if($seller->iec_certificate)
+                                            <a href="{{ asset($seller->iec_certificate) }}" target="_blank" class="text-primary ms-2" title="View IEC Certificate"><i class="ri-eye-line fs-5"></i></a>
+                                        @endif
+                                    </div>
                                     <div class="d-flex align-items-center gap-1">
                                         @php $iecStatus = strtolower($seller->iec_status ?? 'pending'); @endphp
                                         <span class="v-badge v-badge-{{ $iecStatus }} py-0 px-2" style="font-size:0.65rem; line-height: 1.5; border-radius: 4px;">{{ ucfirst($iecStatus) }}</span>
@@ -915,11 +926,6 @@
                                 </div>
                                 <div class="small text-muted">IEC Code: <strong>{{ $seller->iec_code ?? '—' }}</strong></div>
                                 <div class="small text-muted mb-2">File No: {{ $seller->iec_file_number ?? '—' }}</div>
-                                @if($seller->iec_certificate)
-                                    <a href="{{ asset($seller->iec_certificate) }}" target="_blank" class="doc-btn doc-btn-pdf w-100 justify-content-center py-2" style="font-size:0.75rem">
-                                        <i class="ri-file-pdf-line"></i> View IEC
-                                    </a>
-                                @endif
                             </div>
                         </div>
                     </div>

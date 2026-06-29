@@ -64,7 +64,10 @@ class MyAccountController extends Controller
             'membership' => Membership::where('customer_id', $customer->id)->first(),
             'wishlist' => Wishlist::where('customer_id', $customer->id)->with('product')->get(),
             'referralCode' => $customer->referral_code,
-            'referralHistory' => Referral::where('customer_id', $customer->id)->with('referredCustomer')->get(),
+            'referralHistory' => Referral::where('customer_id', $customer->id)
+                ->with(['referredCustomer' => function($query) {
+                    $query->withCount('orders');
+                }])->get(),
             'orders' => Order::where('customer_id', $customer->id)->with('items.product')->orderBy('id','desc')->get(),
             'reviews' => ProductReview::where('customer_id', $customer->id)->with('product')->get(),
             'recentlyViewed' => CustomerRecentlyViewed::where('customer_id', $customer->id)->with('product')->orderBy('viewed_at','desc')->take(10)->get(),
@@ -126,6 +129,25 @@ class MyAccountController extends Controller
         if ($validated['marital_status'] !== 'Married') {
             $validated['anniversary'] = null;
         }
+
+        $customer->update($validated);
+        $customer->checkAndRewardProfileCompletion();
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Update bank account details.
+     */
+    public function updateBankDetails(Request $request)
+    {
+        $customer = Auth::guard('customer')->user();
+        $validated = $request->validate([
+            'bank_name' => 'nullable|string|max:255',
+            'account_holder' => 'nullable|string|max:255',
+            'account_number' => 'nullable|string|max:255',
+            'ifsc_code' => 'nullable|string|max:50',
+            'upi_id' => 'nullable|string|max:255',
+        ]);
 
         $customer->update($validated);
         $customer->checkAndRewardProfileCompletion();

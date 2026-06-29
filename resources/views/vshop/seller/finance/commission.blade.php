@@ -203,9 +203,9 @@
             <p>Total Revenue</p>
 
             <h3 class="money"
-                data-amount="245000">
+                data-amount="{{ $totalRevenue }}">
 
-                ₹245000
+                ₹{{ number_format($totalRevenue, 2) }}
 
             </h3>
 
@@ -220,7 +220,7 @@
             <p>Total Orders</p>
 
             <h3>
-                1,245
+                {{ number_format($totalOrders) }}
             </h3>
 
         </div>
@@ -234,9 +234,9 @@
             <p>Pending Settlements</p>
 
             <h3 class="money"
-                data-amount="35400">
+                data-amount="{{ $pendingSettlements }}">
 
-                ₹35400
+                ₹{{ number_format($pendingSettlements, 2) }}
 
             </h3>
 
@@ -251,7 +251,7 @@
             <p>Disputes Raised</p>
 
             <h3>
-                18
+                {{ $disputesRaised }}
             </h3>
 
         </div>
@@ -263,8 +263,14 @@
 {{-- ================= COMMISSION STRUCTURE ================= --}}
 <div class="card shadow-sm mb-4">
 
-    <div class="card-header fw-bold">
-        📊 Commission Structure
+    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+        <span>📊 Commission Structure</span>
+        <span class="badge bg-primary px-3 py-2" style="font-size: 13px;">
+            Seller Commission: {{ $sellerCommissionPct !== null ? number_format($sellerCommissionPct, 2) . '%' : 'N/A' }}
+            @if($platformCommissionPct !== null)
+                | Platform Fee: {{ number_format($platformCommissionPct, 2) }}%
+            @endif
+        </span>
     </div>
 
     <div class="card-body">
@@ -274,7 +280,7 @@
             <div class="col-md-6">
 
                 <h6 class="mb-3">
-                    Category-wise Commission
+                    Category-wise Commission Rate (%)
                 </h6>
 
                 <div id="categoryChart"
@@ -318,13 +324,13 @@
                     </strong>
 
                     <div class="text-muted small">
-                        Based on promotion_discount
+                        Based on promotion_discount & referral allocation
                     </div>
 
                 </div>
 
                 <span class="fw-bold text-success fs-5">
-                    32%
+                    {{ $promoWaiverRate }}%
                 </span>
 
             </div>
@@ -332,7 +338,7 @@
             <div class="progress">
 
                 <div class="progress-bar bg-success"
-                     style="width:32%;">
+                     style="width:{{ min(100, max(0, $promoWaiverRate * 3)) }}%;">
                 </div>
 
             </div>
@@ -359,10 +365,10 @@
                 <h6>Logistics</h6>
 
                 <h4 class="text-danger fee-breakdown money"
-                    data-original="4500"
-                    data-amount="4500">
+                    data-original="{{ $logisticsFee }}"
+                    data-amount="{{ $logisticsFee }}">
 
-                    ₹4500
+                    ₹{{ number_format($logisticsFee, 2) }}
 
                 </h4>
 
@@ -373,10 +379,10 @@
                 <h6>Gateway</h6>
 
                 <h4 class="text-warning fee-breakdown money"
-                    data-original="3200"
-                    data-amount="3200">
+                    data-original="{{ $gatewayFee }}"
+                    data-amount="{{ $gatewayFee }}">
 
-                    ₹3200
+                    ₹{{ number_format($gatewayFee, 2) }}
 
                 </h4>
 
@@ -387,10 +393,10 @@
                 <h6>Platform Fee</h6>
 
                 <h4 class="text-info fee-breakdown money"
-                    data-original="5600"
-                    data-amount="5600">
+                    data-original="{{ $platformFee }}"
+                    data-amount="{{ $platformFee }}">
 
-                    ₹5600
+                    ₹{{ number_format($platformFee, 2) }}
 
                 </h4>
 
@@ -401,10 +407,10 @@
                 <h6>Tax</h6>
 
                 <h4 class="text-primary fee-breakdown money"
-                    data-original="2800"
-                    data-amount="2800">
+                    data-original="{{ $taxFee }}"
+                    data-amount="{{ $taxFee }}">
 
-                    ₹2800
+                    ₹{{ number_format($taxFee, 2) }}
 
                 </h4>
 
@@ -450,25 +456,14 @@
 
                 <ul class="list-group">
 
-                    <li class="list-group-item d-flex justify-content-between">
-                        Electronics
-                        <span class="badge bg-primary">42%</span>
-                    </li>
-
-                    <li class="list-group-item d-flex justify-content-between">
-                        Fashion
-                        <span class="badge bg-success">28%</span>
-                    </li>
-
-                    <li class="list-group-item d-flex justify-content-between">
-                        Grocery
-                        <span class="badge bg-warning">18%</span>
-                    </li>
-
-                    <li class="list-group-item d-flex justify-content-between">
-                        Services
-                        <span class="badge bg-danger">12%</span>
-                    </li>
+                    @forelse($topPerformingCategories as $tc)
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ $tc->name }}
+                            <span class="badge {{ $tc->color_class }}">{{ $tc->percentage }}%</span>
+                        </li>
+                    @empty
+                        <li class="list-group-item text-muted text-center">No categories found for seller</li>
+                    @endforelse
 
                 </ul>
 
@@ -491,9 +486,15 @@
                 🔍 Fee Reconciliation
             </span>
 
-            <span class="badge bg-dark static-badge">
-                Static Data
-            </span>
+            @if($hasCommissionData)
+                <span class="badge bg-success static-badge">
+                    Seller Commission Rate: {{ number_format($sellerCommissionPct, 2) }}%
+                </span>
+            @else
+                <span class="badge bg-danger static-badge">
+                    No Commission Rule Found
+                </span>
+            @endif
 
         </div>
 
@@ -508,158 +509,122 @@
 
     <div class="table-responsive">
 
-        <table class="table">
+        <table class="table mb-0">
 
             <thead>
 
             <tr>
-                <th>Order</th>
-                <th>Product</th>
+                <th>Order / Rule</th>
+                <th>Product / Category</th>
                 <th>Amount</th>
-                <th>Commission</th>
+                <th>Seller Commission ({{ $sellerCommissionPct !== null ? number_format($sellerCommissionPct, 2).'%' : 'N/A' }})</th>
                 <th>Fees</th>
-                <th>Net</th>
+                <th>Net Earnings</th>
                 <th>Status</th>
-               
             </tr>
 
             </thead>
 
             <tbody>
 
-            {{-- ROW 1 --}}
-            <tr class="fee-row"
-                data-amount="4500"
-                data-commission="450"
-                data-logistics="100"
-                data-gateway="50"
-                data-platform="30"
-                data-tax="20">
+            @forelse($reconciliationOrders as $ord)
+                @php
+                    $amt = (float)($ord->total_amount ?? $ord->sub_total ?? 0);
+                    $commPct = $sellerCommissionPct ?? 0;
+                    $comm = round($amt * ($commPct / 100), 2);
+                    $logistics = round($amt * 0.02, 2);
+                    $gateway = round($amt * 0.015, 2);
+                    $platform = $platformCommissionPct !== null ? round($amt * ($platformCommissionPct / 100), 2) : 0;
+                    $tax = round(($logistics + $gateway + $platform) * 0.18, 2);
+                    $totFees = $logistics + $gateway + $platform + $tax;
+                    $net = $comm; // Seller earnings based on seller commission
+                @endphp
+                <tr class="fee-row"
+                    data-amount="{{ $amt }}"
+                    data-commission="{{ $comm }}"
+                    data-logistics="{{ $logistics }}"
+                    data-gateway="{{ $gateway }}"
+                    data-platform="{{ $platform }}"
+                    data-tax="{{ $tax }}">
 
-                <td>#1025</td>
+                    <td>#ORD-{{ $ord->id }}</td>
 
-                <td>Wireless Headphone</td>
+                    <td>Order Item #{{ $ord->id }}</td>
 
-                <td class="money"
-                    data-amount="4500">
-                    ₹4500
-                </td>
+                    <td class="money" data-amount="{{ $amt }}">
+                        ₹{{ number_format($amt, 2) }}
+                    </td>
 
-                <td class="money"
-                    data-amount="450">
-                    ₹450
-                </td>
+                    <td class="money" data-amount="{{ $comm }}">
+                        ₹{{ number_format($comm, 2) }}
+                    </td>
 
-                <td class="table-fees money"
-                    data-original="200"
-                    data-amount="200">
-                    ₹200
-                </td>
+                    <td class="table-fees money" data-original="{{ $totFees }}" data-amount="{{ $totFees }}">
+                        ₹{{ number_format($totFees, 2) }}
+                    </td>
 
-                <td class="table-net money"
-                    data-original="3850"
-                    data-amount="3850">
-                    ₹3850
-                </td>
+                    <td class="table-net money" data-original="{{ $net }}" data-amount="{{ $net }}">
+                        ₹{{ number_format($net, 2) }}
+                    </td>
 
-                <td>
-                    <span class="badge bg-success">
-                        Matched
-                    </span>
-                </td>
+                    <td>
+                        <span class="badge {{ in_array($ord->status, ['completed', 'paid', 'delivered']) ? 'bg-success' : 'bg-warning' }}">
+                            {{ ucfirst($ord->status ?? 'Matched') }}
+                        </span>
+                    </td>
+                </tr>
+            @empty
+                @forelse($commissionRules as $rule)
+                    @php
+                        $amt = (float)($rule->total_sales > 0 ? $rule->total_sales : 0);
+                        $commPct = (float)($rule->seller_commission ?? 0);
+                        $comm = round($amt * ($commPct / 100), 2);
+                        $totFees = round($amt * 0.05, 2);
+                        $net = $comm;
+                    @endphp
+                    <tr class="fee-row"
+                        data-amount="{{ $amt }}"
+                        data-commission="{{ $comm }}"
+                        data-logistics="0"
+                        data-gateway="0"
+                        data-platform="0"
+                        data-tax="0">
 
-             
+                        <td>Rule #{{ $rule->id }}</td>
 
-            </tr>
+                        <td>{{ ucfirst($rule->app_type ?? 'vshop') }} - {{ ucfirst($rule->sell_type ?? 'direct') }}</td>
 
-            {{-- ROW 2 --}}
-            <tr class="fee-row"
-                data-amount="6200"
-                data-commission="620"
-                data-logistics="120"
-                data-gateway="70"
-                data-platform="60"
-                data-tax="50">
+                        <td class="money" data-amount="{{ $amt }}">
+                            ₹{{ number_format($amt, 2) }}
+                        </td>
 
-                <td>#1026</td>
+                        <td class="money" data-amount="{{ $comm }}">
+                            ₹{{ number_format($comm, 2) }} ({{ number_format($commPct, 2) }}%)
+                        </td>
 
-                <td>Fashion Combo</td>
+                        <td class="table-fees money" data-original="{{ $totFees }}" data-amount="{{ $totFees }}">
+                            ₹{{ number_format($totFees, 2) }}
+                        </td>
 
-                <td class="money"
-                    data-amount="6200">
-                    ₹6200
-                </td>
+                        <td class="table-net money" data-original="{{ $net }}" data-amount="{{ $net }}">
+                            ₹{{ number_format($net, 2) }}
+                        </td>
 
-                <td class="money"
-                    data-amount="620">
-                    ₹620
-                </td>
-
-                <td class="table-fees money"
-                    data-original="300"
-                    data-amount="300">
-                    ₹300
-                </td>
-
-                <td class="table-net money"
-                    data-original="5280"
-                    data-amount="5280">
-                    ₹5280
-                </td>
-
-                <td>
-                    <span class="badge bg-warning">
-                        Mismatch
-                    </span>
-                </td>
-
-               
-
-            </tr>
-
-            {{-- ROW 3 --}}
-            <tr class="fee-row"
-                data-amount="2400"
-                data-commission="240"
-                data-logistics="40"
-                data-gateway="20"
-                data-platform="20"
-                data-tax="20">
-
-                <td>#1027</td>
-
-                <td>Digital Service</td>
-
-                <td class="money"
-                    data-amount="2400">
-                    ₹2400
-                </td>
-
-                <td class="money"
-                    data-amount="240">
-                    ₹240
-                </td>
-
-                <td class="table-fees money"
-                    data-original="100"
-                    data-amount="100">
-                    ₹100
-                </td>
-
-                <td class="table-net money"
-                    data-original="2060"
-                    data-amount="2060">
-                    ₹2060
-                </td>
-
-                <td>
-                    <span class="badge bg-success">
-                        Matched
-                    </span>
-                </td>
-
-             
-            </tr>
+                        <td>
+                            <span class="badge bg-success">
+                                Active Rule
+                            </span>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted fw-semibold">
+                            <i class="fa-solid fa-circle-exclamation text-warning me-2 fs-5"></i>
+                            No commission records or rules configured for this seller in <code>commission_management</code> table.
+                        </td>
+                    </tr>
+                @endforelse
+            @endforelse
 
             </tbody>
 
@@ -846,12 +811,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
         xAxis:{
             type:'category',
-            data:[
-                'Electronics',
-                'Fashion',
-                'Groceries',
-                'Services'
-            ]
+            data: @json($categoryChartLabels)
         },
 
         yAxis:{
@@ -860,7 +820,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
         series:[{
             type:'bar',
-            data:[12,18,9,15],
+            data: @json($categoryChartData),
             color:'#4e73df',
             label:{
                 show:true,
@@ -883,10 +843,7 @@ document.addEventListener("DOMContentLoaded",function(){
         series:[{
             type:'pie',
             radius:['50%','75%'],
-            data:[
-                {value:65,name:'Product'},
-                {value:35,name:'Service'}
-            ]
+            data: @json($productVsService)
         }]
 
     });
@@ -904,10 +861,7 @@ document.addEventListener("DOMContentLoaded",function(){
         series:[{
             type:'pie',
             radius:'70%',
-            data:[
-                {value:55,name:'Dropship'},
-                {value:45,name:'Inventory'}
-            ]
+            data: @json($dropshipVsInventory)
         }]
 
     });
@@ -924,14 +878,7 @@ document.addEventListener("DOMContentLoaded",function(){
 
         xAxis:{
             type:'category',
-            data:[
-                'Jan',
-                'Feb',
-                'Mar',
-                'Apr',
-                'May',
-                'Jun'
-            ]
+            data: @json($trendLabels)
         },
 
         yAxis:{
@@ -942,14 +889,7 @@ document.addEventListener("DOMContentLoaded",function(){
             type:'line',
             smooth:true,
             areaStyle:{},
-            data:[
-                12000,
-                18000,
-                15000,
-                24000,
-                28000,
-                32000
-            ]
+            data: @json($trendData)
         }]
 
     });

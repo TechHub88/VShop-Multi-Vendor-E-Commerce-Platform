@@ -14,7 +14,7 @@
         .login-body-inner { width: 100%; min-height: 100dvh; display: flex; align-items: center; position: relative; }
         .login-body-left {
             width: 50%; height: 100%; min-height: 100dvh; padding: 80px;
-            background-image: url(https://img.freepik.com/free-photo/copy-space-cosmetic-skin-care-products_23-2148317615.jpg?t=st=1773403401~exp=1773407001~hmac=c55fcfca1d3f05bd276fbc991cfac47f632ceb6f1db723cb5bf047ee2aeb5b4b&w=1060);
+            background-image: url("{{ asset('images/vshop_all_categories_bg.png') }}");
             background-repeat: no-repeat; background-size: cover; background-position: top;
             position: relative; display: flex; align-items: center;
         }
@@ -101,7 +101,7 @@
                     <div class="login-form-sec">
                         <div class="top-area">
                             <a href="{{ route('vshoplogin') }}">
-                                <img src="{{ asset('images/vshop-logo.png') }}" alt="VSHOP Logo">
+                                <img src="{{ asset('images/new-logo-vridhee.png') }}" alt="Vridhee Logo">
                             </a>
                             <h2>Create VSHOP Account</h2>
                             <p>Enter your details to start shopping</p>

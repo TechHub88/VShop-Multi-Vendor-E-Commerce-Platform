@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class Customer extends Authenticatable
 {
@@ -12,6 +13,21 @@ class Customer extends Authenticatable
     /**
      * The attributes that are mass assignable.
      */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($customer) {
+            if (empty($customer->referral_code)) {
+                do {
+                    $code = 'BUYER-' . strtoupper(Str::random(6));
+                } while (self::where('referral_code', $code)->exists());
+
+                $customer->referral_code = $code;
+            }
+        });
+    }
+
     protected $fillable = [
         // Basic info
         'name',

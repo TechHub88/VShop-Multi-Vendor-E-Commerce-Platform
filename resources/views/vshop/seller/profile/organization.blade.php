@@ -62,6 +62,26 @@ View Organization
 
 </div>
 
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs mb-4" id="orgTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" data-bs-target="#basic-info" type="button" role="tab" aria-controls="basic-info" aria-selected="true">Basic Info</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="company-tab" data-bs-toggle="tab" data-bs-target="#company" type="button" role="tab" aria-controls="company" aria-selected="false">Company Registration</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tax-tab" data-bs-toggle="tab" data-bs-target="#tax" type="button" role="tab" aria-controls="tax" aria-selected="false">PAN & GST</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="address-tab" data-bs-toggle="tab" data-bs-target="#address" type="button" role="tab" aria-controls="address" aria-selected="false">Address & Comm</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="orgTabsContent">
+        <!-- Basic Info Tab -->
+        <div class="tab-pane fade show active p-2" id="basic-info" role="tabpanel" aria-labelledby="basic-tab">
+
 {{-- ================= APPLICATION ================= --}}
 <div class="mb-4">
 
@@ -387,7 +407,10 @@ value="{{ $type }}"
 @endforeach
 
 </div>
-
+        </div> <!-- End Basic Info Tab -->
+        
+        <!-- Company Tab -->
+        <div class="tab-pane fade p-2" id="company" role="tabpanel" aria-labelledby="company-tab">
 
 <div id="companySection" style="display:none;">
 
@@ -477,8 +500,10 @@ value="{{ $type }}"
     </div>
 
 </div>
+        </div> <!-- End Company Tab -->
 
-<hr>
+        <!-- PAN & GST Tab -->
+        <div class="tab-pane fade p-2" id="tax" role="tabpanel" aria-labelledby="tax-tab">
 
 @php
 use Carbon\Carbon;
@@ -854,11 +879,10 @@ $gstDaysLeft = $gstExpiry
     </div>
 
 </div>
+        </div> <!-- End PAN & GST Tab -->
 
-<hr>
-
-<hr>
-
+        <!-- Address & Comm Tab -->
+        <div class="tab-pane fade p-2" id="address" role="tabpanel" aria-labelledby="address-tab">
 
 {{-- ================= IEC ================= --}}
 
@@ -1329,6 +1353,8 @@ placeholder="Street Address"></textarea>
 
 </div>
 
+        </div> <!-- End Address & Comm Tab -->
+    </div> <!-- End Tab Content -->
 
 <div class="text-end mt-4">
 

@@ -7,11 +7,11 @@
     <style>
         body { font-family: DejaVu Sans, sans-serif; }
         .invoice-box {
-            max-width: 800px;
+            max-width: 400px;
             margin: auto;
-            padding: 25px;
+            padding: 15px;
             border: 1px solid #eee;
-            font-size: 14px;
+            font-size: 12px;
             line-height: 20px;
         }
         table { width: 100%; border-collapse: collapse; }
@@ -46,7 +46,7 @@
         <tr>
             <td width="50%">
                 <strong>Sold By:</strong><br>
-                Mafatlals Pvt Ltd<br>
+                VRIDHEE INNOVATIONS PRIVATE LIMITED<br>
                 123, Industrial Estate,<br>
                 Mumbai, India 400001
             </td>
@@ -340,7 +340,7 @@
     <br><br>
 
     <p style="text-align:center; font-size:12px;">
-        Thank you for shopping with Mafatlals!
+        Thank you for shopping with Vridhee!
     </p>
 </div>
 

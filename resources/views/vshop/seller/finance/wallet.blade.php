@@ -522,38 +522,9 @@ body {
                 <input type="text" id="tableSearchInput" placeholder="Search Enquiries, Services, Sources...">
             </div>
 
-            {{-- Default Region Pill --}}
-            <div class="control-badge d-flex flex-column align-items-start" title="Default Region" style="padding: 4px 12px; border-radius: 12px; height: auto; gap: 2px;">
-                <small class="text-muted text-uppercase fw-bold" style="font-size: 9px; letter-spacing: 0.5px;">Default Region</small>
-                @php
-                    $countryIds = \DB::table('seller_operation_areas')
-                        ->where('seller_id', $seller->id)
-                        ->whereNotNull('country_id')
-                        ->pluck('country_id')
-                        ->unique();
-
-                    $countries = \DB::table('countries')
-                        ->whereIn('id', $countryIds)
-                        ->get();
-
-                    $selectedCountry = request('country', session('country'));
-                    if (!$selectedCountry && $countries->count() > 0) {
-                        $selectedCountry = $countries->first()->id;
-                    }
-                    session(['country' => $selectedCountry]);
-                @endphp
-                <select id="countryFilter" class="border-0 bg-transparent fw-bold" style="outline: none; cursor: pointer; padding: 0; font-size: 13px; color: #1e293b;">
-                    @foreach($countries as $country)
-                        <option value="{{ $country->id }}" {{ $selectedCountry == $country->id ? 'selected' : '' }}>
-                            {{ $country->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
             {{-- Currency Selector Pill --}}
             <div class="control-badge" title="Currency Selector">
-                <select id="currencySwitcher" class="border-0 bg-transparent fw-bold" style="outline: none; cursor: pointer;">
+                <select id="currencySwitcher" class="border-0 bg-transparent fw-bold" style="outline: none; cursor: pointer; padding: 4px 8px;">
                     <option value="INR">₹ INR</option>
                     <option value="USD">$ USD</option>
                     <option value="EUR">€ EUR</option>
@@ -1000,50 +971,56 @@ body {
                             <thead>
                                 <tr>
                                     <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Payment Method</th>
+                                    <th>Transaction Type</th>
+                                    <th>Credit / Debit</th>
                                     <th>Amount</th>
-                                    <th>Transaction ID</th>
+                                    <th>Balance After</th>
+                                    <th>Reference ID</th>
+                                    <th>Description / Remarks</th>
                                     <th>Status</th>
-                                    <th>Remarks</th>
-                                    <th>Attachment</th>
                                 </tr>
                             </thead>
                             <tbody id="walletTransactionsTable">
                                 @forelse($walletTransactions ?? [] as $wt)
+                                @php
+                                    $isCredit = (float)($wt->credit ?? 0) > 0;
+                                    $amount = $isCredit ? (float)$wt->credit : (float)($wt->debit ?? 0);
+                                @endphp
                                 <tr>
                                     <td>{{ date('d M Y, h:i A', strtotime($wt->created_at)) }}</td>
                                     <td>
-                                        @if($wt->type == 'credit')
+                                        <span class="badge bg-light text-dark border px-2 py-1 fw-bold text-uppercase" style="font-size: 11px;">
+                                            {{ str_replace('_', ' ', $wt->transaction_type ?? 'transaction') }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if($isCredit)
                                             <span class="badge-credit"><i class="fa-solid fa-circle-up"></i> Credit</span>
                                         @else
                                             <span class="badge-deducted"><i class="fa-solid fa-circle-down"></i> Debit</span>
                                         @endif
                                     </td>
-                                    <td>{{ ucfirst($wt->payment_method) }}</td>
-                                    <td class="fw-bold {{ $wt->type == 'credit' ? 'text-success' : 'text-danger' }}">
-                                        <span class="money" data-amount="{{ $wt->amount }}">
-                                            {{ $wt->type == 'credit' ? '+' : '-' }} ₹{{ number_format($wt->amount, 2) }}
+                                    <td class="fw-bold {{ $isCredit ? 'text-success' : 'text-danger' }}">
+                                        <span class="money" data-amount="{{ $amount }}">
+                                            {{ $isCredit ? '+' : '-' }} ₹{{ number_format($amount, 2) }}
                                         </span>
                                     </td>
-                                    <td><small class="text-muted">{{ $wt->transaction_id ?? 'N/A' }}</small></td>
+                                    <td class="fw-bold text-slate-700">
+                                        <span class="money" data-amount="{{ $wt->balance_after ?? 0 }}">
+                                            ₹{{ number_format($wt->balance_after ?? 0, 2) }}
+                                        </span>
+                                    </td>
+                                    <td><small class="text-primary fw-bold">{{ $wt->reference_id ?? 'N/A' }}</small></td>
+                                    <td><small class="text-muted">{{ $wt->description ?? '-' }}</small></td>
                                     <td>
-                                        @if($wt->status == 'completed')
+                                        @if($wt->status == 'completed' || $wt->status == 'success')
                                             <span class="badge bg-success">Completed</span>
                                         @elseif($wt->status == 'pending')
                                             <span class="badge-pending">Pending</span>
+                                        @elseif($wt->status == 'hold')
+                                            <span class="badge bg-warning text-dark">On Hold</span>
                                         @else
                                             <span class="badge-deducted">Failed</span>
-                                        @endif
-                                    </td>
-                                    <td><small>{{ $wt->remarks ?? '-' }}</small></td>
-                                    <td>
-                                        @if($wt->attachment)
-                                            <a href="#" target="_blank" class="btn btn-sm btn-link">
-                                                <i class="fa-solid fa-file"></i> View
-                                            </a>
-                                        @else
-                                            -
                                         @endif
                                     </td>
                                 </tr>
@@ -1081,37 +1058,22 @@ body {
                                     <th>Release Date</th>
                                     <th>Hold Reason</th>
                                     <th>Deduction Summary</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {{-- Static demo data as per screenshot --}}
+                                                            <tbody>
+                                @forelse($referralFinance ?? [] as $rf)
                                 <tr>
-                                    <td>01 Nov 2023</td>
-                                    <td>Product Name</td>
-                                    <td class="fw-bold money" data-amount="10">$10.00</td>
-                                    <td><span class="badge-onhold">On Hold</span></td>
-                                    <td>01 Nov 2023</td>
-                                    <td>Awaiting Sale Confirmation</td>
-                                    <td>Deduction Summary - #12345 - $15.00</td>
-                                </tr>
-                                <tr>
-                                    <td>01 Nov 2023</td>
-                                    <td>Product Name</td>
-                                    <td class="fw-bold money" data-amount="75">$75.00</td>
+                                    <td>{{ date('d M Y', strtotime($rf->date)) }}</td>
+                                    <td>{{ $rf->name }}</td>
+                                    <td class="fw-bold money" data-amount="{{ $rf->deduction }}">₹{{ number_format($rf->deduction, 2) }}</td>
                                     <td><span class="badge-released">Released</span></td>
-                                    <td>20 Nov 2023</td>
-                                    <td>Pending Buyer Acceptance</td>
-                                    <td>Deduction Summary - #12301 - $245.00</td>
+                                    <td>{{ date('d M Y', strtotime($rf->date)) }}</td>
+                                    <td>Sale Completed</td>
+                                    <td>Deduction Summary - {{ $rf->name }}</td>
                                 </tr>
+                                @empty
                                 <tr>
-                                    <td>01 Nov 2023</td>
-                                    <td>Product Name</td>
-                                    <td class="fw-bold money" data-amount="70">$70.00</td>
-                                    <td><span class="badge-released">Released</span></td>
-                                    <td>31 Nov 2023</td>
-                                    <td>Pending Buyer Acceptance</td>
-                                    <td>Deduction Summary - #12301 - $875.00</td>
+                                    <td colspan="7" class="text-center text-muted py-4">No referral commission history found.</td>
                                 </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -1121,15 +1083,15 @@ body {
                         <h6 class="fw-bold mb-3">Deduction Summaries</h6>
                         <div class="deduction-summary-item">
                             <span>Today's Deduction:</span>
-                            <strong class="text-danger money" data-amount="15">-$15.00</strong>
+                            <strong class="text-danger money" data-amount="{{ $today_deduction ?? 0 }}">-₹{{ number_format($today_deduction ?? 0, 2) }}</strong>
                         </div>
                         <div class="deduction-summary-item">
                             <span>Monthly Deduction:</span>
-                            <strong class="text-danger money" data-amount="245">-$245.00</strong>
+                            <strong class="text-danger money" data-amount="{{ $monthly_deduction ?? 0 }}">-₹{{ number_format($monthly_deduction ?? 0, 2) }}</strong>
                         </div>
                         <div class="deduction-summary-item">
                             <span>Total Remaining Referral Budget:</span>
-                            <strong class="text-success money" data-amount="875">$875.00</strong>
+                            <strong class="text-success money" data-amount="{{ $available ?? 0 }}">₹{{ number_format($available ?? 0, 2) }}</strong>
                         </div>
                     </div>
                 </div>
@@ -1153,20 +1115,19 @@ body {
                                 </tr>
                             </thead>
                             <tbody>
+                                @forelse($referralFinance ?? [] as $rf)
                                 <tr>
-                                    <td>2026-05-18</td>
-                                    <td>Ayurveda</td>
-                                    <td class="fw-bold text-danger money" data-amount="10">$10.00</td>
-                                    <td class="fw-bold text-success money" data-amount="10">$10.00</td>
-                                    <td class="fw-bold text-primary money" data-amount="10">$10.00</td>
+                                    <td>{{ date('Y-m-d', strtotime($rf->date)) }}</td>
+                                    <td>{{ $rf->name }}</td>
+                                    <td class="fw-bold text-danger money" data-amount="{{ $rf->deduction }}">-₹{{ number_format($rf->deduction, 2) }}</td>
+                                    <td class="fw-bold text-success money" data-amount="{{ $rf->sales }}">+₹{{ number_format($rf->sales, 2) }}</td>
+                                    <td class="fw-bold text-primary money" data-amount="{{ $rf->budget }}">₹{{ number_format($rf->budget, 2) }}</td>
                                 </tr>
+                                @empty
                                 <tr>
-                                    <td>2026-05-18</td>
-                                    <td>Space Boo</td>
-                                    <td class="fw-bold text-danger money" data-amount="10">$10.00</td>
-                                    <td class="fw-bold text-success money" data-amount="5">$5.00</td>
-                                    <td class="fw-bold text-primary money" data-amount="10">$10.00</td>
+                                    <td colspan="5" class="text-center text-muted py-4">No referral finance data found.</td>
                                 </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -1204,15 +1165,22 @@ body {
                                 <div class="text-muted" style="font-size: 11px;">Lead Deduction Wallet &lt; 5,000</div>
                             </div>
                             <div class="form-check form-switch m-0">
-                                <input class="form-check-input" type="checkbox" role="switch" id="lowBalanceToggle" checked>
+                                <input class="form-check-input" type="checkbox" role="switch" id="lowBalanceToggle" {{ ($lead_deduction_wallet ?? 0) < 5000 ? 'checked' : '' }}>
                             </div>
                         </div>
 
                         {{-- Alert Callout --}}
-                        <div class="alert-card-warning">
-                            <i class="fa-solid fa-circle-exclamation fs-5"></i>
-                            <div>Minimum balance alert before lead deduction fails</div>
-                        </div>
+                        @if(($lead_deduction_wallet ?? 0) < 5000)
+                            <div class="alert-card-warning">
+                                <i class="fa-solid fa-circle-exclamation fs-5"></i>
+                                <div>Minimum balance alert before lead deduction fails (Current: ₹{{ number_format($lead_deduction_wallet ?? 0, 2) }})</div>
+                            </div>
+                        @else
+                            <div class="alert-card-warning" style="background: #f0fdf4; border-color: #bbf7d0; color: #166534;">
+                                <i class="fa-solid fa-circle-check fs-5 text-success"></i>
+                                <div>Wallet balance is healthy (Current: ₹{{ number_format($lead_deduction_wallet ?? 0, 2) }})</div>
+                            </div>
+                        @endif
 
                     </div>
                 </div>
@@ -1224,25 +1192,30 @@ body {
                     </h6>
 
                     <div class="d-flex flex-column gap-2">
-                        
-                        {{-- Attraction 1 --}}
-                        <div class="attraction-card">
-                            <span class="attraction-icon">🏬</span>
-                            <div>
-                                <h6 class="fw-bold mb-0 font-outfit" style="font-size: 13px;">Local Pawn Shop</h6>
-                                <span class="text-muted" style="font-size: 11px;">(e.g., Banarasi Pawn)</span>
+                        @forelse($interestingAttractions ?? [] as $attraction)
+                            <div class="attraction-card">
+                                <span class="attraction-icon">🏬</span>
+                                <div>
+                                    <h6 class="fw-bold mb-0 font-outfit" style="font-size: 13px;">{{ $attraction->name ?? 'Featured Product' }}</h6>
+                                    <span class="text-muted" style="font-size: 11px;">(₹{{ number_format($attraction->price ?? $attraction->unit_price ?? 0, 2) }})</span>
+                                </div>
                             </div>
-                        </div>
-
-                        {{-- Attraction 2 --}}
-                        <div class="attraction-card">
-                            <span class="attraction-icon">👗</span>
-                            <div>
-                                <h6 class="fw-bold mb-0 font-outfit" style="font-size: 13px;">Famous Saree Center</h6>
-                                <span class="text-muted" style="font-size: 11px;">(e.g., Traditional Silks)</span>
+                        @empty
+                            <div class="attraction-card">
+                                <span class="attraction-icon">🏬</span>
+                                <div>
+                                    <h6 class="fw-bold mb-0 font-outfit" style="font-size: 13px;">Local Pawn Shop</h6>
+                                    <span class="text-muted" style="font-size: 11px;">(e.g., Banarasi Pawn)</span>
+                                </div>
                             </div>
-                        </div>
-
+                            <div class="attraction-card">
+                                <span class="attraction-icon">👗</span>
+                                <div>
+                                    <h6 class="fw-bold mb-0 font-outfit" style="font-size: 13px;">Famous Saree Center</h6>
+                                    <span class="text-muted" style="font-size: 11px;">(e.g., Traditional Silks)</span>
+                                </div>
+                            </div>
+                        @endforelse
                     </div>
                 </div>
 
@@ -1259,7 +1232,7 @@ body {
 
                     <div class="rule-item">
                         <i class="fa-solid fa-circle-info mt-0_5"></i>
-                        <div>Refund to wallet when click and enquiry is in recllet (e.g., cihat nam)</div>
+                        <div>Refund to wallet when click and enquiry is in recllet (e.g., chat name)</div>
                     </div>
                 </div>
 
@@ -1385,9 +1358,6 @@ body {
         </div>
     </div>
 </div>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function(){
