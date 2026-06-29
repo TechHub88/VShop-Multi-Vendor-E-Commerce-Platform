@@ -326,22 +326,29 @@
     }
     
     .view-similar-btn {
-        background: #004392;
-        color: #fff;
-        font-size: 12px;
+        background: #ffffff;
+        color: #212121;
+        font-size: 13px;
         font-weight: 600;
-        padding: 6px;
-        border-radius: 6px;
+        padding: 8px 12px;
+        border: 1px solid #d7d7d7;
+        border-radius: 4px;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: 0.3s;
+        transition: all 0.3s ease;
         text-decoration: none;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         height: auto !important;
     }
     .view-similar-btn:hover {
-        background: #002e66;
-        color: #fff;
+        background: #f7f7f7;
+        border-color: #c2c2c2;
+        color: #000;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .view-similar-btn i {
+        color: #555;
     }
     
     /* Mobile responsive fix for product layout */
