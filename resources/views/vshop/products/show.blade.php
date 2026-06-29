@@ -690,7 +690,7 @@
                                                  @elseif($product->low_stock_threshold !== null && $product->stock_qty <= $product->low_stock_threshold)
                                                      <p class="in-stock text-warning" style="color: #ff9900 !important; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock! Only <span id="availableStock">{{ $product->stock_qty }}</span> left</p>
                                                  @else
-                                                     <p class="in-stock text-success"><i class="fa-regular fa-check-circle"></i> In Stock (<span id="availableStock">{{ $product->stock_qty }}</span> available)</p>
+                                                     <p class="in-stock text-success"><i class="fa-regular fa-check-circle"></i> In Stock <span id="availableStock" class="d-none">{{ $product->stock_qty }}</span></p>
                                                  @endif
                                              </div>
 
@@ -2035,7 +2035,7 @@ $(document).on('click','.copy',function(){
         } else {
             stockStatus.innerHTML = `<p class="in-stock text-success">
                 <i class="fa-regular fa-check-circle"></i> 
-                In Stock (<span id="availableStock">${stock}</span> available)
+                In Stock <span id="availableStock" class="d-none">${stock}</span>
             </p>`;
             if (addToCartBtn) addToCartBtn.disabled = false;
             if (buyNowBtn) buyNowBtn.disabled = false;
