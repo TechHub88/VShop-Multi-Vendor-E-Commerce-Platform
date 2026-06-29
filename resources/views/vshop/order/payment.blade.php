@@ -247,6 +247,16 @@
                      <p class="text-success" style="font-weight: 600;">Coupon Discount <span id="coupon_label_code">{{ $couponCode ? '('.$couponCode.')' : '' }}</span></p>
                      <span class="text-success" id="coupon_discount" style="font-weight: 600;">- ₹ {{ number_format($couponDiscount, 2) }}</span>
                  </li>
+
+                 {{-- Referral Discount --}}
+                 @php
+                     $referralDiscount = $orderSummary['referral_discount'] ?? 0;
+                 @endphp
+                 <li id="referral_discount_row" class="{{ $referralDiscount > 0 ? '' : 'd-none' }}">
+                     <p class="text-success" style="font-weight: 600;">Referral Discount</p>
+                     <span class="text-success" id="referral_discount" style="font-weight: 600;">- ₹ {{ number_format($referralDiscount, 2) }}</span>
+                 </li>
+
                  <li id="rewards_discount_row" class="{{ $rewardDiscount > 0 ? '' : 'd-none' }}">
                      <p class="text-success" style="font-weight: 600;">Rewards Discount <span id="rewards_label_code">{{ $appliedPoints ? '('.$appliedPoints.' Pts)' : '' }}</span></p>
                      <span class="text-success" id="rewards_discount" style="font-weight: 600;">- ₹ {{ number_format($rewardDiscount, 2) }}</span>

@@ -215,13 +215,25 @@ public function placeOrder(Request $request)
         }
 
         $referrerId = $customer->referred_by ?? null;
-        if ($request->filled('referral_code')) {
+        if (empty($referrerId) && $request->filled('referral_code')) {
             $referrer = \App\Models\Customer::where('referral_code', $request->referral_code)
                 ->where('id', '!=', $customer->id)
                 ->first();
                 
             if ($referrer) {
                 $referrerId = $referrer->id;
+                $customer->referred_by = $referrerId;
+                $customer->save();
+                
+                \App\Models\Referral::firstOrCreate([
+                    'customer_id' => $referrerId,
+                    'referred_customer_id' => $customer->id,
+                ], [
+                    'referral_code' => $referrer->referral_code,
+                    'status' => 'successful',
+                    'reward_amount' => 0,
+                    'completed_at' => now(),
+                ]);
             } else {
                 return back()->with('error', 'Invalid referral code provided.');
             }
@@ -425,6 +437,44 @@ public function placeOrder(Request $request)
             'referrer_id'         => $referrerId,
         ]);
 
+        // Process Buyer-to-Buyer Referral Commission
+        if ($referrerId) {
+            $hasOrderedBefore = \App\Models\Order::where('customer_id', $customer->id)
+                ->where('seller_id', $sellerId)
+                ->where('id', '!=', $order->id)
+                ->exists();
+
+            if (!$hasOrderedBefore) {
+                $config = DB::table('referral_configurations')
+                    ->where('type', 'buyer_to_buyer')
+                    ->where('reference_id', $sellerId)
+                    ->where('status', 1)
+                    ->first();
+
+                if ($config) {
+                    $commPercent = $config->commission_percentage ?? 0;
+                    if ($commPercent > 0) {
+                        $rewardAmount = ($subTotal * $commPercent) / 100;
+                        $rewardPoints = (int) $rewardAmount;
+                        
+                        \App\Models\Reward::create([
+                            'customer_id' => $referrerId,
+                            'type' => 'points',
+                            'points' => $rewardPoints,
+                            'amount' => $rewardAmount,
+                            'description' => "Buyer-to-Buyer referral commission for Customer #{$customer->id}'s first purchase from Seller #{$sellerId}",
+                            'status' => 'active',
+                            'expiry_date' => now()->addDays(365)
+                        ]);
+
+                        \App\Models\Referral::where('customer_id', $referrerId)
+                            ->where('referred_customer_id', $customer->id)
+                            ->increment('reward_amount', $rewardPoints);
+                    }
+                }
+            }
+        }
+
         // Record Referral History immediately so seller sees it
         if ($referrerId) {
             \App\Models\ReferralHistory::create([
@@ -480,10 +530,12 @@ public function placeOrder(Request $request)
         $pointsEarned = 5;
         $description = 'Reward points earned for Order #' . $order->id;
 
-        if ($prevOrdersCount == 0) {
+        if ($prevOrdersCount == 0 && empty($referrerId)) {
             // First order sliding scale: 15 points + 50 points Login & First Order bonus
             $pointsEarned = 15 + 50; 
             $description = 'Login & First Order Reward Points (15 base + 50 bonus) for Order #' . $order->id;
+        } elseif ($prevOrdersCount == 0 && !empty($referrerId)) {
+            $pointsEarned = 0; // No points for the buyer if they use a referral code
         } elseif ($prevOrdersCount == 1) {
             // Second order sliding scale: 10 points
             $pointsEarned = 10;
@@ -840,13 +892,55 @@ private function calculateOrderSummary($cartItems)
     $summary['reward_discount'] = $rewardDiscount;
     $summary['reward_points'] = session('order.reward_points', 0);
 
+    // --- BUYER-TO-BUYER REFERRAL LOGIC FOR DISPLAY ---
+    $customer = Auth::guard('customer')->user();
+    $referralDiscount = 0;
+    
+    if ($customer && $customer->referred_by) {
+        // Group items by seller to check first purchase per seller
+        $sellerIds = [];
+        foreach ($cartItems as $item) {
+            $sId = $item->product->created_by_id ?? null;
+            if ($sId) {
+                $sellerIds[$sId] = ($sellerIds[$sId] ?? 0) + (($item->main_product_price ?? 0) * ($item->main_product_quantity ?? 1));
+            }
+        }
+
+        foreach($sellerIds as $sellerId => $sellerSubtotal) {
+            $hasOrderedBefore = DB::table('orders')
+                ->where('customer_id', $customer->id)
+                ->where('seller_id', $sellerId)
+                ->exists();
+
+            if (!$hasOrderedBefore) {
+                $config = DB::table('referral_configurations')
+                    ->where('type', 'buyer_to_buyer')
+                    ->where('reference_id', $sellerId)
+                    ->where('status', 1)
+                    ->first();
+
+                if ($config) {
+                    $configExtra = json_decode($config->description, true);
+                    $refereeDiscountPercent = $configExtra['referee_discount'] ?? 0;
+
+                    if ($refereeDiscountPercent > 0) {
+                        $referralDiscount += $sellerSubtotal * ($refereeDiscountPercent / 100);
+                    }
+                }
+            }
+        }
+    }
+    
+    $summary['referral_discount'] = $referralDiscount;
+
     $summary['grand_total'] =
         $summary['subtotal'] +
         $summary['cgst'] +
         $summary['sgst'] +
         $summary['igst'] -
         $couponDiscount -
-        $rewardDiscount;
+        $rewardDiscount -
+        $referralDiscount;
 
     return $summary;
 }
