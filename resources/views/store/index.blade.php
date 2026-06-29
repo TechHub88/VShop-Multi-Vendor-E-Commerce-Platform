@@ -34,12 +34,10 @@ $routeName = 'productmanage.show';
 
 {{-- ================= TOP TRENDING ================= --}}
 
-<section class="home-seller-sec mt-4">
-<div class="home-seller-header">
-<h2>Top Trending</h2>
-</div>
-
-<div class="home-seller-bottom">
+<div class="container mt-5 mb-4">
+<h4 class="mb-3" style="font-weight: 600; color: #1a253c; border-left: 4px solid #004392; padding-left: 10px;">
+    Top Trending
+</h4>
 <div class="row">
 
 @if($products->count() > 0)
@@ -50,22 +48,19 @@ $routeName = 'productmanage.show';
     @endforeach
 @else
     <div class="col-12">
-        <p class="text-center">No trending products available.</p>
+        <p class="text-muted">No trending products available.</p>
     </div>
 @endif
 
 </div>
 </div>
-</section>
 
 {{-- ================= BEST DISCOUNT ================= --}}
 
-<section class="home-seller-sec mt-4">
-<div class="home-seller-header">
-<h2>Best Discount</h2>
-</div>
-
-<div class="home-seller-bottom">
+<div class="container mb-4">
+<h4 class="mb-3" style="font-weight: 600; color: #1a253c; border-left: 4px solid #004392; padding-left: 10px;">
+    Best Discount
+</h4>
 <div class="row">
 
 @if($products->count() > 0)
@@ -82,18 +77,17 @@ $routeName = 'productmanage.show';
     @endforeach
 @else
     <div class="col-12">
-        <p class="text-center">No discounted products available.</p>
+        <p class="text-muted">No discounted products available.</p>
     </div>
 @endif
 
 </div>
 </div>
-</section>
 
 {{-- ================= ALL PRODUCTS ================= --}}
 
-<div class="container mt-5">
-<h4 class="mb-4">
+<div class="container mb-4">
+<h4 class="mb-3" style="font-weight: 600; color: #1a253c; border-left: 4px solid #004392; padding-left: 10px;">
 Best Sellers from {{ $seller->name ?? $seller->org_name }}
 </h4>
 
