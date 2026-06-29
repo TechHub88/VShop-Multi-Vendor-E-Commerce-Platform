@@ -198,6 +198,25 @@ public function placeOrder(Request $request)
 
     // --- BUYER-TO-BUYER REFERRAL LOGIC ---
     $customer = Auth::guard('customer')->user();
+    
+    // Check if referral code is provided during checkout
+    if (empty($customer->referred_by) && $request->filled('referral_code')) {
+        $referrer = \App\Models\Customer::where('referral_code', $request->referral_code)->first();
+        if ($referrer && $referrer->id !== $customer->id) {
+            $customer->referred_by = $referrer->id;
+            $customer->save();
+            
+            \App\Models\Referral::create([
+                'customer_id' => $referrer->id,
+                'referred_customer_id' => $customer->id,
+                'referral_code' => $referrer->referral_code,
+                'status' => 'successful',
+                'reward_amount' => 0,
+                'completed_at' => now(),
+            ]);
+        }
+    }
+    
     $referredBy = $customer->referred_by;
     $referralDiscounts = 0;
 
@@ -253,6 +272,11 @@ public function placeOrder(Request $request)
                                 'status' => 'active',
                                 'expiry_date' => now()->addDays(365)
                             ]);
+
+                            // Update Referral History
+                            \App\Models\Referral::where('customer_id', $referredBy)
+                                ->where('referred_customer_id', $customer_id)
+                                ->increment('reward_amount', $rewardPoints);
                         }
                     }
                 }
