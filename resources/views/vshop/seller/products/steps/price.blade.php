@@ -249,6 +249,38 @@
         cursor: pointer;
     }
     .discount-display { background: #f8f9fa; }
+    
+    /* Premium Toggle Switch Styles */
+    .boost-toggle-label {
+        width: 44px;
+        height: 24px;
+        background-color: #cbd5e1;
+        border-radius: 12px;
+        position: relative;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        display: inline-block;
+        margin-bottom: 0;
+    }
+    .boost-toggle-label::after {
+        content: '';
+        width: 18px;
+        height: 18px;
+        background-color: white;
+        border-radius: 50%;
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        transition: transform 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .boost-toggle-switch:checked + .boost-toggle-label {
+        background-color: #198754;
+    }
+    .boost-toggle-switch:checked + .boost-toggle-label::after {
+        transform: translateX(20px);
+    }
+
     .v-ai-button {
         display: inline-flex;
         align-items: center;
@@ -604,173 +636,182 @@
     </div>
     <p style="font-size: 12px; color: #64748b; margin-bottom: 15px;">Configure your next boost campaign to reach your target buyers and convert them.</p>
 
-    <div class="row g-3">
-        <div class="col-md-5">
-            <div class="pricing-section mb-3">
-                <div class="pricing-section-title">SECTION 1: BOOST CONTROLS</div>
-                <div class="d-flex align-items-center gap-3 mb-3">
-                    <span style="font-size: 12px; font-weight: 600;">Boost Campaign Status:</span>
-                    <label class="d-inline-flex align-items-center gap-2" style="cursor: pointer;">
-                        <input type="checkbox" name="boost_status" id="boostStatus" value="1" {{ old('boost_status', $product->boost_status ?? false) ? 'checked' : '' }} style="width: 18px; height: 18px;">
-                        <span style="font-size: 12px;">Enable Boost</span>
-                    </label>
-                </div>
-                <div class="mb-2" style="font-size: 12px; font-weight: 600;">Boost Duration</div>
-                <div class="d-flex gap-2 flex-wrap">
-                    <button type="button" class="btn-boost-duration" data-days="1">1 Day</button>
-                    <button type="button" class="btn-boost-duration" data-days="3">3 Days</button>
-                    <button type="button" class="btn-boost-duration" data-days="7">7 Days</button>
-                    <button type="button" class="btn-boost-duration" data-days="15">15 Days</button>
-                    <button type="button" class="btn-boost-duration" data-days="30">30 Days</button>
-                </div>
-                <input type="hidden" name="boost_duration" id="boostDuration" value="{{ old('boost_duration', $product->boost_duration ?? 7) }}">
-            </div>
-
-            <div class="pricing-section">
-                <div class="pricing-section-title">SECTION 2: BUDGETING</div>
-                <div class="row g-2 mb-3">
-                    <div class="col-6">
-                        <label style="font-size:10px; font-weight:600;">Daily Budget (Admin Rate)</label>
-                        <div class="budget-input-group">
-                            <span class="currency">₹</span>
-                             <input type="number" id="dailyBudget" value="{{ $boostPerDay !== null ? number_format($boostPerDay, 2, '.', '') : '' }}" readonly style="background-color: #f1f5f9;">
-                             <input type="hidden" name="daily_budget" value="{{ $boostPerDay ?? '' }}">
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <label style="font-size:10px; font-weight:600;">Daily spend limit</label>
-                        <div class="budget-input-group">
-                            <span class="currency">₹</span>
-                            <input type="number" name="daily_limit" id="dailyLimit" value="{{ old('daily_limit', $product->daily_limit ?? 0) }}">
-                        </div>
-                    </div>
-                    <div class="col-12">
-                        <label style="font-size:10px; font-weight:600;">Total Budget (Cost)</label>
-                        <div class="budget-input-group">
-                            <span class="currency">₹</span>
-                            <input type="number" name="total_budget" id="totalBudget" value="{{ old('total_budget', $product->total_budget ?? 0) }}" readonly style="background-color: #f1f5f9;">
-                        </div>
-                        <small class="text-muted" style="font-size: 9px;">This amount will be deducted from your wallet if you enable boost.</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pricing-section mt-3">
-                <div class="pricing-section-title">HARD STOP RULES</div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" name="stop_daily_budget" id="stopDailyBudget" value="1" {{ old('stop_daily_budget', $product->stop_daily_budget ?? false) ? 'checked' : '' }}>
-                    <label class="form-check-label" style="font-size: 11px;">Stop when daily budget reached (pause, resume next day)</label>
-                </div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" name="stop_total_budget" id="stopTotalBudget" value="1" {{ old('stop_total_budget', $product->stop_total_budget ?? false) ? 'checked' : '' }}>
-                    <label class="form-check-label" style="font-size: 11px;">Stop when total budget reached (campaign ends)</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="notify_before_exhaust" id="notifyBeforeExhaust" value="1" {{ old('notify_before_exhaust', $product->notify_before_exhaust ?? true) ? 'checked' : '' }}>
-                    <label class="form-check-label" style="font-size: 11px;">Notify me before budget exhausts</label>
-                    <select name="notify_percentage" class="form-select form-select-sm mt-1" style="width: auto; display: inline-block; margin-left: 10px;">
-                        <option value="80" {{ old('notify_percentage', $product->notify_percentage ?? 95) == 80 ? 'selected' : '' }}>80%</option>
-                        <option value="90" {{ old('notify_percentage', $product->notify_percentage ?? 95) == 90 ? 'selected' : '' }}>90%</option>
-                        <option value="95" {{ old('notify_percentage', $product->notify_percentage ?? 95) == 95 ? 'selected' : '' }}>95%</option>
-                    </select>
-                </div>
-            </div>
+    <!-- Proper Toggle Switch Bar -->
+    <div class="pricing-section mb-3 p-3 bg-light border-0 d-flex justify-content-between align-items-center">
+        <div>
+            <h6 class="mb-0 fw-bold" style="font-size: 13px; color: #1e3a8a;">Enable Promotion & Boosting</h6>
+            <small class="text-muted" style="font-size: 11px;">Promote this listing to increase reach, impressions, and sales conversions.</small>
         </div>
+        <div class="form-check form-switch p-0 m-0 d-flex align-items-center">
+            <input type="checkbox" name="boost_status" id="boostStatus" value="1" {{ old('boost_status', $product->boost_status ?? false) ? 'checked' : '' }} class="boost-toggle-switch" style="display: none;">
+            <label for="boostStatus" class="boost-toggle-label"></label>
+            <span id="boostToggleStateText" class="ms-2 fw-bold text-muted" style="font-size: 12px; min-width: 60px;">Disabled</span>
+        </div>
+    </div>
 
-        <div class="col-md-3">
-            <div class="pricing-section mb-3">
-                <div class="pricing-section-title">SECTION 3: TARGET AUDIENCE</div>
-                <div class="row g-2">
-                    <div class="col-12">
-                        <label style="font-size: 11px; font-weight: 600;">Country</label>
-                        <select name="target_country" id="targetCountry" class="form-select form-select-sm">
-                            <option value="">Select Country</option>
-                            @foreach($countries ?? [] as $c)
-                                <option value="{{ $c->id }}" {{ (old('target_country', $product->target_country ?? '') == $c->id) ? 'selected' : '' }}>{{ $c->name }}</option>
-                            @endforeach
-                        </select>
+    <!-- Sliding Config Container -->
+    <div id="boostConfigContainer" style="{{ old('boost_status', $product->boost_status ?? false) ? '' : 'display: none;' }}">
+        <div class="row g-3">
+            <div class="col-md-5">
+                <div class="pricing-section mb-3">
+                    <div class="pricing-section-title">SECTION 1: BOOST CONTROLS</div>
+                    <div class="mb-2" style="font-size: 12px; font-weight: 600;">Boost Duration</div>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn-boost-duration" data-days="1">1 Day</button>
+                        <button type="button" class="btn-boost-duration" data-days="3">3 Days</button>
+                        <button type="button" class="btn-boost-duration" data-days="7">7 Days</button>
+                        <button type="button" class="btn-boost-duration" data-days="15">15 Days</button>
+                        <button type="button" class="btn-boost-duration" data-days="30">30 Days</button>
                     </div>
-                    <div class="col-12">
-                        <label style="font-size: 11px; font-weight: 600;">State</label>
-                        <select name="target_state" id="targetState" class="form-select form-select-sm">
-                            <option value="">Select State</option>
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label style="font-size: 11px; font-weight: 600;">City (Multi-select)</label>
-                        <div class="city-multiselect-container">
-                            <div class="city-multiselect-header" id="cityDropdownHeader">
-                                <span id="selectedCitiesText">Select Cities</span>
-                                <i class="bi bi-chevron-down"></i>
-                            </div>
-                            <div class="city-multiselect-dropdown" id="cityDropdownList">
-                                <div class="city-search-box">
-                                    <input type="text" id="citySearchInput" placeholder="Search cities..." class="form-control form-control-sm">
-                                </div>
-                                <div class="city-options-list" id="cityOptionsList">
-                                    @foreach($cities ?? [] as $city)
-                                        <label class="city-option">
-                                            <input type="checkbox" name="target_city[]" value="{{ $city->id }}" class="city-checkbox" 
-                                                {{ (is_array(old('target_city', json_decode($product->target_city ?? '[]', true))) && in_array($city->id, old('target_city', json_decode($product->target_city ?? '[]', true)))) ? 'checked' : '' }}>
-                                            <span>{{ $city->name }}</span>
-                                        </label>
-                                    @endforeach
-                                </div>
+                    <input type="hidden" name="boost_duration" id="boostDuration" value="{{ old('boost_duration', $product->boost_duration ?? 7) }}">
+                </div>
+
+                <div class="pricing-section">
+                    <div class="pricing-section-title">SECTION 2: BUDGETING</div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label style="font-size:10px; font-weight:600;">Daily Budget (Admin Rate)</label>
+                            <div class="budget-input-group">
+                                <span class="currency">₹</span>
+                                 <input type="number" id="dailyBudget" value="{{ $boostPerDay !== null ? number_format($boostPerDay, 2, '.', '') : '' }}" readonly style="background-color: #f1f5f9;">
+                                 <input type="hidden" name="daily_budget" value="{{ $boostPerDay ?? '' }}">
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-4">
-            <div class="pricing-section mb-3">
-                <div class="pricing-section-title">SECTION 4: PROMOTION GOAL</div>
-                <div class="mb-3">
-                    <label style="font-size: 11px; font-weight: 600;">Age Group</label>
-                    <div class="age-range-container">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span style="font-size: 11px;">Min Age: <span class="age-value" id="ageMinDisplay">20</span></span>
-                            <span style="font-size: 11px;">Max Age: <span class="age-value" id="ageMaxDisplay">45</span></span>
+                        <div class="col-6">
+                            <label style="font-size:10px; font-weight:600;">Daily spend limit</label>
+                            <div class="budget-input-group">
+                                <span class="currency">₹</span>
+                                <input type="number" name="daily_limit" id="dailyLimit" value="{{ old('daily_limit', $product->daily_limit ?? 0) }}">
+                            </div>
                         </div>
-                        <input type="range" name="age_min" id="ageMinRange" class="form-range" min="18" max="65" step="1" value="{{ old('age_min', $product->age_min ?? 20) }}">
-                        <input type="range" name="age_max" id="ageMaxRange" class="form-range mt-2" min="18" max="65" step="1" value="{{ old('age_max', $product->age_max ?? 45) }}">
+                        <div class="col-12">
+                            <label style="font-size:10px; font-weight:600;">Total Budget (Cost)</label>
+                            <div class="budget-input-group">
+                                <span class="currency">₹</span>
+                                <input type="number" name="total_budget" id="totalBudget" value="{{ old('total_budget', $product->total_budget ?? 0) }}" readonly style="background-color: #f1f5f9;">
+                            </div>
+                            <small class="text-muted" style="font-size: 9px;">This amount will be deducted from your wallet if you enable boost.</small>
+                        </div>
                     </div>
                 </div>
-                <div class="mb-3">
-                    <label style="font-size: 11px; font-weight: 600;">Language</label>
-                    <select name="language" id="languageSelect" class="form-select form-select-sm">
-                        <option value="english" {{ old('language', $product->language ?? 'english') == 'english' ? 'selected' : '' }}>English</option>
-                        <option value="hindi" {{ old('language', $product->language ?? 'english') == 'hindi' ? 'selected' : '' }}>Hindi</option>
-                        <option value="bengali" {{ old('language', $product->language ?? 'english') == 'bengali' ? 'selected' : '' }}>Bengali</option>
-                        <option value="tamil" {{ old('language', $product->language ?? 'english') == 'tamil' ? 'selected' : '' }}>Tamil</option>
-                        <option value="telugu" {{ old('language', $product->language ?? 'english') == 'telugu' ? 'selected' : '' }}>Telugu</option>
-                    </select>
+
+                <div class="pricing-section mt-3">
+                    <div class="pricing-section-title">HARD STOP RULES</div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="stop_daily_budget" id="stopDailyBudget" value="1" {{ old('stop_daily_budget', $product->stop_daily_budget ?? false) ? 'checked' : '' }}>
+                        <label class="form-check-label" style="font-size: 11px;">Stop when daily budget reached (pause, resume next day)</label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" name="stop_total_budget" id="stopTotalBudget" value="1" {{ old('stop_total_budget', $product->stop_total_budget ?? false) ? 'checked' : '' }}>
+                        <label class="form-check-label" style="font-size: 11px;">Stop when total budget reached (campaign ends)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="notify_before_exhaust" id="notifyBeforeExhaust" value="1" {{ old('notify_before_exhaust', $product->notify_before_exhaust ?? true) ? 'checked' : '' }}>
+                        <label class="form-check-label" style="font-size: 11px;">Notify me before budget exhausts</label>
+                        <select name="notify_percentage" class="form-select form-select-sm mt-1" style="width: auto; display: inline-block; margin-left: 10px;">
+                            <option value="80" {{ old('notify_percentage', $product->notify_percentage ?? 95) == 80 ? 'selected' : '' }}>80%</option>
+                            <option value="90" {{ old('notify_percentage', $product->notify_percentage ?? 95) == 90 ? 'selected' : '' }}>90%</option>
+                            <option value="95" {{ old('notify_percentage', $product->notify_percentage ?? 95) == 95 ? 'selected' : '' }}>95%</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="d-flex flex-wrap gap-2">
-                    <div class="goal-option {{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') == 'views' ? 'active' : '' }}" data-goal="views"><i class="bi bi-eye"></i> <span>More Views</span></div>
-                    <div class="goal-option {{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') == 'enquiries' ? 'active' : '' }}" data-goal="enquiries"><i class="bi bi-chat-dots"></i> <span>More Enquiries</span></div>
-                    <div class="goal-option {{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') == 'orders' ? 'active' : '' }}" data-goal="orders"><i class="bi bi-cart"></i> <span>More Orders</span></div>
-                    <div class="goal-option {{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') == 'awareness' ? 'active' : '' }}" data-goal="awareness"><i class="bi bi-megaphone"></i> <span>Brand Awareness</span></div>
-                    <div class="goal-option {{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') == 'clicks' ? 'active' : '' }}" data-goal="clicks"><i class="bi bi-mouse"></i> <span>More Clicks</span></div>
-                </div>
-                <input type="hidden" name="promotion_goal" id="promotionGoal" value="{{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') }}">
             </div>
 
-            <div class="pricing-section" style="position: relative;">
-                <div class="pricing-section-title d-flex justify-content-between">
-                    <span>AI RECOMMENDATION</span>
-                    <div class="v-ai-button" id="openAiModalBtn">
-                        <i class="bi bi-cpu"></i> v-Ai
+            <div class="col-md-3">
+                <div class="pricing-section mb-3">
+                    <div class="pricing-section-title">SECTION 3: TARGET AUDIENCE</div>
+                    <div class="row g-2">
+                        <div class="col-12">
+                            <label style="font-size: 11px; font-weight: 600;">Country</label>
+                            <select name="target_country" id="targetCountry" class="form-select form-select-sm">
+                                <option value="">Select Country</option>
+                                @foreach($countries ?? [] as $c)
+                                    <option value="{{ $c->id }}" {{ (old('target_country', $product->target_country ?? '') == $c->id) ? 'selected' : '' }}>{{ $c->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label style="font-size: 11px; font-weight: 600;">State</label>
+                            <select name="target_state" id="targetState" class="form-select form-select-sm">
+                                <option value="">Select State</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label style="font-size: 11px; font-weight: 600;">City (Multi-select)</label>
+                            <div class="city-multiselect-container">
+                                <div class="city-multiselect-header" id="cityDropdownHeader">
+                                    <span id="selectedCitiesText">Select Cities</span>
+                                    <i class="bi bi-chevron-down"></i>
+                                </div>
+                                <div class="city-multiselect-dropdown" id="cityDropdownList">
+                                    <div class="city-search-box">
+                                        <input type="text" id="citySearchInput" placeholder="Search cities..." class="form-control form-control-sm">
+                                    </div>
+                                    <div class="city-options-list" id="cityOptionsList">
+                                        @foreach($cities ?? [] as $city)
+                                            <label class="city-option">
+                                                <input type="checkbox" name="target_city[]" value="{{ $city->id }}" class="city-checkbox" 
+                                                    {{ (is_array(old('target_city', json_decode($product->target_city ?? '[]', true))) && in_array($city->id, old('target_city', json_decode($product->target_city ?? '[]', true)))) ? 'checked' : '' }}>
+                                                <span>{{ $city->name }}</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="ai-recommendation-card">
-                    <div class="ai-recommendation-header">AI RECOMMENDED BOOST</div>
-                    <div class="ai-recommendation-body">
-                        <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Recommended Budget:</span><strong id="aiBudget">₹{{ old('daily_budget', $product->daily_budget ?? 700) }}</strong></div>
-                        <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Expected Reach:</span><strong id="aiReach">12,000 - 18,000</strong></div>
-                        <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Estimated Enquiries:</span><strong id="aiEnquiries">120 - 180</strong></div>
-                        <div class="d-flex justify-content-between align-items-center"><span style="font-size: 11px;">Recommended Cities:</span><strong id="aiCities">Kolkata, Delhi</strong></div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="pricing-section mb-3">
+                    <div class="pricing-section-title">SECTION 4: PROMOTION GOAL</div>
+                    <div class="mb-3">
+                        <label style="font-size: 11px; font-weight: 600;">Age Group</label>
+                        <div class="age-range-container">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span style="font-size: 11px;">Min Age: <span class="age-value" id="ageMinDisplay">20</span></span>
+                                <span style="font-size: 11px;">Max Age: <span class="age-value" id="ageMaxDisplay">45</span></span>
+                            </div>
+                            <input type="range" name="age_min" id="ageMinRange" class="form-range" min="18" max="65" step="1" value="{{ old('age_min', $product->age_min ?? 20) }}">
+                            <input type="range" name="age_max" id="ageMaxRange" class="form-range mt-2" min="18" max="65" step="1" value="{{ old('age_max', $product->age_max ?? 45) }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label style="font-size: 11px; font-weight: 600;">Language</label>
+                        <select name="language" id="languageSelect" class="form-select form-select-sm">
+                            <option value="english" {{ old('language', $product->language ?? 'english') == 'english' ? 'selected' : '' }}>English</option>
+                            <option value="hindi" {{ old('language', $product->language ?? 'english') == 'hindi' ? 'selected' : '' }}>Hindi</option>
+                            <option value="bengali" {{ old('language', $product->language ?? 'english') == 'bengali' ? 'selected' : '' }}>Bengali</option>
+                            <option value="tamil" {{ old('language', $product->language ?? 'english') == 'tamil' ? 'selected' : '' }}>Tamil</option>
+                            <option value="telugu" {{ old('language', $product->language ?? 'english') == 'telugu' ? 'selected' : '' }}>Telugu</option>
+                        </select>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <div class="goal-option {{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') == 'views' ? 'active' : '' }}" data-goal="views"><i class="bi bi-eye"></i> <span>More Views</span></div>
+                        <div class="goal-option {{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') == 'enquiries' ? 'active' : '' }}" data-goal="enquiries"><i class="bi bi-chat-dots"></i> <span>More Enquiries</span></div>
+                        <div class="goal-option {{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') == 'orders' ? 'active' : '' }}" data-goal="orders"><i class="bi bi-cart"></i> <span>More Orders</span></div>
+                        <div class="goal-option {{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') == 'awareness' ? 'active' : '' }}" data-goal="awareness"><i class="bi bi-megaphone"></i> <span>Brand Awareness</span></div>
+                        <div class="goal-option {{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') == 'clicks' ? 'active' : '' }}" data-goal="clicks"><i class="bi bi-mouse"></i> <span>More Clicks</span></div>
+                    </div>
+                    <input type="hidden" name="promotion_goal" id="promotionGoal" value="{{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') }}">
+                </div>
+
+                <div class="pricing-section" style="position: relative;">
+                    <div class="pricing-section-title d-flex justify-content-between">
+                        <span>AI RECOMMENDATION</span>
+                        <div class="v-ai-button" id="openAiModalBtn">
+                            <i class="bi bi-cpu"></i> v-Ai
+                        </div>
+                    </div>
+                    <div class="ai-recommendation-card">
+                        <div class="ai-recommendation-header">AI RECOMMENDED BOOST</div>
+                        <div class="ai-recommendation-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Recommended Daily Budget:</span><strong id="aiBudget">₹{{ old('daily_budget', $product->daily_budget ?? 700) }}</strong></div>
+                            <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Expected Reach:</span><strong id="aiReach">12,000 - 18,000</strong></div>
+                            <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Estimated Enquiries:</span><strong id="aiEnquiries">120 - 180</strong></div>
+                            <div class="d-flex justify-content-between align-items-center"><span style="font-size: 11px;">Recommended Cities:</span><strong id="aiCities">Kolkata, Delhi</strong></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1201,11 +1242,15 @@ $(document).ready(function(){
     function updateBoostSections() {
         let isBoostEnabled = $('#boostStatus').is(':checked');
         if(isBoostEnabled) {
+            $('#boostConfigContainer').slideDown(300);
+            $('#boostToggleStateText').text('Active').removeClass('text-muted').addClass('text-success');
             $('#dailyBudget, #dailyLimit, #totalBudget, #stopDailyBudget, #stopTotalBudget, #notifyBeforeExhaust, select[name="notify_percentage"], #targetCountry, #targetState, .city-checkbox, #ageMinRange, #ageMaxRange, #languageSelect, .goal-option, #openAiModalBtn').prop('disabled', false).css('opacity', '1');
             $('.btn-boost-duration').removeClass('disabled').css('pointer-events', 'auto');
             $('.goal-option').css('pointer-events', 'auto');
             $('#modalCityOptionsList input').prop('disabled', false);
         } else {
+            $('#boostConfigContainer').slideUp(300);
+            $('#boostToggleStateText').text('Disabled').removeClass('text-success').addClass('text-muted');
             $('#dailyBudget, #dailyLimit, #totalBudget, #stopDailyBudget, #stopTotalBudget, #notifyBeforeExhaust, select[name="notify_percentage"], #targetCountry, #targetState, .city-checkbox, #ageMinRange, #ageMaxRange, #languageSelect, .goal-option, #openAiModalBtn').prop('disabled', true).css('opacity', '0.6');
             $('.btn-boost-duration').addClass('disabled').css('pointer-events', 'none');
             $('.goal-option').css('pointer-events', 'none');
@@ -1216,7 +1261,18 @@ $(document).ready(function(){
     $('#boostStatus').on('change', function() {
         updateBoostSections();
     });
-    updateBoostSections();
+    
+    // Run initially on page load
+    let isBoostEnabled = $('#boostStatus').is(':checked');
+    if(isBoostEnabled) {
+        $('#boostConfigContainer').show();
+        $('#boostToggleStateText').text('Active').removeClass('text-muted').addClass('text-success');
+        $('#dailyBudget, #dailyLimit, #totalBudget, #stopDailyBudget, #stopTotalBudget, #notifyBeforeExhaust, select[name="notify_percentage"], #targetCountry, #targetState, .city-checkbox, #ageMinRange, #ageMaxRange, #languageSelect, .goal-option, #openAiModalBtn').prop('disabled', false).css('opacity', '1');
+    } else {
+        $('#boostConfigContainer').hide();
+        $('#boostToggleStateText').text('Disabled').removeClass('text-success').addClass('text-muted');
+        $('#dailyBudget, #dailyLimit, #totalBudget, #stopDailyBudget, #stopTotalBudget, #notifyBeforeExhaust, select[name="notify_percentage"], #targetCountry, #targetState, .city-checkbox, #ageMinRange, #ageMaxRange, #languageSelect, .goal-option, #openAiModalBtn').prop('disabled', true).css('opacity', '0.6');
+    }
 
     // ================= BOOST DURATION & BUDGET =================
     $('.btn-boost-duration').on('click', function() {
@@ -1517,12 +1573,23 @@ $(document).ready(function(){
 
         let currentGoal = $('#promotionGoal').val() || 'enquiries';
 
+        // Gather selected target areas for AI recommendation optimization
+        let targetCountry = $('#targetCountry').val();
+        let targetState = $('#targetState').val() ? $('#targetState option:selected').text().trim() : '';
+        let selectedCities = [];
+        $('.city-checkbox:checked').each(function() {
+            selectedCities.push($(this).closest('.city-option').find('span').text().trim());
+        });
+
         $.ajax({
             url: "{{ route('seller.price.ai-recommend', $product->id ?? 0) }}",
             type: "POST",
             data: {
                 _token: "{{ csrf_token() }}",
-                goal: currentGoal
+                goal: currentGoal,
+                country: targetCountry,
+                state: targetState,
+                cities: selectedCities
             },
             dataType: 'json',
             success: function(res) {

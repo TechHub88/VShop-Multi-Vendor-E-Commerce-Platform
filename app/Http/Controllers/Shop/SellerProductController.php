@@ -1940,6 +1940,51 @@ public function savePrice(Request $request, Product $product)
     
     $product->update($priceData);
 
+    // ================= UPDATE BOOSTED_LISTINGS TABLE =================
+    if ($request->has('boost_status')) {
+        $perDay = $request->daily_budget ?? 700;
+        $duration = $request->boost_duration ?? 7;
+        $totalBudget = $request->total_budget ?? ($perDay * $duration);
+
+        $startDate = date('Y-m-d');
+        $endDate = date('Y-m-d', strtotime("+$duration days"));
+
+        $existing = \Illuminate\Support\Facades\DB::table('boosted_listings')->where('product_id', $product->id)->first();
+        if ($existing) {
+            \Illuminate\Support\Facades\DB::table('boosted_listings')->where('product_id', $product->id)->update([
+                'category_id' => $product->category_id,
+                'seller_id' => $product->created_by_id ?? auth('seller')->id(),
+                'per_day' => $perDay,
+                'boost_amount' => $totalBudget,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => 'active',
+                'updated_at' => now()
+            ]);
+        } else {
+            \Illuminate\Support\Facades\DB::table('boosted_listings')->insert([
+                'product_id' => $product->id,
+                'category_id' => $product->category_id,
+                'seller_id' => $product->created_by_id ?? auth('seller')->id(),
+                'per_day' => $perDay,
+                'boost_amount' => $totalBudget,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
+    } else {
+        // If boost is disabled, mark it as inactive in boosted_listings
+        \Illuminate\Support\Facades\DB::table('boosted_listings')
+            ->where('product_id', $product->id)
+            ->update([
+                'status' => 'inactive',
+                'updated_at' => now()
+            ]);
+    }
+
     // Notification for price update
     $this->createNotification($product->created_by_id, 'product', 'Product "' . $product->name . '" pricing information saved successfully', route('seller.products.index'));
     
@@ -1972,14 +2017,25 @@ public function getAiRecommendation(Request $request, Product $product)
     }
 
     $goal = $request->input('goal', 'enquiries');
+    $cities = $request->input('cities', []);
+    $state = $request->input('state', '');
+    $country = $request->input('country', '');
+
+    $locationInfo = "Target Area: India";
+    if (!empty($cities)) {
+        $locationInfo = "Target Cities: " . implode(', ', $cities);
+    } elseif ($state && $state !== 'Select State' && $state !== 'Loading...') {
+        $locationInfo = "Target State: " . $state;
+    }
 
     $prompt = "You are a professional digital marketing budget estimator. Calculate a recommended daily advertising boost budget, expected daily reach range, and expected daily enquiries range for the following product:
 Product Name: {$product->name}
 Category: {$categoryName}
 Price Range: INR {$minPrice} to INR {$maxPrice}
 Marketing Goal: {$goal}
+Target Location: {$locationInfo}
 
-Based on these details, generate a realistic daily budget, estimated daily reach range (number of people reached), estimated daily enquiries range (number of leads/enquiries generated), and 3 recommended target cities in India that are best suited for this product.
+Based on these details, generate a realistic daily budget, estimated daily reach range (number of people reached), estimated daily enquiries range (number of leads/enquiries generated), and 3 recommended target cities in India that are best suited for this product (prefer to include some or all of the selected Target Location cities/states if specified, or suggest others that fit the product profile).
 Keep in mind:
 - Higher priced products should have a slightly higher daily budget, lower estimated reach but high-quality enquiries.
 - Lower priced products should have a lower/moderate daily budget, higher estimated reach, and higher number of enquiries.
