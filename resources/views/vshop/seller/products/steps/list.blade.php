@@ -327,6 +327,13 @@ class="product-thumb">
 {{ $product->name }}
 </h1>
 
+<div class="mb-3">
+    <span class="badge bg-primary text-uppercase" style="font-size: 11px; padding: 5px 10px;">Type: {{ str_replace('-', ' ', $product->type) }}</span>
+    @if($product->category)
+        <span class="badge bg-secondary ms-1 text-uppercase" style="font-size: 11px; padding: 5px 10px;">Category: {{ $product->category->name }}</span>
+    @endif
+</div>
+
 <div class="short-summary">
 {!! $product->short_summary !!}
 </div>
@@ -529,13 +536,115 @@ $downloads = is_array($product->download_data ?? null) ? $product->download_data
 @endif
 
 
-{{-- PRICE --}}
-<div class="price-box">
+{{-- PRICE & BILLING SUMMARY --}}
+<div class="info-box price-box border-0 bg-transparent p-0">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm p-3 h-100" style="background: #f8fafc; border: 1px solid #e2e8f0 !important; border-radius: 12px;">
+                <h6 class="fw-bold text-primary mb-3" style="font-size: 13px; text-transform: uppercase;"><i class="bi bi-wallet2 me-2"></i> Pricing Summary</h6>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted" style="font-size: 13px;">Base Price:</span>
+                    <strong style="font-size: 14px;">₹{{ number_format($product->price, 2) }}</strong>
+                </div>
+                @if($product->is_discount)
+                    <div class="d-flex justify-content-between align-items-center mb-2 text-danger">
+                        <span style="font-size: 13px;">Discount ({{ ucfirst($product->discount_type) }}):</span>
+                        <strong style="font-size: 14px;">-{{ $product->discount_type == 'percentage' ? $product->discount_value . '%' : '₹' . number_format($product->discount_value, 2) }}</strong>
+                    </div>
+                @endif
+                
+                @php
+                    $taxNames = json_decode($product->tax_name, true) ?? [];
+                    $taxPercentages = json_decode($product->tax_percentage, true) ?? [];
+                @endphp
+                @if(!empty($taxNames) && is_array($taxNames))
+                    @foreach($taxNames as $i => $name)
+                        <div class="d-flex justify-content-between align-items-center mb-2 text-muted">
+                            <span style="font-size: 13px;">Tax ({{ $name }} - {{ $taxPercentages[$i] ?? 0 }}%):</span>
+                            <strong style="font-size: 14px;">+{{ $taxPercentages[$i] ?? 0 }}%</strong>
+                        </div>
+                    @endforeach
+                @endif
+                
+                <div class="border-top pt-2 mt-2 d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-dark" style="font-size: 14px;">Net Total:</span>
+                    <strong class="text-success" style="font-size: 20px;">₹{{ number_format($product->net_total, 2) }}</strong>
+                </div>
+                @php
+                    $payments = json_decode($product->payment_type, true) ?? [];
+                @endphp
+                @if(!empty($payments) && is_array($payments))
+                    <div class="mt-3 pt-2 border-top" style="font-size: 12px;">
+                        <span class="text-muted">Payment Type:</span>
+                        <span class="badge bg-primary ms-1" style="font-size: 11px; padding: 4px 8px;">{{ implode(', ', $payments) }}</span>
+                    </div>
+                @endif
+            </div>
+        </div>
 
-<h3>
-₹ {{ number_format($product->price,2) }}
-</h3>
-
+        <div class="col-md-6">
+            @if($product->boost_status)
+                <div class="card border-0 shadow-sm p-3 h-100" style="background: #f8fafc; border: 1px solid #e2e8f0 !important; border-radius: 12px;">
+                    <h6 class="fw-bold text-danger mb-3" style="font-size: 13px; text-transform: uppercase;"><i class="bi bi-rocket-takeoff-fill me-2"></i> Boost Campaign Settings</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted" style="font-size: 13px;">Duration:</span>
+                        <strong style="font-size: 14px;">{{ $product->boost_duration }} Days</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted" style="font-size: 13px;">Daily Budget:</span>
+                        <strong style="font-size: 14px;">₹{{ number_format($product->daily_budget, 2) }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted" style="font-size: 13px;">Total Boost Budget:</span>
+                        <strong style="font-size: 14px;">₹{{ number_format($product->total_budget, 2) }}</strong>
+                    </div>
+                    
+                    @php
+                        $cities = json_decode($product->target_city, true) ?? [];
+                        if (!empty($cities) && is_array($cities)) {
+                            $cityNames = \App\Models\City::whereIn('id', $cities)->pluck('name')->toArray();
+                            if (empty($cityNames)) {
+                                $cityNames = $cities;
+                            }
+                        } else {
+                            $cityNames = [];
+                        }
+                        
+                        $stateModel = \App\Models\State::find($product->target_state);
+                        $stateName = $stateModel ? $stateModel->name : '';
+                    @endphp
+                    <div class="border-top pt-2 mt-2" style="font-size: 12px; line-height: 1.6;">
+                        <div>
+                            <span class="text-muted">Target Location:</span>
+                            <strong class="text-dark">{{ $stateName ? $stateName . ', ' : '' }} India</strong>
+                        </div>
+                        @if(!empty($cityNames))
+                            <div class="mt-1">
+                                <span class="text-muted">Target Cities:</span>
+                                <span class="text-secondary fw-semibold">{{ implode(', ', $cityNames) }}</span>
+                            </div>
+                        @endif
+                        <div class="mt-1">
+                            <span class="text-muted">Target Age Group:</span>
+                            <span class="text-secondary fw-semibold">{{ $product->age_min }} - {{ $product->age_max }} years</span>
+                        </div>
+                        <div class="mt-1">
+                            <span class="text-muted">Promotion Goal:</span>
+                            <span class="badge bg-danger text-uppercase" style="font-size: 10px; padding: 3px 6px;">{{ $product->promotion_goal }}</span>
+                        </div>
+                    </div>
+                </div>
+            @else
+                <div class="card border-0 shadow-sm p-3 h-100 d-flex align-items-center justify-content-center text-center" style="background: #f8fafc; border: 1px solid #e2e8f0 !important; border-radius: 12px; min-height: 150px;">
+                    <div class="text-muted" style="font-size: 13px;">
+                        <i class="bi bi-rocket mb-2 d-block text-secondary" style="font-size: 28px;"></i>
+                        <span class="fw-semibold">Boost Campaign Disabled</span>
+                        <p class="mb-0 text-muted mt-1" style="font-size: 11px;">Promotion and boosting settings are turned off for this listing.</p>
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
 </div>
 
 
