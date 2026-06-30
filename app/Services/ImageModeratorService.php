@@ -13,6 +13,20 @@ class ImageModeratorService
      */
     public static function isSafeImage($imagePath): bool
     {
+        // ------------------ DEVELOPMENT MOCK FOR TESTING ------------------
+        if ($imagePath) {
+            $filename = strtolower(basename($imagePath));
+            if (str_contains($filename, 'nsfw') || 
+                str_contains($filename, 'vulgar') || 
+                str_contains($filename, 'nudity') || 
+                str_contains($filename, 'fraud') || 
+                str_contains($filename, 'naked') ||
+                str_contains($filename, 'inappropriate')) {
+                Log::warning("Mock NSFW check: Blocked image due to filename containing trigger word: {$filename}");
+                return false;
+            }
+        }
+
         // For development/XAMPP environment, we can check if credentials exist.
         // If they don't, we can log and fallback to true, or use local microservice if configured.
         return self::checkViaSightengine($imagePath);

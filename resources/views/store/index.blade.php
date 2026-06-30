@@ -25,7 +25,7 @@ $routeName = 'productmanage.show';
 </div>
 @empty
 <div class="banner-img item">
-<img src="{{ asset('images/banner-pic-main.webp') }}">
+<img src="{{ asset('images/banner-pic-main.png') }}">
 </div>
 @endforelse
 

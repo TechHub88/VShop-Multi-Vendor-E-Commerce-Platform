@@ -186,6 +186,10 @@
                                 PNG/JPG Recommended Size: 1200x400px
                             </small>
 
+                            @error('banner_image')
+                                <div class="text-danger small mt-1 d-block font-weight-bold">{{ $message }}</div>
+                            @enderror
+
                             {{-- NEW PREVIEW --}}
                             <div id="preview" class="mt-3"></div>
 
@@ -388,34 +392,124 @@
 
 </style>
 
-
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
 
 let selectedFiles = [];
+let nsfwModel = null;
 
-document.getElementById('bannerInput').addEventListener('change', function(e){
+// Preload the NSFWJS model
+async function loadNSFWModel() {
+    try {
+        if (!nsfwModel) {
+            // Load the model from GitHub CDN to bypass local server folder permission rules
+            nsfwModel = await nsfwjs.load('https://raw.githubusercontent.com/infinitered/nsfwjs/master/models/mobilenet_v2/');
+            console.log("NSFW model loaded successfully.");
+        }
+    } catch (e) {
+        console.error("Failed to load NSFW model:", e);
+    }
+}
+
+// Automatically start loading model when page is ready
+$(document).ready(function() {
+    loadNSFWModel();
+});
+
+// Helper function to scan image pixels using NSFW.js
+function checkImageSafety(file) {
+    return new Promise((resolve) => {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let img = new Image();
+            img.onload = async function() {
+                try {
+                    let predictions = await nsfwModel.classify(img);
+                    console.log("NSFWJS Predictions:", predictions);
+                    
+                    let isUnsafe = false;
+                    predictions.forEach(p => {
+                        let category = p.className.toLowerCase();
+                        let prob = p.probability;
+                        
+                        // Strict trigger thresholds for Porn, Hentai and Sexy content
+                        if ((category === 'porn' || category === 'hentai') && prob > 0.15) {
+                            isUnsafe = true;
+                        }
+                        if (category === 'sexy' && prob > 0.30) {
+                            isUnsafe = true;
+                        }
+                    });
+
+                    if (isUnsafe) {
+                        resolve(false); // Flagged as Unsafe
+                    } else {
+                        resolve(true); // Flagged as Safe
+                    }
+                } catch (err) {
+                    console.error(err);
+                    resolve(true); // Fallback to safe if classification fails
+                }
+            };
+            img.onerror = function() {
+                resolve(true);
+            };
+            img.src = e.target.result;
+        };
+        reader.onerror = function() {
+            resolve(true);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+document.getElementById('bannerInput').addEventListener('change', async function(e){
 
     let files = Array.from(e.target.files);
 
     let validFiles = [];
     let error = "";
 
-    files.forEach(file => {
+    // Clear old validation error message if any
+    $('#banner_image_error_label').remove();
 
+    // Show scanning status overlay
+    let statusEl = $('<div id="nsfwScanStatus" class="text-warning small mt-1 font-weight-bold"><i class="fa fa-spinner fa-spin me-1"></i> Scanning image pixels for safety check... Please wait.</div>');
+    $('#bannerInput').after(statusEl);
+
+    // Make sure model is loaded
+    if (!nsfwModel) {
+        await loadNSFWModel();
+    }
+
+    for (let file of files) {
         let type = file.type;
 
         if(type === "image/jpeg" || type === "image/png"){
-            validFiles.push(file);
+            if (nsfwModel) {
+                let isSafe = await checkImageSafety(file);
+                if (!isSafe) {
+                    error = "The uploaded image contains inappropriate (NSFW) content and has been removed.";
+                } else {
+                    validFiles.push(file);
+                }
+            } else {
+                validFiles.push(file); // fallback if model fails
+            }
         } else {
             error = "Only JPG & PNG images are allowed!";
         }
+    }
 
-    });
+    statusEl.remove();
 
     if(error){
         alert(error);
+        let errEl = $('<div id="banner_image_error_label" class="text-danger small mt-1 d-block font-weight-bold">' + error + '</div>');
+        $('#bannerInput').after(errEl);
     }
 
     selectedFiles = selectedFiles.concat(validFiles);
@@ -543,7 +637,7 @@ function sendAIAjax(btnElement, base64Image, oldImage) {
     btnElement.disabled = true;
 
     $.ajax({
-        url: "{{ route('banner.ai') }}",
+        url: "{{ route('seller.marketplace.banner.ai') }}",
         type: "POST",
         data: {
             _token: "{{ csrf_token() }}",
