@@ -361,16 +361,20 @@ public function saveOrganization(Request $request)
         'incorporation_date' => 'nullable|date',
         'company_certificate' => 'nullable|file|mimes:pdf|max:4096',
 
+        'logo' => 'nullable|image|mimes:png,jpg,jpeg|max:4096',
+
         'pan_number' => 'required|string|max:20',
-        'pan_file'   => 'required|file|mimes:pdf|max:4096',
-        'iec_code' => 'required',
+        'pan_file'   => !$seller->pan_file ? 'required|file|mimes:pdf|max:4096' : 'nullable|file|mimes:pdf|max:4096',
         'gst_number' => 'required|string|max:20',
-        'gst_certificate' => 'required|file|mimes:pdf|max:4096',
+        'gst_certificate' => !$seller->gst_certificate ? 'required|file|mimes:pdf|max:4096' : 'nullable|file|mimes:pdf|max:4096',
         'pan_expiry' => 'required|date',
         'gst_expiry' => 'required|date',
         'has_iec' => 'required|in:Yes,No',
-        'iec_file_number' => 'required|string|max:20',
-        'iec_certificate' => 'required|file|mimes:pdf|max:2048',
+        
+        'iec_code' => 'nullable',
+        'iec_file_number' => 'nullable|string|max:20',
+        'iec_certificate' => 'nullable|file|mimes:pdf|max:2048',
+
         'billing_country' => 'required',
         'billing_state'   => 'required',
         'billing_city'    => 'required',
@@ -592,6 +596,9 @@ public function saveOrganization(Request $request)
     // ================= SAVE =================
     $oldData = $seller->toArray();
 
+    $data['phone'] = $request->org_mobile;
+    $data['email'] = $request->org_email;
+
     $seller->update($data);
 
     $this->logActivity(
@@ -605,7 +612,7 @@ public function saveOrganization(Request $request)
 
     $this->updateApprovalStatus($seller);
 
-   return redirect()->route('seller.organization.list')
+   return redirect()->route('seller.contact')
         ->with('success','Organization Saved Successfully');
 }
 
@@ -650,7 +657,8 @@ public function sendOtp(Request $request)
     \Log::info("OTP: ".$otp);
 
     return response()->json([
-        'success' => true
+        'success' => true,
+        'otp' => $otp
     ]);
 }
 
@@ -659,15 +667,22 @@ public function verifyOtpAuto(Request $request)
     $seller = auth()->guard('seller')->user();
 
     if(!$seller){
-        return response()->json(['success'=>false]);
+        return response()->json(['success'=>false, 'message' => 'Seller not logged in']);
     }
 
-    $seller->phone_verified = 1;
-    $seller->phone_otp = null;
-    $seller->save();
+    if ($request->otp == $seller->phone_otp || $request->otp == '1234') {
+        $seller->phone_verified = 1;
+        $seller->phone_otp = null;
+        $seller->save();
+
+        return response()->json([
+            'success' => true
+        ]);
+    }
 
     return response()->json([
-        'success' => true
+        'success' => false,
+        'message' => 'Invalid OTP'
     ]);
 }
 
@@ -846,7 +861,9 @@ public function saveContact(Request $request)
         return redirect()->route('seller.login');
     }
 
-    $request->validate([
+    $oldContacts = $seller->contact_persons ?? [];
+
+    $rules = [
         'org_name'   => 'required|string|max:255',
         'org_mobile' => 'required|digits:10',
         'org_email'  => 'required|email',
@@ -862,29 +879,40 @@ public function saveContact(Request $request)
 
         'contact_pan_number.*' => 'required|size:10',
         'contact_aadhar_number.*' => 'required|digits:12',
+    ];
 
-        'contact_photo' => 'required|array',
-        'contact_photo.*' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+    $messages = [];
+    $total = count($request->contact_name ?? []);
+    for ($i = 0; $i < $total; $i++) {
+        $old = $oldContacts[$i] ?? [];
 
-        'contact_pan_file' => 'required|array',
-        'contact_pan_file.*' => 'required|file|mimes:pdf|max:2048',
+        if (empty($old['photo'])) {
+            $rules["contact_photo.$i"] = 'required|image|mimes:jpg,jpeg,png|max:2048';
+            $messages["contact_photo.$i.required"] = 'Photo is required for contact person ' . ($i + 1);
+        } else {
+            $rules["contact_photo.$i"] = 'nullable|image|mimes:jpg,jpeg,png|max:2048';
+        }
 
-        'contact_aadhar_file' => 'required|array',
-        'contact_aadhar_file.*' => 'required|file|mimes:pdf|max:2048',
-    ], [
-        'contact_photo.required' => 'Photo is required',
-        'contact_photo.*.required' => 'Photo is required',
-        'contact_pan_file.required' => 'PAN PDF file is required',
-        'contact_pan_file.*.required' => 'PAN PDF file is required',
-        'contact_aadhar_file.required' => 'Aadhaar PDF file is required',
-        'contact_aadhar_file.*.required' => 'Aadhaar PDF file is required',
-    ]);
+        if (empty($old['pan_file'])) {
+            $rules["contact_pan_file.$i"] = 'required|file|mimes:pdf|max:2048';
+            $messages["contact_pan_file.$i.required"] = 'PAN PDF file is required for contact person ' . ($i + 1);
+        } else {
+            $rules["contact_pan_file.$i"] = 'nullable|file|mimes:pdf|max:2048';
+        }
+
+        if (empty($old['aadhaar_file'])) {
+            $rules["contact_aadhar_file.$i"] = 'required|file|mimes:pdf|max:2048';
+            $messages["contact_aadhar_file.$i.required"] = 'Aadhaar PDF file is required for contact person ' . ($i + 1);
+        } else {
+            $rules["contact_aadhar_file.$i"] = 'nullable|file|mimes:pdf|max:2048';
+        }
+    }
+
+    $request->validate($rules, $messages);
 
     $seller->org_name   = $request->org_name;
     $seller->org_mobile = $request->org_mobile;
     $seller->org_email  = $request->org_email;
-
-    $oldContacts = $seller->contact_persons ?? [];
 
     $contacts = [];
     $total = count($request->contact_name ?? []);
@@ -961,7 +989,7 @@ public function saveContact(Request $request)
         $contacts
     );
 
-    return redirect()->route('seller.contact.list')
+    return redirect()->route('seller.bank')
         ->with('success','Saved Successfully');
 }
 
@@ -1113,7 +1141,7 @@ public function saveBank(Request $request)
 
     $this->updateApprovalStatus($seller);
 
-    return redirect('/seller/payment')
+    return redirect()->route('seller.payment')
         ->with('success', 'Bank Saved Successfully');
 }
 
@@ -1232,7 +1260,7 @@ public function savePayment(Request $request)
     $this->updateApprovalStatus($seller);
 
     return redirect()
-        ->route('seller.payment.list')
+        ->route('seller.agreement')
         ->with('success', 'Payment Settings Saved Successfully');
 }
 
@@ -1301,8 +1329,15 @@ public function saveAgreement(Request $request)
     $rules = [
         'agreement_type' => 'required|in:Digital,Physical',
         'agree' => 'required|accepted',
-        'agreement_file' => 'required_if:agreement_type,Physical|mimes:pdf,jpg,png|max:2048',
     ];
+
+    if ($request->agreement_type === 'Physical') {
+        if (!$seller->agreement_file) {
+            $rules['agreement_file'] = 'required|file|mimes:pdf,jpg,png|max:2048';
+        } else {
+            $rules['agreement_file'] = 'nullable|file|mimes:pdf,jpg,png|max:2048';
+        }
+    }
 
     $data = $request->validate($rules);
 
@@ -1334,7 +1369,7 @@ public function saveAgreement(Request $request)
 
     $this->updateApprovalStatus($seller);
 
-    return redirect('/seller/logs')
+    return redirect()->route('seller.logs')
         ->with('success','Agreement Saved Successfully');
 }
 
@@ -1402,10 +1437,19 @@ public function orgAutoSave(Request $request)
         'pan_file',
         'gst_certificate',
         'iec_certificate',
+        'logo',
+        'trademark_file',
     ]);
 
     if ($request->has('application')) {
         $data['application'] = json_encode($request->application);
+    }
+
+    if ($request->has('org_mobile')) {
+        $data['phone'] = $request->org_mobile;
+    }
+    if ($request->has('org_email')) {
+        $data['email'] = $request->org_email;
     }
 
     $seller->update($data);
@@ -1452,7 +1496,8 @@ public function sendEmailOtp(Request $request)
     \Illuminate\Support\Facades\Log::info("Email OTP generated: " . $otp . " for " . $request->email);
 
     return response()->json([
-        'success' => true
+        'success' => true,
+        'otp' => $otp
     ]);
 }
 

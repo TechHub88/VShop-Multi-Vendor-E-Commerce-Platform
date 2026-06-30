@@ -316,6 +316,16 @@ PAN File (PDF)
 Only PDF allowed, Max 2MB
 </small>
 
+@if(!empty($c['pan_file']))
+    <div class="mt-2">
+        <a href="{{ asset($c['pan_file']) }}"
+           target="_blank"
+           class="btn btn-sm btn-outline-primary">
+            View Uploaded File
+        </a>
+    </div>
+@endif
+
 @if($errors->has('contact_pan_file'))
 <div class="text-danger small d-block mt-1">
     {{ $errors->first('contact_pan_file') }}
@@ -364,6 +374,16 @@ Aadhaar File (PDF)
 <small class="text-muted d-block">
 Only PDF allowed, Max 2MB
 </small>
+
+@if(!empty($c['aadhaar_file']))
+    <div class="mt-2">
+        <a href="{{ asset($c['aadhaar_file']) }}"
+           target="_blank"
+           class="btn btn-sm btn-outline-primary">
+            View Uploaded File
+        </a>
+    </div>
+@endif
 
 @if($errors->has('contact_aadhar_file'))
 <div class="text-danger small d-block mt-1">

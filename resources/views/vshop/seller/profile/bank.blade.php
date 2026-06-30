@@ -371,7 +371,7 @@ $seller = auth()->guard('seller')->user();
     @enderror
 
     {{-- FILE VIEW LOGIC --}}
-  @if(!empty($seller->cancel_cheque) && file_exists(public_path($seller->cancel_cheque)))
+  @if(!empty($seller->cancel_cheque))
 
     <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
 

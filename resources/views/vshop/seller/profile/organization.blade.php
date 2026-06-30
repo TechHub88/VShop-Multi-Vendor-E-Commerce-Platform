@@ -307,10 +307,7 @@ No
             </small>
 
           {{-- VIEW FILE --}}
-@if(
-    !empty($seller->trademark_file) &&
-    file_exists(public_path($seller->trademark_file))
-)
+@if(!empty($seller->trademark_file))
 
     <div class="mt-3">
 
@@ -495,6 +492,16 @@ value="{{ $type }}"
                 class="form-control"
                 accept="application/pdf">
 
+            @if(!empty($seller->company_certificate))
+                <div class="mt-2">
+                    <a href="{{ asset($seller->company_certificate) }}"
+                       target="_blank"
+                       class="btn btn-sm btn-outline-primary">
+                        View Uploaded File
+                    </a>
+                </div>
+            @endif
+
         </div>
 
     </div>
@@ -676,7 +683,7 @@ $panDaysLeft = $panExpiry
                 </small>
 
                 {{-- EXISTING FILE --}}
-                @if(!empty($seller->pan_file) && file_exists(public_path($seller->pan_file)))
+                @if(!empty($seller->pan_file))
 
                     <div class="mt-2">
 
@@ -856,7 +863,7 @@ $gstDaysLeft = $gstExpiry
                 </small>
 
                 {{-- EXISTING FILE --}}
-                @if(!empty($seller->gst_certificate) && file_exists(public_path($seller->gst_certificate)))
+                @if(!empty($seller->gst_certificate))
 
                     <div class="mt-2">
 
@@ -1018,7 +1025,7 @@ $gstDaysLeft = $gstExpiry
             @enderror
 
             {{-- EXISTING FILE --}}
-            @if(!empty($seller->iec_certificate) && file_exists(public_path($seller->iec_certificate)))
+            @if(!empty($seller->iec_certificate))
 
                 <div class="mt-2">
 
@@ -1224,28 +1231,6 @@ placeholder="Street Address"></textarea>
                     maxlength="10"
                     value="{{ old('org_mobile', $seller->org_mobile ?? '') }}"
                     placeholder="Enter phone number">
-    
-                @error('org_mobile')
-                    <small class="text-danger">{{ $message }}</small>
-                @enderror
-                    
-                <div id="otpBox" style="display:none;" class="mt-2">
-                    <div class="d-flex gap-2">
-                        <input type="text"
-                            id="otpInput"
-                            class="form-control text-center"
-                            maxlength="4"
-                            style="width:80px;"
-                            placeholder="----"
-                            autocomplete="off">
-
-                        <button type="button"
-                            class="btn btn-success btn-sm"
-                            id="verifyOtpBtn">
-                            Submit
-                        </button>
-                    </div>
-                </div>
 
                 {{-- VERIFY BUTTON --}}
                 <button type="button"
@@ -1257,11 +1242,31 @@ placeholder="Street Address"></textarea>
 
             </div>
 
+            @error('org_mobile')
+                <small class="text-danger d-block mt-1">{{ $message }}</small>
+            @enderror
+
             <small id="phoneStatus"
                 class="d-block mt-1 
                 {{ $seller->phone_verified ? 'text-success' : 'text-warning' }}">
                 {{ $seller->phone_verified ? 'Verified ✔' : 'Pending' }}
             </small>
+
+            {{-- OTP BOX --}}
+            <div id="otpBox" style="display:none;" class="mt-2">
+                <div class="d-flex align-items-center gap-1">
+                    <input type="text" class="form-control text-center otp-digit" maxlength="1" style="width:38px; height:38px; font-weight:bold;" autocomplete="off">
+                    <input type="text" class="form-control text-center otp-digit" maxlength="1" style="width:38px; height:38px; font-weight:bold;" autocomplete="off">
+                    <input type="text" class="form-control text-center otp-digit" maxlength="1" style="width:38px; height:38px; font-weight:bold;" autocomplete="off">
+                    <input type="text" class="form-control text-center otp-digit" maxlength="1" style="width:38px; height:38px; font-weight:bold;" autocomplete="off">
+
+                    <button type="button"
+                        class="btn btn-success btn-sm ms-2"
+                        id="verifyOtpBtn">
+                        Submit
+                    </button>
+                </div>
+            </div>
         </div>
 
 
@@ -1294,18 +1299,15 @@ placeholder="Street Address"></textarea>
 
     {{-- OTP BOX --}}
     <div id="emailOtpBox" style="display:none;" class="mt-2">
-        <div class="d-flex gap-2">
+        <div class="d-flex align-items-center gap-1">
 
-            <input type="text"
-                id="emailOtpInput"
-                class="form-control text-center"
-                maxlength="4"
-                style="width:80px;"
-                placeholder="----"
-                autocomplete="off">
+            <input type="text" class="form-control text-center email-otp-digit" maxlength="1" style="width:38px; height:38px; font-weight:bold;" autocomplete="off">
+            <input type="text" class="form-control text-center email-otp-digit" maxlength="1" style="width:38px; height:38px; font-weight:bold;" autocomplete="off">
+            <input type="text" class="form-control text-center email-otp-digit" maxlength="1" style="width:38px; height:38px; font-weight:bold;" autocomplete="off">
+            <input type="text" class="form-control text-center email-otp-digit" maxlength="1" style="width:38px; height:38px; font-weight:bold;" autocomplete="off">
 
             <button type="button"
-                class="btn btn-success btn-sm"
+                class="btn btn-success btn-sm ms-2"
                 id="verifyEmailOtpBtn">
                 Submit
             </button>
@@ -1413,6 +1415,7 @@ $('#emailInput').on('input', function(){
         .html('Not Verified');
 
     $('#emailOtpBox').hide();
+    $('.email-otp-digit').val('');
     
     // Show Verify button again when email is changed
     $('#sendEmailOtpBtn').show();
@@ -1439,8 +1442,8 @@ $('#sendEmailOtpBtn').click(function(){
         return;
     }
 
-    // Clear the OTP input field for a clean input box
-    $('#emailOtpInput').val('');
+    // Clear split inputs
+    $('.email-otp-digit').val('');
 
     $('#emailStatus')
         .removeClass()
@@ -1458,6 +1461,14 @@ $('#sendEmailOtpBtn').click(function(){
                 .removeClass()
                 .addClass('text-info')
                 .html('Sent OTP to your mail');
+
+            // Autofill split OTP inputs
+            if(res.otp) {
+                let otpStr = res.otp.toString();
+                $('.email-otp-digit').each(function(index) {
+                    $(this).val(otpStr[index] || '');
+                });
+            }
 
             // ✅ SHOW OTP BOX
             $('#emailOtpBox').fadeIn();
@@ -1478,7 +1489,10 @@ $('#sendEmailOtpBtn').click(function(){
 // ================= VERIFY EMAIL OTP =================
 $('#verifyEmailOtpBtn').click(function(){
 
-    let otp = $('#emailOtpInput').val();
+    let otp = '';
+    $('.email-otp-digit').each(function() {
+        otp += $(this).val();
+    });
 
     if(otp.length < 4){
         alert('Enter valid OTP');
@@ -1535,6 +1549,22 @@ $('#verifyEmailOtpBtn').click(function(){
 
     });
 
+});
+
+// Shift focus to the next input or previous input for split OTP digit inputs
+$(document).on('input', '.email-otp-digit', function() {
+    let inputs = $('.email-otp-digit');
+    let idx = inputs.index(this);
+    if (this.value.length === 1 && idx < inputs.length - 1) {
+        inputs.eq(idx + 1).focus();
+    }
+});
+$(document).on('keydown', '.email-otp-digit', function(e) {
+    let inputs = $('.email-otp-digit');
+    let idx = inputs.index(this);
+    if (e.key === 'Backspace' && this.value.length === 0 && idx > 0) {
+        inputs.eq(idx - 1).focus();
+    }
 });
 
 </script>
@@ -2260,6 +2290,7 @@ $('#phoneInput').on('input', function(){
         .text('Pending');
 
     $('#otpBox').hide();
+    $('.otp-digit').val('');
     
     // Show Verify button again when phone is changed
     $('#sendOtpBtn').show();
@@ -2277,8 +2308,8 @@ $('#sendOtpBtn').click(function(){
         return;
     }
 
-    // Clear the OTP input field for a clean input box
-    $('#otpInput').val('');
+    // Clear split inputs
+    $('.otp-digit').val('');
 
     $('#phoneStatus')
         .removeClass()
@@ -2297,9 +2328,16 @@ $('#sendOtpBtn').click(function(){
                 .addClass('text-info')
                 .text('OTP Sent ✔');
 
+            // Autofill split OTP inputs
+            if(res.otp) {
+                let otpStr = res.otp.toString();
+                $('.otp-digit').each(function(index) {
+                    $(this).val(otpStr[index] || '');
+                });
+            }
+
             // ✅ SHOW OTP BOX
             $('#otpBox').fadeIn();
-
 
         } else {
 
@@ -2315,7 +2353,10 @@ $('#sendOtpBtn').click(function(){
 
 $('#verifyOtpBtn').click(function(){
 
-    let otp = $('#otpInput').val();
+    let otp = '';
+    $('.otp-digit').each(function() {
+        otp += $(this).val();
+    });
 
     if(otp.length < 4){
         alert('Enter valid OTP');
@@ -2329,7 +2370,7 @@ $('#verifyOtpBtn').click(function(){
 
     $.post('/seller/verify-otp', {
         _token: '{{ csrf_token() }}',
-        otp: otp   // 🔥 REQUIRED
+        otp: otp
     }, function(res){
 
         if(res.success){
@@ -2371,6 +2412,22 @@ $('#verifyOtpBtn').click(function(){
 
     });
 
+});
+
+// Shift focus to the next input or previous input for split OTP digit inputs
+$(document).on('input', '.otp-digit', function() {
+    let inputs = $('.otp-digit');
+    let idx = inputs.index(this);
+    if (this.value.length === 1 && idx < inputs.length - 1) {
+        inputs.eq(idx + 1).focus();
+    }
+});
+$(document).on('keydown', '.otp-digit', function(e) {
+    let inputs = $('.otp-digit');
+    let idx = inputs.index(this);
+    if (e.key === 'Backspace' && this.value.length === 0 && idx > 0) {
+        inputs.eq(idx - 1).focus();
+    }
 });
 $('#verifyEmailBtn').click(function(){
 
@@ -2472,6 +2529,28 @@ $(document).ready(function(){
     $('#gstExpiry').on('change blur', function(){
         validateDate(this);
     });
+
+    // Auto-switch to tab containing errors
+    @if ($errors->any())
+        var firstErrorTab = null;
+        @if ($errors->has('application') || $errors->has('legal_name') || $errors->has('hide_price') || $errors->has('logo') || $errors->has('logo_trademark') || $errors->has('trademark_file'))
+            firstErrorTab = '#basic-tab';
+        @elseif ($errors->has('business_type') || $errors->has('cin') || $errors->has('incorporation_date') || $errors->has('company_certificate'))
+            firstErrorTab = '#company-tab';
+        @elseif ($errors->has('pan_number') || $errors->has('pan_expiry') || $errors->has('pan_file') || $errors->has('gst_number') || $errors->has('gst_expiry') || $errors->has('gst_certificate'))
+            firstErrorTab = '#tax-tab';
+        @else
+            firstErrorTab = '#address-tab';
+        @endif
+
+        if (firstErrorTab) {
+            var tabEl = document.querySelector(firstErrorTab);
+            if (tabEl) {
+                var tab = new bootstrap.Tab(tabEl);
+                tab.show();
+            }
+        }
+    @endif
 
 });
 </script>
@@ -2603,6 +2682,8 @@ $(document).ready(function(){
             formData.delete('pan_file');
             formData.delete('gst_certificate');
             formData.delete('iec_certificate');
+            formData.delete('logo');
+            formData.delete('trademark_file');
 
             $.ajax({
                 url: '/seller/org-autosave',

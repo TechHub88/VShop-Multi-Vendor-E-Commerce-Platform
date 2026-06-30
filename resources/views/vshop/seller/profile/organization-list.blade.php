@@ -116,8 +116,8 @@ Organization Details
 <tr><th>IEC</th><td>{{ $seller->has_iec }}</td></tr>
 <tr><th>IEC Code</th><td>{{ $seller->iec_code }}</td></tr>
 
-<tr><th>Phone</th><td>{{ $seller->phone }}</td></tr>
-<tr><th>Email</th><td>{{ $seller->email }}</td></tr>
+<tr><th>Phone</th><td>{{ $seller->org_mobile ?: ($seller->phone ?: $seller->mobile) }}</td></tr>
+<tr><th>Email</th><td>{{ $seller->org_email ?: $seller->email }}</td></tr>
 
 <tr><th>Billing Address</th>
 <td>
