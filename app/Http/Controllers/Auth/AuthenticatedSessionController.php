@@ -35,14 +35,13 @@ class AuthenticatedSessionController extends Controller
         $credentials = $request->only('email', 'password');
         $remember = $request->boolean('remember');
 
-        // Check if 2FA is enabled globally
-        $is2faEnabled = \App\Models\Setting::getByKey('security_2fa', false);
-
-        if ($is2faEnabled) {
-            // Validate credentials for User (web guard)
-            if (Auth::guard('web')->validate($credentials)) {
-                $user = \App\Models\User::where('email', $request->email)->first();
-                if ($user) {
+        // 1. Check if it's a main Admin User (web guard)
+        if (Auth::guard('web')->validate($credentials)) {
+            $user = \App\Models\User::where('email', $request->email)->first();
+            if ($user) {
+                // If global 2FA is enabled, use standard 2FA flow
+                $is2faEnabled = \App\Models\Setting::getByKey('security_2fa', false);
+                if ($is2faEnabled) {
                     $otp = rand(100000, 999999);
                     session([
                         '2fa_temp_user_id' => $user->id,
@@ -51,51 +50,103 @@ class AuthenticatedSessionController extends Controller
                         '2fa_otp_expires_at' => now()->addMinutes(15),
                         '2fa_remember' => $remember
                     ]);
-                    return redirect()->route('admin.2fa');
+                    return $request->ajax() 
+                        ? response()->json(['redirect' => route('admin.2fa')])
+                        : redirect()->route('admin.2fa');
+                } else {
+                    // No 2FA -> Direct login
+                    Auth::guard('web')->login($user, $remember);
+                    $request->session()->regenerate();
+                    return $request->ajax()
+                        ? response()->json(['redirect' => url('/dashboard/index')])
+                        : redirect()->intended('/dashboard/index');
                 }
-            }
-
-            // Validate credentials for AdminStaff (admin_staff guard)
-            if (Auth::guard('admin_staff')->validate($credentials)) {
-                $staff = \App\Models\AdminStaff::where('email', $request->email)->first();
-                if ($staff) {
-                    if ($staff->status !== 'Active') {
-                        return back()->withErrors(['email' => 'Your staff account is ' . $staff->status . '. Please contact admin.'])->withInput();
-                    }
-                    $otp = rand(100000, 999999);
-                    session([
-                        '2fa_temp_user_id' => $staff->id,
-                        '2fa_temp_user_type' => 'admin_staff',
-                        '2fa_otp' => $otp,
-                        '2fa_otp_expires_at' => now()->addMinutes(15),
-                        '2fa_remember' => $remember
-                    ]);
-                    return redirect()->route('admin.2fa');
-                }
-            }
-        } else {
-            // Direct login (No 2FA)
-            // 1. Try User
-            if (Auth::guard('web')->attempt($credentials, $remember)) {
-                $request->session()->regenerate();
-                return redirect()->intended('/dashboard/index');
-            }
-
-            // 2. Try AdminStaff
-            if (Auth::guard('admin_staff')->attempt($credentials, $remember)) {
-                $staff = Auth::guard('admin_staff')->user();
-                if ($staff->status !== 'Active') {
-                    Auth::guard('admin_staff')->logout();
-                    return back()->withErrors(['email' => 'Your staff account is ' . $staff->status . '. Please contact admin.'])->withInput();
-                }
-                $request->session()->regenerate();
-                return redirect()->intended('/dashboard/index');
             }
         }
 
-        return back()->withErrors([
-            'email' => 'Invalid email or password'
-        ])->withInput();
+        // 2. Check if it's an Admin Staff (ALWAYS require OTP, return JSON for AJAX)
+        if (Auth::guard('admin_staff')->validate($credentials)) {
+            $staff = \App\Models\AdminStaff::where('email', $request->email)->first();
+            if ($staff) {
+                if ($staff->status !== 'Active') {
+                    $msg = 'Your staff account is ' . $staff->status . '. Please contact admin.';
+                    return $request->ajax()
+                        ? response()->json(['message' => $msg], 422)
+                        : back()->withErrors(['email' => $msg])->withInput();
+                }
+
+                // Generate 4-digit OTP for staff
+                $otp = rand(1000, 9999);
+                session([
+                    'staff_temp_id' => $staff->id,
+                    'staff_otp' => $otp,
+                    'staff_otp_expires' => now()->addMinutes(15),
+                    'staff_remember' => $remember
+                ]);
+
+                // Send Email via Mailable
+                try {
+                    \Illuminate\Support\Facades\Mail::to($staff->email)->send(new \App\Mail\AdminOtpMail($otp));
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Staff OTP Email Failed: ' . $e->getMessage());
+                    // We can still proceed, maybe log it or show a specific dev OTP if needed
+                }
+
+                if ($request->ajax()) {
+                    return response()->json([
+                        'otp_required' => true,
+                        'message' => 'OTP has been sent to your registered email.',
+                        'dev_otp' => env('APP_ENV') === 'local' ? $otp : null // Optional: remove in prod
+                    ]);
+                } else {
+                    // Fallback if somehow not AJAX (though we will update the view)
+                    return redirect()->back()->with('status', 'OTP sent to email. Please verify.');
+                }
+            }
+        }
+
+        $errorMsg = 'Invalid email or password';
+        return $request->ajax()
+            ? response()->json(['message' => $errorMsg], 422)
+            : back()->withErrors(['email' => $errorMsg])->withInput();
+    }
+
+    /**
+     * ðŸ”¹ Verify Staff OTP (AJAX)
+     */
+    public function verifyStaffOtp(Request $request)
+    {
+        $request->validate([
+            'otp' => 'required|string|size:4'
+        ]);
+
+        if (!session()->has('staff_temp_id')) {
+            return response()->json(['message' => 'Session expired. Please login again.'], 422);
+        }
+
+        $expectedOtp = session('staff_otp');
+        $expiresAt = session('staff_otp_expires');
+
+        if (!$expectedOtp || !$expiresAt || now()->greaterThan($expiresAt)) {
+            return response()->json(['message' => 'OTP has expired. Please resend.'], 422);
+        }
+
+        if ($request->otp !== (string)$expectedOtp) {
+            return response()->json(['message' => 'Incorrect OTP code.'], 422);
+        }
+
+        // OTP is correct
+        $staffId = session('staff_temp_id');
+        $remember = session('staff_remember', false);
+
+        session()->forget(['staff_temp_id', 'staff_otp', 'staff_otp_expires', 'staff_remember']);
+
+        Auth::guard('admin_staff')->loginUsingId($staffId, $remember);
+        $request->session()->regenerate();
+
+        return response()->json([
+            'redirect' => url('/dashboard/index')
+        ]);
     }
 
     /**

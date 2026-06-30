@@ -1443,8 +1443,8 @@ require __DIR__ . '/auth.php';
 Route::get('/admin/login', [AuthenticatedSessionController::class, 'create'])
     ->name('admin.login');
 
-Route::post('/admin/login', [AuthenticatedSessionController::class, 'store'])
-    ->name('admin.login.store');
+Route::post('/admin/login', [AuthenticatedSessionController::class, 'store'])->name('admin.login.store');
+Route::post('/admin/login/verify-otp', [AuthenticatedSessionController::class, 'verifyStaffOtp'])->name('admin.login.verify-otp');
 
 Route::get('/admin/2fa', [AuthenticatedSessionController::class, 'show2faForm'])
     ->name('admin.2fa');
