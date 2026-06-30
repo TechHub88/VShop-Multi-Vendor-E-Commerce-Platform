@@ -12,32 +12,41 @@
         background: linear-gradient(180deg, rgba(44, 127, 195, 1) 0%, rgba(35, 61, 121, 1) 100%) !important;
     }
     .ai-btn {
-        display: flex !important;
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 50%;
+        background: #fff;
+        border: 1px solid rgba(0, 82, 204, 0.25) !important;
+        display: inline-flex !important;
         align-items: center !important;
-        font-size: 9px !important;
-        font-weight: 700 !important;
-        gap: 6px !important;
-        white-space: nowrap;
+        justify-content: center !important;
+        cursor: pointer;
+        box-shadow: 0 0 0 0 rgba(0, 82, 204, 0.4);
+        animation: pulse-vai 2s infinite;
+        transition: all 0.3s ease;
+        padding: 0 !important;
+        flex-shrink: 0;
         margin-top: 28px;
-        padding: 8px 18px !important;
-        border-radius: 60px !important;
-        border: 0 !important;
-        background: linear-gradient(180deg, #d7f1ff 0%, #9fd0ff 25%, #7bb8ff 55%, #6aa8ff 75%, #8fd4ff 100%);
-        color: #fff !important;
-        letter-spacing: 2px;
-        line-height: 14px;
-        text-transform: uppercase;
+        overflow: hidden;
     }
     .ai-btn:hover {
-        box-shadow: inset 0 4px 10px rgba(255, 255, 255, 0.6), inset 0 -6px 12px rgba(0, 0, 0, 0.12), 0 0 20px rgba(120, 190, 255, 0.8);
+        transform: scale(1.08);
+        border-color: rgba(0, 82, 204, 0.5) !important;
+        box-shadow: 0 4px 15px rgba(0, 82, 204, 0.3);
     }
-    .ai-btn svg {
-        width: 22px;
-        height: 22px;
+    .ai-btn img {
+        width: 38px;
+        height: 38px;
+        object-fit: contain;
     }
-    .ai-btn i {
-        color: orange;
-        font-size: 14px;
+    .ai-btn svg, .ai-btn span {
+        display: none !important;
+    }
+    @keyframes pulse-vai {
+        0% { box-shadow: 0 0 0 0 rgba(0, 82, 204, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(0, 82, 204, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 82, 204, 0); }
     }
     .top-back-heading-sec {
         align-items: center;
@@ -415,10 +424,10 @@ action="{{ $product->id
             @enderror
         </div>
         <button type="button"
-                class="btn btn-outline-primary btn-sm ai-btn"
-                onclick="generateAIContent(this)">
-            <svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="512" height="512" x="0" y="0" viewBox="0 0 64 64" style="enable-background:new 0 0 512 512" xml:space="preserve" class=""><g><path d="M4 35c18.621 4.21 20 23 20 23s1.379-18.79 20-23c-18.621-4.21-20-23-20-23S22.621 30.79 4 35zM38 48c10.241 2.2 11 12 11 12s.759-9.8 11-12c-10.241-2.2-11-12-11-12s-.759 9.8-11 12zM31 16c10.241 2.2 11 12 11 12s.759-9.8 11-12C42.759 13.8 42 4 42 4s-.759 9.8-11 12z" fill="#ffffff" opacity="1" data-original="#000000"></path></g></svg>
-            <span>V-AI<br>Generate</span>
+                class="btn ai-btn"
+                onclick="generateAIContent(this)"
+                title="V-AI Generate">
+            <img src="{{ asset('vtravelassets/images/vai-chip-logo.png') }}" alt="V-AI">
         </button>
     </div>
 

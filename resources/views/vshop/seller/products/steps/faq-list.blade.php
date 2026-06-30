@@ -16,18 +16,40 @@
         height: 36px !important;
     }
     .ai-btn {
-        display: flex !important;
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        border-radius: 50%;
+        background: #fff;
+        border: 1px solid rgba(0, 82, 204, 0.25) !important;
+        display: inline-flex !important;
         align-items: center !important;
-        font-size: 12px !important; 
-        font-weight: 700 !important;
-        gap: 6px !important;
-        white-space: nowrap;
-        margin-top: 32px;
-        padding-top: 7px !important;
+        justify-content: center !important;
+        cursor: pointer;
+        box-shadow: 0 0 0 0 rgba(0, 82, 204, 0.4);
+        animation: pulse-vai 2s infinite;
+        transition: all 0.3s ease;
+        padding: 0 !important;
+        flex-shrink: 0;
+        overflow: hidden;
     }
-    .ai-btn i {
-        color: orange;
-        font-size: 14px;
+    .ai-btn:hover {
+        transform: scale(1.08);
+        border-color: rgba(0, 82, 204, 0.5) !important;
+        box-shadow: 0 4px 15px rgba(0, 82, 204, 0.3);
+    }
+    .ai-btn img {
+        width: 38px;
+        height: 38px;
+        object-fit: contain;
+    }
+    .ai-btn svg, .ai-btn span {
+        display: none !important;
+    }
+    @keyframes pulse-vai {
+        0% { box-shadow: 0 0 0 0 rgba(0, 82, 204, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(0, 82, 204, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 82, 204, 0); }
     }
     .top-back-heading-sec {
         align-items: center;
