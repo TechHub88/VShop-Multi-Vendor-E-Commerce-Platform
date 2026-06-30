@@ -663,7 +663,7 @@ private function dashboardData()
         ->map(function($seller) {
             $seller->total_revenue = $seller->orders_sum_total_amount ?? 0;
             $seller->orders_count = $seller->orders_count ?? 0;
-            $seller->products_count = \App\Models\Product::where('seller_id', $seller->id)->count();
+            $seller->products_count = \App\Models\Product::where('created_by_id', $seller->id)->count();
             return $seller;
         });
 
