@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * 🔹 Show Login Page
+     * ðŸ”¹ Show Login Page
      */
     public function create()
     {
@@ -18,13 +18,11 @@ class AuthenticatedSessionController extends Controller
             session(['admin_panel' => 'product']);
         }
 
-        $isAdmin = request()->is('admin/*') || request()->is('admin/login');
-
-        return view('auth.login', compact('isAdmin'));
+        return view('auth.login');
     }
 
     /**
-     * 🔹 Handle Login (with Multi-guard & 2FA support)
+     * ðŸ”¹ Handle Login (with Multi-guard & 2FA support)
      */
     public function store(Request $request)
     {
@@ -101,7 +99,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * 🔹 Show 2FA Form
+     * ðŸ”¹ Show 2FA Form
      */
     public function show2faForm()
     {
@@ -113,7 +111,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * 🔹 Verify 2FA
+     * ðŸ”¹ Verify 2FA
      */
     public function verify2fa(Request $request)
     {
@@ -155,7 +153,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * 🔹 Logout
+     * ðŸ”¹ Logout
      */
     public function destroy(Request $request)
     {
@@ -170,7 +168,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * 🔹 Switch Panel (Vshop / Vtravel / Vcampus / Vedge)
+     * ðŸ”¹ Switch Panel (Vshop / Vtravel / Vcampus / Vedge)
      */
     public function switchPanel($type)
     {
