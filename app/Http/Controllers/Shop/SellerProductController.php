@@ -1216,6 +1216,16 @@ public function saveMedia(Request $request, Product $product)
 
     if ($request->hasFile('thumbnail')) {
 
+        $file = $request->file('thumbnail');
+
+        // ================= NSFW CHECK =================
+        if (!\App\Services\ImageModeratorService::isSafeImage($file->getRealPath())) {
+            return response()->json([
+                'status' => false,
+                'error' => 'The uploaded thumbnail contains inappropriate (NSFW) content.'
+            ]);
+        }
+
         // delete old
         if ($product->thumbnail && file_exists(public_path($product->thumbnail))) {
             unlink(public_path($product->thumbnail));
@@ -1269,6 +1279,16 @@ public function saveMedia(Request $request, Product $product)
     |--------------------------------------------------------------------------
     */
     if ($request->hasFile('images')) {
+
+        // ================= NSFW CHECK =================
+        foreach ($request->file('images') as $file) {
+            if (!\App\Services\ImageModeratorService::isSafeImage($file->getRealPath())) {
+                return response()->json([
+                    'status' => false,
+                    'error' => 'One of the uploaded gallery images contains inappropriate (NSFW) content.'
+                ]);
+            }
+        }
 
         foreach ($request->file('images') as $file) {
 

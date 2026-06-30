@@ -24,6 +24,20 @@
     color: #fff !important;
     border: 0 !important;
 }
+.premium-back-btn {
+    width: 40px; height: 40px; background: #fff; color: #0f172a; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; border: 1px solid #e2e8f0;
+    transition: 0.3s; text-decoration: none; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.premium-back-btn:hover { background: #f8fafc; color: #0b4da1; }
+
+.premium-list-btn, .premium-add-btn {
+    width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; box-shadow: 0 4px 10px rgba(11, 77, 161, 0.2); transition: 0.3s; text-decoration: none; color: white;
+}
+.premium-list-btn { background: linear-gradient(135deg, #0b4da1 0%, #1a73e8 100%); }
+.premium-add-btn { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+.premium-list-btn:hover, .premium-add-btn:hover { transform: translateY(-2px); color: white; }
 </style>
 
 @section('content')
@@ -40,32 +54,21 @@
 <div class="marketplace-left">
     
 <div class="d-flex justify-content-between align-items-center mb-4">
-<div class="d-flex top-back-heading-sec mb-4">
-    <button onclick="goBack()" class="nav-btn">
-        <i class="fa-solid fa-arrow-left"></i>
-    </button>
-    <h5 class="">
-    Select Category <span class="text-danger">*</span>
-    </h5>
-</div>
+    <div class="d-flex align-items-center" style="gap: 15px;">
+        <a href="javascript:history.back()" class="premium-back-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <h4 class="mb-0 fw-bold" style="color: #1e293b;">Select Category <span class="text-danger">*</span></h4>
+    </div>
 
-
-<div class="header-actions d-flex gap-2">
-
-<a href="{{ route('seller.marketplace.category.list') }}"
-class="icon-btn"
-title="Category List">
-<i class="bi bi-list-ul"></i>
-</a>
-
-<a href="{{ route('seller.marketplace.category.create') }}"
-class="icon-btn"
-title="Add Category">
-<i class="bi bi-plus-circle"></i>
-</a>
-
-</div>
-
+    <div class="d-flex gap-2">
+        <a href="{{ route('seller.marketplace.category.list') }}" class="premium-list-btn" title="Category List">
+            <i class="bi bi-list"></i>
+        </a>
+        <a href="{{ route('seller.marketplace.category.create') }}" class="premium-add-btn" title="Add Category">
+            <i class="bi bi-plus"></i>
+        </a>
+    </div>
 </div>
 
 @if($categories->isEmpty())

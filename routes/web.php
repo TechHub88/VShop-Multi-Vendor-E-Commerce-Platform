@@ -694,6 +694,7 @@ Route::get('logs',[ShopMyProfileController::class,'logs'])->name('logs');
 //seller marketplace
         
 Route::prefix('marketplace')->name('marketplace.')->group(function(){
+    Route::get('/setup',[MarketplaceController::class,'setup'])->name('setup');
     Route::get('/category',[MarketplaceController::class,'category'])
     ->name('category');
     

@@ -29,26 +29,7 @@
         color: orange;
         font-size: 14px;
     }
-    .nav-btn {
-        border: 1px solid #004392;
-        color: #004392;
-        background: transparent;
-        border-radius: 5px;
-        font-size: 4px;
-        width: 35px;
-        height: 38px;
-    }
-    .top-back-heading-sec {
-        align-items: center;
-        gap: 10px;
-    }
-    .edit-btn {
-        width: 32px;
-        height: 32px;
-    }
-    .top-back-heading-sec h5 {
-        color: #0f172a !important;
-    }
+
     .btn-save {
     background: linear-gradient(180deg, rgba(44, 127, 195, 1) 0%, rgba(35, 61, 121, 1) 100%) !important;
 }
@@ -62,28 +43,22 @@
 {{-- LEFT --}}
 <div class="marketplace-left">
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-<div class="d-flex top-back-heading-sec mb-4">
-  <button onclick="window.location.href='{{ route('seller.marketplace.template') }}'" 
-        class="nav-btn">
-    <i class="fa-solid fa-arrow-left"></i>
-</button>
-    <h5 class="">
-    {{ isset($seo) ? 'Edit SEO' : 'SEO Management' }}
-    </h5>
+<div class="header-action-row">
+<div class="top-back-heading-sec">
+    <a href="{{ route('seller.marketplace.template') }}" class="premium-nav-btn">
+        <i class="fa-solid fa-arrow-left"></i>
+    </a>
+    <h5>{{ isset($seo) ? 'Edit SEO' : 'SEO Management' }}</h5>
 </div>
-
-
-<div class="header-actions">
-<a href="{{ route('seller.marketplace.seo.list') }}" class="">
-<i class="bi bi-list-ul"></i>
+<div>
+<a href="{{ route('seller.marketplace.seo.list') }}" class="premium-list-btn" title="SEO List">
+    <i class="bi bi-list"></i>
 </a>
 </div>
-
 </div>
 
 
-<div class="market-card">
+<div class="premium-form-container mb-4">
 
 <form method="POST"
 action="{{ route('seller.marketplace.seo.save') }}"
@@ -145,16 +120,7 @@ placeholder="e.g. business, marketing, growth">{{ old('meta_keywords', $seo->met
 
 <span>Search Hashtags</span>
 
-<div class="d-flex align-items-center gap-2">
-<button type="button"
-class="btn btn-sm btn-outline-primary ai-btn"
-onclick="generateAI()">
-<!--    <i class="fa-solid fa-bolt"></i>-->
-<!--V-AI-->
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="512" height="512" x="0" y="0" viewBox="0 0 64 64" style="enable-background:new 0 0 512 512" xml:space="preserve" class=""><g><path d="M4 35c18.621 4.21 20 23 20 23s1.379-18.79 20-23c-18.621-4.21-20-23-20-23S22.621 30.79 4 35zM38 48c10.241 2.2 11 12 11 12s.759-9.8 11-12c-10.241-2.2-11-12-11-12s-.759 9.8-11 12zM31 16c10.241 2.2 11 12 11 12s.759-9.8 11-12C42.759 13.8 42 4 42 4s-.759 9.8-11 12z" fill="#ffffff" opacity="1" data-original="#000000"></path></g></svg>
-                                    <span>V-AI<br>Generate</span>
-</button>
-</div>
+
 
 </label>
 
@@ -166,9 +132,11 @@ placeholder="#business,#growth,#marketing">{{ old('search_hashtags', $seo->searc
 <small class="text-danger" id="hashtagError"></small>
 </div>
 
-<button class="btn-save">
-{{ isset($seo) ? 'Update SEO' : 'Save SEO' }}
-</button>
+<div class="text-end mt-4">
+    <button class="premium-btn-save">
+        {{ isset($seo) ? 'Update SEO' : 'Save SEO' }}
+    </button>
+</div>
 
 </form>
 

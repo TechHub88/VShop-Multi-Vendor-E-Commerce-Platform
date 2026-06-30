@@ -1,28 +1,6 @@
 @extends('vshop.seller.main')
 <style>
-.nav-btn {
-    border: 1px solid #004392;
-    color: #004392;
-    background: transparent;
-    border-radius: 5px;
-    font-size: 4px;
-    width: 35px;
-    height: 38px;
-}
-.top-back-heading-sec {
-    align-items: center;
-    gap: 10px;
-}
-.nav-btn {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.top-back-heading-sec h5 {
-        color: #0f172a !important;
-    }
+
     .btn-success {
         background: linear-gradient(180deg, rgba(44, 127, 195, 1) 0%, rgba(35, 61, 121, 1) 100%);
         border: 0 !important;
@@ -48,21 +26,20 @@ id="templateForm">
 {{-- LEFT --}}
 <div class="marketplace-left">
 
-<div class="card template-wrapper p-4">
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="premium-form-container mb-4">
+<div class="header-action-row">
+    <div class="top-back-heading-sec">
+        <a href="{{ url('seller/marketplace/template') }}" class="premium-nav-btn">
+            <i class="fa-solid fa-arrow-left"></i>
+        </a>
+        <h5>Add Template</h5>
+    </div>
 
-<div class="d-flex top-back-heading-sec">
-    <a href="{{ url('seller/marketplace/template') }}"
-    class="nav-btn">
-    
-    <i class="fa-solid fa-arrow-left"></i>
-    
-    </a>
-   <h5 class="mb-0">Add Template</h5>
-</div>
-
-
-
+    <div>
+        <a href="{{ route('seller.marketplace.template') }}" class="premium-list-btn" title="Template List">
+            <i class="bi bi-list"></i>
+        </a>
+    </div>
 </div>
 
 @if(session('success'))
@@ -139,9 +116,11 @@ id="description">{{ old('description') }}</textarea>
 @enderror
 </div>
 
-<button class="btn btn-success px-4">
-<i class="fa fa-save me-2"></i> Save
-</button>
+<div class="text-end mt-4">
+    <button class="premium-btn-save">
+        <i class="fa fa-save me-2"></i> Save Template
+    </button>
+</div>
 
 </div>
 

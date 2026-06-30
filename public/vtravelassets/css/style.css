@@ -161,8 +161,9 @@ select {
 }
 
 .dashboardPagesContent {
-    width: calc(100% - 120px);
-    margin-left: 120px;
+    flex: 1;
+    width: 100%;
+    margin-left: 0;
     padding: 18px;
     position: relative;
     /*z-index: -1;*/
@@ -3375,16 +3376,17 @@ input[type="checkbox"]:checked+.toggle {
 }
 
 .dashboardPagesContent {
-    background: #fff !important;
+    background: hsl(213deg 32.26% 87.84%) !important;
 }
 
 .dashboardPagesContent .container-fluid {
-    background: hsl(213deg 32.26% 87.84%) !important;
+    min-height: 100vh;
 }
 
 
 .dashboardPagesContent {
-    width: calc(100% - 230px) !important;
+    flex: 1 !important;
+    max-width: 100% !important;
 }
 
 
