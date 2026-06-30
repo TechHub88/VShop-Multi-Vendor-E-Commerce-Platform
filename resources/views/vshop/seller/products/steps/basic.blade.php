@@ -427,7 +427,8 @@ action="{{ $product->id
                 class="btn ai-btn"
                 onclick="generateAIContent(this)"
                 title="V-AI Generate">
-            <img src="{{ asset('vtravelassets/images/vai-chip-logo.png') }}" alt="V-AI">
+            <img src="{{ asset('vtravelassets/images/vai-chip-logo.png') }}" alt="V-AI" class="ai-logo">
+            <span class="spinner-border text-primary d-none ai-spinner" role="status" aria-hidden="true" style="width: 24px; height: 24px; border-width: 3px;"></span>
         </button>
     </div>
 
@@ -1587,8 +1588,9 @@ function generateAIContent(btn) {
         return;
     }
 
-    let originalText = $(btn).html();
-    $(btn).html('<span>Loading...</span>').prop('disabled', true);
+    $(btn).find('.ai-logo').addClass('d-none');
+    $(btn).find('.ai-spinner').removeClass('d-none');
+    $(btn).prop('disabled', true);
 
     $.ajax({
         url: "{{ route('seller.products.ai.generate') }}",
@@ -1598,7 +1600,9 @@ function generateAIContent(btn) {
             name: name
         },
         success: function(response) {
-            $(btn).html(originalText).prop('disabled', false);
+            $(btn).find('.ai-spinner').addClass('d-none');
+            $(btn).find('.ai-logo').removeClass('d-none');
+            $(btn).prop('disabled', false);
             if (response.success) {
                 $('#short_summary').val(response.short_summary);
                 
@@ -1629,7 +1633,9 @@ function generateAIContent(btn) {
             }
         },
         error: function(xhr) {
-            $(btn).html(originalText).prop('disabled', false);
+            $(btn).find('.ai-spinner').addClass('d-none');
+            $(btn).find('.ai-logo').removeClass('d-none');
+            $(btn).prop('disabled', false);
             let errMsg = 'Failed to connect to the server. Please check the API key or try again.';
             if (xhr.responseJSON && xhr.responseJSON.message) {
                 errMsg = xhr.responseJSON.message;
