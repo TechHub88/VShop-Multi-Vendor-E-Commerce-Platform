@@ -79,8 +79,8 @@ i {
 }
 
 .dashboardPagesContent {
-    max-height: 88vh;
     overflow: auto;
+    height: 100%;
     padding-bottom: 100px !important;
 }
 
@@ -3364,7 +3364,7 @@ input[type="checkbox"]:checked+.toggle {
 }
 
 .dashboard-bottom-wrapper {
-    height: 98vh;
+    height: 88vh;
 }
 
 .modern-progress {
@@ -3377,14 +3377,7 @@ input[type="checkbox"]:checked+.toggle {
 
 .dashboardPagesContent {
     background: hsl(213deg 32.26% 87.84%) !important;
-}
-
-.dashboardPagesContent .container-fluid {
     min-height: 100vh;
-}
-
-
-.dashboardPagesContent {
     flex: 1 !important;
     max-width: 100% !important;
 }
