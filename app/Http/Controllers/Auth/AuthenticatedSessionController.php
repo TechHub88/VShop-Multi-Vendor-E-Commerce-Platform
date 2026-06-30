@@ -18,7 +18,9 @@ class AuthenticatedSessionController extends Controller
             session(['admin_panel' => 'product']);
         }
 
-        return view('auth.login');
+        $isAdmin = request()->is('admin/*') || request()->is('admin/login');
+
+        return view('auth.login', compact('isAdmin'));
     }
 
     /**

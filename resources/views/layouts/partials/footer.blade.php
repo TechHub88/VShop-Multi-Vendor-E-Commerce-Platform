@@ -273,7 +273,7 @@
     </div>
 </div>
 
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="http://127.0.0.1:3000/socket.io/socket.io.js"></script>
 <script>
     // DOM elements
     const chatWidget = document.getElementById('supportChatWidget');

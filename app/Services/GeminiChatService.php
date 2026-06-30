@@ -24,10 +24,10 @@ class GeminiChatService
      * @param int|null $userId
      * @return string
      */
-    public function getChatbotResponse(string $userMessage, ?int $userId = null): string
+    public function getChatbotResponse(string $userMessage, ?int $userId = null, string $senderType = 'user'): string
     {
         // 1. Fetch real-time database context
-        $context = $this->buildDatabaseContext($userMessage, $userId);
+        $context = $this->buildDatabaseContext($userMessage, $userId, $senderType);
 
         // 2. Fallback if API key is not configured
         if (empty($this->apiKey)) {
@@ -69,18 +69,18 @@ class GeminiChatService
             }
 
             Log::error("OpenRouter API Error response: " . $response->body());
-            return "Thank you for reaching out! I'm having trouble processing that right now, but a human support admin will connect with you shortly.";
+            return "Thank you for reaching out! I'm currently unable to process your request at this moment. However, I have forwarded your query to our support team, and a human representative will connect with you here shortly.";
 
         } catch (\Exception $e) {
             Log::error("OpenRouter service exception: " . $e->getMessage());
-            return "Thank you! I am reviewing your query. A support admin is being notified to connect with you.";
+            return "Thank you for reaching out! I'm currently unable to process your request at this moment. However, I have forwarded your query to our support team, and a human representative will connect with you here shortly.";
         }
     }
 
     /**
      * Gather database context for orders, products, and user profiles.
      */
-    protected function buildDatabaseContext(string $userMessage, ?int $userId): array
+    protected function buildDatabaseContext(string $userMessage, ?int $userId, string $senderType = 'user'): array
     {
         $context = [
             'store_info' => [
@@ -97,16 +97,26 @@ class GeminiChatService
 
         // Fetch User and Order History if logged in
         if ($userId) {
-            $user = User::find($userId);
+            $user = null;
+            if ($senderType === 'customer') {
+                $user = \App\Models\Customer::find($userId);
+            } else {
+                $user = User::find($userId);
+            }
+
             if ($user) {
                 $context['buyer_info'] = [
-                    'name' => $user->name,
+                    'name' => $user->first_name ? ($user->first_name . ' ' . $user->last_name) : $user->name,
                     'email' => $user->email,
-                    'phone' => $user->phone ?? 'Not provided'
+                    'phone' => $user->phone ?? 'Not provided',
+                    'wallet_balance' => $user->wallet_balance ?? 0,
+                    'reward_points' => $user->reward_points ?? 0,
+                    'referral_code' => $user->referral_code ?? 'None'
                 ];
 
                 // Fetch recent 3 orders
-                $orders = Order::where('user_id', $userId)
+                $orderColumn = $senderType === 'customer' ? 'customer_id' : 'user_id';
+                $orders = Order::where($orderColumn, $userId)
                     ->with('items.product')
                     ->latest()
                     ->take(3)
@@ -126,7 +136,7 @@ class GeminiChatService
                         'order_id' => $order->id,
                         'order_number' => $order->order_number ?? '#' . $order->id,
                         'status' => $order->status ?? 'pending',
-                        'total' => $order->total ?? $order->grand_total,
+                        'total' => $order->total_amount ?? $order->total ?? $order->grand_total ?? 0,
                         'created_at' => $order->created_at ? $order->created_at->toDateTimeString() : 'N/A',
                         'items' => $items
                     ];
@@ -178,6 +188,11 @@ class GeminiChatService
             return "I couldn't find any recent orders associated with your account. Please share your Order Number, and a support agent will help you track it shortly!";
         }
 
+        // Try reward/wallet check
+        if (str_contains($msg, 'reward') || str_contains($msg, 'wallet') || str_contains($msg, 'balance') || str_contains($msg, 'points')) {
+            return "Hi " . ($context['buyer_info']['name'] ?? 'there') . "! You currently have a Wallet Balance of ₹" . number_of_format_or_raw($context['buyer_info']['wallet_balance'] ?? 0) . " and " . ($context['buyer_info']['reward_points'] ?? 0) . " Reward Points. Keep shopping to earn more!";
+        }
+
         // Try product check
         if (!empty($context['matching_products'])) {
             $p = $context['matching_products'][0];
@@ -193,7 +208,7 @@ class GeminiChatService
             return "Our return policy allows returns within 7 days of delivery for unused products in their original packaging. You can raise a return request directly from your dashboard under the My Orders section.";
         }
 
-        return "Thank you for your message! Ashmita is reviewing your request. Since my AI services are in setup mode, an admin will connect with you here shortly.";
+        return "Thank you for reaching out! I'm currently unable to process your request at this moment. However, I have forwarded your query to our support team, and a human representative will connect with you here shortly.";
     }
 }
 

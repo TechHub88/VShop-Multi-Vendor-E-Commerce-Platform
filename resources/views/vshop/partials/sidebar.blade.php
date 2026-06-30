@@ -346,7 +346,7 @@
     // });
 </script>
 
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="http://127.0.0.1:3000/socket.io/socket.io.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -363,10 +363,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if(typeof Swal !== 'undefined') {
                 let sidebarSocket = null;
                 let conversationId = null;
-                let currentUserId = {{ Auth::id() ?? 0 }};
+                let currentUserId = {{ Auth::guard('customer')->id() ?? Auth::id() ?? 0 }};
 
                 Swal.fire({
-                    title: '<div style="text-align: left; font-size: 18px; display: flex; align-items: center;"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; margin-right: 10px;">Chat with Ashmita</div>',
+                    title: '<div style="text-align: left; font-size: 18px; display: flex; align-items: center; justify-content: space-between; width: 100%;"><div style="display: flex; align-items: center;"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; margin-right: 10px;">Chat with Ashmita</div><button id="clearChatBtn" style="font-size:12px; padding:5px 12px; border:1px solid #e0e0e0; background:#f8f9fa; color:#6c757d; border-radius:20px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; transition:0.2s;" title="Clear Chat History" onmouseover="this.style.background=\'#dc3545\';this.style.color=\'#fff\';this.style.borderColor=\'#dc3545\'" onmouseout="this.style.background=\'#f8f9fa\';this.style.color=\'#6c757d\';this.style.borderColor=\'#e0e0e0\'"><i class="bi bi-eraser-fill"></i> Clear</button></div>',
                     html: `
                         <div id="liveChatWindow" class="scrollbar" style="height: 320px; overflow-y: auto; background: #f8f9fa; border-radius: 12px; padding: 15px; margin-bottom: 15px; text-align: left; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e9ecef;">
                             <div style="display: flex; flex-direction: column; gap: 12px;" id="liveChatContainer">
@@ -399,7 +399,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         }
 
                         function appendMsg(msg) {
-                            const isSent = msg.sender_id == currentUserId || msg.sender_type === 'seller';
+                            const isSent = msg.sender_id == currentUserId || msg.sender_type === 'seller' || msg.sender_type === 'customer';
                             
                             // Render user sent message on right
                             if (isSent) {
@@ -426,7 +426,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         // Load history
                         try {
-                            const res = await fetch('{{ route('chat.ashmita.history') }}');
+                            const res = await fetch('{{ route('chat.ashmita.history') }}', {
+                                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                            });
+
+                            if (res.status === 401 || res.redirected) {
+                                chatContainer.innerHTML = `
+                                    <div style="display: flex; gap: 10px; align-items: flex-end;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: #004392; color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,67,146,0.3); overflow: hidden;">
+                                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width:100%; height:100%; object-fit:cover;">
+                                        </div>
+                                        <div style="background: white; padding: 12px 15px; border-radius: 14px; border-bottom-left-radius: 4px; max-width: 80%; font-size: 14px; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f1f1;">
+                                            Hi this is Ashmita! Please <a href="{{ route('vshoplogin') }}" style="color:#004392; font-weight:600;">log in</a> to start chatting with me.
+                                        </div>
+                                    </div>
+                                `;
+                                return;
+                            }
+
+                            if (!res.ok) {
+                                throw new Error('Server returned ' + res.status);
+                            }
+
                             const data = await res.json();
                             if (data.success) {
                                 conversationId = data.conversation_id;
@@ -457,9 +478,12 @@ document.addEventListener("DOMContentLoaded", function () {
                                     appendMsg(msg);
                                     chatWindow.scrollTop = chatWindow.scrollHeight;
                                 });
+                            } else {
+                                throw new Error(data.error || 'Unknown error');
                             }
                         } catch (err) {
-                            chatContainer.innerHTML = '<div class="text-danger p-3">Failed to load chat history.</div>';
+                            console.error('Chat history error:', err);
+                            chatContainer.innerHTML = '<div class="text-danger p-3">Failed to load chat history. Please try again.</div>';
                         }
 
                         const sendMessage = async () => {
@@ -480,6 +504,31 @@ document.addEventListener("DOMContentLoaded", function () {
                                 }
                             }
                         };
+                        
+                        const clearChatBtn = document.getElementById('clearChatBtn');
+                        if (clearChatBtn) {
+                            clearChatBtn.addEventListener('click', async () => {
+                                if (confirm('Are you sure you want to clear your chat history?')) {
+                                    try {
+                                        await fetch('{{ route('chat.ashmita.clear') }}', {
+                                            method: 'DELETE',
+                                            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                                        });
+                                        chatContainer.innerHTML = `
+                                        <div style="display: flex; gap: 10px; align-items: flex-end;">
+                                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #004392; color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,67,146,0.3); overflow: hidden;">
+                                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width:100%; height:100%; object-fit:cover;">
+                                            </div>
+                                            <div style="background: white; padding: 12px 15px; border-radius: 14px; border-bottom-left-radius: 4px; max-width: 80%; font-size: 14px; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f1f1;">
+                                                Conversation cleared. Ask me anything!
+                                            </div>
+                                        </div>`;
+                                    } catch (err) {
+                                        console.error(err);
+                                    }
+                                }
+                            });
+                        }
                         
                         sendBtn.addEventListener('click', sendMessage);
                         input.addEventListener('keypress', (e) => {

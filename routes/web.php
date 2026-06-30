@@ -2692,7 +2692,7 @@ Route::get('admin/grievances/get/{id}', [\App\Http\Controllers\admin\GrievanceCo
     });
 
 // ==================== CHAT SYSTEM ROUTES ====================
-Route::prefix('chat')->name('chat.')->middleware('auth')->group(function () {
+Route::prefix('chat')->name('chat.')->middleware('auth:web,customer')->group(function () {
     Route::get('/communication-center', [ChatController::class, 'index'])->name('communication-center');
     Route::get('/conversations', [ChatController::class, 'conversations'])->name('conversations');
     Route::get('/conversations/{id}', [ChatController::class, 'getConversation'])->name('get-conversation');
@@ -2707,6 +2707,7 @@ Route::prefix('chat')->name('chat.')->middleware('auth')->group(function () {
     Route::get('/stats', [ChatController::class, 'getStats'])->name('stats');
     Route::post('/ashmita/message', [ChatController::class, 'ashmitaMessage'])->name('ashmita.message');
     Route::get('/ashmita/history', [ChatController::class, 'ashmitaHistory'])->name('ashmita.history');
+    Route::delete('/ashmita/clear', [ChatController::class, 'ashmitaClearHistory'])->name('ashmita.clear');
     Route::get('/admin/messages/{sellerId}', [ChatController::class, 'getMessages'])->name('admin.messages');
     Route::post('/admin/send', [ChatController::class, 'sendMessage'])->name('admin.send');
 });

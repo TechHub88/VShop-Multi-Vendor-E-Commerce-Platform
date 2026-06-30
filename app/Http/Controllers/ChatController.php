@@ -318,18 +318,23 @@ class ChatController extends Controller
     public function ashmitaHistory()
     {
         try {
-            $userId = Auth::id();
+            $userId = Auth::guard('customer')->id() ?? Auth::id();
+            $senderType = Auth::guard('customer')->check() ? 'customer' : 'seller';
             if (!$userId) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
 
+            // Use the correct column based on user type
+            $idColumn = $senderType === 'customer' ? 'customer_id' : 'seller_id';
+            $adminId = \App\Models\User::first()->id ?? null;
+
             $conversation = ChatConversation::firstOrCreate(
                 [
                     'type' => 'support',
-                    'seller_id' => $userId,
+                    $idColumn => $userId,
                 ],
                 [
-                    'admin_id' => 1,
+                    'admin_id' => $adminId,
                     'subject' => 'Support Chat with Ashmita',
                     'status' => 'open',
                     'last_message_at' => now(),
@@ -354,7 +359,8 @@ class ChatController extends Controller
     public function ashmitaMessage(Request $request, GeminiChatService $geminiService)
     {
         try {
-            $userId = Auth::id();
+            $userId = Auth::guard('customer')->id() ?? Auth::id();
+            $senderType = Auth::guard('customer')->check() ? 'customer' : 'seller';
             if (!$userId) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
@@ -363,13 +369,17 @@ class ChatController extends Controller
                 'message' => 'required|string',
             ]);
 
+            // Use the correct column based on user type
+            $idColumn = $senderType === 'customer' ? 'customer_id' : 'seller_id';
+            $adminId = \App\Models\User::first()->id ?? null;
+
             $conversation = ChatConversation::firstOrCreate(
                 [
                     'type' => 'support',
-                    'seller_id' => $userId,
+                    $idColumn => $userId,
                 ],
                 [
-                    'admin_id' => 1,
+                    'admin_id' => $adminId,
                     'subject' => 'Support Chat with Ashmita',
                     'status' => 'open',
                     'last_message_at' => now(),
@@ -380,7 +390,7 @@ class ChatController extends Controller
             $buyerMessage = ChatMessage::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => $userId,
-                'sender_type' => 'seller',
+                'sender_type' => $senderType,
                 'message' => $request->message,
                 'is_read' => false,
             ]);
@@ -396,7 +406,7 @@ class ChatController extends Controller
                         'id' => $buyerMessage->id,
                         'message' => $buyerMessage->message,
                         'sender_id' => $userId,
-                        'sender_type' => 'seller',
+                        'sender_type' => $senderType,
                         'created_at' => $buyerMessage->created_at->toDateTimeString()
                     ]
                 ]);
@@ -405,12 +415,12 @@ class ChatController extends Controller
             }
 
             // 3. Generate AI response from Ashmita
-            $botReplyText = $geminiService->getChatbotResponse($request->message, $userId);
+            $botReplyText = $geminiService->getChatbotResponse($request->message, $userId, $senderType);
 
             // 4. Save Ashmita's message to database
             $botMessage = ChatMessage::create([
                 'conversation_id' => $conversation->id,
-                'sender_id' => 1, // Admin ID 1 representing Ashmita
+                'sender_id' => $adminId ?? 1, // Admin ID representing Ashmita
                 'sender_type' => 'admin',
                 'message' => $botReplyText,
                 'is_read' => false,
@@ -441,6 +451,33 @@ class ChatController extends Controller
 
         } catch (\Exception $e) {
             \Log::error('ashmitaMessage error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function ashmitaClearHistory()
+    {
+        try {
+            $senderType = \Auth::guard('customer')->check() ? 'customer' : 'seller';
+            $userId = \Auth::guard('customer')->id() ?? \Auth::id();
+
+            if (!$userId) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+
+            $idColumn = $senderType === 'customer' ? 'customer_id' : 'seller_id';
+
+            $conversation = ChatConversation::where('type', 'support')
+                ->where($idColumn, $userId)
+                ->first();
+
+            if ($conversation) {
+                ChatMessage::where('conversation_id', $conversation->id)->delete();
+            }
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            \Log::error('ashmitaClearHistory error: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
