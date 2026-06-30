@@ -431,8 +431,8 @@ class ChatController extends Controller
             // 4. Save Ashmita's message to database
             $botMessage = ChatMessage::create([
                 'conversation_id' => $conversation->id,
-                'sender_id' => $adminId ?? 1, // Admin ID representing Ashmita
-                'sender_type' => 'admin',
+                'sender_id' => 0, // 0 represents Ashmita Bot
+                'sender_type' => 'bot',
                 'message' => $botReplyText,
                 'is_read' => false,
             ]);
@@ -445,8 +445,8 @@ class ChatController extends Controller
                     'data' => [
                         'id' => $botMessage->id,
                         'message' => $botMessage->message,
-                        'sender_id' => 1,
-                        'sender_type' => 'admin',
+                        'sender_id' => 0,
+                        'sender_type' => 'bot',
                         'created_at' => $botMessage->created_at->toDateTimeString()
                     ]
                 ]);

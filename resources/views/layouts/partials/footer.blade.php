@@ -369,7 +369,7 @@
     }
 
     function appendMessage(msg) {
-        const isSent = msg.sender_id == currentUserId || msg.sender_type === 'seller';
+        const isSent = (msg.sender_id == currentUserId || msg.sender_type === 'seller') && msg.sender_type !== 'bot';
         const msgClass = isSent ? 'sent' : 'received';
         const senderName = isSent ? 'You' : 'Ashmita';
         

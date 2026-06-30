@@ -399,7 +399,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         }
 
                         function appendMsg(msg) {
-                            const isSent = msg.sender_id == currentUserId || msg.sender_type === 'seller' || msg.sender_type === 'customer';
+                            const isSent = (msg.sender_id == currentUserId || msg.sender_type === 'seller' || msg.sender_type === 'customer') && msg.sender_type !== 'bot';
                             
                             // Render user sent message on right
                             if (isSent) {
