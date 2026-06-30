@@ -1877,6 +1877,12 @@ public function savePrice(Request $request, Product $product)
     |--------------------------------------------------------------------------
     */
     $netTotal = $priceAfterDiscount + $totalTax;
+    if ($request->has('boost_status')) {
+        $perDay = $request->daily_budget ?? 700;
+        $duration = $request->boost_duration ?? 7;
+        $totalBudget = $request->total_budget ?? ($perDay * $duration);
+        $netTotal += $totalBudget;
+    }
 
     /*
     |--------------------------------------------------------------------------

@@ -1260,6 +1260,7 @@ $(document).ready(function(){
             $('.goal-option').css('pointer-events', 'none');
             $('#modalCityOptionsList input').prop('disabled', true);
         }
+        calculateNetTotal();
     }
 
     $('#boostStatus').on('change', function() {
@@ -1284,6 +1285,7 @@ $(document).ready(function(){
         let days = parseInt($('#boostDuration').val()) || 7;
         let total = dailyBudget * days;
         $('#totalBudget').val(total.toFixed(2));
+        calculateNetTotal();
     }
 
     $('.btn-boost-duration').on('click', function() {
@@ -1407,6 +1409,12 @@ $(document).ready(function(){
         let priceAfterDiscount = basePrice - discountAmount;
         let taxAmount = calculateTax(priceAfterDiscount);
         let netTotal = priceAfterDiscount + taxAmount;
+        
+        if ($('#boostStatus').is(':checked')) {
+            let boostTotal = parseFloat($('#totalBudget').val()) || 0;
+            netTotal += boostTotal;
+        }
+        
         $('#netTotal').val(netTotal.toFixed(2));
     }
 
