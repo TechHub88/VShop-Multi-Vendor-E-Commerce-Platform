@@ -2020,6 +2020,7 @@ public function getAiRecommendation(Request $request, Product $product)
     $cities = $request->input('cities', []);
     $state = $request->input('state', '');
     $country = $request->input('country', '');
+    $dailyBudget = (float) $request->input('daily_budget', 700);
 
     $locationInfo = "Target Area: India";
     if (!empty($cities)) {
@@ -2028,22 +2029,23 @@ public function getAiRecommendation(Request $request, Product $product)
         $locationInfo = "Target State: " . $state;
     }
 
-    $prompt = "You are a professional digital marketing budget estimator. Calculate a recommended daily advertising boost budget, expected daily reach range, and expected daily enquiries range for the following product:
+    $prompt = "You are a professional digital marketing budget estimator. Calculate the expected daily reach range, and expected daily enquiries range for the following product advertising boost campaign:
 Product Name: {$product->name}
 Category: {$categoryName}
 Price Range: INR {$minPrice} to INR {$maxPrice}
+Proposed Daily Budget: INR {$dailyBudget}
 Marketing Goal: {$goal}
 Target Location: {$locationInfo}
 
-Based on these details, generate a realistic daily budget, estimated daily reach range (number of people reached), estimated daily enquiries range (number of leads/enquiries generated), and 3 recommended target cities in India that are best suited for this product (prefer to include some or all of the selected Target Location cities/states if specified, or suggest others that fit the product profile).
+Based on these details, validate the proposed daily budget (suggest an adjusted budget value if the proposed budget is too low or too high for this target location, or return the proposed budget if it is appropriate), calculate the estimated daily reach range (number of people reached), estimated daily enquiries range (number of leads/enquiries generated), and 3 recommended target cities in India that are best suited for this product under this budget (prefer to include some or all of the selected Target Location cities/states if specified, or suggest others that fit the product profile).
 Keep in mind:
-- Higher priced products should have a slightly higher daily budget, lower estimated reach but high-quality enquiries.
-- Lower priced products should have a lower/moderate daily budget, higher estimated reach, and higher number of enquiries.
+- Higher priced products should have lower estimated reach but high-quality enquiries.
+- Lower priced products should have higher estimated reach and higher number of enquiries.
 
 You MUST respond ONLY with a raw JSON object and nothing else. Do not include markdown code block formatting (like ```json), no markdown backticks, no comments, and no extra text.
 The JSON must follow this structure exactly:
 {
-  \"budget\": 500,
+  \"budget\": {$dailyBudget},
   \"reach_min\": 5000,
   \"reach_max\": 7500,
   \"enquiries_min\": 10,

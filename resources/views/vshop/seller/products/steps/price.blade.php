@@ -670,11 +670,10 @@
                     <div class="pricing-section-title">SECTION 2: BUDGETING</div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
-                            <label style="font-size:10px; font-weight:600;">Daily Budget (Admin Rate)</label>
+                            <label style="font-size:10px; font-weight:600;">Daily Budget</label>
                             <div class="budget-input-group">
                                 <span class="currency">₹</span>
-                                 <input type="number" id="dailyBudget" value="{{ $boostPerDay !== null ? number_format($boostPerDay, 2, '.', '') : '' }}" readonly style="background-color: #f1f5f9;">
-                                 <input type="hidden" name="daily_budget" value="{{ $boostPerDay ?? '' }}">
+                                 <input type="number" name="daily_budget" id="dailyBudget" value="{{ old('daily_budget', $product->daily_budget ?? ($boostPerDay !== null ? number_format($boostPerDay, 2, '.', '') : '')) }}">
                             </div>
                         </div>
                         <div class="col-6">
@@ -806,7 +805,12 @@
                     </div>
                     <div class="ai-recommendation-card">
                         <div class="ai-recommendation-header">AI RECOMMENDED BOOST</div>
-                        <div class="ai-recommendation-body">
+                        <div class="ai-recommendation-body" style="position: relative; min-height: 110px;">
+                            <!-- Subtle Loading Overlay -->
+                            <div class="ai-card-loader" style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.92); align-items:center; justify-content:center; border-radius:6px; z-index:10; flex-direction: row; gap: 8px;">
+                                <div class="spinner-border text-primary spinner-border-sm" role="status" style="width: 1rem; height: 1rem;"></div>
+                                <span style="font-size: 11px; font-weight:600; color: #0b4da1;">v-Ai analyzing...</span>
+                            </div>
                             <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Recommended Daily Budget:</span><strong id="aiBudget">₹{{ old('daily_budget', $product->daily_budget ?? 700) }}</strong></div>
                             <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Expected Reach:</span><strong id="aiReach">12,000 - 18,000</strong></div>
                             <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Estimated Enquiries:</span><strong id="aiEnquiries">120 - 180</strong></div>
@@ -1275,22 +1279,33 @@ $(document).ready(function(){
     }
 
     // ================= BOOST DURATION & BUDGET =================
+    function calculateTotalBudget() {
+        let dailyBudget = parseFloat($('#dailyBudget').val()) || 0;
+        let days = parseInt($('#boostDuration').val()) || 7;
+        let total = dailyBudget * days;
+        $('#totalBudget').val(total.toFixed(2));
+    }
+
     $('.btn-boost-duration').on('click', function() {
         $('.btn-boost-duration').removeClass('active');
         $(this).addClass('active');
         let days = $(this).data('days');
         $('#boostDuration').val(days);
         
-        // Calculate Total Budget
-        let dailyBudget = parseFloat($('#dailyBudget').val()) || 0;
-        let total = dailyBudget * days;
-        $('#totalBudget').val(total.toFixed(2));
+        calculateTotalBudget();
+        triggerAiAutoFetch();
+    });
+
+    $(document).on('input', '#dailyBudget', function() {
+        calculateTotalBudget();
+        triggerAiAutoFetch();
     });
     
     // Initialize default total budget if there is a selected duration
     if ($('#boostDuration').val()) {
         let days = $('#boostDuration').val();
-        $('.btn-boost-duration[data-days="'+days+'"]').trigger('click');
+        $('.btn-boost-duration[data-days="'+days+'"]').addClass('active');
+        calculateTotalBudget();
     }
 
     // ================= PROMOTION GOAL SELECTION =================
@@ -1713,8 +1728,79 @@ $(document).ready(function(){
         updateModalSelectedCitiesText();
     });
 
+    // ================= AI AUTO FETCH SYSTEM =================
+    let aiFetchTimeout = null;
+
+    function triggerAiAutoFetch() {
+        // If boost is not enabled, do not fetch anything
+        if (!$('#boostStatus').is(':checked')) {
+            return;
+        }
+
+        // Show subtle inline card loader
+        $('.ai-card-loader').css('display', 'flex');
+
+        if (aiFetchTimeout) {
+            clearTimeout(aiFetchTimeout);
+        }
+
+        aiFetchTimeout = setTimeout(function() {
+            let currentGoal = $('#promotionGoal').val() || 'enquiries';
+            let targetCountry = $('#targetCountry').val();
+            let targetState = $('#targetState').val() ? $('#targetState option:selected').text().trim() : '';
+            let selectedCities = [];
+            $('.city-checkbox:checked').each(function() {
+                selectedCities.push($(this).closest('.city-option').find('span').text().trim());
+            });
+            let dailyBudget = parseFloat($('#dailyBudget').val()) || 700;
+
+            $.ajax({
+                url: "{{ route('seller.products.price.ai-recommend', $product->id ?? 0) }}",
+                type: "POST",
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    goal: currentGoal,
+                    country: targetCountry,
+                    state: targetState,
+                    cities: selectedCities,
+                    daily_budget: dailyBudget
+                },
+                dataType: 'json',
+                success: function(res) {
+                    $('.ai-card-loader').hide();
+                    if (res.success && res.recommendation) {
+                        let rec = res.recommendation;
+                        
+                        // Dynamically update the AI recommendation card displays
+                        $('#aiBudget').text('₹' + rec.budget);
+                        $('#aiReach').text(rec.reach_min + ' - ' + rec.reach_max);
+                        $('#aiEnquiries').text(rec.enquiries_min + ' - ' + rec.enquiries_max);
+                        
+                        let recCities = rec.recommended_cities || [];
+                        if (recCities.length > 0) {
+                            $('#aiCities').text(recCities.join(', '));
+                        } else {
+                            $('#aiCities').text('No cities suggested');
+                        }
+                    }
+                },
+                error: function() {
+                    $('.ai-card-loader').hide();
+                }
+            });
+        }, 1000); // 1-second debounce
+    }
+
+    // Attach triggers for auto fetch
+    $(document).on('change', '.city-checkbox', function() { triggerAiAutoFetch(); });
+    $(document).on('change', '#targetState', function() { triggerAiAutoFetch(); });
+    $(document).on('change', '#targetCountry', function() { triggerAiAutoFetch(); });
+    $('.goal-option').on('click', function() { triggerAiAutoFetch(); });
+    $('#boostStatus').on('change', function() { triggerAiAutoFetch(); });
+
     // ================= INITIAL CALCULATIONS =================
     calculateNetTotal();
+    triggerAiAutoFetch();
 });
 </script>
 
