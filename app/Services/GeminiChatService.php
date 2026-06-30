@@ -35,10 +35,16 @@ class GeminiChatService
         }
 
         try {
-            $systemInstruction = "You are Ashmita, the helpful and professional real-time AI customer support assistant for Vridhee Shop.\n";
-            $systemInstruction .= "Answer the buyer's query as accurately as possible using the provided store context.\n";
-            $systemInstruction .= "If you cannot find the information in the context, politely state that you are looking into it and a human support admin will connect shortly.\n";
-            $systemInstruction .= "Keep answers concise, direct, helpful, and friendly (max 2-3 sentences where possible).";
+            if ($senderType === 'admin') {
+                $systemInstruction = "You are Ashmita, the intelligent AI assistant for the Admin Panel of Vridhee Shop.\n";
+                $systemInstruction .= "Answer the admin's query using the provided admin dashboard statistics context.\n";
+                $systemInstruction .= "Keep answers concise, professional, and data-driven.";
+            } else {
+                $systemInstruction = "You are Ashmita, the helpful and professional real-time AI customer support assistant for Vridhee Shop.\n";
+                $systemInstruction .= "Answer the buyer's query as accurately as possible using the provided store context.\n";
+                $systemInstruction .= "If you cannot find the information in the context, politely state that you are looking into it and a human support admin will connect shortly.\n";
+                $systemInstruction .= "Keep answers concise, direct, helpful, and friendly (max 2-3 sentences where possible).";
+            }
 
             $payload = [
                 'model' => 'google/gemini-2.5-flash',
@@ -104,7 +110,23 @@ class GeminiChatService
                 $user = User::find($userId);
             }
 
-            if ($user) {
+            if ($senderType === 'admin') {
+                $context['admin_dashboard_info'] = [
+                    'total_products' => Product::count(),
+                    'approved_products' => Product::whereIn('status', ['approved', 'active'])->count(),
+                    'pending_products' => Product::where('status', 'pending')->count(),
+                    'rejected_products' => Product::where('status', 'rejected')->count(),
+                    'total_sellers' => \App\Models\Seller::count(),
+                    'active_sellers' => \App\Models\Seller::where('status', 'active')->count(),
+                    'total_orders' => Order::count(),
+                    'todays_orders' => Order::whereDate('created_at', today())->count(),
+                    'pending_orders' => Order::where('status', 'pending')->count(),
+                    'processing_orders' => Order::where('status', 'processing')->count(),
+                    'completed_orders' => Order::where('status', 'completed')->count(),
+                    'total_revenue' => Order::where('status', 'completed')->sum('grand_total') ?? Order::where('status', 'completed')->sum('total_amount') ?? 0,
+                    'todays_revenue' => Order::whereDate('created_at', today())->where('status', 'completed')->sum('grand_total') ?? Order::whereDate('created_at', today())->where('status', 'completed')->sum('total_amount') ?? 0,
+                ];
+            } elseif ($user) {
                 $context['buyer_info'] = [
                     'name' => $user->first_name ? ($user->first_name . ' ' . $user->last_name) : $user->name,
                     'email' => $user->email,
@@ -115,7 +137,7 @@ class GeminiChatService
                 ];
 
                 // Fetch recent 3 orders
-                $orderColumn = $senderType === 'customer' ? 'customer_id' : 'user_id';
+                $orderColumn = $senderType === 'customer' ? 'customer_id' : 'seller_id';
                 $orders = Order::where($orderColumn, $userId)
                     ->with('items.product')
                     ->latest()

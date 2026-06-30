@@ -359,8 +359,19 @@ class ChatController extends Controller
     public function ashmitaMessage(Request $request, GeminiChatService $geminiService)
     {
         try {
-            $userId = Auth::guard('customer')->id() ?? Auth::id();
-            $senderType = Auth::guard('customer')->check() ? 'customer' : 'seller';
+            $userId = null;
+            $senderType = 'seller';
+            if (Auth::guard('customer')->check()) {
+                $senderType = 'customer';
+                $userId = Auth::guard('customer')->id();
+            } elseif (Auth::guard('web')->check()) {
+                $senderType = 'admin';
+                $userId = Auth::guard('web')->id();
+            } else {
+                $senderType = 'seller';
+                $userId = Auth::guard('seller')->id() ?? Auth::id();
+            }
+
             if (!$userId) {
                 return response()->json(['error' => 'Unauthenticated'], 401);
             }
@@ -370,7 +381,7 @@ class ChatController extends Controller
             ]);
 
             // Use the correct column based on user type
-            $idColumn = $senderType === 'customer' ? 'customer_id' : 'seller_id';
+            $idColumn = $senderType === 'customer' ? 'customer_id' : ($senderType === 'admin' ? 'admin_id' : 'seller_id');
             $adminId = \App\Models\User::first()->id ?? null;
 
             $conversation = ChatConversation::firstOrCreate(
