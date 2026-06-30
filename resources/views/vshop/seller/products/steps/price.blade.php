@@ -1582,7 +1582,7 @@ $(document).ready(function(){
         });
 
         $.ajax({
-            url: "{{ route('seller.price.ai-recommend', $product->id ?? 0) }}",
+            url: "{{ route('seller.products.price.ai-recommend', $product->id ?? 0) }}",
             type: "POST",
             data: {
                 _token: "{{ csrf_token() }}",
