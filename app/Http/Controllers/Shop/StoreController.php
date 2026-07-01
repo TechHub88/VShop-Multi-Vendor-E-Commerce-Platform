@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\SellerBanner;
 use App\Models\SellerSeo;
 use App\Models\SellerWebsiteTemplate;
+use App\Models\ProductReview;
 
 class StoreController extends Controller
 {
@@ -41,9 +42,29 @@ class StoreController extends Controller
                     ->with('template')
                     ->first();
 
+        // Overall Seller Rating
+        $sellerReviews = ProductReview::whereHas('product', function($q) use ($seller) {
+            $q->where('created_by_id', $seller->id)
+              ->where('created_by', 'seller');
+        })->where('is_approved', 1)->get();
+
+        $totalReviews = $sellerReviews->count();
+        $avgRating = $totalReviews > 0 ? round($sellerReviews->avg('rating'), 1) : 0;
+        
+        $ratingBreakdown = [
+            5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0
+        ];
+        
+        if ($totalReviews > 0) {
+            foreach (range(5, 1, -1) as $star) {
+                $count = $sellerReviews->where('rating', $star)->count();
+                $ratingBreakdown[$star] = round(($count / $totalReviews) * 100);
+            }
+        }
+
         // Blade view
         $view = 'store.index';
 
-        return view($view, compact('seller', 'products', 'banners', 'seo', 'template', 'panel'));
+        return view($view, compact('seller', 'products', 'banners', 'seo', 'template', 'panel', 'totalReviews', 'avgRating', 'ratingBreakdown'));
     }
 }
