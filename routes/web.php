@@ -2711,6 +2711,8 @@ Route::prefix('chat')->name('chat.')->middleware('auth:web,customer')->group(fun
     Route::delete('/ashmita/clear', [ChatController::class, 'ashmitaClearHistory'])->name('ashmita.clear');
     Route::get('/admin/messages/{sellerId}', [ChatController::class, 'getMessages'])->name('admin.messages');
     Route::post('/admin/send', [ChatController::class, 'sendMessage'])->name('admin.send');
+    Route::get('/admin/customer-messages/{customerId}', [ChatController::class, 'getCustomerMessages'])->name('admin.customer-messages');
+    Route::post('/admin/customer/send', [ChatController::class, 'sendCustomerMessage'])->name('admin.customer.send');
 });
 
 // ==================== LOCATION ROUTES ====================

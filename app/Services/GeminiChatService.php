@@ -41,9 +41,9 @@ class GeminiChatService
                 $systemInstruction .= "Keep answers concise, professional, and data-driven.";
             } else {
                 $systemInstruction = "You are Ashmita, the helpful and professional real-time AI customer support assistant for Vridhee Shop.\n";
-                $systemInstruction .= "Answer the buyer's query as accurately as possible using the provided store context.\n";
-                $systemInstruction .= "If you cannot find the information in the context, politely state that you are looking into it and a human support admin will connect shortly.\n";
-                $systemInstruction .= "Keep answers concise, direct, helpful, and friendly (max 2-3 sentences where possible).";
+                $systemInstruction .= "Answer the buyer's query as accurately as possible. Do NOT mention 'store database' or 'provided context' in your replies.\n";
+                $systemInstruction .= "If you cannot find the answer, OR if the user explicitly asks to speak to a human/support, you must apologize politely and state EXACTLY: 'I have notified our support team and a human representative will connect with you here shortly.'\n";
+                $systemInstruction .= "Keep answers concise, direct, helpful, and friendly (max 2-3 sentences). If asked 'how are you', reply warmly and professionally.";
             }
 
             $payload = [
@@ -98,8 +98,25 @@ class GeminiChatService
             ],
             'buyer_info' => null,
             'orders' => [],
-            'matching_products' => []
+            'matching_products' => [],
+            'categories' => [],
+            'all_products' => []
         ];
+
+        try {
+            $context['categories'] = \App\Models\MarketplaceCategory::pluck('name')->toArray();
+            $allProds = \App\Models\Product::with('category')->where('status', 'active')->take(100)->get(['id', 'name', 'price', 'quantity', 'description', 'category_id']);
+            foreach ($allProds as $p) {
+                $context['all_products'][] = [
+                    'name' => $p->name,
+                    'category' => $p->category ? $p->category->name : 'Uncategorized',
+                    'price' => $p->price,
+                    'stock' => $p->quantity > 0 ? 'In Stock (' . $p->quantity . ' available)' : 'Out of Stock'
+                ];
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to load categories/products for chat context: ' . $e->getMessage());
+        }
 
         // Fetch User and Order History if logged in
         if ($userId) {
@@ -123,8 +140,11 @@ class GeminiChatService
                     'pending_orders' => Order::where('status', 'pending')->count(),
                     'processing_orders' => Order::where('status', 'processing')->count(),
                     'completed_orders' => Order::where('status', 'completed')->count(),
-                    'total_revenue' => Order::where('status', 'completed')->sum('grand_total') ?? Order::where('status', 'completed')->sum('total_amount') ?? 0,
-                    'todays_revenue' => Order::whereDate('created_at', today())->where('status', 'completed')->sum('grand_total') ?? Order::whereDate('created_at', today())->where('status', 'completed')->sum('total_amount') ?? 0,
+                    'total_revenue' => Order::where('status', 'completed')->sum('total_amount') ?? 0,
+                    'todays_revenue' => Order::whereDate('created_at', today())->where('status', 'completed')->sum('total_amount') ?? 0,
+                    'recent_buyers' => \App\Models\Customer::latest()->take(50)->get(['id', 'first_name', 'last_name', 'email'])->toArray(),
+                    'recent_sellers' => \App\Models\Seller::latest()->take(50)->get(['id', 'name', 'email', 'status'])->toArray(),
+                    'recent_orders' => Order::with('items.product')->latest()->take(50)->get()->toArray(),
                 ];
             } elseif ($user) {
                 $context['buyer_info'] = [
@@ -160,6 +180,9 @@ class GeminiChatService
                         'status' => $order->status ?? 'pending',
                         'total' => $order->total_amount ?? $order->total ?? $order->grand_total ?? 0,
                         'created_at' => $order->created_at ? $order->created_at->toDateTimeString() : 'N/A',
+                        'shipped_at' => $order->shipped_at ?? 'Not shipped yet',
+                        'delivered_at' => $order->delivered_at ?? 'Not delivered yet',
+                        'estimated_delivery_days' => $order->estimated_delivery_days ?? 'N/A',
                         'items' => $items
                     ];
                 }
@@ -177,13 +200,14 @@ class GeminiChatService
                 $productQuery->orWhere('name', 'like', "%{$word}%");
             }
 
-            $products = $productQuery->where('status', 'active')
-                ->take(3)
-                ->get(['id', 'name', 'price', 'quantity', 'description']);
+            $products = $productQuery->with('category')->where('status', 'active')
+                ->take(10)
+                ->get(['id', 'name', 'price', 'quantity', 'description', 'category_id']);
 
             foreach ($products as $p) {
                 $context['matching_products'][] = [
                     'name' => $p->name,
+                    'category' => $p->category ? $p->category->name : 'Uncategorized',
                     'price' => $p->price,
                     'stock_status' => $p->quantity > 0 ? 'In Stock (' . $p->quantity . ' available)' : 'Out of Stock',
                     'description' => substr(strip_tags($p->description), 0, 100) . '...'

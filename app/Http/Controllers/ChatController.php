@@ -145,6 +145,80 @@ class ChatController extends Controller
         return response()->json(['success' => true, 'message' => $message]);
     }
 
+    // ==================== CUSTOMER SUPPORT CHAT (ADMIN PANEL) ====================
+    public function getCustomerMessages($customerId)
+    {
+        try {
+            $adminId = Auth::id();
+            if (!$adminId) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
+
+            $conversation = ChatConversation::where('type', 'support')
+                ->where('customer_id', $customerId)
+                ->first();
+
+            if (!$conversation) {
+                return response()->json(['messages' => []]);
+            }
+
+            $messages = ChatMessage::where('conversation_id', $conversation->id)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            return response()->json(['messages' => $messages, 'conversation_id' => $conversation->id]);
+        } catch (\Exception $e) {
+            \Log::error('getCustomerMessages error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function sendCustomerMessage(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'required',
+            'message' => 'required|string',
+        ]);
+
+        $adminId = Auth::id();
+        $conversation = ChatConversation::where('type', 'support')
+            ->where('customer_id', $request->customer_id)
+            ->first();
+
+        if (!$conversation) {
+            return response()->json(['error' => 'Conversation not found'], 404);
+        }
+
+        $message = ChatMessage::create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $adminId,
+            'sender_type' => 'admin',
+            'message' => $request->message,
+            'is_read' => false,
+        ]);
+
+        $conversation->update(['last_message_at' => now()]);
+
+        // Publish message to Socket.io server
+        try {
+            Http::post('http://localhost:3000/publish', [
+                'room' => 'conversation_' . $conversation->id,
+                'event' => 'message',
+                'data' => [
+                    'id' => $message->id,
+                    'message' => $message->message,
+                    'sender_id' => $adminId,
+                    'sender_type' => 'admin',
+                    'created_at' => $message->created_at->toDateTimeString()
+                ]
+            ]);
+        } catch (\Exception $ex) {
+            \Log::warning('Failed to publish admin customer message to Socket.io: ' . $ex->getMessage());
+        }
+
+        return response()->json(['success' => true, 'message' => $message]);
+    }
+
     // ==================== CONVERSATION LIST (OPTIONAL) ====================
     public function conversations()
     {
@@ -450,6 +524,29 @@ class ChatController extends Controller
                         'created_at' => $botMessage->created_at->toDateTimeString()
                     ]
                 ]);
+
+                // Check for fallback to notify admin
+                if (str_contains(strtolower($botReplyText), 'human representative will connect') || str_contains(strtolower($botReplyText), 'support team')) {
+                    if ($senderType === 'customer') {
+                        $customerName = 'Customer';
+                        $customer = \App\Models\Customer::find($userId);
+                        if ($customer) {
+                            $customerName = $customer->first_name . ' ' . $customer->last_name;
+                        }
+
+                        Http::post('http://localhost:3000/publish', [
+                            'room' => 'admin_global',
+                            'event' => 'escalated_chat',
+                            'data' => [
+                                'conversation_id' => $conversation->id,
+                                'customer_id' => $userId,
+                                'customer_name' => $customerName,
+                                'last_message' => $request->message,
+                                'created_at' => now()->toDateTimeString()
+                            ]
+                        ]);
+                    }
+                }
             } catch (\Exception $ex) {
                 \Log::warning('Failed to publish bot message to Socket.io: ' . $ex->getMessage());
             }

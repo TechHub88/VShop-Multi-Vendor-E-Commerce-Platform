@@ -248,6 +248,32 @@
 </footer>
 
 <!-- Floating Support Chat Popup (VAI Chat) -->
+@if(Auth::guard('web')->check())
+<script src="http://127.0.0.1:3000/socket.io/socket.io.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const socketUrlGlobal = window.location.protocol + '//' + window.location.hostname + ':3000';
+        const globalSocket = io(socketUrlGlobal);
+        globalSocket.on('connect', () => {
+            globalSocket.emit('join', 'admin_global');
+        });
+        globalSocket.on('escalated_chat', (data) => {
+            if(typeof toastr !== 'undefined') {
+                toastr.warning(`Buyer <strong>${data.customer_name}</strong> needs human support!<br><br><a href="/chat/communication-center" style="color:white;text-decoration:underline;font-weight:bold;">Click here to reply</a>`, 'New Support Request', {
+                    timeOut: 15000,
+                    extendedTimeOut: 5000,
+                    closeButton: true,
+                    progressBar: true,
+                    positionClass: "toast-top-right",
+                });
+            }
+        });
+    });
+</script>
+@endif
+
 <div id="supportChatWidget" class="support-chat-widget">
     <div class="chat-widget-header" id="chatWidgetHeader">
         <h6><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; margin-right: 4px;"> Chat with Ashmita </h6>

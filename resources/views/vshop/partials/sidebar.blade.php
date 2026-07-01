@@ -379,7 +379,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
                     `,
                     showConfirmButton: false,
-                    showCloseButton: true,
+                    showCloseButton: false,
                     width: '450px',
                     padding: '20px',
                     customClass: {
