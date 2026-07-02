@@ -760,7 +760,6 @@
 </ul>
 </div>
 
-    <div class="product-dtl-banner">
         @php
             $topAds = collect();
             if(isset($bannerAds)) $topAds = $topAds->merge($bannerAds);
@@ -772,6 +771,7 @@
         @endphp
 
         @if($topAds->count() > 0 && $topAds->contains(function($ad) { return $ad->media->count() > 0; }))
+        <div class="product-dtl-banner">
             <div id="bannerCarousel" class="carousel slide" data-bs-ride="carousel">
 
             <div class="carousel-inner">
@@ -795,14 +795,8 @@
             </div>
 
         </div>
-
-    @else
-
-        <img src="{{ asset('vtravelassets/images/product_banner1.png') }}">
-
-    @endif
-
-</div>
+        </div>
+        @endif
 
 {{-- ================= TOP BAR ================= --}}
 
@@ -1192,12 +1186,28 @@ PRODUCT GRID
         $campaignMedia[] = $campaignMedia[0];
     }
 
-    $showCampaignCarousel = function() use (&$campaignMedia, $__env) {
-        if (count($campaignMedia) > 0) {
+    $campaignSectionIndex = 0;
+    $totalCampaignSections = 4;
+
+    $showCampaignCarousel = function() use (&$campaignMedia, &$campaignSectionIndex, $totalCampaignSections, $__env) {
+        $sectionItems = [];
+        foreach($campaignMedia as $index => $item) {
+            if ($index % $totalCampaignSections === $campaignSectionIndex) {
+                $sectionItems[] = $item;
+            }
+        }
+        
+        $campaignSectionIndex++;
+
+        if (count($sectionItems) == 1) {
+            $sectionItems[] = $sectionItems[0];
+        }
+
+        if (count($sectionItems) > 0) {
             @endphp
             <div class="campaign-banner-sec mb-0">
                 <div class="campaign-slider-wrapper owl-carousel">
-                    @foreach($campaignMedia as $item)
+                    @foreach($sectionItems as $item)
                         <div class="campaign-banner-item item">
                             <a href="{{ ($item['banner']->redirect_url && $item['banner']->redirect_url !== '#') ? $item['banner']->redirect_url : route('discount.products') }}" class="d-block w-100">
                                 <img src="{{ asset($item['media']->file_path) }}" class="w-100" style="display: block; width: 100%; height: auto; border: none !important; box-shadow: none !important; margin-bottom: 0 !important;" alt="{{ $item['banner']->title }}">
