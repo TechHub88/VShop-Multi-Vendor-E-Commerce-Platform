@@ -1182,10 +1182,6 @@ PRODUCT GRID
             }
         }
     }
-    if (count($campaignMedia) == 1) {
-        $campaignMedia[] = $campaignMedia[0];
-    }
-
     $campaignSectionIndex = 0;
     $totalCampaignSections = 4;
 
