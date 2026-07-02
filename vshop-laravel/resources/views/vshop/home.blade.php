@@ -565,6 +565,10 @@
         
         $campaignSectionIndex++;
 
+        if (count($sectionItems) == 1) {
+            $sectionItems[] = $sectionItems[0];
+        }
+
         if (count($sectionItems) > 0) {
             @endphp
             <div class="campaign-banner-sec mb-0">
