@@ -2,111 +2,261 @@
 
 @section('content')
 
-<div class="container-fluid">
+<style>
+    .modern-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(13, 110, 253, 0.08);
+        background: #ffffff;
+        overflow: hidden;
+    }
+    .modern-card-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+        padding: 20px 25px;
+        border-bottom: none;
+    }
+    .modern-card-header h4 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+    .modern-card-body {
+        padding: 30px;
+    }
+    .form-group-modern {
+        margin-bottom: 1.5rem;
+    }
+    .form-group-modern label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 8px;
+        display: block;
+    }
+    .form-control-modern {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        padding: 10px 15px;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+    }
+    .form-control-modern:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+        background-color: #ffffff;
+    }
+    .btn-modern-primary {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        border: none;
+        border-radius: 8px;
+        padding: 12px 25px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        color: white !important;
+    }
+    .btn-modern-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(13, 110, 253, 0.4);
+        background: linear-gradient(135deg, #0b5ed7 0%, #084298 100%);
+        color: white !important;
+    }
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #0d6efd;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e9ecef;
+    }
+    .instruction-badge {
+        display: inline-block;
+        background-color: #e7f1ff;
+        color: #0d6efd;
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-top: 8px;
+        border: 1px solid #b6d4fe;
+    }
+</style>
 
-    <h4 class="mb-3">Create Advertisement</h4>
-
-    <div class="card">
-        <div class="card-body">
-
+<div class="container-fluid" style="padding-top: 20px;">
+    
+    <div class="card modern-card mb-4">
+        <div class="modern-card-header d-flex align-items-center">
+            <i class="fas fa-bullhorn me-2" style="font-size: 1.3rem;"></i>
+            <h4>Add Advertisement</h4>
+        </div>
+        
+        <div class="card-body modern-card-body">
             <form method="POST" action="{{ route('admin.ads.store') }}" enctype="multipart/form-data">
                 @csrf
 
+                <!-- Basic Information -->
+                <div class="section-title">
+                    <i class="fas fa-info-circle me-2"></i> Basic Information
+                </div>
+                
                 <div class="row">
-
-                    <div class="col-md-4">
-                        <label>Title</label>
-                        <input type="text" name="title" class="form-control" required>
+                    <div class="col-md-6 form-group-modern">
+                        <label>Campaign Title</label>
+                        <input type="text" name="title" class="form-control form-control-modern" placeholder="Enter an engaging title" required>
                     </div>
 
-                    <div class="col-md-4">
-                        <label>Type</label>
-                        <select name="type" class="form-control">
+                    <div class="col-md-6 form-group-modern">
+                        <label>Target Audience</label>
+                        <select name="target_type" id="target_type" class="form-control form-control-modern">
+                            <option value="product">Vshop (Products)</option>
+                            <option value="service">Vtravel (Services)</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 form-group-modern product-box">
+                        <label>Select Category</label>
+                        <select name="category_id" id="categorySelect" class="form-control form-control-modern">
+                            <option value="" data-name="">Select Target Category</option>
+                            @php
+                                $uniqueCategories = $categories->unique('name');
+                            @endphp
+                            @foreach($uniqueCategories as $c)
+                                <option value="{{ $c->id }}" data-name="{{ $c->name }}">{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 form-group-modern product-box">
+                        <label>Select Product (Optional)</label>
+                        <select name="product_id" id="productSelect" class="form-control form-control-modern">
+                            <option value="">Select Target Product</option>
+                            @foreach($products as $p)
+                                <option value="{{ $p->id }}" data-category-name="{{ $p->category ? $p->category->name : '' }}">{{ $p->name }} ({{ ucfirst($p->type ?? 'product') }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Media & Layout -->
+                <div class="section-title mt-4">
+                    <i class="fas fa-photo-video me-2"></i> Media & Layout
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 form-group-modern">
+                        <label>Advertisement Type</label>
+                        <select name="type" class="form-control form-control-modern">
                             <option value="banner">Banner</option>
                             <option value="video">Video</option>
                             <option value="campaign">Campaign</option>
                             <option value="featured">Featured</option>
                         </select>
+                        <div id="type_instruction" class="instruction-badge">
+                            <i class="fas fa-crop-alt me-1"></i> <span>Size as per Banner standard</span>
+                        </div>
                     </div>
 
-                    <div class="col-md-4">
-                        <label>Target</label>
-                        <select name="target_type" id="target_type" class="form-control">
-                            <option value="product">Vshop</option>
-                            <option value="service">Vtravel</option>
-                            <option value="both">Both</option>
-                        </select>
-                    </div>
-
-                    {{-- PRODUCT (COMMON FOR BOTH) --}}
-                    <div class="col-md-4 mt-3 product-box">
-                        <label>Select Item</label>
-                        <select name="product_id" class="form-control">
-                            <option value="">Select</option>
-
-                            @foreach($products as $p)
-                                <option value="{{ $p->id }}">
-                                    {{ $p->name }} ({{ ucfirst($p->type ?? 'product') }})
-                                </option>
-                            @endforeach
-
-                        </select>
-                    </div>
-
-                    <div class="col-md-4 mt-3">
+                    <div class="col-md-6 form-group-modern">
                         <label>Images</label>
-                        <input type="file" name="images[]" multiple class="form-control">
+                        <input type="file" name="images[]" multiple class="form-control form-control-modern">
+                        <small class="text-muted d-block mt-2" style="font-size: 11px; line-height: 1.4;">
+                            <i class="fas fa-info-circle text-primary me-1"></i> <strong>Formats:</strong> JPG, PNG, WEBP. Max 2MB per image.<br>
+                            - <strong>Banner:</strong> 1200 x 380 px<br>
+                            - <strong>Campaign:</strong> 1600 x 88 px (Full-width divider)<br>
+                            - <strong>Featured:</strong> 263 x 162 px (Sidebar slider)
+                        </small>
                     </div>
 
-                    <div class="col-md-4 mt-3">
+                    <div class="col-md-6 form-group-modern">
                         <label>Videos</label>
-                        <input type="file" name="videos[]" multiple class="form-control">
+                        <input type="file" name="videos[]" multiple class="form-control form-control-modern">
+                        <small class="text-muted d-block mt-2" style="font-size: 11px; line-height: 1.4;">
+                            <i class="fas fa-info-circle text-primary me-1"></i> <strong>Formats:</strong> MP4 (H.264), WEBM. Max 10MB.<br>
+                            - <strong>Dimensions:</strong> Vertical 9:16 (1080 x 1920 px or 720 x 1280 px)<br>
+                            - <strong>Duration:</strong> 10 to 15 seconds (Max 30 seconds)
+                        </small>
                     </div>
+                </div>
 
-                    <div class="col-md-4 mt-3">
+                <!-- Schedule & Description -->
+                <div class="section-title mt-4">
+                    <i class="fas fa-calendar-alt me-2"></i> Schedule & Details
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 form-group-modern">
                         <label>Start Date</label>
-                        <input type="datetime-local" name="start_date" class="form-control">
+                        <input type="datetime-local" name="start_date" class="form-control form-control-modern">
                     </div>
 
-                    <div class="col-md-4 mt-3">
+                    <div class="col-md-6 form-group-modern">
                         <label>End Date</label>
-                        <input type="datetime-local" name="end_date" class="form-control">
+                        <input type="datetime-local" name="end_date" class="form-control form-control-modern">
                     </div>
 
-                    <div class="col-md-12 mt-3">
-                        <label>Description</label>
-                        <textarea name="description" class="form-control"></textarea>
+                    <div class="col-md-12 form-group-modern">
+                        <label>Description (Optional)</label>
+                        <textarea name="description" class="form-control form-control-modern" rows="3" placeholder="Additional details about this campaign..."></textarea>
                     </div>
+                </div>
 
-                    <div class="col-md-12 mt-3">
-                        <button class="btn btn-success">Create Advertisement</button>
-                    </div>
-
+                <div class="text-end mt-4">
+                    <button type="submit" class="btn btn-modern-primary btn-lg">
+                        <i class="fas fa-paper-plane me-2"></i> Add Advertisement
+                    </button>
                 </div>
 
             </form>
-
         </div>
     </div>
 
 </div>
 
-{{-- SCRIPT --}}
 <script>
-document.getElementById('target_type').addEventListener('change', function () {
-    let val = this.value;
+// Dynamic dimensions text
+const typeSelect = document.querySelector('select[name="type"]');
+const instructionEl = document.querySelector('#type_instruction span');
 
-    let options = document.querySelectorAll('select[name="product_id"] option');
+function updateInstruction() {
+    let type = typeSelect.value;
+    let text = "";
+    if(type === 'video') text = "Recommended: Vertical 9:16 (e.g. 1080 x 1920 px), Max 10MB, Max 30s";
+    else if(type === 'campaign') text = "Recommended: 1600 x 88 px (Thin horizontal strip)";
+    else if(type === 'banner') text = "Recommended: 1200 x 380 px (Standard Hero Banner)";
+    else if(type === 'featured') text = "Recommended: 263 x 162 px (Sidebar card slider)";
+    
+    instructionEl.innerText = text;
+}
 
-    options.forEach(opt => {
-        if(opt.value === '') return;
+typeSelect.addEventListener('change', updateInstruction);
+// Call on load
+updateInstruction();
 
-        let text = opt.text.toLowerCase();
+// Dependent Product Dropdown Logic
+const catSelect = document.getElementById('categorySelect');
+const prodSelect = document.getElementById('productSelect');
+const originalProdOptions = Array.from(prodSelect.querySelectorAll('option'));
 
-        if(val === 'both'){
-            opt.style.display = 'block';
-        } else {
-            opt.style.display = text.includes(val) ? 'block' : 'none';
+catSelect.addEventListener('change', function() {
+    // Get the name of the selected category, not the ID
+    let selectedOption = this.options[this.selectedIndex];
+    let catName = selectedOption.getAttribute('data-name');
+    
+    // Clear current options
+    prodSelect.innerHTML = '';
+    
+    originalProdOptions.forEach(opt => {
+        if(opt.value === "") {
+            prodSelect.appendChild(opt); // Always append the placeholder
+            return;
+        }
+        
+        let pCatName = opt.getAttribute('data-category-name');
+        
+        // If no category selected, or product's category name matches selected category name
+        if(!catName || pCatName === catName) {
+            prodSelect.appendChild(opt);
         }
     });
 });

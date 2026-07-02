@@ -183,11 +183,12 @@
                     @if($item->product->category)
                         <br><small>Category: {{ $item->product->category->name }}</small>
                     @endif
-                    @if($mainColor || $mainSize || $mainFabric)
+                    @if($mainColor || $mainSize || $mainFabric || isset($mainProductAttributes['Booking Slots']))
                         <br><small>
                             @if($mainColor) Color: {{ $mainColor }} @endif
                             @if($mainSize) | Size: {{ $mainSize }} @endif
                             @if($mainFabric) | Fabric: {{ $mainFabric }} @endif
+                            @if(isset($mainProductAttributes['Booking Slots'])) | Booking Slots: {{ $mainProductAttributes['Booking Slots']['name'] ?? '' }} @endif
                         </small>
                     @endif
                     @if($item->combo_id && $comboProduct)

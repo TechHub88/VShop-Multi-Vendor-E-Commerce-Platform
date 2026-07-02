@@ -427,7 +427,7 @@ action="{{ $product->id
                 class="btn ai-btn"
                 onclick="generateAIContent(this)"
                 title="V-AI Generate">
-            <img src="{{ asset('vtravelassets/images/vai-chip-logo.png') }}" alt="V-AI" class="ai-logo">
+            <img src="{{ asset('vtravelassets/images/vai-chip-logo.png') }}?v=2" alt="V-AI" class="ai-logo">
             <span class="spinner-border text-primary d-none ai-spinner" role="status" aria-hidden="true" style="width: 24px; height: 24px; border-width: 3px;"></span>
         </button>
     </div>
@@ -602,25 +602,39 @@ action="{{ $product->id
             <small class="text-danger validation-error d-block">{{ $message }}</small>
         @enderror
     </div>
-    <div class="col-md-4">
-        <label class="form-label fw-bold">Start Time <span class="text-danger">*</span></label>
-        <input type="time" id="prof_start_time" name="prof_start_time" value="{{ old('prof_start_time', $product->start_time ?? '') }}" class="form-control required-prof @error('prof_start_time') is-invalid @enderror">
-        @error('prof_start_time')
-            <small class="text-danger validation-error d-block">{{ $message }}</small>
-        @enderror
-    </div>
-    <div class="col-md-4">
-        <label class="form-label fw-bold">End Time <span class="text-danger">*</span></label>
-        <input type="time" id="prof_end_time" name="prof_end_time" value="{{ old('prof_end_time', $product->end_time ?? '') }}" class="form-control required-prof @error('prof_end_time') is-invalid @enderror">
-        @error('prof_end_time')
-            <small class="text-danger validation-error d-block">{{ $message }}</small>
-        @enderror
-    </div>
-    <div class="col-md-4">
-        <label class="form-label fw-bold">Session Duration <span class="text-danger">*</span></label>
-        <input type="text" id="prof_duration_display" class="form-control bg-light @error('prof_session_duration') is-invalid @enderror" readonly placeholder="Calculated automatically">
-        <input type="hidden" id="prof_session_duration" name="prof_session_duration" value="{{ old('prof_session_duration', $product->session_duration ?? '') }}">
-        @error('prof_session_duration')
+    {{-- PROFESSIONAL SLOTS (Multiple Date + Time) --}}
+    <div class="col-md-12">
+        <label class="form-label fw-bold">Available Date & Time Slots</label>
+        <div class="slot-picker-card">
+            <div class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted mb-1">Date</label>
+                    <input type="date" id="slotDate" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">Start Time</label>
+                    <input type="time" id="slotStartTime" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">End Time</label>
+                    <input type="time" id="slotEndTime" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-primary w-100" onclick="addProfSlot()" style="height:38px;">
+                        <i class="fa fa-plus me-1"></i> Add
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Slot Tags --}}
+        <div id="profSlotTags" class="d-flex flex-wrap gap-2 mt-3"></div>
+
+        {{-- Hidden field to store JSON --}}
+        <input type="hidden" name="professional_slots" id="professionalSlotsInput"
+               value="{{ old('professional_slots', $product->professional_slots ?? '[]') }}">
+
+        @error('professional_slots')
             <small class="text-danger validation-error d-block">{{ $message }}</small>
         @enderror
     </div>
@@ -1238,23 +1252,8 @@ function loadCategories(type, preselect) {
     let categoryTypes = [];
 
     // Determine which category types to load
-    if (type === 'professional') {
-        let profModule = $('input[name="professional_module"]:checked').val();
-        if (profModule === 'vtravel') {
-            categoryTypes = ['service'];
-        } else {
-            categoryTypes = ['product'];
-        }
-    } else if (['product', 'vshop-product', 'vshop-professional'].includes(type)) {
-        categoryTypes = ['product'];
-    } else if (['tour', 'vtravel-tour', 'information_advisory', 'vtravel-information_advisory', 'vtravel-professional'].includes(type)) {
-        categoryTypes = ['service'];
-    } else if (type === 'service' || type === 'vshop-service' || type === 'vtravel-service') {
-        // "Others" – show both product and service categories
-        categoryTypes = ['product', 'service'];
-    } else {
-        categoryTypes = ['product'];
-    }
+    // Always load both product and service categories so seller-created categories show up across all types
+    categoryTypes = ['product', 'service'];
 
     // If only one type, call endpoint as before
     if (categoryTypes.length === 1) {
@@ -1645,7 +1644,82 @@ function generateAIContent(btn) {
     });
 }
 </script>
+@push('scripts')
+<script>
+// ================= PROFESSIONAL SLOTS SYSTEM =================
+var profSlots = [];
+
+$(document).ready(function() {
+    // Load existing slots from hidden input
+    try {
+        var raw = $('#professionalSlotsInput').val();
+        if (raw && raw !== '[]') {
+            profSlots = JSON.parse(raw);
+        }
+    } catch(e) { profSlots = []; }
+    renderProfSlots();
+});
+
+function addProfSlot() {
+    var date = $('#slotDate').val();
+    var start = $('#slotStartTime').val();
+    var end = $('#slotEndTime').val();
+
+    if (!date) { alert('Please select a date'); return; }
+    if (!start) { alert('Please select start time'); return; }
+    if (!end) { alert('Please select end time'); return; }
+    if (start >= end) { alert('End time must be after start time'); return; }
+
+    // Calculate duration
+    var s = new Date('1970-01-01T' + start + ':00');
+    var e = new Date('1970-01-01T' + end + ':00');
+    var diffMs = e - s;
+    var hrs = Math.floor(diffMs / 3600000);
+    var mins = Math.floor((diffMs % 3600000) / 60000);
+    var duration = (hrs > 0 ? hrs + 'h ' : '') + (mins > 0 ? mins + 'm' : '');
+
+    profSlots.push({ date: date, start: start, end: end, duration: duration.trim() });
+    renderProfSlots();
+
+    // Clear inputs for next entry
+    $('#slotDate').val('');
+    $('#slotStartTime').val('');
+    $('#slotEndTime').val('');
+}
+
+function removeProfSlot(index) {
+    profSlots.splice(index, 1);
+    renderProfSlots();
+}
+
+function renderProfSlots() {
+    var container = $('#profSlotTags');
+    container.empty();
+
+    profSlots.forEach(function(slot, i) {
+        // Format date nicely
+        var d = new Date(slot.date + 'T00:00:00');
+        var dateStr = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        container.append(
+            '<div class="prof-slot-tag">' +
+                '<i class="fa fa-calendar-day me-1"></i>' +
+                '<span class="slot-date">' + dateStr + '</span>' +
+                '<span class="slot-time">' + slot.start + ' - ' + slot.end + '</span>' +
+                '<span class="slot-dur">(' + slot.duration + ')</span>' +
+                '<button type="button" class="slot-remove" onclick="removeProfSlot(' + i + ')">&times;</button>' +
+            '</div>'
+        );
+    });
+
+    // Update hidden input
+    $('#professionalSlotsInput').val(JSON.stringify(profSlots));
+}
+</script>
+@endpush
 <style>
+.input-group-text {
+ cursor: pointer; }
 .day-box { cursor: pointer; }
 .day-box input { display: none; }
 .day-box span {
@@ -1737,5 +1811,38 @@ function generateAIContent(btn) {
     margin: 20px 0;
     border: 1px solid #e9ecef;
 }
+/* Professional Slot Picker */
+.slot-picker-card {
+    background: #f8f9fb;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 14px;
+}
+.prof-slot-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #e8f0fe, #d4e4fc);
+    border: 1px solid #b6d4fe;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #1a4d8f;
+    font-weight: 500;
+}
+.prof-slot-tag .slot-date { font-weight: 600; }
+.prof-slot-tag .slot-time { color: #0d6efd; }
+.prof-slot-tag .slot-dur { color: #6c757d; font-size: 12px; }
+.prof-slot-tag .slot-remove {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 0 0 4px;
+    cursor: pointer;
+    font-weight: 700;
+}
+.prof-slot-tag .slot-remove:hover { color: #a71d2a; }
 </style>
 @endsection

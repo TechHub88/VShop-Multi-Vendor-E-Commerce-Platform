@@ -271,12 +271,38 @@ public function placeOrder(Request $request)
             }
 
             // Fake cart item
+            $buyNowAttributes = [];
+            if ($request->has('size_name')) {
+                $buyNowAttributes['size'] = [
+                    'id' => $request->size_id,
+                    'name' => $request->size_name,
+                    'value' => null
+                ];
+            }
+            if ($request->has('color_name')) {
+                $buyNowAttributes['color'] = [
+                    'id' => $request->color_id,
+                    'name' => $request->color_name,
+                    'value' => null
+                ];
+            }
+            if ($request->has('selected_slots') && is_array($request->selected_slots)) {
+                $buyNowAttributes['Booking Slots'] = [
+                    'id' => null,
+                    'name' => implode(', ', $request->selected_slots),
+                    'value' => null
+                ];
+            }
+
             $cartItems = collect([
                 (object)[
                     'product_id' => $productId,
                     'main_product_price' => $price,
                     'main_product_quantity' => $qty,
-                    'gst_percent' => 5
+                    'gst_percent' => 5,
+                    'color_id' => $request->color_id ?? null,
+                    'size_id' => $request->size_id ?? null,
+                    'main_product_attributes' => json_encode($buyNowAttributes)
                 ]
             ]);
 
@@ -748,6 +774,10 @@ $this->notifySeller(
 
                 'gst_percent'=> $gstPercent,
 
+                'color_id'                 => $item->color_id ?? null,
+                'size_id'                  => $item->size_id ?? null,
+                'main_product_attributes'  => $item->main_product_attributes ?? null,
+
                 'commission_percent' => $platformComm + $referrerComm,
                 'commission_amount'  => $commissionAmount,
                 'seller_earning'     => $sellerEarning,
@@ -796,6 +826,18 @@ $this->notifySeller(
         ]);
 
         DB::commit();
+
+        // Send booking confirmation email
+        try {
+            $order->load('items.product');
+            $customerEmail = $customer->email ?? '';
+            $customerName  = $customer->name ?? 'Customer';
+            if (!empty($customerEmail)) {
+                \App\Mail\BookingMsg::send($customerEmail, $customerName, $order, $order->items->all());
+            }
+        } catch (\Exception $mailEx) {
+            \Illuminate\Support\Facades\Log::error('BookingMsg email failed: ' . $mailEx->getMessage());
+        }
 
         return redirect()->route('vshop.order.confirmation', $order->id)
             ->with('success', 'Order placed successfully!');

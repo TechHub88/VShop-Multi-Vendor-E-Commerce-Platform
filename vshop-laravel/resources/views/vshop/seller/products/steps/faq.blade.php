@@ -112,16 +112,20 @@
     {{-- RIGHT: ACTIONS --}}
     <div class="d-flex gap-2">
 
+        <button type="button"
+                class="btn ai-btn mt-0"
+                onclick="generateAIFAQ(this)"
+                title="V-AI Generate">
+            <img src="{{ asset('vtravelassets/images/vai-chip-logo.png') }}" alt="V-AI" class="ai-logo">
+            <span class="spinner-border text-primary d-none ai-spinner" role="status" aria-hidden="true" style="width: 24px; height: 24px; border-width: 3px;"></span>
+        </button>
+
         {{-- LIST PAGE --}}
         @if($hasId)
-
             <a href="{{ route('seller.products.faq.list', $product->id) }}"
-               class="btn btn-light btn-sm">
-
-                <i class="bi bi-list"></i>
-
+               class="btn btn-light btn-sm d-flex align-items-center justify-content-center">
+                <i class="bi bi-list fs-5"></i>
             </a>
-
         @endif
 
     </div>
@@ -255,6 +259,58 @@ $(document).on('click','.deleteLocal',function(){
     $(this).closest('.faq-item').remove();
 });
 
+function generateAIFAQ(btn) {
+    let logo = $(btn).find('.ai-logo');
+    let spinner = $(btn).find('.ai-spinner');
+    
+    logo.addClass('d-none');
+    spinner.removeClass('d-none');
+    $(btn).prop('disabled', true);
+
+    $.ajax({
+        url: "{{ route('seller.products.faq.ai') }}",
+        type: "POST",
+        data: {
+            _token: "{{ csrf_token() }}",
+            product_id: "{{ $product->id ?? '' }}"
+        },
+        success: function(res) {
+            if(res.success && res.faqs) {
+                let html = '';
+                res.faqs.forEach(function(item) {
+                    html += `
+                        <div class="faq-item">
+                            <div class="faq-top">
+                                <span class="faq-label">FAQ</span>
+                                <i class="bi bi-x-lg text-danger deleteLocal"></i>
+                            </div>
+                            <div class="input-group mb-2">
+                                <input type="text" name="question[]" class="form-control" value="${item.question}" placeholder="Enter Question">
+                            </div>
+                            <textarea name="answer[]" class="form-control" rows="2" placeholder="Enter Answer">${item.answer}</textarea>
+                        </div>
+                    `;
+                });
+                $('#faqWrapper').append(html);
+            } else {
+                alert("Could not generate AI FAQs. Try again.");
+            }
+        },
+        error: function(err) {
+            console.error(err);
+            let msg = "Error connecting to AI service.";
+            if(err.responseJSON && err.responseJSON.message) {
+                msg = err.responseJSON.message;
+            }
+            alert(msg);
+        },
+        complete: function() {
+            logo.removeClass('d-none');
+            spinner.addClass('d-none');
+            $(btn).prop('disabled', false);
+        }
+    });
+}
 </script>
 
 

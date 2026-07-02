@@ -146,9 +146,9 @@ public function vshophome(Request $request)
             ->get();
     }
 
-    // ========== 6. Banners ==========
+    // ========== 6. Banners & Advertisements ==========
     $currentDateTime = now();
-    $banners = \App\Models\Advertisement::with('media')
+    $allBanners = \App\Models\Advertisement::with('media')
         ->where('is_active', 1)
         ->whereIn('target_type', ['product', 'both'])
         ->where(function($q) use ($currentDateTime) {
@@ -161,6 +161,11 @@ public function vshophome(Request $request)
         })
         ->orderBy('id', 'desc')
         ->get();
+
+    $bannerAds = $allBanners->where('type', 'banner');
+    $videoAds = $allBanners->where('type', 'video');
+    $featuredAds = $allBanners->whereIn('type', ['featured', 'features']);
+    $campaignAds = $allBanners->where('type', 'campaign');
 
     // ========== 7. Top Rated Products (rating >= 4.5) – FIXED ==========
     // Join with products table to apply platform filter
@@ -212,7 +217,11 @@ public function vshophome(Request $request)
         'recentlyViewed',
         'searchHistory',
         'query',
-        'banners',
+        'allBanners',
+        'bannerAds',
+        'videoAds',
+        'featuredAds',
+        'campaignAds',
         'topRated',
         'recommendations'
     ));
@@ -346,4 +355,28 @@ public function vshophome(Request $request)
         'wishlist' => $wishlistCount,
     ]);
 }
+
+    // Visual Showcase Page (Videos & Features)
+    public function visuals(Request $request)
+    {
+        $currentDateTime = now();
+        $allBanners = \App\Models\Advertisement::with('media')
+            ->where('is_active', 1)
+            ->whereIn('target_type', ['product', 'both'])
+            ->where(function($q) use ($currentDateTime) {
+                $q->whereNull('start_date')
+                  ->orWhere('start_date', '<=', $currentDateTime);
+            })
+            ->where(function($q) use ($currentDateTime) {
+                $q->whereNull('end_date')
+                  ->orWhere('end_date', '>=', $currentDateTime);
+            })
+            ->orderBy('id', 'desc')
+            ->get();
+
+        $videoAds = $allBanners->where('type', 'video');
+        $featuresAds = $allBanners->whereIn('type', ['featured', 'features']);
+
+        return view('vshop.visuals', compact('videoAds', 'featuresAds'));
+    }
 }

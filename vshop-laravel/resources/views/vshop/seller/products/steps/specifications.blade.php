@@ -406,10 +406,10 @@ value="{{ old('stock_qty',$product->inventory ?? '') }}">
 <div class="col-md-6 mb-3">
     <label class="form-label">Delivery Time (Hour)</label>
 
-    <input type="text"
+    <input type="time"
         name="delivery_hour"
         class="form-control @error('delivery_hour') is-invalid @enderror"
-        placeholder="e.g. 14:30 or 2 hours"
+        placeholder="e.g. 14:30"
         value="{{ old('delivery_hour',$product->delivery_hour ?? '') }}">
 
     @error('delivery_hour')
@@ -469,16 +469,61 @@ Professional Service Details
 
 <div class="row">
 
-{{-- SERVICE DURATION --}}
-<div class="col-md-6 mb-3">
-<label class="form-label required">Service Duration</label>
-<input type="number" name="service_duration"
-class="form-control @error('service_duration') is-invalid @enderror"
-value="{{ old('service_duration',$product->service_duration ?? '') }}">
-@error('service_duration')
-<div class="invalid-feedback">{{ $message }}</div>
-@enderror
-</div>
+{{-- SERVICE DURATION, START, END TIME --}}
+@php
+    $slots = json_decode($product->professional_slots, true);
+    $hasSlots = !empty($slots) && is_array($slots);
+@endphp
+
+@if($hasSlots)
+    <div class="col-md-12 mb-3">
+        <label class="form-label text-primary"><i class="fa fa-calendar-check me-1"></i> Time Slots (From Basic Details)</label>
+        <div class="d-flex flex-wrap gap-2">
+            @foreach($slots as $slot)
+                <div class="px-3 py-2 bg-light border rounded" style="font-size:14px; border-color:#b6d4fe !important; background:linear-gradient(135deg, #e8f0fe, #d4e4fc) !important; color:#1a4d8f; font-weight:500;">
+                    <i class="fa fa-calendar-day me-1"></i> <strong>{{ \Carbon\Carbon::parse($slot['date'])->format('d M, Y') }}</strong> &nbsp;|&nbsp;
+                    <i class="fa fa-clock me-1"></i> {{ $slot['start'] }} - {{ $slot['end'] }}
+                    <span class="text-muted ms-1 small">({{ $slot['duration'] }})</span>
+                </div>
+            @endforeach
+        </div>
+        {{-- Hidden fields to pass validation without user input --}}
+        <input type="hidden" name="service_duration" value="{{ $slots[0]['duration'] ?? 'Multiple' }}">
+        <input type="hidden" name="start_time" value="{{ $slots[0]['start'] ?? '00:00' }}">
+        <input type="hidden" name="end_time" value="{{ $slots[0]['end'] ?? '00:00' }}">
+    </div>
+@else
+    {{-- SERVICE DURATION --}}
+    <div class="col-md-6 mb-3">
+    <label class="form-label required">Service Duration</label>
+    <input type="number" name="service_duration"
+    class="form-control @error('service_duration') is-invalid @enderror"
+    value="{{ old('service_duration',$product->service_duration ?? '') }}">
+    @error('service_duration')
+    <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+    </div>
+
+    <div class="col-md-6 mb-3">
+    <label class="form-label required">Start Time</label>
+    <input type="time" name="start_time"
+    class="form-control @error('start_time') is-invalid @enderror"
+    value="{{ old('start_time',$product->start_time ?? '') }}">
+    @error('start_time')
+    <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+    </div>
+
+    <div class="col-md-6 mb-3">
+    <label class="form-label required">End Time</label>
+    <input type="time" name="end_time"
+    class="form-control @error('end_time') is-invalid @enderror"
+    value="{{ old('end_time',$product->end_time ?? '') }}">
+    @error('end_time')
+    <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+    </div>
+@endif
 
 {{-- SESSION TYPE --}}
 <div class="col-md-6 mb-3">
@@ -491,26 +536,6 @@ class="form-control @error('session_type') is-invalid @enderror">
 <option value="hybrid" {{ old('session_type',$product->session_type ?? '')=='hybrid'?'selected':'' }}>Hybrid</option>
 </select>
 @error('session_type')
-<div class="invalid-feedback">{{ $message }}</div>
-@enderror
-</div>
-
-<div class="col-md-6 mb-3">
-<label class="form-label required">Start Time</label>
-<input type="time" name="start_time"
-class="form-control @error('start_time') is-invalid @enderror"
-value="{{ old('start_time',$product->start_time ?? '') }}">
-@error('start_time')
-<div class="invalid-feedback">{{ $message }}</div>
-@enderror
-</div>
-
-<div class="col-md-6 mb-3">
-<label class="form-label required">End Time</label>
-<input type="time" name="end_time"
-class="form-control @error('end_time') is-invalid @enderror"
-value="{{ old('end_time',$product->end_time ?? '') }}">
-@error('end_time')
 <div class="invalid-feedback">{{ $message }}</div>
 @enderror
 </div>

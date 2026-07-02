@@ -164,6 +164,14 @@ use Illuminate\Http\Request;
             ];
         }
 
+        if ($request->has('selected_slots') && is_array($request->selected_slots)) {
+            $attributes['Booking Slots'] = [
+                'id'    => null,
+                'name'  => implode(', ', $request->selected_slots),
+                'value' => null
+            ];
+        }
+
         /*
         |--------------------------------------------------------------------------
         | GUEST CART (SESSION)

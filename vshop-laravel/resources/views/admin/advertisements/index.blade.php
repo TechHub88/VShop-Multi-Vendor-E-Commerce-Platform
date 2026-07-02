@@ -72,7 +72,7 @@
                                 {{-- Category (NEW) --}}
                                 <td>
                                     <span class="badge bg-primary">
-                                        {{ $row->category_name ?? '—' }}
+                                        {{ $row->category ? $row->category->name : '—' }}
                                     </span>
                                 </td>
 
@@ -155,6 +155,10 @@
                                             <input class="form-check-input status-toggle" type="checkbox" role="switch" data-id="{{ $row->id }}" {{ $row->is_active ? 'checked' : '' }} title="Toggle Active Status" style="cursor: pointer; margin-left: -2.5em;">
                                         </div>
 
+                                        <button class="btn btn-sm btn-info text-white me-1 view-btn" data-id="{{ $row->id }}">
+                                            View
+                                        </button>
+
                                         <a href="{{ route('admin.ads.edit', $row->id) }}"
                                            class="btn btn-sm btn-warning text-white me-1">
                                             Edit
@@ -192,6 +196,7 @@
 
 <script>
     document.querySelectorAll('.status-toggle').forEach(function(toggle) {
+        // ... (existing status toggle code)
         toggle.addEventListener('change', function() {
             let status = this.checked ? 1 : 0;
             let id = this.getAttribute('data-id');
@@ -222,6 +227,72 @@
             .catch(error => console.error('Error:', error));
         });
     });
+
+    // View Participants Logic
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            let id = this.getAttribute('data-id');
+            let tbody = document.getElementById('participantsTableBody');
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">Loading...</td></tr>';
+            
+            // Show modal
+            var modal = new bootstrap.Modal(document.getElementById('participantsModal'));
+            modal.show();
+
+            fetch(`/advertisements/${id}/participants`)
+                .then(res => res.json())
+                .then(data => {
+                    tbody.innerHTML = '';
+                    if (data.sellers && data.sellers.length > 0) {
+                        data.sellers.forEach((seller, index) => {
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td>${index + 1}</td>
+                                    <td>${seller.org_name || '-'}</td>
+                                    <td>${seller.first_name} ${seller.last_name || ''}</td>
+                                    <td>${seller.email || '-'}</td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No sellers have listed products in this campaign.</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading data.</td></tr>';
+                });
+        });
+    });
 </script>
+
+<!-- Participants Modal -->
+<div class="modal fade" id="participantsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Campaign Participating Sellers</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Organization Name</th>
+                        <th>Seller Name</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody id="participantsTableBody">
+                    <!-- Loaded via AJAX -->
+                </tbody>
+            </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 @endsection

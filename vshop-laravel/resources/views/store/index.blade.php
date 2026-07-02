@@ -51,173 +51,119 @@ $routeName = 'productmanage.show';
 </div>
 </section>
 
-{{-- ================= OVERALL RATING ================= --}}
+{{-- ================= SELLER IDENTITY & OVERALL RATING ================= --}}
 @php
     $avgRating = $avgRating ?? 0;
     $totalReviews = $totalReviews ?? 0;
-    $ratingBreakdown = $ratingBreakdown ?? [5=>0, 4=>0, 3=>0, 2=>0, 1=>0];
 @endphp
-<div class="container mt-4 mb-2">
-    <div class="d-flex justify-content-end">
-        <div class="seller-rating-dropdown-wrapper" style="position: relative; display: inline-block;">
-            
-            {{-- Button --}}
-            <div class="d-inline-flex align-items-center justify-content-center" onclick="toggleRatingPopup(event)" style="cursor: pointer; border: 1px solid #D5D9D9; border-radius: 4px; padding: 2px 5px; background-color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.05); user-select: none;">
-                <span class="fw-bold me-1" style="color: #0F1111; font-size: 12px;">{{ number_format($avgRating, 1) }}</span>
-                <div class="text-warning me-1 d-flex align-items-center" style="gap: 1px;">
+<div class="container mt-4 mb-4">
+    <div class="d-flex align-items-center bg-white p-3 shadow-sm" style="border-radius: 8px; border: 1px solid #E7E7E7;">
+        @if(!empty($seller->logo))
+            <img src="{{ asset($seller->logo) }}" alt="{{ $seller->name ?? $seller->org_name }}" class="rounded-circle border" style="width: 70px; height: 70px; object-fit: cover;">
+        @else
+            <div class="rounded-circle border d-flex align-items-center justify-content-center bg-light text-primary fw-bold" style="width: 70px; height: 70px; font-size: 28px;">
+                {{ strtoupper(substr($seller->name ?? $seller->org_name, 0, 1)) }}
+            </div>
+        @endif
+        <div class="ms-3">
+            <h2 class="mb-1" style="font-weight: 700; color: #0F1111; font-size: 22px; letter-spacing: -0.5px;">{{ $seller->name ?? $seller->org_name }}</h2>
+            <div class="d-inline-flex align-items-center mt-1">
+                <span class="fw-bold me-1" style="color: #0F1111; font-size: 14px;">{{ number_format($avgRating, 1) }}</span>
+                <div class="text-warning d-flex align-items-center" style="gap: 1px;">
                     @for($i=1; $i<=5; $i++)
                         @if($i <= $avgRating)
-                            <i class="fa fa-star" style="font-size: 11px !important;"></i>
+                            <i class="fa fa-star" style="font-size: 13px !important;"></i>
                         @elseif($i - 0.5 <= $avgRating)
-                            <i class="fa fa-star-half-alt" style="font-size: 11px !important;"></i>
+                            <i class="fa fa-star-half-alt" style="font-size: 13px !important;"></i>
                         @else
-                            <i class="far fa-star" style="font-size: 11px !important;"></i>
+                            <i class="far fa-star" style="font-size: 13px !important;"></i>
                         @endif
                     @endfor
                 </div>
-                <i class="fas fa-chevron-down text-muted" style="font-size: 8px !important; padding-top: 1px;"></i>
+                <span class="ms-2 text-muted" style="font-size: 13px;">({{ $totalReviews }} global ratings)</span>
             </div>
-            
-            {{-- Popup Menu --}}
-            <div id="ratingDropdownMenu" class="p-3 border bg-white" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; width: 300px; z-index: 1000; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                <div class="d-flex align-items-center mb-1">
-                    <div class="text-warning me-2" style="font-size: 16px;">
-                        @for($i=1; $i<=5; $i++)
-                            @if($i <= $avgRating)
-                                <i class="fa fa-star"></i>
-                            @elseif($i - 0.5 <= $avgRating)
-                                <i class="fa fa-star-half-alt"></i>
-                            @else
-                                <i class="far fa-star"></i>
-                            @endif
-                        @endfor
-                    </div>
-                    <span class="mb-0 fw-bold me-1" style="color: #0F1111; font-size: 16px;">{{ number_format($avgRating, 1) }} out of 5</span>
-                </div>
-                <p class="text-muted mb-3" style="font-size: 13px;">{{ $totalReviews }} global ratings</p>
-                
-                <div class="rating-breakdown">
-                    @foreach([5, 4, 3, 2, 1] as $star)
-                    <div class="d-flex align-items-center mb-2" style="font-size: 13px; cursor: default;">
-                        <span class="text-primary me-2 text-nowrap" style="width: 45px; text-decoration: none;">{{ $star }} star</span>
-                        <div class="progress flex-grow-1 me-2" style="height: 14px; border-radius: 4px; background-color: #F0F2F2; border: 1px solid #D5D9D9; overflow: hidden;">
-                            <div class="progress-bar" role="progressbar" style="width: {{ $ratingBreakdown[$star] ?? 0 }}%; background-color: #FFA41C; border-radius: 0;" aria-valuenow="{{ $ratingBreakdown[$star] ?? 0 }}" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                        <span class="text-primary text-end" style="width: 35px; font-size: 13px;">{{ $ratingBreakdown[$star] ?? 0 }}%</span>
-                    </div>
-                    @endforeach
-                </div>
-            </div>
-            
         </div>
     </div>
 </div>
 
-<script>
-    function toggleRatingPopup(event) {
-        event.stopPropagation();
-        var menu = document.getElementById('ratingDropdownMenu');
-        if (menu.style.display === 'none' || menu.style.display === '') {
-            menu.style.display = 'block';
-        } else {
-            menu.style.display = 'none';
-        }
-    }
+{{-- ================= DYNAMIC PRODUCT CAROUSELS ================= --}}
+@php
+$sections = [
+    ['title' => 'Top Trending', 'data' => $topTrending ?? collect()],
+    ['title' => 'Best Discount', 'data' => $bestDiscount ?? collect()],
+    ['title' => 'New Arrivals', 'data' => $newArrivals ?? collect()],
+    ['title' => 'Recommended For You', 'data' => $recommendedProducts ?? collect()],
+    ['title' => 'Most Purchased', 'data' => $mostPurchased ?? collect()],
+    ['title' => 'Most Enquiries', 'data' => $mostEnquiries ?? collect()],
+    ['title' => 'Highest Rated', 'data' => $highestReviews ?? collect()],
+];
+@endphp
 
-    document.addEventListener('click', function(event) {
-        var wrapper = document.querySelector('.seller-rating-dropdown-wrapper');
-        var menu = document.getElementById('ratingDropdownMenu');
-        if (wrapper && !wrapper.contains(event.target)) {
-            if (menu) menu.style.display = 'none';
-        }
-    });
-</script>
-
-{{-- ================= TOP TRENDING ================= --}}
-
-<div class="container mt-5 mb-4">
-<h4 class="mb-3" style="font-weight: 600; color: #1a253c; border-left: 4px solid #004392; padding-left: 10px;">
-    Top Trending
-</h4>
-<div class="row">
-
-@if($products->count() > 0)
-    @foreach($products->take(4) as $product)
-    <div class="col-6 col-md-4 col-lg-2 mb-4">
-        @include('vshop.partials.product_card', ['product' => $product])
+@foreach($sections as $section)
+@if($section['data']->count() > 0)
+<div class="container mb-5">
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+        <h4 class="mb-0" style="font-weight: 700; color: #0F1111; font-size: 20px;">{{ $section['title'] }}</h4>
     </div>
-    @endforeach
-@else
-    <div class="col-12">
-        <p class="text-muted">No trending products available.</p>
+    
+    <div class="d-flex product-slider" style="overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: #D5D9D9 #F7F7F7;">
+        @foreach($section['data'] as $product)
+            <div class="product-slider-item" style="flex: 0 0 auto; width: 220px; scroll-snap-align: start;">
+                @include('vshop.partials.product_card', ['product' => $product])
+            </div>
+        @endforeach
     </div>
+</div>
 @endif
+@endforeach
 
-</div>
-</div>
-
-{{-- ================= BEST DISCOUNT ================= --}}
-
-<div class="container mb-4">
-<h4 class="mb-3" style="font-weight: 600; color: #1a253c; border-left: 4px solid #004392; padding-left: 10px;">
-    Best Discount
-</h4>
-<div class="row">
-
+{{-- ================= ALL PRODUCTS (GRID) ================= --}}
 @if($products->count() > 0)
-    @php
-        $discountProducts = $products->sortByDesc(function($p){
-            return ($p->regular_price - $p->price);
-        })->take(4);
-    @endphp
-
-    @foreach($discountProducts as $product)
-    <div class="col-6 col-md-4 col-lg-2 mb-4">
-        @include('vshop.partials.product_card', ['product' => $product])
-    </div>
-    @endforeach
-@else
-    <div class="col-12">
-        <p class="text-muted">No discounted products available.</p>
-    </div>
-@endif
-
-</div>
-</div>
-
-{{-- ================= ALL PRODUCTS ================= --}}
-
 <div class="container mb-4">
-<h4 class="mb-3" style="font-weight: 600; color: #1a253c; border-left: 4px solid #004392; padding-left: 10px;">
-Best Sellers from {{ $seller->name ?? $seller->org_name }}
-</h4>
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+        <h4 class="mb-0" style="font-weight: 700; color: #0F1111; font-size: 20px;">All Products</h4>
+    </div>
 
-<div class="row">
-
-@forelse($products as $product)
-
-<div class="col-6 col-md-4 col-lg-2 mb-4">
-    @include('vshop.partials.product_card', ['product' => $product])
+    <div class="row">
+        @foreach($products as $product)
+            <div class="col-6 col-md-4 col-lg-2 mb-4">
+                @include('vshop.partials.product_card', ['product' => $product])
+            </div>
+        @endforeach
+    </div>
+    
+    <div class="mt-4">
+        {{ $products->links() }}
+    </div>
 </div>
-
-@empty
-<div class="col-12">
-    <p class="text-center">No products found for this store.</p>
-</div>
-@endforelse
-
-</div>
-
-{{ $products->links() }}
-</div>
+@endif
 
             </div>
         </div>
     </div>
 </div>
+
+<style>
+/* CSS Slider Scrollbar styling for Webkit */
+.product-slider::-webkit-scrollbar {
+    height: 8px;
+}
+.product-slider::-webkit-scrollbar-track {
+    background: #F7F7F7;
+    border-radius: 4px;
+}
+.product-slider::-webkit-scrollbar-thumb {
+    background-color: #D5D9D9;
+    border-radius: 4px;
+}
+.product-slider::-webkit-scrollbar-thumb:hover {
+    background-color: #a0a0a0;
+}
+</style>
 
 <script>
 $(document).ready(function(){
+    // Banner carousel
     if ($(".banner-wrapper").length) {
         $(".banner-wrapper").owlCarousel({
             items: 1,

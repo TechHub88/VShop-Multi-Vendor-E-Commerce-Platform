@@ -90,15 +90,29 @@ $attributes = is_string($item->main_product_attributes)
 
 @foreach($attributes as $key => $attr)
 
+@if($key === 'Booking Slots')
+<span style="display:block;font-size:14px;color:#555;margin-top:5px;">
+<strong><i class="fa fa-calendar-alt text-primary me-1"></i> Booking Slots:</strong>
+<div class="d-flex flex-wrap gap-1 mt-1">
+    @foreach(explode(', ', $attr['name'] ?? '') as $slot)
+        <span class="badge bg-light text-dark border p-1" style="font-size: 11px; font-weight: 500;">
+            {{ $slot }}
+        </span>
+    @endforeach
+</div>
+</span>
+@else
 <span style="display:block;font-size:14px;color:#555;">
 <strong>{{ ucfirst($key) }} :</strong>
 {{ $attr['name'] ?? '' }}
 </span>
+@endif
 
 @endforeach
 
 </div>
 @endif
+
                                         </div>
                                     </div>
 
