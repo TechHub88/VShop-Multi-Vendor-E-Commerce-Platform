@@ -142,17 +142,22 @@
     }
     .location-box .right-part .delivery-text {
         display: block;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 500;
         color: #666;
         line-height: 1.1;
+        white-space: nowrap;
     }
     .location-box .right-part .location-info {
         display: block;
-        font-size: 14px;
+        font-size: 12px;
         font-weight: 700;
         color: #004392;
         line-height: 1.2;
+        max-width: 110px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .dashboardTopBar {
         padding-bottom: 0;
@@ -478,7 +483,9 @@ if($customerLoggedIn){
                     </div>
 
                     {{-- RIGHT: Location, Notification, Wishlist, Cart, Profile --}}
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2">
+                        
+                        <a href="{{ url('seller/register') }}" class="btn btn-sm text-white fw-bold shadow-sm" style="background: linear-gradient(90deg, #de7921, #f59a4b); border-radius: 20px; font-size: 12px; padding: 5px 12px; white-space: nowrap; letter-spacing: 0.3px; border: none;">Want to be Seller?</a>
                         
                         <div class="location-box" id="fetchLocationBtn" style="cursor: pointer;" title="Click to update location">
                             <div class="left-part">

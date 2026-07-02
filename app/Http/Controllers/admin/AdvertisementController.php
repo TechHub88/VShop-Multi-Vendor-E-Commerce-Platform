@@ -15,7 +15,7 @@ class AdvertisementController extends Controller
      */
     public function index()
     {
-        $ads = Advertisement::latest()->with('media')->get();
+        $ads = Advertisement::latest()->with(['media', 'category'])->get();
 
         // Single table (Product + Service)
         $products = DB::table('products')->get();
@@ -28,7 +28,7 @@ class AdvertisementController extends Controller
      */
     public function create()
     {
-        $products = DB::table('products')->get();
+        $products = \App\Models\Product::with('category')->get();
         $categories = DB::table('marketplace_categories')->get();
 
         return view('admin.advertisements.create', compact('products', 'categories'));
@@ -49,22 +49,52 @@ class AdvertisementController extends Controller
             'videos.*' => 'nullable|mimes:mp4,mov,avi|max:10240',
         ]);
 
+        $catName = null;
+        if ($request->category_id) {
+            $cat = DB::table('marketplace_categories')->where('id', $request->category_id)->first();
+            if ($cat) $catName = $cat->name;
+        }
+
         $ad = Advertisement::create([
             'title' => $request->title,
             'type' => $request->type,
             'description' => $request->description,
             'redirect_url' => $request->redirect_url,
             'target_type' => $request->target_type,
+            'category_id' => $request->category_id,
+            'category_name' => $catName,
             'product_id' => $request->product_id,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'is_active' => 1,
         ]);
 
+        // Send notification to all active sellers
+        $categoryName = 'All Categories';
+        if ($request->category_id) {
+            $category = DB::table('marketplace_categories')->where('id', $request->category_id)->first();
+            if ($category) {
+                $categoryName = $category->name;
+            }
+        }
+        
+        $sellers = \App\Models\Seller::where('status', 'approved')->get();
+        foreach ($sellers as $seller) {
+            \App\Models\Notification::create([
+                'seller_id' => $seller->id,
+                'type' => 'campaign',
+                'message' => 'New ' . ucfirst($request->type) . ' "' . $request->title . '" created for category: ' . $categoryName . '. Please list your products with offers to participate!',
+                'link' => '#',
+                'is_read' => 0
+            ]);
+        }
+
         // IMAGE UPLOAD
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $img) {
-                $path = $img->store('ads/images', 'public');
+                $filename = \Illuminate\Support\Str::random(40) . '.' . $img->getClientOriginalExtension();
+                $img->move(public_path('ads/images'), $filename);
+                $path = 'ads/images/' . $filename;
 
                 AdvertisementMedia::create([
                     'advertisement_id' => $ad->id,
@@ -77,7 +107,9 @@ class AdvertisementController extends Controller
         // VIDEO UPLOAD
         if ($request->hasFile('videos')) {
             foreach ($request->file('videos') as $vid) {
-                $path = $vid->store('ads/videos', 'public');
+                $filename = \Illuminate\Support\Str::random(40) . '.' . $vid->getClientOriginalExtension();
+                $vid->move(public_path('ads/videos'), $filename);
+                $path = 'ads/videos/' . $filename;
 
                 AdvertisementMedia::create([
                     'advertisement_id' => $ad->id,
@@ -97,7 +129,7 @@ class AdvertisementController extends Controller
     {
         $ad = Advertisement::with('media')->findOrFail($id);
 
-        $products = DB::table('products')->get();
+        $products = \App\Models\Product::with('category')->get();
         $categories = DB::table('marketplace_categories')->get();
 
         return view('admin.advertisements.edit', compact('ad', 'products', 'categories'));
@@ -118,12 +150,20 @@ class AdvertisementController extends Controller
             'product_id' => 'nullable|exists:products,id',
         ]);
 
+        $catName = null;
+        if ($request->category_id) {
+            $cat = DB::table('marketplace_categories')->where('id', $request->category_id)->first();
+            if ($cat) $catName = $cat->name;
+        }
+
         $ad->update([
             'title' => $request->title,
             'type' => $request->type,
             'description' => $request->description,
             'redirect_url' => $request->redirect_url,
             'target_type' => $request->target_type,
+            'category_id' => $request->category_id,
+            'category_name' => $catName,
             'product_id' => $request->product_id,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
@@ -132,7 +172,9 @@ class AdvertisementController extends Controller
         // ADD NEW IMAGES
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $img) {
-                $path = $img->store('ads/images', 'public');
+                $filename = \Illuminate\Support\Str::random(40) . '.' . $img->getClientOriginalExtension();
+                $img->move(public_path('ads/images'), $filename);
+                $path = 'ads/images/' . $filename;
 
                 AdvertisementMedia::create([
                     'advertisement_id' => $ad->id,
@@ -145,7 +187,9 @@ class AdvertisementController extends Controller
         // ADD NEW VIDEOS
         if ($request->hasFile('videos')) {
             foreach ($request->file('videos') as $vid) {
-                $path = $vid->store('ads/videos', 'public');
+                $filename = \Illuminate\Support\Str::random(40) . '.' . $vid->getClientOriginalExtension();
+                $vid->move(public_path('ads/videos'), $filename);
+                $path = 'ads/videos/' . $filename;
 
                 AdvertisementMedia::create([
                     'advertisement_id' => $ad->id,
@@ -173,6 +217,23 @@ class AdvertisementController extends Controller
     }
 
     /**
+     * DELETE MEDIA ITEM
+     */
+    public function deleteMedia($id)
+    {
+        try {
+            $media = AdvertisementMedia::findOrFail($id);
+            if ($media->file_path && file_exists(public_path($media->file_path))) {
+                @unlink(public_path($media->file_path));
+            }
+            $media->delete();
+            return response()->json(['success' => true, 'message' => 'Media removed successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to delete media: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * TOGGLE STATUS
      */
     public function toggleStatus(Request $request)
@@ -182,5 +243,35 @@ class AdvertisementController extends Controller
         $ad->save();
 
         return response()->json(['success' => true, 'message' => 'Status updated successfully']);
+    }
+
+    /**
+     * GET CAMPAIGN PARTICIPANTS
+     */
+    public function getCampaignParticipants($id)
+    {
+        $ad = Advertisement::findOrFail($id);
+
+        if (!$ad->category_id) {
+            return response()->json(['sellers' => []]);
+        }
+
+        // Find products created or updated during campaign with discount in this category
+        $products = DB::table('products')
+            ->where('category_id', $ad->category_id)
+            ->where(function($query) use ($ad) {
+                if ($ad->start_date && $ad->end_date) {
+                    $query->whereBetween('created_at', [$ad->start_date, $ad->end_date])
+                          ->orWhereBetween('updated_at', [$ad->start_date, $ad->end_date]);
+                }
+            })
+            // ->where('discount_price', '>', 0) // Assume they offered a discount
+            ->where('created_by', 'seller')
+            ->get();
+
+        $sellerIds = $products->pluck('created_by_id')->unique();
+        $sellers = \App\Models\Seller::whereIn('id', $sellerIds)->select('id', 'first_name', 'last_name', 'org_name', 'email')->get();
+
+        return response()->json(['sellers' => $sellers]);
     }
 }

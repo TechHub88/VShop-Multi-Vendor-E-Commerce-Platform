@@ -84,6 +84,23 @@
                                             {{ ucfirst($order->status) }}
                                         </span>
                                     </p>
+
+                                    {{-- Booking Slots --}}
+                                    @foreach($order->items as $oItem)
+                                        @php
+                                            $oAttrs = $oItem->main_product_attributes ? json_decode($oItem->main_product_attributes, true) : [];
+                                        @endphp
+                                        @if(isset($oAttrs['Booking Slots']))
+                                        <div class="mt-1">
+                                            <span style="font-size:11px;color:#0d6efd;font-weight:600;">
+                                                <i class="fa fa-calendar-alt me-1"></i> Slots:
+                                            </span>
+                                            @foreach(explode(', ', $oAttrs['Booking Slots']['name'] ?? '') as $sl)
+                                                <span class="badge bg-light text-dark border" style="font-size:10px;padding:2px 6px;">{{ $sl }}</span>
+                                            @endforeach
+                                        </div>
+                                        @endif
+                                    @endforeach
                                 </div>
 
                                 {{-- RIGHT --}}

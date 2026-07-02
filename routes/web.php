@@ -160,6 +160,8 @@ Route::get('/reset-storage', function () {
 // Route::get('/', [HomeController::class, 'Home'])->name('dashboard');
 
 Route::get('/', [HomeController::class, 'vshophome'])->name('home');
+Route::get('/visual-showcase', [HomeController::class, 'visuals'])->name('vshop.visuals');
+Route::post('/spin-wheel', [\App\Http\Controllers\vtravel\SpinController::class, 'spin'])->name('spin.wheel');
 Route::get('/VtravelHome', [HomeController::class, 'vtravelhome'])->name('vtravelhome');
 Route::get('/discount-products', [HomeController::class, 'discountProducts'])
     ->name('discount.products');
@@ -424,6 +426,7 @@ Route::get('faq/{id}', [SellerProductController::class,'faq'])->name('faq');
 Route::post('faq/save/{id}', [SellerProductController::class,'saveFaq'])->name('faq.save');
 
 Route::get('faq/edit/{id}/{faq_id}', [SellerProductController::class,'editFaq'])->name('faq.edit');
+Route::post('faq/ai', [SellerProductController::class,'generateFaqAIContent'])->name('faq.ai');
 
 Route::post('faq/update/{id}/{faq_id}', [SellerProductController::class,'updateFaq'])->name('faq.update');
 
@@ -1490,6 +1493,7 @@ Route::match(['post', 'put'], '/advertisements/update/{id}', [AdvertisementContr
 Route::delete('/advertisements/delete/{id}', [AdvertisementController::class, 'destroy'])->name('ads.delete');
 Route::delete('/advertisements/media/{id}', [AdvertisementController::class, 'deleteMedia'])->name('ads.delete.media');
 Route::post('/advertisements/toggle-status', [AdvertisementController::class, 'toggleStatus'])->name('ads.toggle-status');
+Route::get('/advertisements/{id}/participants', [AdvertisementController::class, 'getCampaignParticipants'])->name('ads.participants');
 
 //dynamic page creation
 Route::get('/pages', [PageController::class,'index'])->name('pages.index');

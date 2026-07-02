@@ -85,20 +85,20 @@ public function index(Request $request)
         }
     }
 
-    $query->whereIn('type', array_unique($allowedTypes));
+    $query->whereIn('products.type', array_unique($allowedTypes));
 
     // Platform filter
     $query->where(function ($platform) {
-        $platform->where('platform', 'vshop')
-                 ->orWhere('platform', 'both');
+        $platform->where('products.platform', 'vshop')
+                 ->orWhere('products.platform', 'both');
     });
 
     // Seller/Admin status filter
     $query->where(function ($q) {
-        $q->whereNull('created_by')
+        $q->whereNull('products.created_by')
           ->orWhere(function ($seller) {
-              $seller->where('created_by', 'seller')
-                     ->where('status', 'approved');
+              $seller->where('products.created_by', 'seller')
+                     ->where('products.status', 'approved');
           });
     })->with(['brand', 'category', 'seller']);
 
@@ -259,8 +259,65 @@ public function index(Request $request)
         }
     }
 
-    // ================= PAGINATION =================
-    $products = $query->paginate(6)->withQueryString();
+    // ================= PAGINATION (SECTIONS) =================
+    // 1. Trending / Most Sold
+    $trendingQuery = clone $query;
+    $trendingProductIds = DB::table('order_items')
+        ->select('product_id', DB::raw('SUM(quantity) as total_sold'))
+        ->groupBy('product_id')
+        ->orderBy('total_sold', 'desc')
+        ->take(50)
+        ->pluck('product_id')
+        ->toArray();
+
+    if (!empty($trendingProductIds)) {
+        $trendingQuery->whereIn('id', $trendingProductIds);
+    } else {
+        $trendingQuery->orderBy('views', 'desc');
+    }
+    $trendingProducts = $trendingQuery->paginate(6, ['*'], 'trending_page')->withQueryString();
+
+    // 2. Most Viewed
+    $mostViewedQuery = clone $query;
+    $mostViewedProducts = $mostViewedQuery->orderBy('views', 'desc')
+        ->paginate(6, ['*'], 'views_page')
+        ->withQueryString();
+
+    // 3. Most Enquired
+    $mostEnquiredQuery = clone $query;
+    $enquiredProductIds = DB::table('enquiries')
+        ->select('product_id', DB::raw('COUNT(*) as total_enquiries'))
+        ->whereNotNull('product_id')
+        ->groupBy('product_id')
+        ->orderBy('total_enquiries', 'desc')
+        ->take(50)
+        ->pluck('product_id')
+        ->toArray();
+
+    if (!empty($enquiredProductIds)) {
+        $mostEnquiredQuery->whereIn('id', $enquiredProductIds);
+    } else {
+        $mostEnquiredQuery->latest();
+    }
+    $mostEnquiredProducts = $mostEnquiredQuery->paginate(6, ['*'], 'enquiries_page')->withQueryString();
+
+    // 4. Highest Rated
+    $highestRatedQuery = clone $query;
+    $highestRatedProducts = $highestRatedQuery->leftJoin('product_reviews', 'products.id', '=', 'product_reviews.product_id')
+        ->select('products.*', DB::raw('AVG(product_reviews.rating) as avg_rating'))
+        ->groupBy('products.id')
+        ->orderByRaw('AVG(product_reviews.rating) DESC')
+        ->paginate(6, ['*'], 'rating_page')
+        ->withQueryString();
+    if ($highestRatedProducts->isEmpty()) {
+        $fallbackQuery = clone $query;
+        $highestRatedProducts = $fallbackQuery->latest()
+            ->paginate(6, ['*'], 'rating_page')
+            ->withQueryString();
+    }
+
+    // Keep $products as a fallback to prevent undefined variable issues
+    $products = $trendingProducts;
 
     // ================= WISHLIST IDS =================
     $wishlistIds = [];
@@ -292,17 +349,44 @@ public function index(Request $request)
               ->orWhere('end_date', '>=', $currentDateTime);
         });
 
-    if ($selectedCategoryModel) {
-        $adsQuery->where(function($q) use ($selectedCategoryModel) {
+    // Strict category-specific ads matching by category ID and name variations
+    if ($selectedCategory) {
+        $matchingCats = DB::table('marketplace_categories')
+            ->where(function($q) use ($selectedCategory) {
+                $q->where('slug', $selectedCategory)
+                  ->orWhereRaw("LOWER(REPLACE(name,' ','-')) = ?", [strtolower($selectedCategory)])
+                  ->orWhereRaw("LOWER(name) = ?", [strtolower(str_replace('-', ' ', $selectedCategory))]);
+            })
+            ->get();
+        $matchingCatIds = $matchingCats->pluck('id')->toArray();
+        $matchingCatNames = $matchingCats->pluck('name')->map(fn($n) => strtolower($n))->toArray();
+        $matchingCatNames[] = strtolower($selectedCategory);
+
+        $adsQuery->where(function($q) use ($matchingCatIds, $matchingCatNames) {
+            $q->whereIn('category_id', $matchingCatIds);
+            foreach ($matchingCatNames as $name) {
+                $q->orWhere('category_name', $name)
+                  ->orWhere('category_name', ucfirst($name))
+                  ->orWhere('category_name', str_replace(' ', '', $name))
+                  ->orWhere('category_name', str_replace('-', '', $name))
+                  ->orWhere('category_name', str_replace(' ', '-', $name))
+                  ->orWhere('category_name', str_replace('-', ' ', $name));
+            }
+        });
+    } else {
+        $adsQuery->where(function($q) {
             $q->whereNull('category_name')
-              ->orWhere('category_name', strtolower($selectedCategoryModel->name))
-              ->orWhere('category_name', ucfirst($selectedCategoryModel->name))
-              ->orWhere('category_name', $selectedCategoryModel->name)
-              ->orWhere('category_name', $selectedCategoryModel->slug);
+              ->whereNull('category_id');
         });
     }
 
     $banners = $adsQuery->get();
+    
+    // Separate ads by type
+    $bannerAds = $banners->where('type', 'banner');
+    $videoAds = $banners->where('type', 'video');
+    $campaignAds = $banners->where('type', 'campaign');
+    $featuredAds = $banners->whereIn('type', ['featured', 'features']);
 
     // ================= OTHER DATA =================
     $sizes  = AttributeTerm::where('attribute_id', 10)->get();
@@ -333,6 +417,14 @@ public function index(Request $request)
 
     return view('vshop.products.index', compact(
         'products',
+        'trendingProducts',
+        'mostViewedProducts',
+        'mostEnquiredProducts',
+        'highestRatedProducts',
+        'bannerAds',
+        'videoAds',
+        'campaignAds',
+        'featuredAds',
         'brands',
         'sizes',
         'colors',

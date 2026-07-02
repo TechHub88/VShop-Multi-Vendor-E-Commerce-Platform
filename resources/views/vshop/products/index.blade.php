@@ -11,6 +11,211 @@
 @section('content')
 
 <style>
+    /* Override dark blue header for modern Flipkart/Amazon clean look */
+    .home-seller-header {
+        background: transparent !important;
+        color: #212121 !important;
+        padding: 0 0 8px 0 !important;
+        margin-bottom: 10px !important;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+    }
+    
+    .home-seller-header h2 {
+        font-weight: 600 !important;
+        font-size: 15px !important;
+        color: #212121 !important;
+        margin: 0 !important;
+    }
+    
+    .home-seller-header i {
+        color: #2874f0 !important;
+        font-size: 14px !important;
+    }
+
+    /* Clean overrides matching homepage compact sizes */
+    .product-bottom-sec {
+        flex-direction: column-reverse;
+        align-items: stretch !important;
+        gap: 4px !important;
+        margin-top: 4px !important;
+    }
+    .product-box {
+        padding: 0 !important;
+        border-radius: 8px !important;
+        box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.04) !important;
+        border: 1px solid #e2e8f0 !important;
+        height: 200px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden;
+        position: relative;
+    }
+    .product-box-img {
+        height: 100px !important;
+        background: #fff !important;
+        padding: 6px !important;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .product-box-img a {
+        height: 100px !important;
+        border-radius: 0 !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+    .product-box-img a img {
+        object-fit: contain !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+    }
+    .product-bottom {
+        padding: 4px 6px 6px 6px !important;
+        flex-grow: 1;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    .product-bottom h3 {
+        margin-bottom: 1px !important;
+        height: 14px !important;
+        overflow: hidden;
+    }
+    .product-bottom h3 a {
+        font-size: 11px !important;
+        line-height: 14px !important;
+        font-weight: 600 !important;
+        color: #2d3748 !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .share-wishlist-sec {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        z-index: 10;
+        display: flex;
+        gap: 4px;
+    }
+    .share-wishlist-sec a {
+        width: 20px !important;
+        height: 20px !important;
+        background: rgba(255, 255, 255, 0.9) !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+        text-decoration: none !important;
+        color: #718096 !important;
+    }
+    .share-wishlist-sec a i {
+        font-size: 9px !important;
+    }
+    /* Hide the large rating dropdown panel */
+    .custom-rating-dropdown .dropdown-menu {
+        display: none !important;
+    }
+    .amazon-rating-sec .fa-chevron-down {
+        display: none !important;
+    }
+    .amazon-rating-sec {
+        cursor: default !important;
+    }
+    .rating-size-sec {
+        margin-bottom: 1px !important;
+        gap: 2px !important;
+    }
+    .rating-num {
+        font-size: 10px !important;
+    }
+    .amazon-rating-sec .stars i {
+        font-size: 8px !important;
+    }
+    .rating-count {
+        font-size: 10px !important;
+    }
+    .rating-sec {
+        font-size: 9px !important;
+        color: #4a5568 !important;
+        gap: 2px !important;
+    }
+    .rating-sec i {
+        font-size: 8px !important;
+    }
+    .color-size-sec {
+        font-size: 9px !important;
+        font-weight: 500 !important;
+        color: #718096 !important;
+    }
+    .off-sec {
+        margin-bottom: 1px !important;
+        justify-content: flex-start !important;
+        gap: 4px !important;
+    }
+    .old-rupess {
+        font-size: 9px !important;
+        font-weight: 500 !important;
+    }
+    .off-box {
+        font-size: 9px !important;
+        font-weight: 700 !important;
+    }
+    .new-rupess {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        margin: 0 !important;
+    }
+    .add-cart-btn {
+        font-size: 9px !important;
+        padding: 3px 6px !important;
+        border-radius: 4px !important;
+        text-align: center !important;
+        width: 100% !important;
+    }
+    .home-seller-sec {
+        margin-bottom: 4px !important;
+    }
+    .home-seller-sec.mb-5 {
+        margin-bottom: 4px !important;
+    }
+    .campaign-banner-sec {
+        margin-bottom: 2px !important;
+    }
+    .campaign-banner-sec.mb-4 {
+        margin-bottom: 2px !important;
+    }
+    .home-seller-header.mb-3 {
+        margin-bottom: 4px !important;
+    }
+    .home-seller-bottom .row {
+        margin-bottom: 0 !important;
+    }
+    .home-seller-bottom .row .mb-4 {
+        margin-bottom: 4px !important;
+    }
+    .custom-pagination-wrapper {
+        margin-top: 0px !important;
+        margin-bottom: 2px !important;
+    }
+    .custom-pagination-wrapper .pagination {
+        margin: 0 !important;
+    }
+    .custom-pagination-wrapper .page-link {
+        font-size: 11px !important;
+        padding: 3px 8px !important;
+    }
+    .product-list-right {
+        padding-top: 0 !important;
+    }
+
     /* Prevent dropdown clipping in product cards */
     .product-box, .item {
         overflow: visible !important;
@@ -162,26 +367,26 @@
     /* Sidebar Filter styling */
     .filter-sec {
         background: #fff;
-        border: 1px solid #f0f0f0;
-        border-radius: 4px;
-        box-shadow: 0 2px 4px 0 rgba(0,0,0,.08);
-        padding: 16px;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        box-shadow: none;
+        padding: 10px;
         margin-bottom: 20px;
     }
     .filter-box {
-        padding: 16px 0;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 8px 0;
+        border-bottom: 1px solid #f2f2f2;
     }
     .filter-box:last-child {
         border-bottom: none;
     }
     .filter-box h3 {
-        font-size: 14px;
-        font-weight: 600;
-        color: #212121;
+        font-size: 11px;
+        font-weight: 700;
+        color: #878787;
         text-transform: uppercase;
-        letter-spacing: 0.3px;
-        margin-bottom: 14px;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
         position: relative;
     }
     .filter-box ul {
@@ -212,7 +417,7 @@
         position: relative;
         padding-left: 28px;
         cursor: pointer;
-        font-size: 14px;
+        font-size: 12px;
         color: #212121;
         user-select: none;
         margin: 0;
@@ -555,16 +760,24 @@
 </ul>
 </div>
 
-<div class="product-dtl-banner">
+    <div class="product-dtl-banner">
+        @php
+            $topAds = collect();
+            if(isset($bannerAds)) $topAds = $topAds->merge($bannerAds);
+            
+            // Duplicate to force scrolling if there's only 1 banner
+            if ($topAds->count() == 1) {
+                $topAds->push($topAds->first());
+            }
+        @endphp
 
-    @if(isset($banners) && count($banners) > 0 && $banners->contains(function($ad) { return $ad->media->count() > 0; }))
-
-        <div id="bannerCarousel" class="carousel slide" data-bs-ride="carousel">
+        @if($topAds->count() > 0 && $topAds->contains(function($ad) { return $ad->media->count() > 0; }))
+            <div id="bannerCarousel" class="carousel slide" data-bs-ride="carousel">
 
             <div class="carousel-inner">
 
                 @php $isActive = true; @endphp
-                @foreach($banners as $banner)
+                @foreach($bannerAds as $banner)
                     @if($banner->media->count() > 0)
                         @foreach($banner->media as $media)
                             @if($media->media_type == 'image')
@@ -774,7 +987,7 @@
 FILTER SIDEBAR
 ====================================================== --}}
 
-<div class="col-lg-3">
+<div class="col-lg-2">
 <div class="product-list-filter-sec filter-sec" id="filterSidebar">
     
 <div class="filter-top">
@@ -958,514 +1171,212 @@ Clear Filter
 PRODUCT GRID
 ====================================================== --}}
 
-<div class="col-lg-9">
-<div class="product-list-right product-col-view">
-<div class="row">
+<div class="col-lg-10">
 
-@forelse($products as $product)
-
-<div class="col-lg-3 col-md-4 col-sm-6 product-box-outer">
-<div class="product-box">
-
-{{-- Wishlist --}}
-
-<div class="share-wishlist-sec">
-
-    {{-- SHARE BUTTON --}}
-    <a href="javascript:void(0);" 
-       class="share-btn" 
-       data-url="{{ route('productmanage.show', $product->id) }}"
-       data-title="{{ $product->name }}">
-        <i class="fa-solid fa-share-nodes"></i>
-    </a>
-
-    {{-- WISHLIST --}}
-    @auth('customer') 
-        <a href="#" class="wishlist-btn" data-product-id="{{ $product->id }}">
-            <i class="{{ in_array($product->id,$wishlistIds ?? [])
-                ? 'fa-solid fa-heart text-danger'
-                : 'fa-solid fa-heart' }}">
-            </i>
-        </a>
-    @else
-        <a href="{{ route('vshoplogin', ['redirect' => request()->fullUrl()]) }}">
-            <i class="fa-solid fa-heart"></i>
-        </a>
-    @endauth
-
-</div>
-
-{{-- Image --}}
-
-<div class="product-box-img">
-<a href="{{ route('productmanage.show',$product->id) }}">
-<img src="{{ $product->thumbnail
-? asset($product->thumbnail)
-: asset('vtravelassets/images/banner-pic-main.webp') }}">
-</a>
-</div>
-
-<div class="product-bottom">
-
-{{-- Name --}}
-
-<h3>
-<a href="{{ route('productmanage.show',$product->id) }}" title="{{ $product->name }}">
-{{ \Illuminate\Support\Str::limit($product->name, 28) }}
-</a>
-</h3>
-
-{{-- Rating + Seller/Brand --}}
-
-<div class="rating-size-sec">
-
-<div class="dropdown custom-rating-dropdown position-relative">
-    <div class="amazon-rating-sec dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer; margin-bottom: 0; display: inline-flex; align-items: center;">
-        <span class="rating-num">{{ number_format($product->average_rating ?? 0, 1) }}</span>
-        <span class="stars">
-            @for($i=1;$i<=5;$i++)
-                <i class="fa-solid fa-star {{ $i <= round($product->average_rating ?? 0) ? 'text-warning' : 'text-secondary' }}"></i>
-            @endfor
-        </span>
-        <i class="fa-solid fa-chevron-down ms-1 text-muted" style="font-size: 10px;"></i>
-    </div>
-    <a href="{{ route('productmanage.show', $product->id) }}#reviews" class="rating-count d-inline-block ms-1" style="font-size: 13px; color: #007185; text-decoration: none;">
-        ({{ $product->total_reviews ?? 0 }})
-    </a>
-
-    <div class="dropdown-menu p-3 shadow" style="width: 260px; border-radius: 8px; border: 1px solid #ccc; z-index: 1050;">
-        <div class="d-flex align-items-center mb-2">
-            <span class="stars me-2">
-                @for($i=1;$i<=5;$i++)
-                    <i class="fa-solid fa-star {{ $i <= round($product->average_rating ?? 0) ? 'text-warning' : 'text-secondary' }}" style="font-size: 14px;"></i>
-                @endfor
-            </span>
-            <strong style="font-size: 14px;">{{ number_format($product->average_rating ?? 0, 1) }} out of 5</strong>
-        </div>
-        <p class="text-muted mb-3" style="font-size: 13px;">{{ $product->total_reviews ?? 0 }} global ratings</p>
-        
-        @php
-            $totalCount = $product->total_reviews ?? 0;
-            $breakdown = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
-            $reviewsCollection = $product->reviews ?? collect();
-            
-            if($reviewsCollection->count() > 0) {
-                foreach($reviewsCollection as $r) {
-                    $rVal = round($r->rating);
-                    if($rVal >= 1 && $rVal <= 5) {
-                        $breakdown[$rVal]++;
-                    }
-                }
-            } elseif ($totalCount > 0) {
-                $avg = $product->average_rating ?? 0;
-                if($avg >= 4) {
-                    $breakdown[5] = round($totalCount * 0.7);
-                    $breakdown[4] = round($totalCount * 0.2);
-                    $breakdown[3] = $totalCount - $breakdown[5] - $breakdown[4];
-                } else {
-                    $breakdown[5] = round($totalCount * 0.4);
-                    $breakdown[4] = round($totalCount * 0.3);
-                    $breakdown[3] = round($totalCount * 0.2);
-                    $breakdown[2] = $totalCount - $breakdown[5] - $breakdown[4] - $breakdown[3];
+{{-- CAMPAIGN BANNERS & VIDEOS PROCESSING --}}
+@php
+    $campaignMedia = [];
+    if(isset($campaignAds) && count($campaignAds) > 0) {
+        foreach($campaignAds as $banner) {
+            if (strtolower($banner->title) === 'spin and win') {
+                continue;
+            }
+            foreach($banner->media as $media) {
+                if($media->media_type == 'image') {
+                    $campaignMedia[] = ['media' => $media, 'banner' => $banner];
                 }
             }
-        @endphp
-
-        @for($star = 5; $star >= 1; $star--)
-            @php
-                $count = $breakdown[$star] ?? 0;
-                $percent = $totalCount > 0 ? round(($count / $totalCount) * 100) : 0;
-            @endphp
-            <div class="d-flex align-items-center mb-2" style="font-size: 13px;">
-                <a href="{{ route('productmanage.show', $product->id) }}#reviews" class="text-decoration-none" style="width: 50px; color: #007185;">{{ $star }} star</a>
-                <div class="progress flex-grow-1 mx-2" style="height: 16px; background-color: #f0f2f2; border: 1px solid #e3e6e6; border-radius: 4px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);">
-                    <div class="progress-bar" role="progressbar" style="width: {{ $percent }}%; background-color: #de7921; border-radius: 2px;" aria-valuenow="{{ $percent }}" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-                <span class="text-end" style="width: 35px; color: #007185;">{{ $percent }}%</span>
-            </div>
-        @endfor
-
-        <hr class="my-2 border-secondary opacity-25">
-        <a href="{{ route('productmanage.show', $product->id) }}#reviews" class="text-center d-block text-decoration-none" style="font-size: 14px; color: #007185; font-weight: 500;">
-            See customer reviews <i class="fa-solid fa-chevron-right ms-1" style="font-size: 10px;"></i>
-        </a>
-    </div>
-</div>
-
-<p class="color-size-sec">
-
-@if($product->created_by === 'seller')
-{{ $product->seller->name ?? 'Seller Store' }}
-@else
-{{ $product->brand->name ?? $product->brand_name ?? 'Store' }}
-@endif
-
-</p>
-
-</div>
-
-{{-- Discount --}}
-@php
-    $regular = $product->regular_price ?? $product->price;
-    $price = $product->discount_price ?? $product->price;
-    $discountPct = 0;
-    if ($product->is_discount && $product->discount_value > 0) {
-        $discountPct = $product->discount_type == 'percentage' ? $product->discount_value : round(($product->discount_value / ($regular ?: 1)) * 100);
-    } else if ($regular > $price) {
-        $discountPct = round((($regular - $price) / $regular) * 100);
-    } else if ($product->price > 0 && !empty($product->discount_price) && $product->price > $product->discount_price) {
-        $discountPct = round((($product->price - $product->discount_price) / $product->price) * 100);
-        $regular = $product->price;
-        $price = $product->discount_price;
+        }
     }
+    if (count($campaignMedia) == 1) {
+        $campaignMedia[] = $campaignMedia[0];
+    }
+
+    $showCampaignCarousel = function() use (&$campaignMedia, $__env) {
+        if (count($campaignMedia) > 0) {
+            @endphp
+            <div class="campaign-banner-sec mb-0">
+                <div class="campaign-slider-wrapper owl-carousel">
+                    @foreach($campaignMedia as $item)
+                        <div class="campaign-banner-item item">
+                            <a href="{{ ($item['banner']->redirect_url && $item['banner']->redirect_url !== '#') ? $item['banner']->redirect_url : route('discount.products') }}" class="d-block w-100">
+                                <img src="{{ asset($item['media']->file_path) }}" class="w-100" style="display: block; width: 100%; height: auto; border: none !important; box-shadow: none !important; margin-bottom: 0 !important;" alt="{{ $item['banner']->title }}">
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @php
+        }
+    };
+
+    $videoMediaList = [];
+    $allAds = collect();
+    if(isset($videoAds)) $allAds = $allAds->merge($videoAds);
+    if(isset($bannerAds)) $allAds = $allAds->merge($bannerAds);
+    if(isset($campaignAds)) $allAds = $allAds->merge($campaignAds);
+    if(isset($featuredAds)) $allAds = $allAds->merge($featuredAds);
+
+    if($allAds->count() > 0) {
+        foreach($allAds as $ad) {
+            foreach($ad->media as $m) {
+                if($m->media_type == 'video' || pathinfo($m->file_path, PATHINFO_EXTENSION) == 'mp4') {
+                    $videoMediaList[] = ['media' => $m, 'ad' => $ad];
+                }
+            }
+        }
+    }
+    $videoIndex = 0;
+    $totalVideos = count($videoMediaList);
+
+    $renderVideoCard = function() use (&$videoMediaList, &$videoIndex, $totalVideos, $__env) {
+        if ($videoIndex < $totalVideos) {
+            $firstVideoAd = $videoMediaList[$videoIndex];
+            $videoIndex++;
+            @endphp
+            <div class="col-6 col-md-4 col-lg-2 mb-4 ms-auto">
+                <div class="card shadow-sm border-0 overflow-hidden position-relative" style="border-radius: 4px; background: #000; height: 200px !important; border: 1px solid #f0f0f0; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'" onclick="window.location.href='{{ route('vshop.visuals', ['tab' => 'videos']) }}'">
+                    <video class="w-100 h-100 corner-video-player" style="object-fit: cover; opacity: 0.9;" autoplay muted loop playsinline preload="auto">
+                        <source src="{{ asset($firstVideoAd['media']->file_path) }}" type="video/mp4">
+                    </video>
+                    <div class="position-absolute bottom-0 start-0 end-0 p-2" style="background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%); z-index: 2;">
+                        <h6 class="text-white fw-bold mb-0 text-truncate" style="font-size: 11px;">{{ $firstVideoAd['ad']->title }}</h6>
+                    </div>
+                </div>
+            </div>
+            @php
+            return true;
+        }
+        return false;
+    };
 @endphp
 
-@if($regular > $price || $discountPct > 0)
-<div class="off-sec">
-<p class="old-rupess">₹ {{ number_format($regular,2) }}</p>
+<div class="product-list-right">
 
-<p class="off-box">
-{{ $discountPct }}% Off
-</p>
-</div>
-@endif
+    {{-- 1. TOP TRENDING --}}
+    @if(isset($trendingProducts) && count($trendingProducts) > 0)
+        @php $showCampaignCarousel(); @endphp
+        <div class="home-seller-sec mb-2" id="trending-section">
+            <div class="home-seller-header mb-3">
+                <h2 style="font-size: 15px; font-weight: bold; color: #212121;"><i class="fa-solid fa-fire text-danger"></i> Top Trending</h2>
+            </div>
+            <div class="home-seller-bottom">
+                <div class="row">
+                    @php $videoRendered = false; @endphp
+                    @foreach($trendingProducts as $product)
+                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
+                            @include('vshop.products._product_card_partial', ['product' => $product])
+                        </div>
+                        @if($loop->iteration % 5 == 0)
+                            @php $videoRendered = $renderVideoCard(); @endphp
+                        @endif
+                    @endforeach
+                    @if(!$videoRendered)
+                        @php $renderVideoCard(); @endphp
+                    @endif
+                </div>
+                @if($trendingProducts->hasPages())
+                    <div class="custom-pagination-wrapper">
+                        {{ $trendingProducts->appends(request()->except('trending_page'))->links('pagination::bootstrap-4') }}
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
 
-{{-- Price + Button --}}
+    {{-- 2. MOST VIEWED --}}
+    @if(isset($mostViewedProducts) && count($mostViewedProducts) > 0)
+        @php $showCampaignCarousel(); @endphp
+        <div class="home-seller-sec mb-2" id="views-section">
+            <div class="home-seller-header mb-3">
+                <h2 style="font-size: 15px; font-weight: bold; color: #212121;"><i class="fa-solid fa-eye text-primary"></i> Most Viewed</h2>
+            </div>
+            <div class="home-seller-bottom">
+                <div class="row">
+                    @php $videoRendered = false; @endphp
+                    @foreach($mostViewedProducts as $product)
+                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
+                            @include('vshop.products._product_card_partial', ['product' => $product])
+                        </div>
+                        @if($loop->iteration % 5 == 0)
+                            @php $videoRendered = $renderVideoCard(); @endphp
+                        @endif
+                    @endforeach
+                    @if(!$videoRendered)
+                        @php $renderVideoCard(); @endphp
+                    @endif
+                </div>
+                @if($mostViewedProducts->hasPages())
+                    <div class="custom-pagination-wrapper">
+                        {{ $mostViewedProducts->appends(request()->except('views_page'))->links('pagination::bootstrap-4') }}
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
 
-<div class="product-bottom-sec">
+    {{-- 3. MOST ENQUIRED --}}
+    @if(isset($mostEnquiredProducts) && count($mostEnquiredProducts) > 0)
+        @php $showCampaignCarousel(); @endphp
+        <div class="home-seller-sec mb-2" id="enquiries-section">
+            <div class="home-seller-header mb-3">
+                <h2 style="font-size: 15px; font-weight: bold; color: #212121;"><i class="fa-solid fa-circle-question text-info"></i> Most Enquired</h2>
+            </div>
+            <div class="home-seller-bottom">
+                <div class="row">
+                    @php $videoRendered = false; @endphp
+                    @foreach($mostEnquiredProducts as $product)
+                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
+                            @include('vshop.products._product_card_partial', ['product' => $product])
+                        </div>
+                        @if($loop->iteration % 5 == 0)
+                            @php $videoRendered = $renderVideoCard(); @endphp
+                        @endif
+                    @endforeach
+                    @if(!$videoRendered)
+                        @php $renderVideoCard(); @endphp
+                    @endif
+                </div>
+                @if($mostEnquiredProducts->hasPages())
+                    <div class="custom-pagination-wrapper">
+                        {{ $mostEnquiredProducts->appends(request()->except('enquiries_page'))->links('pagination::bootstrap-4') }}
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
 
-<button class="add-cart-btn"
-onclick="window.location.href='{{ route('productmanage.show',$product->id) }}'">
-View Details </button>
+    {{-- 4. HIGHEST RATED --}}
+    @if(isset($highestRatedProducts) && count($highestRatedProducts) > 0)
+        @php $showCampaignCarousel(); @endphp
+        <div class="home-seller-sec mb-2" id="rating-section">
+            <div class="home-seller-header mb-3">
+                <h2 style="font-size: 18px; font-weight: bold; color: #212121;"><i class="fa-solid fa-star text-warning"></i> Highest Rated</h2>
+            </div>
+            <div class="home-seller-bottom">
+                <div class="row">
+                    @php $videoRendered = false; @endphp
+                    @foreach($highestRatedProducts as $product)
+                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
+                            @include('vshop.products._product_card_partial', ['product' => $product])
+                        </div>
+                        @if($loop->iteration % 5 == 0)
+                            @php $videoRendered = $renderVideoCard(); @endphp
+                        @endif
+                    @endforeach
+                    @if(!$videoRendered)
+                        @php $renderVideoCard(); @endphp
+                    @endif
+                </div>
+                @if($highestRatedProducts->hasPages())
+                    <div class="custom-pagination-wrapper">
+                        {{ $highestRatedProducts->appends(request()->except('rating_page'))->links('pagination::bootstrap-4') }}
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
 
-<p class="new-rupess">
-₹ {{ number_format($price,2) }}
-</p>
-
-</div>
-
-</div>
-</div>
-</div>
-
-@empty
-
-<div class="col-12">
-<div class="alert alert-warning">
-No products found with selected filters.
-</div>
-</div>
-@endforelse
-
-</div>
-</div>
-
-
-<div class="product-list-right product-list-view">
-    <div class="row">
-                                                        <div class="col-lg-12 product-box-outer">
-                                                            <div class="product-list-box">
-                                                                <div class="product-list-box-top">
-                                                                    <div class="product-list-box-left">
-                                                                        <div class="share-wishlist-sec">
-                                                                            <a href="#">
-                                                                                <i class="fa-solid fa-share-nodes"></i>
-                                                                            </a>
-                                                                            <a href="#">
-                                                                                <i class="fa-solid fa-heart"></i>
-                                                                            </a>
-                                                                        </div>
-                                                                        <div class="product-image-sec">
-                                                                            <div class="product-image-wrapper-one">
-                                                                                <div class="product-image-one-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-one-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-one-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-one-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div class="product-image-wrapper-two">
-                                                                                <div class="product-image-two-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-two-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-two-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-two-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="product-list-box-right">
-                                                                        <div class="product-heading">
-                                                                            <div class="product-heading-left">
-                                                                                <h3>Yoga Mat, 8 mm thick, 173 x 61 cm</h3>
-                                                                                <ul>
-                                                                                    <li>
-                                                                                        <a href="#">Visit Selinium Yoga store</a>
-                                                                                    </li>
-                                                                                    <li>/</li>
-                                                                                    <li>Yoga Accessories</li>
-                                                                                </ul>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="rating-sec">
-                                                                            <div class="rating-left">
-                                                                                <ul>
-                                                                                    <li>
-                                                                                        4.6
-                                                                                        <i class="fa-solid fa-star"></i>
-                                                                                    </li>
-                                                                                    <li class="blackColor">
-                                                                                        <p class="old-rupess">₹ 6,700.00</p>
-                                                                                    </li>
-                                                                                    <li>
-                                                                                        <p class="off-box">14 % Off</p>
-                                                                                    </li>
-                                                                                    <li>
-                                                                                        <p class="new-rupess">₹ 5,900.00</p>
-                                                                                    </li>
-                                                                                </ul>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="quantity-sec">
-                                                                            <label class="quantity-box">
-                                                                                <input type="radio" name="radio1" checked>
-                                                                                <span>8 mm</span>
-                                                                            </label>
-                                                                            <label class="quantity-box">
-                                                                                <input type="radio" name="radio1">
-                                                                                <span>6 mm</span>
-                                                                            </label>
-                                                                            <label class="quantity-box">
-                                                                                <input type="radio" name="radio1">
-                                                                                <span>4 mm</span>
-                                                                            </label>
-                                                                            <label class="quantity-box">
-                                                                                <input type="radio" name="radio1">
-                                                                                <span>2 mm</span>
-                                                                            </label>
-                                                                        </div>
-                                                                        <div class="color-select-sec">
-                                                                            <label class="color-box">
-                                                                                <input type="radio" checked name="radio2">
-                                                                                <span class="color-circle merun-box"></span>
-                                                                            </label>
-                                                                            <label class="color-box">
-                                                                                <input type="radio" name="radio2">
-                                                                                <span class="color-circle green-box"></span>
-                                                                            </label>
-                                                                            <label class="color-box">
-                                                                                <input type="radio" name="radio2">
-                                                                                <span class="color-circle chocolate-box"></span>
-                                                                            </label>
-                                                                            <p>( Barbarian Red )</p>
-                                                                        </div>
-                                                                        <div class="product-dtl-sec">
-                                                                            <p>Expected Delivery : <span class="blackColor">16 - 19 June 25</span></p>
-                                                                        </div>
-                                                                        <div class="product-col-bottom-sec">
-                                                                            <div class="quantity-sub-sec">
-                                                                                <button type="button" id="sub" class="sub">-</button>
-                                                                                <input class="count" type="text" id="1" value="1" min="1" max="100">
-                                                                                <button type="button" id="add" class="add">+</button>
-                                                                            </div>
-                                                                            <a href="#" class="add-cart-btn">Add to Cart</a>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-lg-12 product-box-outer">
-                                                            <div class="product-list-box">
-                                                                <div class="product-list-box-top">
-                                                                    <div class="product-list-box-left">
-                                                                        <div class="share-wishlist-sec">
-                                                                            <a href="#">
-                                                                                <i class="fa-solid fa-share-nodes"></i>
-                                                                            </a>
-                                                                            <a href="#">
-                                                                                <i class="fa-solid fa-heart"></i>
-                                                                            </a>
-                                                                        </div>
-                                                                        <div class="product-image-sec">
-                                                                            <div class="product-image-wrapper-one">
-                                                                                <div class="product-image-one-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-one-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-one-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-one-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <div class="product-image-wrapper-two">
-                                                                                <div class="product-image-two-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-two-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-two-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                                <div class="product-image-two-box">
-                                                                                    <div class="product-image-one-box-inner">
-                                                                                        <img src="images/banner-pic-main.webp"
-                                                                                            alt="">
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="product-list-box-right">
-                                                                        <div class="product-heading">
-                                                                            <div class="product-heading-left">
-                                                                                <h3>Yoga Mat, 8 mm thick, 173 x 61 cm</h3>
-                                                                                <ul>
-                                                                                    <li>
-                                                                                        <a href="#">Visit Selinium Yoga store</a>
-                                                                                    </li>
-                                                                                    <li>/</li>
-                                                                                    <li>Yoga Accessories</li>
-                                                                                </ul>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="rating-sec">
-                                                                            <div class="rating-left">
-                                                                                <ul>
-                                                                                    <li>
-                                                                                        4.6
-                                                                                        <i class="fa-solid fa-star"></i>
-                                                                                    </li>
-                                                                                    <li class="blackColor">
-                                                                                        <p class="old-rupess">₹ 6,700.00</p>
-                                                                                    </li>
-                                                                                    <li>
-                                                                                        <p class="off-box">14 % Off</p>
-                                                                                    </li>
-                                                                                    <li>
-                                                                                        <p class="new-rupess">₹ 5,900.00</p>
-                                                                                    </li>
-                                                                                </ul>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="quantity-sec">
-                                                                            <label class="quantity-box">
-                                                                                <input type="radio" name="radio1" checked>
-                                                                                <span>8 mm</span>
-                                                                            </label>
-                                                                            <label class="quantity-box">
-                                                                                <input type="radio" name="radio1">
-                                                                                <span>6 mm</span>
-                                                                            </label>
-                                                                            <label class="quantity-box">
-                                                                                <input type="radio" name="radio1">
-                                                                                <span>4 mm</span>
-                                                                            </label>
-                                                                            <label class="quantity-box">
-                                                                                <input type="radio" name="radio1">
-                                                                                <span>2 mm</span>
-                                                                            </label>
-                                                                        </div>
-                                                                        <div class="color-select-sec">
-                                                                            <label class="color-box">
-                                                                                <input type="radio" checked name="radio2">
-                                                                                <span class="color-circle merun-box"></span>
-                                                                            </label>
-                                                                            <label class="color-box">
-                                                                                <input type="radio" name="radio2">
-                                                                                <span class="color-circle green-box"></span>
-                                                                            </label>
-                                                                            <label class="color-box">
-                                                                                <input type="radio" name="radio2">
-                                                                                <span class="color-circle chocolate-box"></span>
-                                                                            </label>
-                                                                            <p>( Barbarian Red )</p>
-                                                                        </div>
-                                                                        <div class="product-dtl-sec">
-                                                                            <p>Expected Delivery : <span class="blackColor">16 - 19 June 25</span></p>
-                                                                        </div>
-                                                                        <div class="product-col-bottom-sec">
-                                                                            <div class="quantity-sub-sec">
-                                                                                <button type="button" id="sub" class="sub">-</button>
-                                                                                <input class="count" type="text" id="1" value="1" min="1" max="100">
-                                                                                <button type="button" id="add" class="add">+</button>
-                                                                            </div>
-                                                                            <a href="#" class="add-cart-btn">Add to Cart</a>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-</div>
-
-{{-- Pagination --}}
-
-<div class="mt-4">
-{{ $products->links('pagination::bootstrap-5') }}
 </div>
 
 <div id="shareModal" class="share-modal">
@@ -1909,28 +1820,62 @@ border:1px solid #ddd;
 </style>
 
 <script>
+    $(document).ready(function() {
         const filterBtn = document.getElementById("filterBtn");
         const sidebar = document.getElementById("filterSidebar");
         const overlay = document.getElementById("overlay");
         const closeBtn = document.getElementById("closeSidebar");
         
         // Open sidebar
-        filterBtn.addEventListener("click", () => {
-          sidebar.classList.add("active");
-          overlay.classList.add("active");
-        });
+        if (filterBtn) {
+            filterBtn.addEventListener("click", () => {
+              sidebar.classList.add("active");
+              overlay.classList.add("active");
+            });
+        }
         
         // Close sidebar (X button)
-        closeBtn.addEventListener("click", () => {
-          sidebar.classList.remove("active");
-          overlay.classList.remove("active");
-        });
+        if (closeBtn) {
+            closeBtn.addEventListener("click", () => {
+              sidebar.classList.remove("active");
+              overlay.classList.remove("active");
+            });
+        }
         
         // Close when clicking outside
-        overlay.addEventListener("click", () => {
-          sidebar.classList.remove("active");
-          overlay.classList.remove("active");
+        if (overlay) {
+            overlay.addEventListener("click", () => {
+              sidebar.classList.remove("active");
+              overlay.classList.remove("active");
+            });
+        }
+
+        // Campaign Banners Slider
+        function initCampaignSliders() {
+            $(".campaign-slider-wrapper").each(function() {
+                let carousel = $(this);
+                if (!carousel.hasClass('owl-loaded')) {
+                    let itemsCount = carousel.find('.item').length;
+                    carousel.owlCarousel({
+                        items: 1,
+                        loop: itemsCount > 1,
+                        autoplay: itemsCount > 1,
+                        autoplayTimeout: 2000,
+                        smartSpeed: 800,
+                        autoplayHoverPause: true,
+                        nav: false,
+                        dots: false
+                    });
+                }
+            });
+        }
+        initCampaignSliders();
+
+        // Force autoplay on load
+        $('video[autoplay]').each(function() {
+            this.play();
         });
+    });
     </script>
 @endpush
 

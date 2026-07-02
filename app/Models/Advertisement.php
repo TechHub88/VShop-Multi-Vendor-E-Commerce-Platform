@@ -18,6 +18,7 @@ class Advertisement extends Model
         'redirect_url',
         'target_type',
         'product_id',
+        'category_id',
         'service_id',
         'start_date',
         'end_date',
@@ -31,6 +32,14 @@ class Advertisement extends Model
     public function media()
     {
         return $this->hasMany(AdvertisementMedia::class, 'advertisement_id');
+    }
+
+    /**
+     * OPTIONAL: Category Relation
+     */
+    public function category()
+    {
+        return $this->belongsTo(\App\Models\MarketplaceCategory::class, 'category_id');
     }
 
     /**

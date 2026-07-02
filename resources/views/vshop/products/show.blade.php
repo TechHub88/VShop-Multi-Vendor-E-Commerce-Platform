@@ -589,45 +589,7 @@
                                                 </ul>
                                             </div>
 
-                                            {{-- DYNAMIC DETAILS SECTION (Professional / Product / Service) --}}
-                                            <div class="product-dynamic-details mt-3 mb-4" >
-                                                <div class="d-flex flex-wrap gap-3" style="font-size: 13px;">
-                                                    
-                                                    @if(in_array($product->type, ['vshop-professional', 'professional', 'vtravel-professional', 'service', 'vshop-service', 'vtravel-service', 'information_advisory', 'vtravel-information_advisory', 'tour', 'vtravel-tour']))
-                                                        {{-- Professional & Service Details --}}
-                                                        @if(!empty($product->session_mode))
-                                                        <div class="d-flex align-items-center"><i class="fa-solid fa-video text-primary me-2"></i> <span class="text-muted fw-semibold me-1">Mode:</span> <span class="text-dark">{{ $product->session_mode }}</span></div>
-                                                        @endif
-                                                        @if(!empty($product->session_type))
-                                                        <div class="d-flex align-items-center"><i class="fa-solid fa-globe text-primary me-2"></i> <span class="text-muted fw-semibold me-1">Type:</span> <span class="text-dark">{{ $product->session_type }}</span></div>
-                                                        @endif
-                                                        @if(!empty($product->service_duration))
-                                                        <div class="d-flex align-items-center"><i class="fa-solid fa-clock text-primary me-2"></i> <span class="text-muted fw-semibold me-1">Duration:</span> <span class="text-dark">{{ $product->service_duration }}</span></div>
-                                                        @endif
-                                                        @if(!empty($product->languages))
-                                                        <div class="d-flex align-items-center"><i class="fa-solid fa-language text-primary me-2"></i> <span class="text-muted fw-semibold me-1">Languages:</span> <span class="text-dark">{{ $product->languages }}</span></div>
-                                                        @endif
-                                                        @if(!empty($product->max_booking))
-                                                        <div class="d-flex align-items-center"><i class="fa-solid fa-users text-primary me-2"></i> <span class="text-muted fw-semibold me-1">Max Booking:</span> <span class="text-dark">{{ $product->max_booking }}</span></div>
-                                                        @endif
-                                                        @if(!empty($product->service_validity))
-                                                        <div class="d-flex align-items-center"><i class="fa-regular fa-calendar-check text-primary me-2"></i> <span class="text-muted fw-semibold me-1">Validity:</span> <span class="text-dark">{{ $product->service_validity }}</span></div>
-                                                        @endif
-                                                        @if(!empty($product->provider_name))
-                                                        <div class="d-flex align-items-center"><i class="fa-solid fa-chalkboard-user text-primary me-2"></i> <span class="text-muted fw-semibold me-1">Provider:</span> <span class="text-dark">{{ $product->provider_name }}</span></div>
-                                                        @endif
-                                                    @elseif(in_array($product->type, ['vshop-product', 'product']))
-                                                        {{-- Product Details --}}
-                                                        @if(!empty($product->color))
-                                                        <div class="d-flex align-items-center"><i class="fa-solid fa-palette text-primary me-2"></i> <span class="text-muted fw-semibold me-1">Color:</span> <span class="text-dark">{{ $product->color }}</span></div>
-                                                        @endif
-                                                        @if(!empty($product->size))
-                                                        <div class="d-flex align-items-center"><i class="fa-solid fa-ruler text-primary me-2"></i> <span class="text-muted fw-semibold me-1">Size:</span> <span class="text-dark">{{ $product->size }}</span></div>
-                                                        @endif
-                                                    @endif
 
-                                                </div>
-                                            </div>
 
                                          
                                             
@@ -644,11 +606,43 @@
                                             <!--    <label class="color-box"><input type="radio" name="radio2"><span class="color-circle chocolate-box"></span></label>-->
                                             <!--    <p>( Barbarian Red )</p>-->
                                             <!--</div>-->
-                                            <div class="product-dtl-sec">
-                                                <p>Expected Delivery : <span class="blackColor" id="deliveryDate"></span> /
-                                                    <a href="{{ route('vshop.address.create') }}" class="change-pincode">Change Pincode</a>
-                                                </p>
-                                            </div>
+                                             @if(in_array($product->type, ['professional', 'vshop-professional', 'vtravel-professional', 'service', 'vshop-service', 'vtravel-service']))
+                                                @php
+                                                    $slots = json_decode($product->professional_slots, true);
+                                                @endphp
+                                                @if(!empty($slots) && is_array($slots))
+                                                    <div class="professional-slots-sec mb-4">
+                                                        <h6 class="fw-bold mb-2 text-dark"><i class="fa fa-calendar-alt text-primary me-2"></i>Select Date & Time Slot(s)</h6>
+                                                        <div class="d-flex flex-wrap gap-2" id="slotSelectionContainer">
+                                                            @foreach($slots as $index => $slot)
+                                                                <label class="slot-checkbox-label" style="cursor: pointer;">
+                                                                    <input type="checkbox" name="selected_slots[]" value="{{ $index }}" class="d-none slot-checkbox-input" data-date="{{ $slot['date'] }}" data-time="{{ $slot['start'] }} - {{ $slot['end'] }}">
+                                                                    <div class="slot-card p-2 border rounded text-center bg-white transition" style="min-width: 120px;">
+                                                                        <div class="small fw-bold text-dark">{{ \Carbon\Carbon::parse($slot['date'])->format('d M, Y') }}</div>
+                                                                        <div class="small text-muted">{{ $slot['start'] }} - {{ $slot['end'] }}</div>
+                                                                        <div class="badge bg-light text-dark border mt-1">{{ $slot['duration'] }}</div>
+                                                                    </div>
+                                                                </label>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                    <style>
+                                                        .slot-checkbox-input:checked + .slot-card {
+                                                            border-color: #0d6efd !important;
+                                                            background-color: #e8f0fe !important;
+                                                            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+                                                        }
+                                                        .slot-card { transition: all 0.2s ease-in-out; }
+                                                        .slot-checkbox-label:hover .slot-card { border-color: #0d6efd; }
+                                                    </style>
+                                                @endif
+                                            @else
+                                                <div class="product-dtl-sec">
+                                                    <p>Expected Delivery : <span class="blackColor" id="deliveryDate"></span> /
+                                                        <a href="{{ route('vshop.address.create') }}" class="change-pincode">Change Pincode</a>
+                                                    </p>
+                                                </div>
+                                            @endif
 
                                              @php
                                                  $isPhysicalProduct = in_array($product->type, ['product', 'vshop-product']) || empty($product->type);
@@ -1824,6 +1818,18 @@ $(document).on('click','.copy',function(){
 
                 let params = new URLSearchParams();
 
+                // Capture selected slots for professional services
+                const selectedSlotBoxes = document.querySelectorAll('input[name="selected_slots[]"]:checked');
+                if (document.querySelector('.professional-slots-sec')) {
+                    if (selectedSlotBoxes.length === 0) {
+                        showToast("Please select at least one date & time slot", "error");
+                        return;
+                    }
+                    selectedSlotBoxes.forEach(box => {
+                        params.append("selected_slots[]", box.dataset.date + " | " + box.dataset.time);
+                    });
+                }
+
                 params.append("product_id", productId);
                 params.append("quantity", quantity);
                 params.append("price", price);
@@ -2385,6 +2391,20 @@ $(document).on('click','.copy',function(){
                 price: parseFloat(document.getElementById("currentPrice").textContent.replace(/,/g, '')),
                 _token: "{{ csrf_token() }}"
             };
+
+            // Capture selected slots for professional services
+            const selectedSlotBoxes = document.querySelectorAll('input[name="selected_slots[]"]:checked');
+            if (document.querySelector('.professional-slots-sec')) {
+                if (selectedSlotBoxes.length === 0) {
+                    showToast("Please select at least one date & time slot", "error");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+                payload.selected_slots = Array.from(selectedSlotBoxes).map(box => {
+                    return box.dataset.date + " | " + box.dataset.time;
+                });
+            }
 
             // Add size_id if selected
             if (selectedSize) {

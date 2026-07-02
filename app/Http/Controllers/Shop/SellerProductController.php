@@ -963,24 +963,29 @@ public function saveBasic(Request $request, Product $product = null)
 
         $request->validate([
             'professional_type' => 'required',
-            'prof_session_duration' => 'required',
             'session_mode' => 'required',
             'languages' => 'required',
             'max_booking' => 'required|integer|min:1',
             'cancel_policy_prof' => 'required',
-            'prof_start_time' => 'required',
-            'prof_end_time' => 'required',
+            'professional_slots' => 'required',
         ]);
 
         $data['professional_type'] = $request->professional_type;
-        $data['session_duration'] = $request->prof_session_duration;
         $data['session_mode'] = $request->session_mode;
         $data['languages'] = $request->languages;
         $data['max_booking'] = $request->max_booking;
         $data['portfolio'] = $request->portfolio;
         $data['cancel_policy_prof'] = $request->cancel_policy_prof;
-        $data['start_time'] = $request->prof_start_time;
-        $data['end_time'] = $request->prof_end_time;
+        $data['professional_slots'] = $request->professional_slots;
+
+        // Extract first slot's times for backward compatibility
+        $slots = json_decode($request->professional_slots, true);
+        if (!empty($slots) && is_array($slots)) {
+            $data['start_time'] = $slots[0]['start'] ?? null;
+            $data['end_time'] = $slots[0]['end'] ?? null;
+            $data['session_duration'] = $slots[0]['duration'] ?? null;
+            $data['service_days'] = json_encode(array_column($slots, 'date'));
+        }
     }
 
     // =====================================================
@@ -2082,7 +2087,7 @@ The JSON must follow this structure exactly:
     $apiKey = env('OPENROUTER_API_KEY', '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');
 
     try {
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
+        $response = \Illuminate\Support\Facades\Http::timeout(120)->withHeaders([
             'Authorization' => 'Bearer ' . $apiKey,
             'Content-Type' => 'application/json',
             'HTTP-Referer' => url('/'),
@@ -3467,7 +3472,7 @@ public function generateAIContent(Request $request)
 
     try {
         $prompt = "You are an e-commerce expert. Generate details for a product named '{$name}'. STRICT REQUIREMENTS: 1) 'short_summary' MUST be strictly under 100 characters in length. 2) 'full_description' MUST be strictly under 290 characters in length total (do not exceed 300 characters under any circumstance). 3) 'product_code' MUST be a realistic 6-8 character alphanumeric code related to the name (e.g. ECO-KW-01). 4) 'ingredients' MUST list realistic ingredients/materials (max 100 chars). 5) 'storage_instruction' MUST be a short realistic storage instruction (max 100 chars). Return strictly valid JSON format with keys 'short_summary', 'full_description', 'product_code', 'ingredients', and 'storage_instruction'. Do not include markdown code blocks like ```json.";
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
+        $response = \Illuminate\Support\Facades\Http::timeout(120)->withHeaders([
             'Authorization' => "Bearer {$apiKey}",
             'Content-Type' => 'application/json'
         ])->post('https://openrouter.ai/api/v1/chat/completions', [
@@ -3532,7 +3537,7 @@ public function generateSeoAIContent(Request $request)
     try {
         $prompt = "You are an e-commerce SEO expert. Generate SEO details for a product named '{$name}'. Return strictly valid JSON format with keys: 'seo_tags' (comma separated tags, max 100 chars), 'meta_title' (around 60 chars), 'meta_keywords' (comma separated keywords, max 150 chars), 'meta_description' (around 150 chars), 'bullet_points' (3-5 short bullet points as an HTML unordered list), and 'target_audience' (choose ONE from: 'kids', 'students', 'professionals', 'seniors', 'all'). Do not include markdown code blocks like ```json.";
         
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
+        $response = \Illuminate\Support\Facades\Http::timeout(120)->withHeaders([
             'Authorization' => "Bearer {$apiKey}",
             'Content-Type' => 'application/json'
         ])->post('https://openrouter.ai/api/v1/chat/completions', [
@@ -3606,5 +3611,81 @@ public function generateSeoAIContent(Request $request)
                 'message' => 'Failed to send reply. ' . $e->getMessage()
             ]);
         }
+    }
+
+    public function generateFaqAIContent(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required'
+        ]);
+
+        $product = \App\Models\Product::find($request->product_id);
+        $name = $product ? $product->name : 'Awesome Product';
+
+        $apiKey = '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';
+
+        if (empty($apiKey)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'OpenRouter API Key not configured.'
+            ], 500);
+        }
+
+        try {
+            $prompt = "Generate 6 to 7 frequently asked questions (FAQs) and answers for a product named '{$name}'. Return ONLY a valid JSON object with a single key 'faqs' which is an array of objects. Each object MUST have exactly two keys: 'question' and 'answer'. Example: {\"faqs\": [{\"question\": \"What is it?\", \"answer\": \"It is...\"}]}. Do not include markdown code blocks.";
+            
+            $response = \Illuminate\Support\Facades\Http::timeout(120)->withHeaders([
+                'Authorization' => "Bearer {$apiKey}",
+                'Content-Type' => 'application/json'
+            ])->post('https://openrouter.ai/api/v1/chat/completions', [
+                'model' => 'openrouter/auto',
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt]
+                ],
+                'response_format' => ['type' => 'json_object']
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $content = $data['choices'][0]['message']['content'] ?? '';
+                
+                // Aggressive cleaning to ensure pure JSON
+                $content = preg_replace('/```json\s*(.*?)\s*```/is', '$1', $content);
+                $content = preg_replace('/```\s*(.*?)\s*```/is', '$1', $content);
+                $content = trim($content);
+                
+                $parsed = json_decode($content, true);
+
+                if ($parsed && isset($parsed['faqs']) && is_array($parsed['faqs'])) {
+                    // Normalize keys to ensure 'question' and 'answer' exist
+                    $normalizedFaqs = [];
+                    foreach ($parsed['faqs'] as $faq) {
+                        $q = $faq['question'] ?? $faq['Question'] ?? $faq['q'] ?? '';
+                        $a = $faq['answer'] ?? $faq['Answer'] ?? $faq['a'] ?? '';
+                        if (!empty($q)) {
+                            $normalizedFaqs[] = ['question' => $q, 'answer' => $a];
+                        }
+                    }
+                    
+                    if(count($normalizedFaqs) > 0) {
+                        return response()->json([
+                            'success' => true,
+                            'faqs' => $normalizedFaqs
+                        ]);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('FAQ AI generation failed: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'AI service error: ' . $e->getMessage()
+            ], 500);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to parse AI response. Please try again.'
+        ], 500);
     }
 }

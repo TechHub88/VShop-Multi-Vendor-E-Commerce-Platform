@@ -280,6 +280,28 @@
 
                     <!-- NEW CARDS IN SIDEBAR (Styled to match screenshot) -->
                     <div class="px-3 mt-4 mb-3">
+
+                        <!-- Features Banner (Taller & Clean without header) -->
+                        @if(isset($featuredAds) && count($featuredAds) > 0)
+                            <div class="sidebar-features-sec mb-3">
+                                <div class="featured-wrapper owl-carousel">
+                                    @foreach($featuredAds as $banner)
+                                        @if($banner->media->count() > 0)
+                                            @foreach($banner->media as $media)
+                                                @if($media->media_type == 'image')
+                                                    <div class="banner-img item shadow-sm" style="border-radius: 14px; overflow: hidden; width: 100%; height: 260px; background: #f8fafc; border: 1px solid #e2e8f0; transition: transform 0.2s ease;">
+                                                        <a href="{{ ($banner->redirect_url && $banner->redirect_url !== '#') ? $banner->redirect_url : route('vshop.visuals', ['tab' => 'features']) }}" target="_blank" class="d-block w-100 h-100">
+                                                            <img src="{{ asset($media->file_path) }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ $banner->title }}">
+                                                        </a>
+                                                    </div>
+                                                @endif
+                                            @endforeach
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
                         <!-- Need Help Card -->
                         <div class="card border-0 rounded-4 mb-3 position-relative overflow-hidden" style="background-color: #f1f5fb; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
                             <div class="card-body p-3">
@@ -548,5 +570,20 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     });
+    
+    // Featured Banners Smooth Scroller
+    if ($(".featured-wrapper").length) {
+        $(".featured-wrapper").owlCarousel({
+            items: 1,
+            margin: 0,
+            nav: false,
+            dots: false,
+            loop: true,
+            autoplay: true,
+            autoplayTimeout: 3000,
+            autoplaySpeed: 800,
+            autoplayHoverPause: true
+        });
+    }
 });
 </script>

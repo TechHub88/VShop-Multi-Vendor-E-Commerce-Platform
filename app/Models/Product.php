@@ -98,6 +98,7 @@ class Product extends Model
         'bullet_points',
         'target_audience',
         'service_days',
+        'professional_slots',
         'start_time',
         'end_time',
         'duration_hours',

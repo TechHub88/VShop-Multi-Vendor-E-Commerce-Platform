@@ -50,76 +50,159 @@
     .product-bottom-sec {
         flex-direction: column-reverse;
         align-items: stretch !important;
-        gap: 4px !important;
-        margin-top: 4px !important;
+        gap: 2px !important;
+        margin-top: 2px !important;
     }
     .product-box {
-        padding: 6px !important;
-        border-radius: 12px !important;
+        padding: 0 !important;
+        border-radius: 8px !important;
         box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.04) !important;
-        border: 1px solid #f1f3f9 !important;
+        border: 1px solid #e2e8f0 !important;
+        height: 200px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden;
+        position: relative;
+    }
+    .product-box-img {
+        height: 100px !important;
+        background: #fff !important;
+        padding: 6px !important;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     .product-box-img a {
         height: 100px !important;
-        border-radius: 8px !important;
+        border-radius: 0 !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
     }
     .product-box-img a img {
         object-fit: contain !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+    }
+    .product-bottom {
+        padding: 4px 6px 6px 6px !important;
+        flex-grow: 1;
+        display: flex !important;
+        flex-direction: column !important;
     }
     .product-bottom h3 {
-        margin-bottom: 4px !important;
+        margin-bottom: 1px !important;
+        height: auto !important;
+        overflow: hidden;
+        text-align: center;
     }
     .product-bottom h3 a {
-        font-size: 13px !important;
-        line-height: 16px !important;
+        font-size: 11px !important;
+        line-height: 13px !important;
         font-weight: 600 !important;
         color: #2d3748 !important;
-        display: -webkit-box !important;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
+        display: block !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        text-align: center;
+    }
+    .share-wishlist-sec {
+        display: none !important;
+    }
+    /* Hide the large rating dropdown panel */
+    .custom-rating-dropdown .dropdown-menu {
+        display: none !important;
+    }
+    .amazon-rating-sec .fa-chevron-down {
+        display: none !important;
+    }
+    .amazon-rating-sec {
+        cursor: default !important;
     }
     .rating-size-sec {
-        margin-bottom: 4px !important;
-        gap: 3px !important;
+        margin-bottom: 1px !important;
+        gap: 2px !important;
+    }
+    .rating-num {
+        font-size: 10px !important;
+    }
+    .amazon-rating-sec .stars i {
+        font-size: 8px !important;
+    }
+    .rating-count {
+        font-size: 10px !important;
     }
     .rating-sec {
-        font-size: 11px !important;
+        font-size: 9px !important;
         color: #4a5568 !important;
+        gap: 2px !important;
     }
     .rating-sec i {
-        font-size: 9px !important;
+        font-size: 8px !important;
     }
     .color-size-sec {
-        font-size: 10px !important;
-        font-weight: 600 !important;
-        color: #004392 !important;
+        font-size: 9px !important;
+        font-weight: 500 !important;
+        color: #718096 !important;
     }
     .off-sec {
-        margin-bottom: 4px !important;
+        margin-bottom: 1px !important;
         justify-content: flex-start !important;
-        gap: 6px !important;
+        gap: 4px !important;
     }
     .old-rupess {
-        font-size: 11px !important;
-        font-weight: 600 !important;
+        font-size: 9px !important;
+        font-weight: 500 !important;
     }
     .off-box {
-        font-size: 11px !important;
+        font-size: 9px !important;
         font-weight: 700 !important;
     }
     .new-rupess {
-        font-size: 14px !important;
+        font-size: 11px !important;
         font-weight: 700 !important;
         margin: 0 !important;
     }
     .add-cart-btn {
-        font-size: 11px !important;
-        padding: 4px 8px !important;
-        border-radius: 6px !important;
+        font-size: 9px !important;
+        padding: 3px 6px !important;
+        border-radius: 4px !important;
         text-align: center !important;
         width: 100% !important;
+    }
+    .home-seller-sec {
+        margin-bottom: 4px !important;
+    }
+    .home-seller-sec.mb-5 {
+        margin-bottom: 4px !important;
+    }
+    .campaign-banner-sec {
+        margin-bottom: 2px !important;
+    }
+    .campaign-banner-sec.mb-4 {
+        margin-bottom: 2px !important;
+    }
+    .home-seller-header.mb-3 {
+        margin-bottom: 4px !important;
+    }
+    .home-seller-bottom .row {
+        margin-bottom: 0 !important;
+    }
+    .home-seller-bottom .row .mb-4 {
+        margin-bottom: 4px !important;
+    }
+    .custom-pagination-wrapper {
+        margin-top: 0px !important;
+        margin-bottom: 2px !important;
+    }
+    .custom-pagination-wrapper .pagination {
+        margin: 0 !important;
+    }
+    .custom-pagination-wrapper .page-link {
+        font-size: 11px !important;
+        padding: 3px 8px !important;
     }
     .banner-img,
     .banner-wrapper {
@@ -313,15 +396,33 @@
 <div class="travel-banner-sec">
     <div class="banner-wrapper owl-carousel">
 
-        @if(isset($banners) && count($banners) > 0 && $banners->contains(function($ad) { return $ad->media->count() > 0; }))
+        @php
+            $topAds = collect();
+            if(isset($bannerAds)) $topAds = $topAds->merge($bannerAds);
+            
+            // Duplicate to force scrolling if there's only 1 banner
+            if ($topAds->count() == 1) {
+                $topAds->push($topAds->first());
+            }
+        @endphp
 
-            @foreach($banners as $banner)
+        @if($topAds->count() > 0 && $topAds->contains(function($ad) { return $ad->media->count() > 0; }))
+
+            @foreach($topAds as $banner)
                 @if($banner->media->count() > 0)
                     @foreach($banner->media as $media)
                         @if($media->media_type == 'image')
                             <div class="banner-img item">
                                 <a href="{{ $banner->redirect_url ? $banner->redirect_url : route('discount.products') }}">
                                     <img src="{{ asset($media->file_path) }}" class="w-100" alt="{{ $banner->title }}">
+                                </a>
+                            </div>
+                        @elseif($media->media_type == 'video')
+                            <div class="banner-img item" style="height: 280px; overflow: hidden;">
+                                <a href="{{ $banner->redirect_url ? $banner->redirect_url : route('discount.products') }}">
+                                    <video class="w-100 h-100" style="object-fit: cover;" autoplay muted loop playsinline>
+                                        <source src="{{ asset($media->file_path) }}" type="video/mp4">
+                                    </video>
                                 </a>
                             </div>
                         @endif
@@ -432,8 +533,87 @@
 </div>
 @endif
 
+{{-- CAMPAIGN BANNERS & VIDEOS PROCESSING --}}
+@php
+    $campaignMedia = [];
+    if(isset($campaignAds) && count($campaignAds) > 0) {
+        foreach($campaignAds as $banner) {
+            if (strtolower($banner->title) === 'spin and win') {
+                continue;
+            }
+            foreach($banner->media as $media) {
+                if($media->media_type == 'image') {
+                    $campaignMedia[] = ['media' => $media, 'banner' => $banner];
+                }
+            }
+        }
+    }
+    if (count($campaignMedia) == 1) {
+        $campaignMedia[] = $campaignMedia[0];
+    }
+
+    $showCampaignCarousel = function() use (&$campaignMedia, $__env) {
+        if (count($campaignMedia) > 0) {
+            @endphp
+            <div class="campaign-banner-sec mb-0">
+                <div class="campaign-slider-wrapper owl-carousel">
+                    @foreach($campaignMedia as $item)
+                        <div class="campaign-banner-item item">
+                            <a href="{{ ($item['banner']->redirect_url && $item['banner']->redirect_url !== '#') ? $item['banner']->redirect_url : route('discount.products') }}" class="d-block w-100">
+                                <img src="{{ asset($item['media']->file_path) }}" class="w-100" style="display: block; width: 100%; height: auto; border: none !important; box-shadow: none !important; margin-bottom: 0 !important;" alt="{{ $item['banner']->title }}">
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @php
+        }
+    };
+
+    $videoMediaList = [];
+    $allAds = collect();
+    if(isset($videoAds)) $allAds = $allAds->merge($videoAds);
+    if(isset($bannerAds)) $allAds = $allAds->merge($bannerAds);
+    if(isset($campaignAds)) $allAds = $allAds->merge($campaignAds);
+    if(isset($featuredAds)) $allAds = $allAds->merge($featuredAds);
+
+    if($allAds->count() > 0) {
+        foreach($allAds as $ad) {
+            foreach($ad->media as $m) {
+                if($m->media_type == 'video' || pathinfo($m->file_path, PATHINFO_EXTENSION) == 'mp4') {
+                    $videoMediaList[] = ['media' => $m, 'ad' => $ad];
+                }
+            }
+        }
+    }
+    $videoIndex = 0;
+    $totalVideos = count($videoMediaList);
+
+    $renderVideoCard = function() use (&$videoMediaList, &$videoIndex, $totalVideos, $__env) {
+        if ($videoIndex < $totalVideos) {
+            $firstVideoAd = $videoMediaList[$videoIndex];
+            $videoIndex++;
+            @endphp
+            <div class="col-6 col-md-4 col-lg-2 mb-4 ms-auto">
+                <div class="card shadow-sm border-0 overflow-hidden position-relative" style="border-radius: 4px; background: #000; height: 200px !important; border: 1px solid #f0f0f0; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'" onclick="window.location.href='{{ route('vshop.visuals', ['tab' => 'videos']) }}'">
+                    <video class="w-100 h-100 corner-video-player" style="object-fit: cover; opacity: 0.9;" autoplay muted loop playsinline preload="auto">
+                        <source src="{{ asset($firstVideoAd['media']->file_path) }}" type="video/mp4">
+                    </video>
+                    <div class="position-absolute bottom-0 start-0 end-0 p-2" style="background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%); z-index: 2;">
+                        <h6 class="text-white fw-bold mb-0 text-truncate" style="font-size: 11px;">{{ $firstVideoAd['ad']->title }}</h6>
+                    </div>
+                </div>
+            </div>
+            @php
+            return true;
+        }
+        return false;
+    };
+@endphp
+
 {{-- TODAY'S DEALS --}}
 @if(isset($discountProducts) && count($discountProducts) > 0)
+@php $showCampaignCarousel(); @endphp
 <div class="home-seller-sec ajax-section" id="deals-section">
     <div class="home-seller-header d-flex justify-content-between align-items-center">
         <h2><i class="fa-solid fa-bolt text-warning"></i> Today's Deals</h2>
@@ -443,11 +623,21 @@
     </div>
     <div class="home-seller-bottom">
         <div class="row">
+            @php $videoRendered = false; @endphp
             @foreach($discountProducts as $product)
                 <div class="col-6 col-md-4 col-lg-2 mb-4">
-                    @include('vshop.partials.product_card', ['product' => $product])
+                    @include('vshop.products._product_card_partial', ['product' => $product])
                 </div>
+
+                @if($loop->iteration % 5 == 0)
+                    @php $videoRendered = $renderVideoCard(); @endphp
+                @endif
             @endforeach
+
+            <!-- Fallback if there are less than 5 product cards -->
+            @if(!$videoRendered)
+                @php $renderVideoCard(); @endphp
+            @endif
         </div>
         <div class="custom-pagination-wrapper">
             {{ $discountProducts->appends(request()->except('deals_page'))->links('pagination::bootstrap-4') }}
@@ -458,17 +648,25 @@
 
 {{-- TOP TRENDING --}}
 @if(isset($trendingProducts) && count($trendingProducts) > 0)
+@php $showCampaignCarousel(); @endphp
 <div class="home-seller-sec ajax-section" id="trending-section">
     <div class="home-seller-header">
         <h2><i class="fa-solid fa-fire text-danger"></i> Top Trending</h2>
     </div>
     <div class="home-seller-bottom">
         <div class="row">
+            @php $videoRendered = false; @endphp
             @foreach($trendingProducts as $product)
                 <div class="col-6 col-md-4 col-lg-2 mb-4">
-                    @include('vshop.partials.product_card', ['product' => $product])
+                    @include('vshop.products._product_card_partial', ['product' => $product])
                 </div>
+                @if($loop->iteration % 5 == 0)
+                    @php $videoRendered = $renderVideoCard(); @endphp
+                @endif
             @endforeach
+            @if(!$videoRendered)
+                @php $renderVideoCard(); @endphp
+            @endif
         </div>
         <div class="custom-pagination-wrapper">
             {{ $trendingProducts->appends(request()->except('trending_page'))->links('pagination::bootstrap-4') }}
@@ -479,17 +677,25 @@
 
 {{-- NEW ARRIVALS --}}
 @if(isset($newArrivals) && count($newArrivals) > 0)
+@php $showCampaignCarousel(); @endphp
 <div class="home-seller-sec ajax-section" id="new-section">
     <div class="home-seller-header">
         <h2>New Arrivals</h2>
     </div>
     <div class="home-seller-bottom">
         <div class="row">
+            @php $videoRendered = false; @endphp
             @foreach($newArrivals as $product)
                 <div class="col-6 col-md-4 col-lg-2 mb-4">
-                    @include('vshop.partials.product_card', ['product' => $product])
+                    @include('vshop.products._product_card_partial', ['product' => $product])
                 </div>
+                @if($loop->iteration % 5 == 0)
+                    @php $videoRendered = $renderVideoCard(); @endphp
+                @endif
             @endforeach
+            @if(!$videoRendered)
+                @php $renderVideoCard(); @endphp
+            @endif
         </div>
         <div class="custom-pagination-wrapper">
             {{ $newArrivals->appends(request()->except('new_page'))->links('pagination::bootstrap-4') }}
@@ -500,17 +706,25 @@
 
 {{-- TOP RATED --}}
 @if(isset($topRated) && count($topRated) > 0)
+@php $showCampaignCarousel(); @endphp
 <div class="home-seller-sec ajax-section" id="top-section">
     <div class="home-seller-header">
         <h2><i class="fa-solid fa-star text-warning"></i> Top Rated Products</h2>
     </div>
     <div class="home-seller-bottom">
         <div class="row">
+            @php $videoRendered = false; @endphp
             @foreach($topRated as $product)
                 <div class="col-6 col-md-4 col-lg-2 mb-4">
-                    @include('vshop.partials.product_card', ['product' => $product])
+                    @include('vshop.products._product_card_partial', ['product' => $product])
                 </div>
+                @if($loop->iteration % 5 == 0)
+                    @php $videoRendered = $renderVideoCard(); @endphp
+                @endif
             @endforeach
+            @if(!$videoRendered)
+                @php $renderVideoCard(); @endphp
+            @endif
         </div>
         <div class="custom-pagination-wrapper">
             {{ $topRated->appends(request()->except('top_page'))->links('pagination::bootstrap-4') }}
@@ -521,17 +735,25 @@
 
 {{-- RECOMMENDED FOR YOU --}}
 @if(isset($recommendations) && count($recommendations) > 0)
+@php $showCampaignCarousel(); @endphp
 <div class="home-seller-sec ajax-section" id="rec-section">
     <div class="home-seller-header">
         <h2>Recommended For You</h2>
     </div>
     <div class="home-seller-bottom">
         <div class="row">
+            @php $videoRendered = false; @endphp
             @foreach($recommendations as $product)
                 <div class="col-6 col-md-4 col-lg-2 mb-4">
-                    @include('vshop.partials.product_card', ['product' => $product])
+                    @include('vshop.products._product_card_partial', ['product' => $product])
                 </div>
+                @if($loop->iteration % 5 == 0)
+                    @php $videoRendered = $renderVideoCard(); @endphp
+                @endif
             @endforeach
+            @if(!$videoRendered)
+                @php $renderVideoCard(); @endphp
+            @endif
         </div>
         <div class="custom-pagination-wrapper">
             {{ $recommendations->appends(request()->except('rec_page'))->links('pagination::bootstrap-4') }}
@@ -542,17 +764,25 @@
 
 {{-- RECENTLY SEARCHED --}}
 @if(isset($searchHistory) && count($searchHistory) > 0)
+@php $showCampaignCarousel(); @endphp
 <div class="home-seller-sec" id="recent-section">
     <div class="home-seller-header">
         <h2>Recently Searched</h2>
     </div>
     <div class="home-seller-bottom">
         <div class="row">
+            @php $videoRendered = false; @endphp
             @foreach($recentlyViewed as $product)
                 <div class="col-6 col-md-4 col-lg-2 mb-4">
-                    @include('vshop.partials.product_card', ['product' => $product])
+                    @include('vshop.products._product_card_partial', ['product' => $product])
                 </div>
+                @if($loop->iteration % 5 == 0)
+                    @php $videoRendered = $renderVideoCard(); @endphp
+                @endif
             @endforeach
+            @if(!$videoRendered)
+                @php $renderVideoCard(); @endphp
+            @endif
         </div>
     </div>
 </div>
@@ -599,6 +829,27 @@
                 1200: { items: 5.5 }
             }
         });
+        
+        // Campaign Banners Slider
+        function initCampaignSliders() {
+            $(".campaign-slider-wrapper").each(function() {
+                let carousel = $(this);
+                if (!carousel.hasClass('owl-loaded')) {
+                    let itemsCount = carousel.find('.item').length;
+                    carousel.owlCarousel({
+                        items: 1,
+                        loop: itemsCount > 1,
+                        autoplay: itemsCount > 1,
+                        autoplayTimeout: 2000,
+                        smartSpeed: 800,
+                        autoplayHoverPause: true,
+                        nav: false,
+                        dots: false
+                    });
+                }
+            });
+        }
+        initCampaignSliders();
         
         // Category Carousel
         $(".category-wrapper").owlCarousel({
@@ -673,6 +924,12 @@
                             $('html, body').animate({
                                 scrollTop: section.offset().top - 100
                             }, 300);
+                            // Force autoplay on newly paginated video
+                            section.find('video').each(function() {
+                                this.play();
+                            });
+                            // Re-init campaign carousel inside section
+                            initCampaignSliders();
                         }
                     },
                     error: function() {
@@ -683,13 +940,32 @@
             }
         });
     
+        // Force autoplay on load
+        $('video[autoplay]').each(function() {
+            this.play();
+        });
     });
 </script>
 @endpush
 
-
-
-
+@push('styles')
+<style>
+/* SPA-like smooth page load transitions */
+body {
+    animation: fadeInPage 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+@keyframes fadeInPage {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+@endpush
 @endsection
 
 

@@ -368,6 +368,12 @@ overflow: auto;
                                 </div>
                                 @endif
                                 
+                                @if(isset($mainProductAttributes['Booking Slots']))
+                                <div class="summaryItem">
+                                    <span class="ttl">Booking Slots</span> <span class="txt">{{ $mainProductAttributes['Booking Slots']['name'] ?? '' }}</span>
+                                </div>
+                                @endif
+                                
                                 @if($item->courier_charge)
                                 <div class="summaryItem">
                                     <span class="ttl">Expected Delivery</span> <span class="txt">{{ $item->expected_delivery ?? 'N/A' }}</span>

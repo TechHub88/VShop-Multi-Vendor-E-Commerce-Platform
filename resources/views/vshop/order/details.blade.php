@@ -285,6 +285,31 @@
                                             </div>
                                         </div>
 
+                                        {{-- Booking Slots & Meeting Link for Professional --}}
+                                        @php
+                                            $itemAttrs = $item->main_product_attributes ? json_decode($item->main_product_attributes, true) : [];
+                                        @endphp
+                                        @if(isset($itemAttrs['Booking Slots']))
+                                        <div class="mt-1 mb-2">
+                                            <span style="font-size:13px;color:#0d6efd;font-weight:600;">
+                                                <i class="fa fa-calendar-alt me-1"></i> Booking Slots:
+                                            </span>
+                                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                                @foreach(explode(', ', $itemAttrs['Booking Slots']['name'] ?? '') as $slot)
+                                                    <span class="badge bg-light text-dark border p-1" style="font-size:11px;font-weight:500;">{{ $slot }}</span>
+                                                @endforeach
+                                            </div>
+                                            @if(!empty($item->product->meeting_link))
+                                            <div class="mt-1">
+                                                <span style="font-size:12px;color:#555;">
+                                                    <i class="fa fa-video text-success me-1"></i> Meeting Link:
+                                                    <a href="{{ $item->product->meeting_link }}" target="_blank" class="text-primary">Join at booking time</a>
+                                                </span>
+                                            </div>
+                                            @endif
+                                        </div>
+                                        @endif
+
                                         {{-- Price & Discount --}}
                                         <div class="rating-sec">
                                             <div class="rating-left">
