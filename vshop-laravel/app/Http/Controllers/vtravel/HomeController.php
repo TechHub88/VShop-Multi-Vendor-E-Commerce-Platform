@@ -233,9 +233,9 @@ public function vshophome(Request $request)
     }
     
  
- public function discountProducts()
+ public function discountProducts(\Illuminate\Http\Request $request)
 {
-    $products = Product::query()
+    $query = Product::query()
         ->whereIn('type', ['product', 'service'])
         ->where(function ($platform) {
             $platform->where('platform', 'vshop')
@@ -249,8 +249,17 @@ public function vshophome(Request $request)
               });
         })
         ->whereNotNull('regular_price')
-        ->whereColumn('regular_price', '>', 'price')
-        ->orderByRaw('(regular_price - price) DESC')
+        ->whereColumn('regular_price', '>', 'price');
+
+    if ($request->has('campaign') && $request->campaign != '') {
+        $campaign = $request->campaign;
+        $query->whereHas('campaignParticipations', function($q) use ($campaign) {
+            $q->where('campaign_type', $campaign)
+              ->where('status', 'approved');
+        });
+    }
+
+    $products = $query->orderByRaw('(regular_price - price) DESC')
         ->paginate(8);
 
     // ✅ FETCH BANNERS

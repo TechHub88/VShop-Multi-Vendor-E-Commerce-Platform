@@ -533,7 +533,15 @@ Search
 
 </div>
 {{-- ================= PRODUCT LIST ================= --}}
-<h6 class="fw-bold mb-3">Product List</h6>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="fw-bold mb-0">Product List</h6>
+    
+    @if(isset($hasActiveCampaign) && $hasActiveCampaign)
+        <button type="button" class="btn btn-sm btn-success fw-bold open-global-campaign-btn shadow-sm" style="border-radius: 6px;">
+            <i class="fa fa-bullhorn me-1"></i> Join Campaign
+        </button>
+    @endif
+</div>
 
 @forelse($products as $product)
 
@@ -619,6 +627,7 @@ Action ▾
 <button type="button" class="dropdown-item text-primary open-recommendations-btn" data-product-id="{{ $product->id }}">
 <i class="fa fa-star me-2 text-primary"></i> Recommendations
 </button>
+
 
 <form method="POST"
 action="{{ route('seller.products.destroy',$product->id) }}"
@@ -880,6 +889,72 @@ document.addEventListener('DOMContentLoaded', function () {
         loadSubcategories(category.value, selectedSubcategory);
 
     }
+
+    // Campaign Participation Modal Logic
+    $('#campaign_type').change(function() {
+        if ($(this).val() === 'bogo' || $(this).val() === 'buy2_get1') {
+            $('#combo_details_container').slideDown();
+        } else {
+            $('#combo_details_container').slideUp();
+        }
+    });
+
+    $(document).on('click', '.open-campaign-btn', function() {
+        let productId = $(this).data('product-id');
+        let btn = $(this);
+        
+        btn.html('<i class="fa fa-spinner fa-spin me-2 text-success"></i> Loading...');
+        
+        $.ajax({
+            url: `/seller/products/${productId}/campaign-participation`,
+            type: 'GET',
+            success: function(response) {
+                btn.html('<i class="fa fa-bullhorn me-2 text-success"></i> Campaign Participation');
+                
+                $('#campaign_product_id').val(response.product.id);
+                $('#campaign_product_name').text(response.product.name);
+                $('#campaign_product_sku').text(response.product.sku || 'N/A');
+                $('#campaign_product_image').attr('src', response.product.thumbnail_url);
+                
+                if (response.participation) {
+                    $('#campaign_type').val(response.participation.campaign_type).trigger('change');
+                    $('#combo_details').val(response.participation.combo_details);
+                } else {
+                    $('#campaign_type').val('none').trigger('change');
+                    $('#combo_details').val('');
+                }
+                
+                $('#campaignModal').modal('show');
+            },
+            error: function() {
+                btn.html('<i class="fa fa-bullhorn me-2 text-success"></i> Campaign Participation');
+                alert('Error loading campaign data');
+            }
+        });
+    });
+
+    $('#saveCampaignBtn').click(function() {
+        let productId = $('#campaign_product_id').val();
+        let btn = $(this);
+        let originalText = btn.html();
+        
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-2"></i> Saving...');
+        
+        $.ajax({
+            url: `/seller/products/${productId}/campaign-participation`,
+            type: 'POST',
+            data: $('#campaignForm').serialize(),
+            success: function(response) {
+                btn.prop('disabled', false).html(originalText);
+                $('#campaignModal').modal('hide');
+                alert(response.message || 'Saved successfully');
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).html(originalText);
+                alert(xhr.responseJSON?.message || 'Error saving campaign participation');
+            }
+        });
+    });
 
 });
 
@@ -1556,6 +1631,153 @@ $(document).ready(function() {
                     title: 'Error',
                     text: 'Server error occurred while saving.'
                 });
+            }
+        });
+    });
+});
+</script>
+{{-- GLOBAL CAMPAIGN PARTICIPATION MODAL --}}
+<div class="modal fade" id="globalCampaignModal" tabindex="-1" aria-labelledby="globalCampaignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header border-0 pb-3" style="background: linear-gradient(135deg, #28a745, #218838);">
+                <h5 class="modal-title fw-bold d-flex align-items-center text-white" id="globalCampaignModalLabel">
+                    <i class="fa fa-bullhorn me-2 text-white bg-white bg-opacity-25 p-2 rounded-circle"></i>
+                    Join Campaign
+                </h5>
+                <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-body p-4 bg-light" style="max-height: 65vh; overflow-y: auto;">
+                <p class="text-muted small mb-3">Select a campaign type for each product to participate. Leave as "None" to opt out.</p>
+
+                <form id="globalCampaignForm">
+                    @csrf
+                    <div class="table-responsive">
+                        <table class="table table-hover bg-white shadow-sm rounded-3 border" style="font-size: 0.9rem;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Campaign Type</th>
+                                    <th>Combo/Offer Details (Optional)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="globalCampaignProductList">
+                                <tr>
+                                    <td colspan="3" class="text-center py-4"><i class="fa fa-spinner fa-spin text-success"></i> Loading products...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer border-0 pt-0 bg-light pb-4 px-4 d-flex justify-content-between">
+                <button type="button" class="btn btn-light border px-4 shadow-sm" data-bs-dismiss="modal" style="border-radius: 6px;">Cancel</button>
+                <button type="button" class="btn btn-success px-4 shadow-sm fw-bold d-flex align-items-center" id="saveGlobalCampaignBtn" style="border-radius: 6px;">
+                    <i class="fa fa-save me-2"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    $(document).on('click', '.open-global-campaign-btn', function() {
+        let btn = $(this);
+        let originalHtml = btn.html();
+        btn.html('<i class="fa fa-spinner fa-spin me-1"></i> Loading...').prop('disabled', true);
+        
+        $.ajax({
+            url: `/seller/products/campaign-participation/all`,
+            type: 'GET',
+            success: function(response) {
+                btn.html(originalHtml).prop('disabled', false);
+                
+                let tbody = $('#globalCampaignProductList');
+                tbody.empty();
+
+                if (response.products.length === 0) {
+                    tbody.append('<tr><td colspan="3" class="text-center py-4 text-muted">No products found.</td></tr>');
+                } else {
+                    response.products.forEach(function(product) {
+                        let p = product.participation || {};
+                        let pType = p.campaign_type || 'none';
+                        let pDetails = p.combo_details || '';
+
+                        let tr = `
+                            <tr>
+                                <td class="align-middle">
+                                    <div class="d-flex align-items-center">
+                                        <img src="${product.thumbnail_url}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;" class="me-2 border">
+                                        <div>
+                                            <div class="fw-bold text-dark text-truncate" style="max-width: 150px;" title="${product.name}">${product.name}</div>
+                                            <small class="text-muted">₹${parseFloat(product.price).toFixed(2)}</small>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="products[${product.id}][id]" value="${product.id}">
+                                </td>
+                                <td class="align-middle">
+                                    <select class="form-select form-select-sm border-0 shadow-sm campaign-type-select" name="products[${product.id}][campaign_type]">
+                                        <option value="none" ${pType === 'none' ? 'selected' : ''}>None</option>
+                                        <option value="percentage_20" ${pType === 'percentage_20' ? 'selected' : ''}>20% Offer</option>
+                                        <option value="bogo" ${pType === 'bogo' ? 'selected' : ''}>Buy 1 Get 1 (BOGO)</option>
+                                        <option value="buy2_get1" ${pType === 'buy2_get1' ? 'selected' : ''}>Buy 2 Get 1</option>
+                                    </select>
+                                </td>
+                                <td class="align-middle">
+                                    <input type="text" class="form-control form-control-sm border-0 shadow-sm combo-details-input" name="products[${product.id}][combo_details]" value="${pDetails}" placeholder="e.g. Any 2 items..." style="${(pType === 'bogo' || pType === 'buy2_get1') ? '' : 'display:none;'}">
+                                </td>
+                            </tr>
+                        `;
+                        tbody.append(tr);
+                    });
+                }
+                
+                $('#globalCampaignModal').modal('show');
+            },
+            error: function() {
+                btn.html(originalHtml).prop('disabled', false);
+                alert('Error loading products for campaign');
+            }
+        });
+    });
+
+    $(document).on('change', '.campaign-type-select', function() {
+        let val = $(this).val();
+        let input = $(this).closest('tr').find('.combo-details-input');
+        if (val === 'bogo' || val === 'buy2_get1') {
+            input.show();
+        } else {
+            input.hide().val('');
+        }
+    });
+
+    $('#saveGlobalCampaignBtn').click(function() {
+        let btn = $(this);
+        let originalText = btn.html();
+        
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-2"></i> Saving...');
+        
+        $.ajax({
+            url: `/seller/products/campaign-participation/all`,
+            type: 'POST',
+            data: $('#globalCampaignForm').serialize(),
+            success: function(response) {
+                btn.prop('disabled', false).html(originalText);
+                $('#globalCampaignModal').modal('hide');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Saved!',
+                    text: response.message || 'Saved successfully',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).html(originalText);
+                alert(xhr.responseJSON?.message || 'Error saving campaign participations');
             }
         });
     });

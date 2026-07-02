@@ -500,6 +500,8 @@ Route::get(
 Route::get('search-ajax', [SellerProductController::class, 'searchAjax'])->name('search_ajax');
 Route::get('{id}/recommendations', [SellerProductController::class, 'getRecommendations'])->name('recommendations.get');
 Route::post('{id}/recommendations', [SellerProductController::class, 'saveRecommendations'])->name('recommendations.save');
+Route::get('{id}/campaign-participation', [SellerProductController::class, 'getCampaignParticipation'])->name('campaign-participation.get');
+Route::post('{id}/campaign-participation', [SellerProductController::class, 'saveCampaignParticipation'])->name('campaign-participation.save');
 
 });
 
@@ -519,6 +521,10 @@ Route::prefix('seller/products')->group(function(){
     Route::post('/bulk-delete', [SellerProductController::class,'bulkDelete'])->name('products.bulk.delete');
 
     Route::get('/sample-download', [SellerProductController::class,'downloadSample'])->name('products.sample');
+
+    // Campaign Participation Routes
+    Route::get('/campaign-participation/all', [\App\Http\Controllers\Shop\SellerProductController::class, 'getAllCampaignParticipations']);
+    Route::post('/campaign-participation/all', [\App\Http\Controllers\Shop\SellerProductController::class, 'saveAllCampaignParticipations']);
 
 });
         

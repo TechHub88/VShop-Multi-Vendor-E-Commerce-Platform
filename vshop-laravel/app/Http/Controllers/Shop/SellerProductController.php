@@ -443,11 +443,25 @@ public function index(Request $request)
 
     // Pass the selected service types to the view for maintaining checkboxes
     $selectedServiceTypes = $request->get('service_types');
-    
+        // Active Campaign Check
+    $currentDateTime = now();
+    $hasActiveCampaign = \App\Models\Advertisement::where('type', 'campaign')
+        ->where('is_active', 1)
+        ->where(function($q) use ($currentDateTime) {
+            $q->whereNull('start_date')
+              ->orWhere('start_date', '<=', $currentDateTime);
+        })
+        ->where(function($q) use ($currentDateTime) {
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>=', $currentDateTime);
+        })
+        ->exists();
+
     return view('vshop.seller.products.index', compact(
         'products',
         'categories',
-        'selectedServiceTypes'
+        'selectedServiceTypes',
+        'hasActiveCampaign'
     ));
 }
 
@@ -803,8 +817,9 @@ public function saveReferralSettings(Request $request)
 private function checkOwner($product)
 {
     abort_if(
-        $product->created_by_id != auth()->id(),
-        403
+        $product->created_by_id != auth('seller')->id(),
+        403,
+        'Unauthorized action.'
     );
 }
 
@@ -3687,5 +3702,70 @@ public function generateSeoAIContent(Request $request)
             'success' => false,
             'message' => 'Failed to parse AI response. Please try again.'
         ], 500);
+    }
+
+    public function getAllCampaignParticipations()
+    {
+        $sellerId = auth('seller')->id();
+        $products = Product::where('created_by_id', $sellerId)
+            ->with(['campaignParticipations' => function($q) {
+                $q->latest()->limit(1);
+            }])
+            ->get();
+
+        $formatted = $products->map(function($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'sku' => $product->sku,
+                'price' => $product->price,
+                'thumbnail_url' => $product->thumbnail ? asset($product->thumbnail) : asset('images/no-image.png'),
+                'participation' => $product->campaignParticipations->first()
+            ];
+        });
+
+        return response()->json([
+            'products' => $formatted
+        ]);
+    }
+
+    public function saveAllCampaignParticipations(Request $request)
+    {
+        $sellerId = auth('seller')->id();
+        
+        $request->validate([
+            'products' => 'nullable|array',
+            'products.*.id' => 'required|exists:products,id',
+            'products.*.campaign_type' => 'required|in:percentage_20,bogo,buy2_get1,none',
+            'products.*.combo_details' => 'nullable|string'
+        ]);
+
+        if ($request->has('products')) {
+            foreach ($request->products as $pData) {
+                $product = Product::find($pData['id']);
+                if ($product && $product->created_by_id == $sellerId) {
+                    $campaignType = $pData['campaign_type'];
+                    
+                    if ($campaignType === 'none') {
+                        \App\Models\SellerCampaignParticipation::where('product_id', $product->id)->delete();
+                    } else {
+                        \App\Models\SellerCampaignParticipation::updateOrCreate(
+                            ['product_id' => $product->id],
+                            [
+                                'seller_id' => $sellerId,
+                                'campaign_type' => $campaignType,
+                                'combo_details' => $pData['combo_details'] ?? null,
+                                'status' => 'approved'
+                            ]
+                        );
+                    }
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Campaign participations updated successfully!'
+        ]);
     }
 }
