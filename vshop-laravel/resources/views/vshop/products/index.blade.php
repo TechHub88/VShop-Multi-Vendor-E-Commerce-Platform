@@ -192,6 +192,9 @@
     .campaign-banner-sec.mb-4 {
         margin-bottom: 2px !important;
     }
+    .home-seller-sec {
+        margin-bottom: 10px !important;
+    }
     .home-seller-header.mb-3 {
         margin-bottom: 4px !important;
     }
@@ -202,8 +205,11 @@
         margin-bottom: 4px !important;
     }
     .custom-pagination-wrapper {
-        margin-top: 0px !important;
-        margin-bottom: 2px !important;
+        margin-top: 5px !important;
+        margin-bottom: 5px !important;
+        display: flex;
+        justify-content: center;
+        width: 100%;
     }
     .custom-pagination-wrapper .pagination {
         margin: 0 !important;
@@ -1876,6 +1882,38 @@ border:1px solid #ddd;
             });
         }
         initCampaignSliders();
+
+        // AJAX Pagination for sections
+        $(document).on('click', '.custom-pagination-wrapper a', function(e) {
+            e.preventDefault();
+            let url = $(this).attr('href');
+            let section = $(this).closest('.home-seller-sec');
+            let sectionId = section.attr('id');
+            
+            if(!sectionId) return;
+
+            section.find('.home-seller-bottom').css('opacity', '0.5');
+            
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    let newContent = $(response).find('#' + sectionId + ' .home-seller-bottom').html();
+                    if(newContent) {
+                        section.find('.home-seller-bottom').html(newContent).css('opacity', '1');
+                        // Re-init videos
+                        section.find('video[autoplay]').each(function() {
+                            this.play();
+                        });
+                    } else {
+                        section.find('.home-seller-bottom').css('opacity', '1');
+                    }
+                },
+                error: function() {
+                    section.find('.home-seller-bottom').css('opacity', '1');
+                }
+            });
+        });
 
         // Force autoplay on load
         $('video[autoplay]').each(function() {
