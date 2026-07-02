@@ -58,3 +58,23 @@ start.bat
 chmod +x start.sh
 ./start.sh
 ```
+
+---
+
+## Live Server Deployment (.env Configuration)
+
+When deploying to the live server, the developer must manually create and configure the `.env` file in the `vshop-laravel` directory (as `.env` files are not pushed to Git for security).
+
+Ensure the following variables are correctly set for the production environment:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-live-domain.com
+ASSET_URL=https://your-live-domain.com
+
+DB_DATABASE=your_live_database_name
+DB_USERNAME=your_live_database_user
+DB_PASSWORD=your_live_database_password
+```
+*(Replace the URL and DB credentials with the actual server details).*
