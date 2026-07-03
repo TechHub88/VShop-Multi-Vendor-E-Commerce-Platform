@@ -1,0 +1,55 @@
+vshop_laravel:
+  replicaCount: 1
+  image:
+    repository: "asia-south1-docker.pkg.dev/vridhee-464216/backend/vshop_laravel"
+    tag: "latest"
+    imagePullPolicy: "Always"
+  type: ClusterIP
+  resources:
+    requests:
+      minMemory: "200Mi"
+      minCpu: "200m"
+    limits:
+      maxMemory: "500Mi"
+      maxCpu: "500m"
+
+  env:
+    APP_NAME: "VShop"
+    APP_ENV: "development"
+    APP_KEY: "base64:kGofaCM13N92VWv+fkCA4IgqnWjUAlE7qJ7M5gs4f6o="
+    APP_DEBUG: "true"
+    APP_TIMEZONE: "Asia/Kolkata"
+    APP_URL: "https://devvshop.vridhee.com"
+    DB_CONNECTION: "mysql"
+    DB_HOST: "srv1643.hstgr.io"
+    DB_PORT: "3306"
+    DB_DATABASE: "u605775003_shop"
+    DB_USERNAME: "u605775003_shopAdmin"
+    DB_PASSWORD: "WLUrYJv4lpfDgPayQpbdz7idsaNl48zM"
+    SESSION_DRIVER: "file"
+    CACHE_STORE: "file"
+    QUEUE_CONNECTION: "database"
+    FILESYSTEM_DISK: "public"
+    WEBSOCKET_URL: "https://devapi.vridhee.com/socket.io"
+    WEBSOCKET_INTERNAL_URL: "http://vshop-websocket:3005"
+    LOG_CHANNEL: "stderr"
+    LOG_LEVEL: "debug"
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://dev.vridhee.com, https://vridhee.com, https://www.vridhee.com, https://admin.vridhee.com, https://sanako.in, https://dev.sanako.in, https://www.sanako.in"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+  hosts:
+    - host: devvshop.vridhee.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service:
+            port: 80
+  tlsSecretName: "vridhee-ssl"

@@ -1,6 +1,6 @@
 @echo off
-echo Starting Socket.io server...
-start /B node websocket-server/index.cjs
+echo Starting Standalone WebSocket server...
+start /B cmd /c "cd vshop-websocket && npm start"
 timeout /t 2 /nobreak >nul
 echo Starting Laravel server...
-php artisan serve
+start cmd /c "cd vshop-laravel && php artisan serve"

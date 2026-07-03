@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vshop_websocket.fullname" . }}
+  labels:
+    app: {{ include "vshop_websocket.fullname" . }}
+  {{- include "vshop_websocket.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.vshop_websocket.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "vshop_websocket.fullname" . }}
+    {{- include "vshop_websocket.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        rollout-id: {{ .Values.rolloutId | default "none" | quote }}
+      labels:
+        app: {{ include "vshop_websocket.fullname" . }}
+      {{- include "vshop_websocket.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - args: []
+        image: {{ .Values.vshop_websocket.image.repository }}:{{ .Values.vshop_websocket.image.tag | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.vshop_websocket.image.imagePullPolicy }}
+        name: {{ include "vshop_websocket.fullname" . }}
+        env:
+          - name: NODE_ENV
+            value: "{{ .Values.vshop_websocket.nodeEnv }}"
+          - name: PORT
+            value: "{{ .Values.vshop_websocket.port }}"
+          - name: HOST
+            value: "{{ .Values.vshop_websocket.host }}"
+          - name: CORS_ORIGIN
+            value: "{{ .Values.vshop_websocket.corsOrigin }}"
+        ports:
+          - name: http
+            containerPort: {{ .Values.vshop_websocket.port }}
+            protocol: TCP
+        resources: 
+          requests:
+            memory: {{ .Values.vshop_websocket.resources.requests.minMemory }}
+            cpu: {{ .Values.vshop_websocket.resources.requests.minCpu }}
+          limits:
+            memory: {{ .Values.vshop_websocket.resources.limits.maxMemory }}
+            cpu: {{ .Values.vshop_websocket.resources.limits.maxCpu }}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      volumes: []
