@@ -1694,8 +1694,9 @@ $(document).ready(function() {
                         <table class="table table-hover bg-white shadow-sm rounded-3 border" style="font-size: 0.9rem;">
                             <thead class="table-light">
                                 <tr>
+                                    <th class="text-center" style="width: 80px;">Select</th>
                                     <th>Product</th>
-                                    <th>Combo Details (if applicable)</th>
+                                    <th>Offer / Campaign Details</th>
                                 </tr>
                             </thead>
                             <tbody id="globalCampaignProductList">
@@ -1754,6 +1755,7 @@ $(document).ready(function() {
                 }
 
                 if (response.products.length === 0) {
+                    
                     tbody.append('<tr><td colspan="3" class="text-center py-4 text-muted">No products found.</td></tr>');
                 } else {
                     // Store products globally for combo dropdown
@@ -1776,16 +1778,25 @@ $(document).ready(function() {
                             productOptions += `<option value="${optProd.id}" ${selected}>${optProd.name}</option>`;
                         });
 
+                        // Extract existing discount percent if any
+                        let discountPercent = 10;
+                        if (pType && pType.indexOf('%') !== -1) {
+                            let match = pType.match(/^(\d+)\%/);
+                            if (match) {
+                                discountPercent = parseInt(match[1]);
+                            }
+                        }
+
                         let tr = `
                             <tr>
+                                <td class="text-center align-middle">
+                                    <input class="product-campaign-checkbox" type="checkbox" name="products[${product.id}][selected]" value="1" ${pType !== 'none' ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer; display: inline-block !important; opacity: 1 !important; visibility: visible !important;">
+                                </td>
                                 <td class="align-middle">
                                     <div class="d-flex align-items-center">
-                                        <div class="form-check me-3">
-                                            <input class="form-check-input product-campaign-checkbox" type="checkbox" name="products[${product.id}][selected]" value="1" ${pType !== 'none' ? 'checked' : ''} style="transform: scale(1.2);">
-                                        </div>
                                         <img src="${product.thumbnail_url}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;" class="me-2 border">
                                         <div>
-                                            <div class="fw-bold text-dark text-truncate" style="max-width: 200px;" title="${product.name}">${product.name}</div>
+                                            <div class="fw-bold text-dark text-truncate" style="max-width: 250px;" title="${product.name}">${product.name}</div>
                                             <small class="text-muted">₹${parseFloat(product.price).toFixed(2)}</small>
                                         </div>
                                     </div>
@@ -1793,6 +1804,7 @@ $(document).ready(function() {
                                     <input type="hidden" name="products[${product.id}][campaign_type]" value="${pType}" class="product-campaign-type-hidden">
                                 </td>
                                 <td class="align-middle">
+                                    <!-- Combo Inputs -->
                                     <div class="combo-inputs" style="display:none;">
                                         <div class="d-flex align-items-center gap-2 mb-2">
                                             <span class="small fw-bold">Buy</span>
@@ -1805,13 +1817,28 @@ $(document).ready(function() {
                                             ${productOptions}
                                         </select>
                                     </div>
+
+                                    <!-- Discount Inputs (Preset by Admin) -->
+                                    <div class="discount-preset" style="display:none;">
+                                        <span class="badge bg-primary text-white p-2" style="font-size:0.85rem;">
+                                            <i class="fa fa-percentage me-1"></i> <span class="discount-preset-val">20</span>% Offer (Preset)
+                                        </span>
+                                    </div>
+
+                                    <!-- Discount Inputs (Seller Editable) -->
+                                    <div class="discount-custom" style="display:none;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="small fw-bold text-nowrap">Discount %:</span>
+                                            <input type="number" class="form-control form-control-sm border-0 shadow-sm discount-custom-input" value="${discountPercent}" min="1" max="100" style="width:80px;">
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         `;
                         tbody.append(tr);
                     });
 
-                    // Show combo inputs if the selected ad is a combo type
+                    // Update visibilities based on initial ad selection
                     updateComboVisibility();
                 }
                 
@@ -1827,20 +1854,50 @@ $(document).ready(function() {
     function updateComboVisibility() {
         let adTitle = $('#globalCampaignSelect option:selected').text().toLowerCase();
         let isCombo = (adTitle.includes('buy') && adTitle.includes('get')) || adTitle.includes('combo') || adTitle.includes('bogo');
+        
         if (isCombo) {
             $('.combo-inputs').show();
-            // Set campaign_type hidden fields to 'combo'
+            $('.discount-preset').hide();
+            $('.discount-custom').hide();
             $('.product-campaign-type-hidden').val('combo');
         } else {
             $('.combo-inputs').hide();
-            // Set campaign_type hidden fields based on ad title
-            let campaignType = 'percentage_20';
-            if (adTitle.includes('discount') || adTitle.includes('offer') || adTitle.includes('%')) {
-                campaignType = 'percentage_20';
+            
+            // Check if there is a percentage preset in the campaign title (e.g. "Diwali 20% Sale")
+            let match = adTitle.match(/\b(\d+)\s*%/);
+            if (match) {
+                let presetVal = match[1];
+                $('.discount-preset-val').text(presetVal);
+                $('.discount-preset').show();
+                $('.discount-custom').hide();
+                $('.product-campaign-type-hidden').val(presetVal + '%_Offer');
+            } else {
+                $('.discount-preset').hide();
+                $('.discount-custom').show();
+                
+                // For custom inputs, set hidden fields per product based on their input value
+                $('.discount-custom-input').each(function() {
+                    let val = $(this).val() || 10;
+                    $(this).closest('tr').find('.product-campaign-type-hidden').val(val + '%_Offer');
+                });
             }
-            $('.product-campaign-type-hidden').val(campaignType);
+
+            // Reset combo fields to defaults
+            $('.combo-inputs input[name$="[buy_qty]"]').val(1);
+            $('.combo-inputs input[name$="[get_qty]"]').val(1);
+            $('.combo-inputs select[name$="[free_product_id]"] option').each(function(){
+                let $opt = $(this);
+                let prodId = $opt.val();
+                let rowProdId = $opt.closest('tr').find('input[name$="[id]"]').val();
+                $opt.prop('selected', prodId == rowProdId);
+            });
         }
     }
+
+    $(document).on('input change', '.discount-custom-input', function() {
+        let val = $(this).val() || 10;
+        $(this).closest('tr').find('.product-campaign-type-hidden').val(val + '%_Offer');
+    });
 
     $(document).on('change', '#globalCampaignSelect', function() {
         let opt = $(this).find(':selected');

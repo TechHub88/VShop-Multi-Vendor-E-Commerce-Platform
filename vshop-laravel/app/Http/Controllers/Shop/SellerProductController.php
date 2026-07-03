@@ -3780,69 +3780,117 @@ public function generateSeoAIContent(Request $request)
         try {
             $sellerId = auth('seller')->id();
             
-            // Auto-create table if missing to prevent 500 errors
+            \Log::info('=== CAMPAIGN SAVE START ===');
+            \Log::info('Seller ID: ' . $sellerId);
+            \Log::info('All request data keys: ' . implode(', ', array_keys($request->all())));
+            \Log::info('Has products key: ' . ($request->has('products') ? 'YES' : 'NO'));
+            \Log::info('Global Ad ID: ' . $request->input('global_advertisement_id'));
+            
+            if (!$sellerId) {
+                return response()->json(['error' => 'Not authenticated as seller'], 401);
+            }
+
+            // Auto-create table if missing
             if (!\Illuminate\Support\Facades\Schema::hasTable('seller_campaign_participations')) {
                 \Illuminate\Support\Facades\Schema::create('seller_campaign_participations', function (\Illuminate\Database\Schema\Blueprint $table) {
                     $table->id();
                     $table->unsignedBigInteger('seller_id');
                     $table->unsignedBigInteger('product_id');
+                    $table->unsignedBigInteger('advertisement_id')->nullable();
                     $table->string('campaign_type');
                     $table->text('combo_details')->nullable();
                     $table->string('status')->default('approved');
                     $table->timestamps();
-
-                    $table->foreign('seller_id')->references('id')->on('sellers')->onDelete('cascade');
-                    $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
                 });
-            }
-            
-            $request->validate([
-                'global_advertisement_id' => 'nullable|exists:advertisements,id',
-                'products' => 'nullable|array',
-                'products.*.id' => 'required|exists:products,id',
-                'products.*.campaign_type' => 'required|in:percentage_20,bogo,buy2_get1,combo,none',
-                'products.*.combo_details' => 'nullable|string'
-            ]);
-
-            $globalAdId = $request->input('global_advertisement_id');
-
-            if ($request->has('products')) {
-                foreach ($request->products as $pData) {
-                    $product = Product::find($pData['id']);
-                    if ($product && $product->created_by_id == $sellerId) {
-                        $isSelected = isset($pData['selected']) && $pData['selected'] == 1;
-                        $campaignType = $isSelected ? $pData['campaign_type'] : 'none';
-                        
-                        if ($campaignType === 'none') {
-                            \App\Models\SellerCampaignParticipation::where('product_id', $product->id)->delete();
-                        } else {
-                            $comboDetails = $pData['combo_details'] ?? null;
-                            if ($campaignType === 'combo') {
-                                $comboDetails = json_encode([
-                                    'buy_qty' => $pData['buy_qty'] ?? 1,
-                                    'get_qty' => $pData['get_qty'] ?? 1,
-                                    'free_product_id' => $pData['free_product_id'] ?? $product->id
-                                ]);
-                            }
-
-                            \App\Models\SellerCampaignParticipation::updateOrCreate(
-                                ['product_id' => $product->id],
-                                [
-                                    'seller_id' => $sellerId,
-                                    'advertisement_id' => $globalAdId,
-                                    'campaign_type' => $campaignType,
-                                    'combo_details' => $comboDetails,
-                                    'status' => 'approved'
-                                ]
-                            );
-                        }
-                    }
+            } else {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('seller_campaign_participations', 'advertisement_id')) {
+                    \Illuminate\Support\Facades\Schema::table('seller_campaign_participations', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->unsignedBigInteger('advertisement_id')->nullable()->after('product_id');
+                    });
                 }
             }
 
-            return response()->json(['message' => 'Campaign participations saved successfully']);
+            $globalAdId = $request->input('global_advertisement_id') ?: null;
+            $products = $request->input('products', []);
+            $savedCount = 0;
+            $skippedCount = 0;
+
+            \Log::info('Products count: ' . count($products));
+
+            if (!empty($products)) {
+                foreach ($products as $key => $pData) {
+                    \Log::info("Processing product key=$key, data=" . json_encode($pData));
+                    
+                    $productId = $pData['id'] ?? null;
+                    if (!$productId) {
+                        \Log::info("Skipped: no product ID");
+                        $skippedCount++;
+                        continue;
+                    }
+
+                    $product = Product::find($productId);
+                    if (!$product) {
+                        \Log::info("Skipped: product $productId not found");
+                        $skippedCount++;
+                        continue;
+                    }
+
+                    $isSelected = isset($pData['selected']) && $pData['selected'] == '1';
+                    $campaignType = $pData['campaign_type'] ?? 'none';
+                    
+                    \Log::info("Product $productId: isSelected=$isSelected, campaignType=$campaignType, created_by_id={$product->created_by_id}");
+                    
+                    if (!$isSelected || $campaignType === 'none') {
+                        // Remove participation if unchecked
+                        \App\Models\SellerCampaignParticipation::where('product_id', $product->id)
+                            ->where('seller_id', $sellerId)
+                            ->delete();
+                        \Log::info("Product $productId: deleted participation (unchecked or none)");
+                        continue;
+                    }
+
+                    // Build combo details
+                    $comboDetails = null;
+                    if ($campaignType === 'combo') {
+                        $comboDetails = json_encode([
+                            'buy_qty' => $pData['buy_qty'] ?? 1,
+                            'get_qty' => $pData['get_qty'] ?? 1,
+                            'free_product_id' => $pData['free_product_id'] ?? $product->id
+                        ]);
+                    } elseif (strpos($campaignType, '%') !== false || isset($pData['discount_percent'])) {
+                        // Extract percentage value from type (e.g. "20%_Offer")
+                        $pct = 10;
+                        if (preg_match('/^(\d+)%/', $campaignType, $matches)) {
+                            $pct = intval($matches[1]);
+                        }
+                        $comboDetails = json_encode([
+                            'discount_percentage' => $pct
+                        ]);
+                    }
+
+                    \App\Models\SellerCampaignParticipation::updateOrCreate(
+                        ['product_id' => $product->id, 'seller_id' => $sellerId],
+                        [
+                            'advertisement_id' => $globalAdId,
+                            'campaign_type' => $campaignType,
+                            'combo_details' => $comboDetails,
+                            'status' => 'approved'
+                        ]
+                    );
+                    $savedCount++;
+                    \Log::info("Product $productId: SAVED successfully");
+                }
+            }
+
+            \Log::info("=== CAMPAIGN SAVE END === Saved: $savedCount, Skipped: $skippedCount");
+
+            return response()->json([
+                'message' => "Campaign participations saved! ($savedCount products saved)",
+                'saved' => $savedCount
+            ]);
         } catch (\Throwable $e) {
-            \Log::error('Save Campaign Error: ' . $e->getMessage());
+            \Log::error('Save Campaign Error: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+            \Log::error($e->getTraceAsString());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
