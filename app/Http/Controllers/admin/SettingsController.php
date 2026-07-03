@@ -923,7 +923,7 @@ public function toggleBoostStatus(Request $request, $id)
             $boosts = DB::table('boosted_listings')
                 ->leftJoin('products', 'boosted_listings.product_id', '=', 'products.id')
                 ->leftJoin('sellers', 'boosted_listings.seller_id', '=', 'sellers.id')
-                ->select('boosted_listings.*', 'products.category_id', 'sellers.name as seller_name')
+                ->select('boosted_listings.*', 'products.category_id', 'sellers.name as seller_name', 'products.name as product_name', 'sellers.application as seller_app')
                 ->get();
         } catch (\Exception $e) {
             $boosts = collect([]);
@@ -942,6 +942,26 @@ public function toggleBoostStatus(Request $request, $id)
                     ['name' => 'Home & Kitchen', 'revenue' => 25000, 'percent' => 19.9, 'trend' => 'down'],
                     ['name' => 'Beauty', 'revenue' => 17400, 'percent' => 13.9, 'trend' => 'up'],
                 ],
+                'sellers' => [
+                    ['name' => 'Apex Electronics', 'spent' => 5000, 'revenue' => 22000, 'roi' => 4.4],
+                    ['name' => 'Fashion Hub', 'spent' => 4500, 'revenue' => 19500, 'roi' => 4.3],
+                    ['name' => 'Home Essentials', 'spent' => 3800, 'revenue' => 15200, 'roi' => 4.0],
+                    ['name' => 'Beauty Zone', 'spent' => 3000, 'revenue' => 12000, 'roi' => 4.0],
+                    ['name' => 'Sports Gear', 'spent' => 2500, 'revenue' => 10500, 'roi' => 4.2],
+                ],
+                'transactions' => [
+                    ['date' => date('d M Y', strtotime('-1 day')), 'campaign' => 'Samsung S24 Ultra', 'seller' => 'Apex Electronics', 'spent' => 1200, 'revenue' => 5400, 'status' => 'active'],
+                    ['date' => date('d M Y', strtotime('-2 days')), 'campaign' => 'Apple Watch Series 9', 'seller' => 'Fashion Hub', 'spent' => 900, 'revenue' => 4100, 'status' => 'active'],
+                    ['date' => date('d M Y', strtotime('-3 days')), 'campaign' => 'Sony WH-1000XM5', 'seller' => 'Apex Electronics', 'spent' => 800, 'revenue' => 3600, 'status' => 'completed'],
+                    ['date' => date('d M Y', strtotime('-4 days')), 'campaign' => 'Nike Air Max', 'seller' => 'Sports Gear', 'spent' => 600, 'revenue' => 2800, 'status' => 'active'],
+                    ['date' => date('d M Y', strtotime('-5 days')), 'campaign' => 'Gaming Chair', 'seller' => 'Home Essentials', 'spent' => 500, 'revenue' => 2100, 'status' => 'completed'],
+                ],
+                'apps' => [
+                    ['name' => 'VShop Platform', 'platform' => 'vshop', 'revenue' => 62700, 'share' => '50%'],
+                    ['name' => 'VTravel Platform', 'platform' => 'vtravel', 'revenue' => 37620, 'share' => '30%'],
+                    ['name' => 'VCampus Platform', 'platform' => 'vcampus', 'revenue' => 18810, 'share' => '15%'],
+                    ['name' => 'VEdge Platform', 'platform' => 'vedge', 'revenue' => 6270, 'share' => '5%'],
+                ],
                 'trend_labels' => collect(range(30, 0))->map(fn($days) => now()->subDays($days)->format('d M'))->toArray(),
                 'trend_values' => collect(range(30, 0))->map(fn() => rand(2000, 8000))->toArray(),
             ];
@@ -956,7 +976,7 @@ public function toggleBoostStatus(Request $request, $id)
         });
         $revenuePerSeller = $sellerRevenue->count() ? $sellerRevenue->average() : 0;
 
-        // Revenue per category (join with categories table if exists, else fallback to product category id)
+        // Revenue per category
         $categoryRevenue = [];
         foreach ($boosts as $b) {
             $catId = $b->category_id ?? 'Uncategorized';
@@ -966,7 +986,25 @@ public function toggleBoostStatus(Request $request, $id)
         $revenuePerCategory = count($categoryRevenue) ? array_sum($categoryRevenue) / count($categoryRevenue) : 0;
 
         // Revenue per app
-        $revenuePerApp = $totalRevenue * 0.4;
+        $vshopRev = 0;
+        $vtravelRev = 0;
+        $vcampusRev = 0;
+        $vedgeRev = 0;
+
+        foreach ($boosts as $b) {
+            $app = strtolower($b->seller_app ?? '');
+            if (str_contains($app, 'travel')) {
+                $vtravelRev += $b->revenue_generated;
+            } elseif (str_contains($app, 'campus')) {
+                $vcampusRev += $b->revenue_generated;
+            } elseif (str_contains($app, 'edge')) {
+                $vedgeRev += $b->revenue_generated;
+            } else {
+                $vshopRev += $b->revenue_generated; // Default to VShop
+            }
+        }
+        $totalAppsRevenue = $vshopRev + $vtravelRev + $vcampusRev + $vedgeRev;
+        $revenuePerApp = $totalAppsRevenue;
 
         // Category breakdown for table
         $categories = [];
@@ -975,6 +1013,42 @@ public function toggleBoostStatus(Request $request, $id)
             $percent = $total ? round(($rev / $total) * 100, 1) : 0;
             $categories[] = ['name' => 'Category ' . $catId, 'revenue' => $rev, 'percent' => $percent, 'trend' => ($rev > $total / count($categoryRevenue)) ? 'up' : 'down'];
         }
+
+        // Sellers list
+        $sellers = [];
+        $sellerSpending = [];
+        foreach ($boosts as $b) {
+            $sid = $b->seller_id;
+            if (!isset($sellerSpending[$sid])) {
+                $sellerSpending[$sid] = ['name' => $b->seller_name ?? 'Seller #'.$sid, 'spent' => 0, 'revenue' => 0];
+            }
+            $sellerSpending[$sid]['spent'] += $b->boost_amount;
+            $sellerSpending[$sid]['revenue'] += $b->revenue_generated;
+        }
+        foreach ($sellerSpending as $s) {
+            $s['roi'] = $s['spent'] > 0 ? round($s['revenue'] / $s['spent'], 2) : 0;
+            $sellers[] = $s;
+        }
+
+        // Transactions list
+        $transactions = [];
+        foreach ($boosts as $b) {
+            $transactions[] = [
+                'date' => date('d M Y', strtotime($b->created_at)),
+                'campaign' => $b->product_name ?? 'Product #'.$b->product_id,
+                'seller' => $b->seller_name ?? 'Seller #'.$b->seller_id,
+                'spent' => $b->boost_amount,
+                'revenue' => $b->revenue_generated,
+                'status' => $b->status
+            ];
+        }
+
+        $apps = [
+            ['name' => 'VShop Platform', 'platform' => 'vshop', 'revenue' => round($vshopRev, 2), 'share' => $totalAppsRevenue > 0 ? round(($vshopRev / $totalAppsRevenue) * 100) . '%' : '0%'],
+            ['name' => 'VTravel Platform', 'platform' => 'vtravel', 'revenue' => round($vtravelRev, 2), 'share' => $totalAppsRevenue > 0 ? round(($vtravelRev / $totalAppsRevenue) * 100) . '%' : '0%'],
+            ['name' => 'VCampus Platform', 'platform' => 'vcampus', 'revenue' => round($vcampusRev, 2), 'share' => $totalAppsRevenue > 0 ? round(($vcampusRev / $totalAppsRevenue) * 100) . '%' : '0%'],
+            ['name' => 'VEdge Platform', 'platform' => 'vedge', 'revenue' => round($vedgeRev, 2), 'share' => $totalAppsRevenue > 0 ? round(($vedgeRev / $totalAppsRevenue) * 100) . '%' : '0%'],
+        ];
 
         // Revenue trends (last 30 days)
         $trendData = DB::table('boosted_listings')
@@ -993,6 +1067,9 @@ public function toggleBoostStatus(Request $request, $id)
             'revenue_per_category' => round($revenuePerCategory, 2),
             'revenue_per_app' => round($revenuePerApp, 2),
             'categories' => $categories,
+            'sellers' => $sellers,
+            'transactions' => $transactions,
+            'apps' => $apps,
             'trend_labels' => $trendLabels,
             'trend_values' => $trendValues,
         ];
@@ -1077,15 +1154,563 @@ public function toggleBoostStatus(Request $request, $id)
             $roiValues[] = $b->boost_amount > 0 ? round($b->revenue_generated / $b->boost_amount, 2) : 0;
         }
 
-        return [
-            'total_revenue' => round($totalRevenue, 2),
-            'total_amount' => round($totalAmount, 2),
-            'roi' => round($roi, 2),
-            'active_boosts' => $activeBoosts,
-            'top_sellers' => $topSellers,
-            'campaigns' => $campaigns,
-            'roi_labels' => $roiLabels,
-            'roi_values' => $roiValues,
+    }
+
+    // ===========================================================
+    // DATA CONTROL METHODS
+    // ===========================================================
+
+    /**
+     * Feature 1: Export Data as CSV
+     */
+    public function dataExport(Request $request)
+    {
+        $type = $request->get('type', 'sellers');
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$type}_export_" . date('Y-m-d') . ".csv\"",
         ];
+
+        $callback = function () use ($type) {
+            $handle = fopen('php://output', 'w');
+
+            if ($type === 'sellers') {
+                fputcsv($handle, ['ID', 'Name', 'Email', 'Phone', 'City', 'Status', 'Joined']);
+                DB::table('sellers')->orderBy('id')->chunk(500, function ($rows) use ($handle) {
+                    foreach ($rows as $row) {
+                        fputcsv($handle, [$row->id, $row->name ?? '', $row->email ?? '', $row->phone ?? '', $row->city ?? '', $row->status ?? '', $row->created_at ?? '']);
+                    }
+                });
+            } elseif ($type === 'products') {
+                fputcsv($handle, ['ID', 'Name', 'Seller ID', 'Category', 'Price', 'Stock', 'Status', 'Created']);
+                DB::table('products')->orderBy('id')->chunk(500, function ($rows) use ($handle) {
+                    foreach ($rows as $row) {
+                        fputcsv($handle, [$row->id, $row->name ?? '', $row->created_by_id ?? '', $row->category_id ?? '', $row->price ?? '', $row->stock ?? '', $row->status ?? '', $row->created_at ?? '']);
+                    }
+                });
+            } elseif ($type === 'orders') {
+                fputcsv($handle, ['ID', 'Seller ID', 'Customer ID', 'Total', 'Status', 'Payment', 'Date']);
+                DB::table('orders')->orderBy('id')->chunk(500, function ($rows) use ($handle) {
+                    foreach ($rows as $row) {
+                        fputcsv($handle, [$row->id, $row->seller_id ?? '', $row->customer_id ?? '', $row->total_amount ?? '', $row->status ?? '', $row->payment_status ?? '', $row->created_at ?? '']);
+                    }
+                });
+            } elseif ($type === 'customers') {
+                fputcsv($handle, ['ID', 'Name', 'Email', 'Phone', 'City', 'Status', 'Joined']);
+                DB::table('customers')->orderBy('id')->chunk(500, function ($rows) use ($handle) {
+                    foreach ($rows as $row) {
+                        fputcsv($handle, [$row->id, $row->name ?? '', $row->email ?? '', $row->phone ?? '', $row->city ?? '', $row->status ?? '', $row->created_at ?? '']);
+                    }
+                });
+            } elseif ($type === 'enquiries') {
+                fputcsv($handle, ['ID', 'Name', 'Email', 'Phone', 'Product ID', 'Message', 'Date']);
+                DB::table('enquiries')->orderBy('id')->chunk(500, function ($rows) use ($handle) {
+                    foreach ($rows as $row) {
+                        fputcsv($handle, [$row->id, $row->name ?? '', $row->email ?? '', $row->phone ?? '', $row->product_id ?? '', substr($row->message ?? '', 0, 100), $row->created_at ?? '']);
+                    }
+                });
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Feature 2: Save Data Retention Settings
+     */
+    public function saveDataRetention(Request $request)
+    {
+        $request->validate([
+            'logs_retain_days'     => 'required|integer|min:1|max:3650',
+            'enquiries_retain_days' => 'required|integer|min:1|max:3650',
+            'fraud_logs_retain_days' => 'required|integer|min:1|max:3650',
+        ]);
+
+        DB::table('settings')->updateOrInsert(['key' => 'logs_retain_days'], ['value' => $request->logs_retain_days]);
+        DB::table('settings')->updateOrInsert(['key' => 'enquiries_retain_days'], ['value' => $request->enquiries_retain_days]);
+        DB::table('settings')->updateOrInsert(['key' => 'fraud_logs_retain_days'], ['value' => $request->fraud_logs_retain_days]);
+
+        return redirect()->back()->with('success', 'Data retention settings saved successfully.');
+    }
+
+    /**
+     * Feature 2b: Run Data Retention Now (manual trigger)
+     */
+    public function runDataRetention(Request $request)
+    {
+        try {
+            $logsDays    = (int) (DB::table('settings')->where('key', 'logs_retain_days')->value('value') ?? 365);
+            $enquiryDays = (int) (DB::table('settings')->where('key', 'enquiries_retain_days')->value('value') ?? 365);
+            $fraudDays   = (int) (DB::table('settings')->where('key', 'fraud_logs_retain_days')->value('value') ?? 180);
+
+            $logsCutoff    = Carbon::now()->subDays($logsDays)->toDateTimeString();
+            $enquiryCutoff = Carbon::now()->subDays($enquiryDays)->toDateTimeString();
+            $fraudCutoff   = Carbon::now()->subDays($fraudDays)->toDateTimeString();
+
+            $deletedLogs     = DB::table('seller_activity_logs')->where('created_at', '<', $logsCutoff)->delete();
+            $deletedEnquiries = DB::table('enquiries')->where('is_archived', 1)->where('created_at', '<', $enquiryCutoff)->delete();
+            $deletedFraud    = DB::table('fraud_system')->where('created_at', '<', $fraudCutoff)->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Cleanup done! Deleted: {$deletedLogs} logs, {$deletedEnquiries} enquiries, {$deletedFraud} fraud records.",
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Feature 3: Get Deletion Requests
+     */
+    public function getDeletionRequests(Request $request)
+    {
+        try {
+            // Check customers with status like 'pending_deletion' or similar
+            $requests = DB::table('customers')
+                ->select('id', 'name as customer_name', 'email as customer_email', 'updated_at as created_at', 'status')
+                ->whereIn('status', ['pending_deletion', 'deletion_requested'])
+                ->get();
+            return response()->json($requests);
+        } catch (\Exception $e) {
+            return response()->json([]);
+        }
+    }
+
+    /**
+     * Feature 3: Process User Data Deletion Request (GDPR)
+     */
+    public function processUserDeletion(Request $request, $id)
+    {
+        try {
+            $request->validate(['action' => 'required|in:approve,reject']);
+            $customer = DB::table('customers')->where('id', $id)->first();
+
+            if (!$customer) {
+                return response()->json(['success' => false, 'message' => 'Customer not found.'], 404);
+            }
+
+            if ($request->action === 'approve') {
+                // Anonymize customer data (soft delete approach - GDPR compliant)
+                DB::table('customers')->where('id', $id)->update([
+                    'name'           => 'Deleted User #' . $id,
+                    'email'          => 'deleted_' . $id . '@removed.com',
+                    'phone'          => null,
+                    'profile_picture'=> null,
+                    'status'         => 'deleted',
+                    'updated_at'     => Carbon::now(),
+                ]);
+                $message = 'User data anonymized and deletion approved successfully.';
+            } else {
+                DB::table('customers')->where('id', $id)->update([
+                    'status' => 'active', // Restore status
+                    'updated_at' => Carbon::now(),
+                ]);
+                $message = 'Deletion request rejected (User restored to active).';
+            }
+
+            return response()->json(['success' => true, 'message' => $message]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Feature 4: Create Database Backup
+     */
+    public function createBackupNow(Request $request)
+    {
+        try {
+            $backupDir = storage_path('app/backups');
+            if (!file_exists($backupDir)) {
+                mkdir($backupDir, 0755, true);
+            }
+
+            $filename  = 'backup_' . date('Y-m-d_H-i-s') . '.sql';
+            $filepath  = $backupDir . '/' . $filename;
+
+            $dbHost = config('database.connections.mysql.host');
+            $dbName = config('database.connections.mysql.database');
+            $dbUser = config('database.connections.mysql.username');
+            $dbPass = config('database.connections.mysql.password');
+
+            // Generate SQL backup using PHP (no shell exec needed)
+            $tables = DB::select('SHOW TABLES');
+            $sql = "-- VShop Database Backup\n-- Generated: " . date('Y-m-d H:i:s') . "\n-- Database: {$dbName}\n\nSET FOREIGN_KEY_CHECKS=0;\n\n";
+
+            foreach ($tables as $tableObj) {
+                $tableName = array_values((array)$tableObj)[0];
+                // Create table structure
+                $createTable = DB::select("SHOW CREATE TABLE `{$tableName}`");
+                $sql .= "\n-- Table: {$tableName}\nDROP TABLE IF EXISTS `{$tableName}`;\n";
+                $sql .= array_values((array)$createTable[0])[1] . ";\n\n";
+
+                // Insert data in chunks
+                $rows = DB::table($tableName)->get();
+                if ($rows->count() > 0) {
+                    $cols = array_keys((array)$rows->first());
+                    $colList = '`' . implode('`, `', $cols) . '`';
+                    foreach ($rows->chunk(100) as $chunk) {
+                        $values = $chunk->map(function ($row) {
+                            $vals = array_map(function ($v) {
+                                return $v === null ? 'NULL' : "'" . addslashes($v) . "'";
+                            }, (array)$row);
+                            return '(' . implode(', ', $vals) . ')';
+                        })->implode(",\n");
+                        $sql .= "INSERT INTO `{$tableName}` ({$colList}) VALUES\n{$values};\n";
+                    }
+                }
+            }
+
+            $sql .= "\nSET FOREIGN_KEY_CHECKS=1;\n";
+            file_put_contents($filepath, $sql);
+
+            return response()->json([
+                'success'  => true,
+                'message'  => "Backup created: {$filename}",
+                'filename' => $filename,
+                'size'     => round(filesize($filepath) / 1024, 2) . ' KB',
+                'date'     => date('d M Y H:i'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Feature 4b: Delete a Backup File
+     */
+    public function deleteBackupFile(Request $request, $filename)
+    {
+        try {
+            // Security: only allow safe filenames
+            if (!preg_match('/^backup_[\d_\-]+\.sql$/', $filename)) {
+                return response()->json(['success' => false, 'message' => 'Invalid filename.'], 400);
+            }
+            $filepath = storage_path('app/backups/' . $filename);
+            if (file_exists($filepath)) {
+                unlink($filepath);
+            }
+            return response()->json(['success' => true, 'message' => 'Backup deleted.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // ===========================================================
+    // FRAUD PROTECTION METHODS
+    // ===========================================================
+
+    /**
+     * Feature 5+: Fraud Dashboard Data (JSON)
+     */
+    public function fraudDashboard(Request $request)
+    {
+        try {
+            $cutoff30 = Carbon::now()->subDays(30);
+
+            // Feature 5: High Fraud Sellers (cancel rate > threshold)
+            $fraudThreshold = (int) (DB::table('settings')->where('key', 'fraud_cancel_threshold')->value('value') ?? 30);
+            $highFraudSellers = DB::table('sellers')
+                ->select(
+                    'sellers.id', 'sellers.name', 'sellers.email',
+                    DB::raw('COUNT(orders.id) as total_orders'),
+                    DB::raw('SUM(CASE WHEN orders.status IN ("cancelled","returned") THEN 1 ELSE 0 END) as bad_orders'),
+                    DB::raw('ROUND(SUM(CASE WHEN orders.status IN ("cancelled","returned") THEN 1 ELSE 0 END) * 100.0 / NULLIF(COUNT(orders.id), 0), 1) as cancel_rate')
+                )
+                ->leftJoin('orders', 'orders.seller_id', '=', 'sellers.id')
+                ->where('orders.created_at', '>=', $cutoff30)
+                ->groupBy('sellers.id', 'sellers.name', 'sellers.email')
+                ->having('cancel_rate', '>', $fraudThreshold)
+                ->having('total_orders', '>', 3)
+                ->orderByDesc('cancel_rate')
+                ->limit(10)
+                ->get();
+
+            // Feature 6: Suspicious IPs (more than 20 clicks in 1 hour from same IP)
+            $clickThreshold = (int) (DB::table('settings')->where('key', 'fraud_click_threshold')->value('value') ?? 20);
+            $suspiciousIps = DB::table('fraud_system')
+                ->select('customer_ip', DB::raw('COUNT(*) as click_count'), DB::raw('MAX(created_at) as last_seen'))
+                ->where('record_type', 'click')
+                ->where('created_at', '>=', Carbon::now()->subDay())
+                ->groupBy('customer_ip')
+                ->having('click_count', '>=', $clickThreshold)
+                ->orderByDesc('click_count')
+                ->limit(20)
+                ->get();
+
+            // Feature 7: Duplicate Sellers (Name, Phone, Email, PAN)
+            $duplicateSellers = DB::table('sellers as s1')
+                ->select(
+                    's1.id', 's1.name', 's1.email', 
+                    's2.id as duplicate_id', 's2.name as duplicate_name',
+                    DB::raw('
+                        CASE 
+                            WHEN s1.pan_number = s2.pan_number AND s1.pan_number != "" THEN "Same PAN"
+                            WHEN s1.phone = s2.phone AND s1.phone != "" THEN "Same Phone"
+                            WHEN s1.email = s2.email AND s1.email != "" THEN "Same Email"
+                            WHEN s1.name = s2.name AND s1.name != "" THEN "Same Name"
+                            ELSE "Duplicate"
+                        END as reason
+                    ')
+                )
+                ->join('sellers as s2', function ($join) {
+                    $join->on(function($q) {
+                        $q->on('s1.pan_number', '=', 's2.pan_number')->whereNotNull('s1.pan_number')->where('s1.pan_number', '!=', '')
+                          ->orOn('s1.phone', '=', 's2.phone')->whereNotNull('s1.phone')->where('s1.phone', '!=', '')
+                          ->orOn('s1.email', '=', 's2.email')->whereNotNull('s1.email')->where('s1.email', '!=', '')
+                          ->orOn('s1.name', '=', 's2.name')->whereNotNull('s1.name')->where('s1.name', '!=', '');
+                    })
+                    ->whereColumn('s1.id', '<', 's2.id');
+                })
+                ->limit(10)
+                ->get();
+
+            // Feature 8: Abnormal Conversions (0% or 100% conversion rate)
+            $abnormalConversions = DB::table('products')
+                ->select(
+                    'products.id', 'products.name',
+                    DB::raw('COUNT(DISTINCT enquiries.id) as enquiries'),
+                    DB::raw('COUNT(DISTINCT order_items.order_id) as orders'),
+                    DB::raw('ROUND(COUNT(DISTINCT order_items.order_id) * 100.0 / NULLIF(COUNT(DISTINCT enquiries.id), 0), 1) as conversion_rate')
+                )
+                ->leftJoin('enquiries', function ($join) use ($cutoff30) {
+                    $join->on('enquiries.product_id', '=', 'products.id')
+                         ->where('enquiries.created_at', '>=', $cutoff30);
+                })
+                ->leftJoin('order_items', 'order_items.product_id', '=', 'products.id')
+                ->groupBy('products.id', 'products.name')
+                ->havingRaw('(conversion_rate >= 90 OR (enquiries >= 20 AND orders = 0))')
+                ->orderByDesc('enquiries')
+                ->limit(10)
+                ->get();
+
+            // Feature 9: Fake/Spam Enquiries (same IP, multiple enquiries)
+            $spamEnquiryThreshold = (int) (DB::table('settings')->where('key', 'fraud_enquiry_threshold')->value('value') ?? 5);
+            $fakeEnquiries = DB::table('enquiries')
+                ->select('ip_address', DB::raw('COUNT(*) as count'), DB::raw('MAX(created_at) as last_time'))
+                ->whereNotNull('ip_address')
+                ->where('created_at', '>=', Carbon::now()->subDay())
+                ->groupBy('ip_address')
+                ->having('count', '>=', $spamEnquiryThreshold)
+                ->orderByDesc('count')
+                ->limit(20)
+                ->get();
+
+            // Feature 11: Duplicate & Fraud Customer Detection
+            // High Risk Customers
+            $highRiskCustomers = DB::table('customers')
+                ->select('id', 'name', 'email', 'phone', 'risk_level')
+                ->whereIn('risk_level', ['high', 'critical'])
+                ->limit(10)
+                ->get();
+            
+            // Duplicate Customers (Same Phone or Email)
+            $duplicateCustomers = DB::table('customers as c1')
+                ->select('c1.id', 'c1.name', 'c1.email', 'c1.phone', 'c2.id as duplicate_id', 'c2.name as duplicate_name')
+                ->join('customers as c2', function ($join) {
+                    $join->on(function($q) {
+                             $q->on('c1.phone', '=', 'c2.phone')->whereNotNull('c1.phone')->where('c1.phone', '!=', '')
+                               ->orOn('c1.email', '=', 'c2.email')->whereNotNull('c1.email')->where('c1.email', '!=', '');
+                         })
+                         ->whereColumn('c1.id', '<', 'c2.id');
+                })
+                ->limit(10)
+                ->get();
+
+            // Feature 11: Payment Fraud Detection
+            $paymentFraud = DB::table('orders')
+                ->select('orders.id', 'orders.customer_id', 'orders.total_amount', 'orders.payment_attempts', 'orders.created_at', 'customers.name', 'customers.email')
+                ->leftJoin('customers', 'customers.id', '=', 'orders.customer_id')
+                ->where('orders.payment_attempts', '>=', 3)
+                ->where('orders.created_at', '>=', $cutoff30)
+                ->orderByDesc('orders.payment_attempts')
+                ->limit(10)
+                ->get();
+
+            // Feature 12: Invoice Validation (Amount Mismatch or Missing)
+            $invoiceValidation = DB::table('orders')
+                ->select('orders.id as order_id', 'orders.total_amount as order_amount', 'invoice_logs.amount as invoice_amount', 'orders.status', 'invoice_logs.invoice_number')
+                ->leftJoin('invoice_logs', function($join) {
+                    $join->on('orders.id', '=', 'invoice_logs.reference_id')
+                         ->where('invoice_logs.module', '=', 'order');
+                })
+                ->whereIn('orders.status', ['completed', 'delivered'])
+                ->where('orders.created_at', '>=', $cutoff30)
+                ->where(function($query) {
+                    $query->whereNull('invoice_logs.id')
+                          ->orWhereRaw('ABS(orders.total_amount - invoice_logs.amount) > 1');
+                })
+                ->orderByDesc('orders.id')
+                ->limit(10)
+                ->get();
+
+            // Feature 10: Blocked IPs list
+            $blockedIps = DB::table('settings')
+                ->where('key', 'blocked_ips')
+                ->value('value');
+            $blockedIps = $blockedIps ? json_decode($blockedIps, true) : [];
+
+            // Duplicate Products upload detection (Fraud Products)
+            $products = DB::table('products')
+                ->select('id', 'name', 'description', 'price', 'created_by_id', 'status')
+                ->where('status', '!=', 'inactive')
+                ->orderByDesc('id')
+                ->limit(100)
+                ->get();
+                
+            $duplicateProducts = [];
+            $pCount = count($products);
+            for ($i = 0; $i < $pCount; $i++) {
+                for ($j = $i + 1; $j < $pCount; $j++) {
+                    $p1 = $products[$i];
+                    $p2 = $products[$j];
+                    
+                    similar_text(strtolower($p1->name), strtolower($p2->name), $nameSim);
+                    if ($nameSim > 85) {
+                        similar_text(strtolower($p1->description ?? ''), strtolower($p2->description ?? ''), $descSim);
+                        
+                        $p1Price = (float)($p1->price ?? 0);
+                        $p2Price = (float)($p2->price ?? 0);
+                        $priceDiff = $p1Price > 0 ? abs($p1Price - $p2Price) / $p1Price : 0;
+                        
+                        if ($descSim > 80 || ($p1Price == $p2Price && $p1Price > 0)) {
+                            $seller1 = DB::table('sellers')->where('id', $p1->created_by_id)->value('name') ?? 'System/Seller #' . $p1->created_by_id;
+                            $seller2 = DB::table('sellers')->where('id', $p2->created_by_id)->value('name') ?? 'System/Seller #' . $p2->created_by_id;
+                            
+                            $duplicateProducts[] = [
+                                'product_1' => [
+                                    'id' => $p1->id,
+                                    'name' => $p1->name,
+                                    'seller' => $seller1,
+                                    'status' => $p1->status
+                                ],
+                                'product_2' => [
+                                    'id' => $p2->id,
+                                    'name' => $p2->name,
+                                    'seller' => $seller2,
+                                    'status' => $p2->status
+                                ],
+                                'similarity' => round(($nameSim + $descSim) / 2, 1),
+                                'reason' => ($p1->created_by_id == $p2->created_by_id) ? 'Same Seller Duplicate' : 'Cross-Seller Duplicate'
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // Summary Stats
+            $totalFraudRecords = DB::table('fraud_system')->where('is_fraud', 1)->count();
+            $fraudThisMonth    = DB::table('fraud_system')->where('is_fraud', 1)->where('created_at', '>=', $cutoff30)->count();
+            $blockedCount      = count($blockedIps);
+            $suspiciousCount   = $suspiciousIps->count() + $highFraudSellers->count() + $duplicateSellers->count() + count($duplicateProducts);
+
+            return response()->json([
+                'success'              => true,
+                'stats' => [
+                    'total_fraud'       => $totalFraudRecords,
+                    'fraud_this_month'  => $fraudThisMonth,
+                    'blocked_ips'       => $blockedCount,
+                    'suspicious_alerts' => $suspiciousCount,
+                ],
+                'high_fraud_sellers'    => $highFraudSellers,
+                'suspicious_ips'        => $suspiciousIps,
+                'duplicate_sellers'     => $duplicateSellers,
+                'abnormal_conversions'  => $abnormalConversions,
+                'fake_enquiries'        => $fakeEnquiries,
+                'high_risk_customers'   => $highRiskCustomers,
+                'duplicate_customers'   => $duplicateCustomers,
+                'payment_fraud'         => $paymentFraud,
+                'invoice_validation'    => $invoiceValidation,
+                'blocked_ips_list'      => $blockedIps,
+                'duplicate_products'    => $duplicateProducts,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Feature: Flag Duplicate Product (Deactivate)
+     */
+    public function flagDuplicateProduct(Request $request, $id)
+    {
+        try {
+            DB::table('products')->where('id', $id)->update(['status' => 'inactive']);
+            return response()->json(['success' => true, 'message' => 'Product has been deactivated/flagged as duplicate.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Feature 10: Block a Suspicious IP
+     */
+    public function blockSuspiciousIp(Request $request)
+    {
+        $request->validate(['ip' => 'required|ip']);
+        try {
+            $ip = $request->ip_address ?? $request->ip;
+            $existing = DB::table('settings')->where('key', 'blocked_ips')->value('value');
+            $list = $existing ? json_decode($existing, true) : [];
+            if (!in_array($ip, array_column($list, 'ip'))) {
+                $list[] = ['ip' => $ip, 'reason' => $request->reason ?? 'Manually blocked', 'blocked_at' => Carbon::now()->toDateTimeString()];
+                DB::table('settings')->updateOrInsert(['key' => 'blocked_ips'], ['value' => json_encode($list)]);
+            }
+            return response()->json(['success' => true, 'message' => "IP {$ip} has been blocked."]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Feature 10b: Unblock an IP
+     */
+    public function unblockIp(Request $request)
+    {
+        $request->validate(['ip' => 'required']);
+        try {
+            $ip = $request->ip;
+            $existing = DB::table('settings')->where('key', 'blocked_ips')->value('value');
+            $list = $existing ? json_decode($existing, true) : [];
+            $list = array_values(array_filter($list, fn($item) => $item['ip'] !== $ip));
+            DB::table('settings')->updateOrInsert(['key' => 'blocked_ips'], ['value' => json_encode($list)]);
+            return response()->json(['success' => true, 'message' => "IP {$ip} has been unblocked."]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Save Fraud Protection Thresholds
+     */
+    public function saveFraudSettings(Request $request)
+    {
+        $request->validate([
+            'fraud_cancel_threshold'  => 'required|integer|min:1|max:100',
+            'fraud_click_threshold'   => 'required|integer|min:1|max:1000',
+            'fraud_enquiry_threshold' => 'required|integer|min:1|max:500',
+        ]);
+
+        DB::table('settings')->updateOrInsert(['key' => 'fraud_cancel_threshold'], ['value' => $request->fraud_cancel_threshold]);
+        DB::table('settings')->updateOrInsert(['key' => 'fraud_click_threshold'], ['value' => $request->fraud_click_threshold]);
+        DB::table('settings')->updateOrInsert(['key' => 'fraud_enquiry_threshold'], ['value' => $request->fraud_enquiry_threshold]);
+
+        return response()->json(['success' => true, 'message' => 'Fraud settings saved successfully.']);
+    }
+
+    /**
+     * Dismiss a Fraud Alert
+     */
+    public function dismissFraudAlert(Request $request, $id)
+    {
+        try {
+            DB::table('fraud_system')->where('id', $id)->update(['is_fraud' => 0, 'fraud_reason' => 'Dismissed by admin']);
+            return response()->json(['success' => true, 'message' => 'Alert dismissed.']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 }

@@ -31,15 +31,15 @@
                         <tr>
                             <td class="title">
                                 <h2 style="color: #2c3e50; margin:0;">INVOICE</h2>
-                                <span style="font-size: 14px; color:#777;">#INV-{{ $seller->id }}-{{ date('Ymd') }}</span>
+                                <span style="font-size: 14px; color:#777;">#{{ $invoiceTemplate['invoicePrefix'] ?? 'INV' }}-{{ $seller->id }}-{{ date('Ymd') }}</span>
                             </td>
                             <td class="text-right">
-                                <h3 class="text-primary" style="margin:0;">Bridhi Invation</h3>
+                                <h3 class="text-primary" style="margin:0;">{{ $invoiceTemplate['companyName'] ?? 'Bridhi Invation' }}</h3>
                                 <div style="font-size: 12px; color: #555;">
-                                    123 Bridhi Tower, Tech Park<br>
-                                    City, State, 12345<br>
-                                    billing@bridhiinvation.com<br>
-                                    GSTIN: 22AAAAA0000A1Z
+                                    {{ $invoiceTemplate['companyAddress'] ?? '123 Bridhi Tower, Tech Park' }}<br>
+                                    @if(!empty($invoiceTemplate['companyPhone'])) Phone: {{ $invoiceTemplate['companyPhone'] }}<br> @endif
+                                    @if(!empty($invoiceTemplate['companyEmail'])) Email: {{ $invoiceTemplate['companyEmail'] }}<br> @endif
+                                    @if(!empty($invoiceTemplate['companyGst'])) GSTIN: {{ $invoiceTemplate['companyGst'] }} @endif
                                 </div>
                             </td>
                         </tr>
@@ -110,7 +110,7 @@
         </table>
         <div style="margin-top: 50px; text-align: center; color: #777; border-top: 1px solid #eee; padding-top: 10px; font-size: 12px;">
             This is a computer-generated invoice and does not require a physical signature.<br>
-            Thank you for your business with Bridhi Invation.
+            {{ $invoiceTemplate['invoiceFooter'] ?? 'Thank you for your business!' }}
         </div>
     </div>
 </body>

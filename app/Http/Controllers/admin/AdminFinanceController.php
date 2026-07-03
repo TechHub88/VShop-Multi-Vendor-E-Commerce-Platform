@@ -257,6 +257,14 @@ class AdminFinanceController extends Controller
         'ppl_rate' => GlobalSetting::get('ppl_rate', 5.00),
         'free_lead_limit' => GlobalSetting::get('free_lead_limit', 100),
         'paid_lead_threshold' => GlobalSetting::get('paid_lead_threshold', 0.50),
+        'dynamic_pricing_enabled' => GlobalSetting::get('dynamic_pricing_enabled', 0),
+        'dynamic_pricing_strategy' => GlobalSetting::get('dynamic_pricing_strategy', 'demand'),
+        'price_adjust_limit' => GlobalSetting::get('price_adjust_limit', 15),
+        'price_update_freq' => GlobalSetting::get('price_update_freq', 'daily'),
+        'discount_cap_enabled' => GlobalSetting::get('discount_cap_enabled', 1),
+        'discount_cap_percent' => GlobalSetting::get('discount_cap_percent', 30),
+        'discount_cap_action' => GlobalSetting::get('discount_cap_action', 'adjust'),
+        'coupon_discount_cap' => GlobalSetting::get('coupon_discount_cap', 500),
     ];
 
     $sellers = Seller::all();
@@ -274,9 +282,22 @@ class AdminFinanceController extends Controller
         $location = $seller->billing_city ?: 'Mumbai';
         
         $totalSales = SellerCommission::where('seller_id', $seller->id)->sum('order_amount') * $exchangeRate;
-        $platformCommission = SellerCommission::where('seller_id', $seller->id)->sum('commission_amount') * $exchangeRate;
+        if ($totalSales == 0) {
+            $totalSales = Order::where('seller_id', $seller->id)->where('payment_status', 'paid')->sum('total_amount') * $exchangeRate;
+        }
         
         $app = $seller->application ?? 'vshop';
+        $platformCommission = SellerCommission::where('seller_id', $seller->id)->sum('commission_amount') * $exchangeRate;
+        if ($platformCommission == 0) {
+            $cleanAppKey = 'vShop';
+            if (stripos($app, 'travel') !== false) $cleanAppKey = 'vTravel';
+            elseif (stripos($app, 'edge') !== false) $cleanAppKey = 'vEdge';
+            elseif (stripos($app, 'campus') !== false) $cleanAppKey = 'vCampus';
+            
+            $commRate = (float) ($appWiseCommission[$cleanAppKey] ?? 10);
+            if ($commRate <= 0) $commRate = 10;
+            $platformCommission = $totalSales * ($commRate / 100);
+        }
         
         $sellerPayout = $totalSales - $platformCommission;
         $referralPayout = $totalSales * 0.006;
@@ -391,6 +412,48 @@ class AdminFinanceController extends Controller
         ];
     }
     
+    // Lead Billing Register - Dynamic from SellerFinance
+    $leadBillingData = SellerFinance::with('seller')
+        ->whereIn('transaction_type', ['click', 'enquiry', 'lead_fee', 'lead_refund'])
+        ->orderBy('created_at', 'desc')
+        ->limit(50)
+        ->get();
+    
+    // Refund Trend - Weekly data for last 4 weeks
+    $refundTrendWeekly = [];
+    for ($w = 3; $w >= 0; $w--) {
+        $weekStart = now()->subWeeks($w)->startOfWeek();
+        $weekEnd = now()->subWeeks($w)->endOfWeek();
+        $refundTrendWeekly[] = SellerFinance::where('transaction_type', 'refund')
+            ->whereBetween('created_at', [$weekStart, $weekEnd])
+            ->sum('credit') * $exchangeRate;
+    }
+    
+    // Recent Refund Activity
+    $recentRefundActivity = SellerFinance::with('seller')
+        ->where('transaction_type', 'refund')
+        ->orderBy('created_at', 'desc')
+        ->limit(10)
+        ->get();
+    
+    // Tax Summary per Seller for export
+    $sellerTaxSummary = [];
+    foreach ($sellers as $seller) {
+        $sellerSales = SellerCommission::where('seller_id', $seller->id)->sum('order_amount') * $exchangeRate;
+        $sellerComm = SellerCommission::where('seller_id', $seller->id)->sum('commission_amount') * $exchangeRate;
+        $sellerGst = $sellerComm * ($gstRate / 100);
+        $sellerTaxSummary[] = [
+            'seller_id' => $seller->id,
+            'seller_name' => $seller->name,
+            'email' => $seller->email,
+            'total_sales' => $sellerSales,
+            'commission' => $sellerComm,
+            'gst_rate' => $gstRate,
+            'gst_amount' => $sellerGst,
+            'net_payout' => $sellerSales - $sellerComm - $sellerGst,
+        ];
+    }
+    
     return view('admin.finance-management', compact(
         'currency', 'exchangeRate', 'totalRevenue', 'totalCommission', 'totalPayouts', 'pendingPayouts',
         'refundAmount', 'disputesCount', 'openDisputes', 'resolvedDisputes', 'netRevenue', 'leadRevenue',
@@ -403,7 +466,8 @@ class AdminFinanceController extends Controller
         'sellers', 'categories', 'products', 'globalRulesTable', 'earningsDetails',
         'pricingRulesTable', 'leadMonetizationTable', 'taxRegions', 'currenciesList', 'invoiceTemplate', 'autoEscalationRules',
         'refundOrders', 'refundReasonsData',
-        'refundTxnsCount', 'avgRefundSla', 'recoveredAmount', 'commissionReversedAmount', 'leadRefundAmount', 'leadRefundCount'
+        'refundTxnsCount', 'avgRefundSla', 'recoveredAmount', 'commissionReversedAmount', 'leadRefundAmount', 'leadRefundCount',
+        'leadBillingData', 'refundTrendWeekly', 'recentRefundActivity', 'sellerTaxSummary', 'gstRate'
     ));
 }
     
@@ -437,9 +501,24 @@ class AdminFinanceController extends Controller
     public function approvePayout(Request $request)
     {
         try {
-            $payout = SellerFinance::find($request->input('payout_id'));
-            if (!$payout) {
-                return response()->json(['success' => false, 'message' => 'Payout not found']);
+            $payoutId = $request->input('payout_id');
+            $payout = SellerFinance::find($payoutId);
+            
+            // Fallback: If payout_id is actually a seller_id
+            if (!$payout || $payout->transaction_type !== 'payout') {
+                $payout = SellerFinance::where('seller_id', $payoutId)
+                    ->where('transaction_type', 'payout')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                
+                if (!$payout) {
+                    $payout = new SellerFinance();
+                    $payout->seller_id = $payoutId;
+                    $payout->transaction_type = 'payout';
+                    $payout->credit = 0;
+                    $payout->debit = 0;
+                    $payout->balance = 0;
+                }
             }
 
             $customerState = $request->input('state');
@@ -464,9 +543,41 @@ class AdminFinanceController extends Controller
     public function bulkApprovePayouts(Request $request)
     {
         try {
-            SellerFinance::whereIn('id', $request->payout_ids)
+            $ids = $request->input('payout_ids', []);
+            if (!is_array($ids)) {
+                $ids = [$ids];
+            }
+            
+            // Try matching as transaction IDs
+            $updatedCount = SellerFinance::whereIn('id', $ids)
                 ->where('transaction_type', 'payout')
                 ->update(['status' => 'completed']);
+                
+            // If no records updated, treat as seller_ids
+            if ($updatedCount === 0) {
+                foreach ($ids as $sellerId) {
+                    $payout = SellerFinance::where('seller_id', $sellerId)
+                        ->where('transaction_type', 'payout')
+                        ->orderBy('created_at', 'desc')
+                        ->first();
+                        
+                    if ($payout) {
+                        $payout->status = 'completed';
+                        $payout->save();
+                    } else {
+                        // Auto-create completed payout entry
+                        $payout = new SellerFinance();
+                        $payout->seller_id = $sellerId;
+                        $payout->transaction_type = 'payout';
+                        $payout->credit = 0;
+                        $payout->debit = 0;
+                        $payout->balance = 0;
+                        $payout->status = 'completed';
+                        $payout->save();
+                    }
+                }
+            }
+            
             return response()->json(['success' => true, 'message' => 'Payouts approved successfully']);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()]);
@@ -1799,7 +1910,7 @@ public function getAllSellers(Request $request)
     public function getSellerCaps(Request $request)
     {
         try {
-            $sellers = Seller::select('id', 'name', 'shop_name', 'email', 'daily_cap', 'daily_cap_enabled', 'daily_cap_used', 'daily_cap_reset_at')
+            $sellers = Seller::select('id', 'name', 'email', 'daily_cap', 'daily_cap_enabled', 'daily_cap_used', 'daily_cap_reset_at')
                 ->where(function($query) {
                     $query->where('daily_cap', '>', 0)
                           ->orWhere('daily_cap_enabled', true);
@@ -1961,6 +2072,36 @@ public function getAllSellers(Request $request)
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch lead config: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getLeadRules()
+    {
+        try {
+            $settings = [
+                'ppc_rate' => (float)GlobalSetting::get('ppc_rate', 0.50),
+                'ppl_rate' => (float)GlobalSetting::get('ppl_rate', 5.00),
+                'free_lead_limit' => (int)GlobalSetting::get('free_lead_limit', 100),
+                'paid_lead_threshold' => (float)GlobalSetting::get('paid_lead_threshold', 0.50),
+                'daily_cap_seller' => (float)GlobalSetting::get('daily_cap_seller', 1000),
+                'max_clicks_per_product' => (int)GlobalSetting::get('max_clicks_per_product', 50),
+                'rule1_duplicate_clicks' => (bool)GlobalSetting::get('enable_duplicate_click_rule', true),
+                'rule2_ip_limit' => (bool)GlobalSetting::get('enable_ip_limit_rule', true),
+                'rule3_invalid_details' => (bool)GlobalSetting::get('enable_invalid_details_rule', true),
+                'rule4_bot_pattern' => (bool)GlobalSetting::get('enable_bot_detection', true),
+                'rule5_too_many_enquiries' => (bool)GlobalSetting::get('enable_enquiry_limit_rule', true),
+                'rule6_blacklist' => (bool)GlobalSetting::get('enable_blacklist_rule', true),
+            ];
+            
+            return response()->json([
+                'success' => true,
+                'settings' => $settings
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
             ], 500);
         }
     }
@@ -2519,13 +2660,13 @@ public function exportReport(Request $request)
         
         switch ($reportType) {
             case 'tax':
-                return $this->exportTaxReport();
+                return $this->exportTaxReport($request);
             case 'invoice':
-                return $this->exportInvoiceReport();
+                return $this->exportInvoiceReport($request);
             case 'gst':
-                return $this->exportGSTReport();
+                return $this->exportGSTReport($request);
             case 'currency':
-                return $this->exportCurrencyReport();
+                return $this->exportCurrencyReport($request);
             default:
                 return redirect()->back()->with('error', 'Invalid report type');
         }
@@ -2611,98 +2752,351 @@ public function saveAllTaxSettings(Request $request)
 }
 
 // Private helper methods for exports
-private function exportTaxReport()
-{
-    $taxRegions = json_decode(GlobalSetting::get('tax_regions', '[]'), true);
-    $gstRate = GlobalSetting::get('gst_rate', 18);
-    
-    $filename = 'tax_report_' . date('Y-m-d') . '.csv';
-    $handle = fopen('php://output', 'w');
-    
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    
-    fputcsv($handle, ['Region', 'Tax Name', 'Rate (%)']);
-    foreach ($taxRegions as $region) {
-        fputcsv($handle, [$region['region'], $region['tax_name'], $region['rate']]);
+    public function sendInvoiceEmail(Request $request)
+    {
+        try {
+            $sellerId = $request->seller_id;
+            $startDate = $request->start_date;
+            $endDate = $request->end_date;
+            
+            if (!$sellerId) {
+                return response()->json(['success' => false, 'message' => 'Please select a seller']);
+            }
+            
+            $seller = Seller::find($sellerId);
+            if (!$seller) {
+                return response()->json(['success' => false, 'message' => 'Seller not found']);
+            }
+            if (!$seller->email) {
+                return response()->json(['success' => false, 'message' => 'Seller has no registered email address']);
+            }
+            
+            $invoiceTemplate = json_decode(GlobalSetting::get('invoice_template_settings', '{}'), true);
+            $gstRate = GlobalSetting::get('gst_rate', 18);
+            
+            $salesData = Order::where('seller_id', $sellerId)
+                ->where('payment_status', 'paid')
+                ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+                ->when($endDate, fn($q) => $q->whereDate('created_at', '<=', $endDate))
+                ->get();
+            
+            $totalSales = $salesData->sum('total_amount');
+            $commission = $totalSales * 0.1;
+            $gstAmount = $commission * ($gstRate / 100);
+            $netAmount = $totalSales - $commission - $gstAmount;
+            
+            $to = $seller->email;
+            $subject = 'Invoice #' . ($invoiceTemplate['invoicePrefix'] ?? 'INV') . '-' . $seller->id . '-' . date('Ymd');
+            
+            $htmlContent = view('emails.invoice', compact('seller', 'salesData', 'invoiceTemplate', 'totalSales', 'commission', 'gstRate', 'gstAmount', 'netAmount', 'startDate', 'endDate'))->render();
+            
+            try {
+                \Mail::to($to)->send(new \App\Mail\InvoiceMail($seller, $salesData, $invoiceTemplate, $totalSales, $commission, $gstRate, $gstAmount, $netAmount, $startDate, $endDate));
+                return response()->json(['success' => true, 'message' => 'Invoice email sent successfully to ' . $seller->name . ' (' . $to . ')']);
+            } catch (\Exception $ex) {
+                $headers = "MIME-Version: 1.0" . "\r\n";
+                $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+                $headers .= "From: " . ($invoiceTemplate['companyEmail'] ?? 'billing@company.com') . "\r\n";
+                
+                $mailSent = @mail($to, $subject, $htmlContent, $headers);
+                if ($mailSent) {
+                    return response()->json(['success' => true, 'message' => 'Invoice email sent successfully (via native PHP mail) to ' . $seller->name . ' (' . $to . ')']);
+                } else {
+                    return response()->json(['success' => false, 'message' => 'Could not send email. Laravel Mailer error: ' . $ex->getMessage()]);
+                }
+            }
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
     }
-    fputcsv($handle, []);
-    fputcsv($handle, ['Default GST Rate', '', $gstRate]);
-    
-    fclose($handle);
-    exit;
-}
 
-private function exportInvoiceReport()
-{
-    $invoices = Order::with('seller')->where('payment_status', 'paid')->get();
-    
-    $filename = 'invoice_report_' . date('Y-m-d') . '.csv';
-    $handle = fopen('php://output', 'w');
-    
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    
-    fputcsv($handle, ['Invoice ID', 'Seller', 'Amount', 'Date', 'Status']);
-    foreach ($invoices as $invoice) {
-        fputcsv($handle, [
-            'INV-' . $invoice->id,
-            $invoice->seller->name ?? 'N/A',
-            $invoice->total_amount,
-            $invoice->created_at->format('Y-m-d'),
-            $invoice->payment_status
-        ]);
+    private function exportTaxReport(Request $request)
+    {
+        $sellerId = $request->seller_id;
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
+        
+        $filename = 'tax_report_' . ($sellerId ? 'seller_' . $sellerId . '_' : 'global_') . date('Y-m-d') . '.csv';
+        $handle = fopen('php://output', 'w');
+        
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        
+        $gstRate = GlobalSetting::get('gst_rate', 18);
+        
+        if ($sellerId) {
+            $seller = Seller::find($sellerId);
+            fputcsv($handle, ['SELLER TAX SUMMARY REPORT']);
+            fputcsv($handle, ['Seller ID', 'S-' . ($seller->id ?? $sellerId)]);
+            fputcsv($handle, ['Seller Name', $seller->name ?? 'N/A']);
+            fputcsv($handle, ['GSTIN', $seller->gst_number ?? 'N/A']);
+            if ($startDate || $endDate) {
+                fputcsv($handle, ['Period', ($startDate ?? 'Start') . ' to ' . ($endDate ?? 'End')]);
+            }
+            fputcsv($handle, []);
+            
+            fputcsv($handle, ['Order ID', 'Total Sales (INR)', 'Commission (INR)', 'GST Amount (INR)', 'Net Payout (INR)', 'Date']);
+            
+            $orders = Order::where('seller_id', $sellerId)
+                ->where('payment_status', 'paid')
+                ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+                ->when($endDate, fn($q) => $q->whereDate('created_at', '<=', $endDate))
+                ->get();
+                
+            foreach ($orders as $order) {
+                $commission = $order->total_amount * 0.1;
+                $gstAmount = $commission * ($gstRate / 100);
+                $netPayout = $order->total_amount - $commission - $gstAmount;
+                
+                fputcsv($handle, [
+                    'INV-' . $order->id,
+                    round($order->total_amount, 2),
+                    round($commission, 2),
+                    round($gstAmount, 2),
+                    round($netPayout, 2),
+                    $order->created_at->format('Y-m-d')
+                ]);
+            }
+        } else {
+            // Export ALL sellers tax summary
+            fputcsv($handle, ['ALL SELLERS TAX SUMMARY REPORT']);
+            if ($startDate || $endDate) {
+                fputcsv($handle, ['Period', ($startDate ?? 'Start') . ' to ' . ($endDate ?? 'End')]);
+            }
+            fputcsv($handle, ['Generated On', date('Y-m-d H:i:s')]);
+            fputcsv($handle, ['GST Rate Applied', $gstRate . '%']);
+            fputcsv($handle, []);
+            fputcsv($handle, ['Seller ID', 'Seller Name', 'Email', 'GSTIN', 'Total Sales', 'Platform Commission', 'GST Amount', 'Net Payout']);
+            
+            $allSellers = Seller::all();
+            $grandTotalSales = 0;
+            $grandTotalCommission = 0;
+            $grandTotalGst = 0;
+            $grandTotalPayout = 0;
+            
+            foreach ($allSellers as $sellerItem) {
+                $query = Order::where('seller_id', $sellerItem->id)->where('payment_status', 'paid');
+                if ($startDate) $query->whereDate('created_at', '>=', $startDate);
+                if ($endDate) $query->whereDate('created_at', '<=', $endDate);
+                
+                $sellerSales = $query->sum('total_amount');
+                $sellerCommission = SellerCommission::where('seller_id', $sellerItem->id)->sum('commission_amount');
+                if ($sellerCommission == 0) $sellerCommission = $sellerSales * 0.1;
+                $sellerGst = $sellerCommission * ($gstRate / 100);
+                $sellerNet = $sellerSales - $sellerCommission - $sellerGst;
+                
+                $grandTotalSales += $sellerSales;
+                $grandTotalCommission += $sellerCommission;
+                $grandTotalGst += $sellerGst;
+                $grandTotalPayout += $sellerNet;
+                
+                fputcsv($handle, [
+                    'S-' . (1000 + $sellerItem->id),
+                    $sellerItem->name,
+                    $sellerItem->email ?? 'N/A',
+                    $sellerItem->gst_number ?? 'N/A',
+                    round($sellerSales, 2),
+                    round($sellerCommission, 2),
+                    round($sellerGst, 2),
+                    round($sellerNet, 2)
+                ]);
+            }
+            
+            fputcsv($handle, []);
+            fputcsv($handle, ['', 'GRAND TOTAL', '', '', round($grandTotalSales, 2), round($grandTotalCommission, 2), round($grandTotalGst, 2), round($grandTotalPayout, 2)]);
+            
+            // Also include tax regions reference
+            fputcsv($handle, []);
+            fputcsv($handle, ['TAX REGIONS REFERENCE']);
+            fputcsv($handle, ['Region', 'Tax Name', 'Rate (%)']);
+            $taxRegions = json_decode(GlobalSetting::get('tax_regions', '[]'), true);
+            foreach ($taxRegions as $region) {
+                fputcsv($handle, [$region['region'], $region['tax_name'], $region['rate']]);
+            }
+        }
+        
+        fclose($handle);
+        exit;
     }
-    
-    fclose($handle);
-    exit;
-}
 
-private function exportGSTReport()
-{
-    $gstRate = GlobalSetting::get('gst_rate', 18);
-    $totalCommission = SellerCommission::sum('commission_amount');
-    $gstCollected = $totalCommission * ($gstRate / 100);
-    
-    $filename = 'gst_report_' . date('Y-m-d') . '.csv';
-    $handle = fopen('php://output', 'w');
-    
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    
-    fputcsv($handle, ['Description', 'Amount (₹)']);
-    fputcsv($handle, ['Total Commission', $totalCommission]);
-    fputcsv($handle, ['GST Rate (%)', $gstRate]);
-    fputcsv($handle, ['GST Collected', $gstCollected]);
-    
-    fclose($handle);
-    exit;
-}
-
-private function exportCurrencyReport()
-{
-    $currencies = json_decode(GlobalSetting::get('currencies_list', '[]'), true);
-    $baseCurrency = session('currency', 'INR');
-    
-    $filename = 'currency_report_' . date('Y-m-d') . '.csv';
-    $handle = fopen('php://output', 'w');
-    
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    
-    fputcsv($handle, ['Base Currency', $baseCurrency]);
-    fputcsv($handle, []);
-    fputcsv($handle, ['Currency', 'Symbol', 'Exchange Rate', 'Auto-Update']);
-    foreach ($currencies as $currency) {
-        fputcsv($handle, [
-            $currency['currency'],
-            $currency['symbol'],
-            $currency['rate'],
-            $currency['auto_update'] ?? 'Fixed'
-        ]);
+    private function exportInvoiceReport(Request $request)
+    {
+        $sellerId = $request->seller_id;
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
+        
+        $filename = 'invoice_history_' . ($sellerId ? 'seller_' . $sellerId . '_' : 'global_') . date('Y-m-d') . '.csv';
+        $handle = fopen('php://output', 'w');
+        
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        
+        fputcsv($handle, ['Invoice ID', 'Seller Name', 'Seller Email', 'Total Sales (INR)', 'Commission (INR)', 'GST Amount (INR)', 'Net Payout (INR)', 'Date', 'Status']);
+        
+        $gstRate = GlobalSetting::get('gst_rate', 18);
+        
+        $invoices = Order::with('seller')
+            ->where('payment_status', 'paid')
+            ->when($sellerId, fn($q) => $q->where('seller_id', $sellerId))
+            ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+            ->when($endDate, fn($q) => $q->whereDate('created_at', '<=', $endDate))
+            ->get();
+            
+        foreach ($invoices as $invoice) {
+            $totalSales = $invoice->total_amount;
+            $commission = $totalSales * 0.1;
+            $gstAmount = $commission * ($gstRate / 100);
+            $netPayout = $totalSales - $commission - $gstAmount;
+            
+            fputcsv($handle, [
+                'INV-' . $invoice->id,
+                $invoice->seller->name ?? 'Guest/Unknown',
+                $invoice->seller->email ?? 'N/A',
+                round($totalSales, 2),
+                round($commission, 2),
+                round($gstAmount, 2),
+                round($netPayout, 2),
+                $invoice->created_at->format('Y-m-d'),
+                $invoice->payment_status
+            ]);
+        }
+        
+        fclose($handle);
+        exit;
     }
-    
-    fclose($handle);
-    exit;
-}
+
+    private function exportGSTReport(Request $request)
+    {
+        $sellerId = $request->seller_id;
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
+        
+        $filename = 'gst_collection_' . ($sellerId ? 'seller_' . $sellerId . '_' : 'global_') . date('Y-m-d') . '.csv';
+        $handle = fopen('php://output', 'w');
+        
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        
+        $gstRate = GlobalSetting::get('gst_rate', 18);
+        
+        if ($sellerId) {
+            $seller = Seller::find($sellerId);
+            fputcsv($handle, ['SELLER GST COLLECTION REPORT']);
+            fputcsv($handle, ['Seller ID', 'S-' . ($seller->id ?? $sellerId)]);
+            fputcsv($handle, ['Seller Name', $seller->name ?? 'N/A']);
+            fputcsv($handle, ['GSTIN', $seller->gst_number ?? 'N/A']);
+            fputcsv($handle, []);
+            fputcsv($handle, ['Order ID', 'Subtotal (INR)', 'GST Rate (%)', 'GST Collected (INR)', 'Commission (INR)', 'Net Payout (INR)', 'Date']);
+            
+            $orders = Order::where('seller_id', $sellerId)
+                ->where('payment_status', 'paid')
+                ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+                ->when($endDate, fn($q) => $q->whereDate('created_at', '<=', $endDate))
+                ->get();
+                
+            foreach ($orders as $order) {
+                $commission = $order->total_amount * 0.1;
+                $gstAmount = $commission * ($gstRate / 100);
+                $netPayout = $order->total_amount - $commission - $gstAmount;
+                
+                fputcsv($handle, [
+                    'INV-' . $order->id,
+                    round($order->total_amount, 2),
+                    $gstRate,
+                    round($gstAmount, 2),
+                    round($commission, 2),
+                    round($netPayout, 2),
+                    $order->created_at->format('Y-m-d')
+                ]);
+            }
+        } else {
+            fputcsv($handle, ['GLOBAL GST COLLECTION REPORT']);
+            fputcsv($handle, []);
+            fputcsv($handle, ['Seller ID', 'Seller Name', 'Seller Email', 'Total Sales (INR)', 'Total Commission (INR)', 'GST Rate (%)', 'GST Amount Collected (INR)', 'Net Payout (INR)']);
+            
+            $sellers = Seller::all();
+            foreach ($sellers as $seller) {
+                $totalSales = SellerCommission::where('seller_id', $seller->id)
+                    ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+                    ->when($endDate, fn($q) => $q->whereDate('created_at', '<=', $endDate))
+                    ->sum('order_amount');
+                    
+                $commission = SellerCommission::where('seller_id', $seller->id)
+                    ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+                    ->when($endDate, fn($q) => $q->whereDate('created_at', '<=', $endDate))
+                    ->sum('commission_amount');
+                    
+                $gstAmount = $commission * ($gstRate / 100);
+                $netPayout = $totalSales - $commission - $gstAmount;
+                
+                fputcsv($handle, [
+                    $seller->id,
+                    $seller->name,
+                    $seller->email,
+                    round($totalSales, 2),
+                    round($commission, 2),
+                    $gstRate,
+                    round($gstAmount, 2),
+                    round($netPayout, 2)
+                ]);
+            }
+        }
+        
+        fclose($handle);
+        exit;
+    }
+
+    private function exportCurrencyReport(Request $request)
+    {
+        $sellerId = $request->seller_id;
+        $currencies = json_decode(GlobalSetting::get('currencies_list', '[]'), true);
+        $baseCurrency = session('currency', 'INR');
+        
+        $filename = 'currency_report_' . ($sellerId ? 'seller_' . $sellerId . '_' : 'global_') . date('Y-m-d') . '.csv';
+        $handle = fopen('php://output', 'w');
+        
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        
+        if ($sellerId) {
+            $seller = Seller::find($sellerId);
+            fputcsv($handle, ['SELLER CURRENCY PREFERENCES']);
+            fputcsv($handle, ['Seller Name', $seller->name ?? 'N/A']);
+            fputcsv($handle, ['Preferred Currency', $seller->currency ?? $baseCurrency]);
+            fputcsv($handle, []);
+        }
+        
+        fputcsv($handle, ['Base Currency', $baseCurrency]);
+        fputcsv($handle, []);
+        fputcsv($handle, ['Currency', 'Symbol', 'Exchange Rate', 'Auto-Update']);
+        foreach ($currencies as $currency) {
+            fputcsv($handle, [
+                $currency['currency'],
+                $currency['symbol'],
+                $currency['rate'],
+                $currency['auto_update'] ?? 'Fixed'
+            ]);
+        }
+        
+        fclose($handle);
+        exit;
+    }
+
+    public function savePricingDiscountRules(Request $request)
+    {
+        try {
+            GlobalSetting::set('dynamic_pricing_enabled', $request->dynamic_pricing_enabled ? 1 : 0);
+            GlobalSetting::set('dynamic_pricing_strategy', $request->dynamic_pricing_strategy ?? 'demand');
+            GlobalSetting::set('price_adjust_limit', $request->price_adjust_limit ?? 15);
+            GlobalSetting::set('price_update_freq', $request->price_update_freq ?? 'daily');
+            GlobalSetting::set('discount_cap_enabled', $request->discount_cap_enabled ? 1 : 0);
+            GlobalSetting::set('discount_cap_percent', $request->discount_cap_percent ?? 30);
+            GlobalSetting::set('discount_cap_action', $request->discount_cap_action ?? 'adjust');
+            GlobalSetting::set('coupon_discount_cap', $request->coupon_discount_cap ?? 500);
+
+            return response()->json(['success' => true, 'message' => 'Dynamic pricing & Discount cap rules saved successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
 }

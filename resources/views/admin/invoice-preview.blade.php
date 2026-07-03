@@ -3,16 +3,16 @@
     <div class="row mb-4 border-bottom pb-3 align-items-center">
         <div class="col-sm-6">
             <h2 class="mb-0 fw-bold" style="color: #2c3e50;">INVOICE</h2>
-            <p class="text-muted mb-0">Invoice #INV-{{ $seller->id }}-{{ date('Ymd') }}</p>
+            <p class="text-muted mb-0">Invoice #{{ $invoiceTemplate['invoicePrefix'] ?? 'INV' }}-{{ $seller->id }}-{{ date('Ymd') }}</p>
             <p class="text-muted fs-8">Date: {{ date('d M Y') }}</p>
         </div>
         <div class="col-sm-6 text-end">
             <!-- Professional Branding -->
-            <h4 class="mb-1 fw-bold" style="color: #1a5276;">Bridhi Invation</h4>
-            <p class="text-muted mb-0 fs-8">123 Bridhi Tower, Tech Park</p>
-            <p class="text-muted mb-0 fs-8">City, State, 12345</p>
-            <p class="text-muted mb-0 fs-8">Email: billing@bridhiinvation.com</p>
-            <p class="text-muted mb-0 fs-8">GSTIN: 22AAAAA0000A1Z</p>
+            <h4 class="mb-1 fw-bold" style="color: #1a5276;">{{ $invoiceTemplate['companyName'] ?? 'Bridhi Invation' }}</h4>
+            <p class="text-muted mb-0 fs-8">{{ $invoiceTemplate['companyAddress'] ?? '123 Bridhi Tower, Tech Park' }}</p>
+            @if(!empty($invoiceTemplate['companyPhone'])) <p class="text-muted mb-0 fs-8">Phone: {{ $invoiceTemplate['companyPhone'] }}</p> @endif
+            @if(!empty($invoiceTemplate['companyEmail'])) <p class="text-muted mb-0 fs-8">Email: {{ $invoiceTemplate['companyEmail'] }}</p> @endif
+            @if(!empty($invoiceTemplate['companyGst'])) <p class="text-muted mb-0 fs-8">GSTIN: {{ $invoiceTemplate['companyGst'] }}</p> @endif
         </div>
     </div>
 
@@ -86,6 +86,6 @@
     <!-- Footer -->
     <div class="text-center mt-5 pt-3 border-top text-muted">
         <p class="mb-1 fs-8">This is a computer-generated invoice and does not require a physical signature.</p>
-        <p class="fw-bold fs-7 mb-0">Thank you for your business with Bridhi Invation.</p>
+        <p class="fw-bold fs-7 mb-0">{{ $invoiceTemplate['invoiceFooter'] ?? 'Thank you for your business!' }}</p>
     </div>
 </div>

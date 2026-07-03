@@ -361,6 +361,7 @@
                 <button class="btn btn-outline-primary btn-sm active" id="btn-sub-config" onclick="switchSubTab('sub-config')">Commission & Hold Settings</button>
                 <button class="btn btn-outline-primary btn-sm" id="btn-sub-table" onclick="switchSubTab('sub-table')">Global Commission Rules Table</button>
                 <button class="btn btn-outline-primary btn-sm" id="btn-sub-boost" onclick="switchSubTab('sub-boost')">Lead Monetization & Boost Engine</button>
+                <button class="btn btn-outline-primary btn-sm" id="btn-sub-pricing" onclick="switchSubTab('sub-pricing')">Dynamic Pricing & Discount Caps</button>
             </div>
 
             <div id="sub-tab-content">
@@ -503,6 +504,59 @@
                     @endforeach
                 </tbody>
             </table>
+        </div>
+
+        <!-- History / Saved Commissions Table -->
+        <div class="p-3 bg-light border-top">
+            <h6 class="fw-bold mb-3 text-secondary"><iconify-icon icon="solar:history-bold" class="align-middle me-1"></iconify-icon> Saved Commissions Rule History</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped table-bordered mb-0 bg-white">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Seller</th>
+                            <th>Platform</th>
+                            <th>Sell Type</th>
+                            <th>Commission Type</th>
+                            <th>Seller Split</th>
+                            <th>Referrer Split</th>
+                            <th>Platform Split</th>
+                            <th>Referrer Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($commissionRules as $hIndex => $hRule)
+                            @php
+                                $hSellerName = 'Global Default';
+                                if (!empty($hRule['seller_id'])) {
+                                    $sObj = collect($sellers)->firstWhere('id', $hRule['seller_id']);
+                                    if ($sObj) $hSellerName = $sObj->name;
+                                }
+                                $hReferrerName = 'None';
+                                if (!empty($hRule['referral_id'])) {
+                                    $rObj = collect($sellers)->firstWhere('id', $hRule['referral_id']);
+                                    if ($rObj) $hReferrerName = $rObj->name;
+                                }
+                            @endphp
+                            <tr>
+                                <td>{{ $hIndex + 1 }}</td>
+                                <td><span class="badge bg-info text-dark">{{ $hSellerName }}</span></td>
+                                <td><span class="badge bg-secondary">{{ $hRule['app_type'] ?? 'vshop' }}</span></td>
+                                <td>{{ ucfirst($hRule['sell_type'] ?? 'direct') }}</td>
+                                <td>{{ ucfirst($hRule['commission_type'] ?? 'percentage') }}</td>
+                                <td>{{ $hRule['seller_commission'] ?? 0 }}%</td>
+                                <td>{{ $hRule['referrer_commission'] ?? 0 }}%</td>
+                                <td>{{ $hRule['platform_commission'] ?? 0 }}%</td>
+                                <td>{{ $hReferrerName }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="9" class="text-center text-muted">No saved commission rules.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
 
 
@@ -927,6 +981,8 @@
             </div>
         </div>
     </div>
+
+
 </div>
 
 <!-- Modal for Fraud Rules Details -->
@@ -1194,101 +1250,63 @@
                         </tr>
                     </thead>
                     <tbody id="leadBillingTableBody">
-                        <tr>
-                            <td>#LD-001</td>
-                            <td>2026-06-03 10:30 AM</td>
-                            <td>TechStore</td>
-                            <td><span class="badge bg-info">Click</span></td>
-                            <td>Google Ads</td>
-                            <td>John Doe</td>
-                            <td>john@email.com</td>
-                            <td>PPC</td>
-                            <td>$0.50</td>
-                            <td><span class="badge bg-success">Paid</span></td>
-                            <td><span class="badge bg-primary">Generated</span></td>
+                        @forelse($leadBillingData as $lb)
+                        @php
+                            $lbType = ucfirst($lb->transaction_type);
+                            $lbTypeBadge = match($lb->transaction_type) {
+                                'click' => 'info',
+                                'enquiry' => 'success',
+                                'lead_fee' => 'primary',
+                                'lead_refund' => 'danger',
+                                default => 'secondary'
+                            };
+                            $lbChargeType = match($lb->transaction_type) {
+                                'click' => 'PPC',
+                                'enquiry' => 'PPL',
+                                'lead_fee' => 'PPL',
+                                'lead_refund' => 'Refunded',
+                                default => '-'
+                            };
+                            $lbStatus = $lb->status ?? 'pending';
+                            $lbStatusBadge = match($lbStatus) {
+                                'completed' => 'success',
+                                'pending' => 'warning',
+                                'failed' => 'danger',
+                                default => 'secondary'
+                            };
+                            $lbAmount = $lb->transaction_type === 'lead_refund' ? -$lb->credit : $lb->credit;
+                        @endphp
+                        <tr data-seller="{{ $lb->seller->name ?? '' }}" data-status="{{ ucfirst($lbStatus) }}">
+                            <td>#LD-{{ str_pad($lb->id, 3, '0', STR_PAD_LEFT) }}</td>
+                            <td>{{ $lb->created_at ? $lb->created_at->format('Y-m-d h:i A') : '-' }}</td>
+                            <td>{{ $lb->seller->name ?? 'N/A' }}</td>
+                            <td><span class="badge bg-{{ $lbTypeBadge }}">{{ $lbType }}</span></td>
+                            <td>{{ $lb->description ?? 'Organic' }}</td>
+                            <td>{{ $lb->reference ?? '-' }}</td>
+                            <td>{{ $lb->seller->email ?? '-' }}</td>
+                            <td>{{ $lbChargeType }}</td>
+                            <td>${{ number_format(abs($lbAmount), 2) }}</td>
+                            <td><span class="badge bg-{{ $lbStatusBadge }}">{{ ucfirst($lbStatus) }}</span></td>
+                            <td><span class="badge bg-{{ $lbStatus == 'completed' ? 'primary' : 'secondary' }}">{{ $lbStatus == 'completed' ? 'Generated' : 'Not Generated' }}</span></td>
                             <td class="text-center">
-                                <button class="btn btn-sm btn-outline-primary" onclick="viewLeadDetails('#LD-001')">
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewLeadDetails('#LD-{{ $lb->id }}')">
                                     <iconify-icon icon="solar:eye-bold"></iconify-icon>
                                 </button>
                             </td>
                         </tr>
+                        @empty
                         <tr>
-                            <td>#LD-002</td>
-                            <td>2026-06-03 11:15 AM</td>
-                            <td>FashionHub</td>
-                            <td><span class="badge bg-success">Enquiry</span></td>
-                            <td>Facebook</td>
-                            <td>Jane Smith</td>
-                            <td>jane@email.com</td>
-                            <td>PPL</td>
-                            <td>$5.00</td>
-                            <td><span class="badge bg-warning">Pending</span></td>
-                            <td><span class="badge bg-secondary">Not Generated</span></td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-outline-primary" onclick="viewLeadDetails('#LD-002')">
-                                    <iconify-icon icon="solar:eye-bold"></iconify-icon>
-                                </button>
+                            <td colspan="12" class="text-center text-muted py-4">
+                                <iconify-icon icon="solar:document-text-bold-duotone" width="32" class="d-block mx-auto mb-2 text-muted"></iconify-icon>
+                                No lead billing records found yet.
                             </td>
                         </tr>
-                        <tr>
-                            <td>#LD-003</td>
-                            <td>2026-06-02 09:45 AM</td>
-                            <td>TravelAgency</td>
-                            <td><span class="badge bg-info">Click</span></td>
-                            <td>Organic</td>
-                            <td>Mike Johnson</td>
-                            <td>mike@email.com</td>
-                            <td>PPC</td>
-                            <td>$0.50</td>
-                            <td><span class="badge bg-success">Paid</span></td>
-                            <td><span class="badge bg-primary">Generated</span></td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-outline-primary" onclick="viewLeadDetails('#LD-003')">
-                                    <iconify-icon icon="solar:eye-bold"></iconify-icon>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#LD-004</td>
-                            <td>2026-06-02 02:30 PM</td>
-                            <td>vCampus</td>
-                            <td><span class="badge bg-success">Enquiry</span></td>
-                            <td>LinkedIn</td>
-                            <td>Sarah Wilson</td>
-                            <td>sarah@email.com</td>
-                            <td>PPL</td>
-                            <td>$5.00</td>
-                            <td><span class="badge bg-success">Paid</span></td>
-                            <td><span class="badge bg-primary">Generated</span></td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-outline-primary" onclick="viewLeadDetails('#LD-004')">
-                                    <iconify-icon icon="solar:eye-bold"></iconify-icon>
-                                </button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>#LD-005</td>
-                            <td>2026-06-01 04:00 PM</td>
-                            <td>vEdge</td>
-                            <td><span class="badge bg-danger">Fake Lead</span></td>
-                            <td>Bot Traffic</td>
-                            <td>Spam User</td>
-                            <td>spam@email.com</td>
-                            <td>Refunded</td>
-                            <td>-$0.50</td>
-                            <td><span class="badge bg-danger">Refunded</span></td>
-                            <td><span class="badge bg-warning">Credited Back</span></td>
-                            <td class="text-center">
-                                <button class="btn btn-sm btn-outline-primary" onclick="viewLeadDetails('#LD-005')">
-                                    <iconify-icon icon="solar:eye-bold"></iconify-icon>
-                                </button>
-                            </td>
-                        </tr>
+                        @endforelse
                     </tbody>
                     <tfoot class="table-light">
                         <tr class="fw-bold">
                             <td colspan="8" class="text-end">Total Lead Revenue:</td>
-                            <td colspan="3">$11.00</td>
+                            <td colspan="3">${{ number_format($leadBillingData->where('transaction_type', '!=', 'lead_refund')->sum('credit') - $leadBillingData->where('transaction_type', 'lead_refund')->sum('credit'), 2) }}</td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -1298,6 +1316,113 @@
     </div>
 
   
+</div>
+
+
+<!-- SUB TAB 4: DYNAMIC PRICING & DISCOUNT CAPS -->
+<div class="sub-tab-pane d-none" id="sub-pricing">
+    <div class="row g-3 mb-4">
+        <!-- Dynamic Pricing Rules Card -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h5 class="mb-0 fw-bold text-primary">📈 Dynamic Pricing Engine</h5>
+                </div>
+                <div class="card-body">
+                    <form id="dynamicPricingRulesForm" onsubmit="savePricingDiscountRules(event)">
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" id="dynamicPricingEnabled" name="dynamic_pricing_enabled" value="1" {{ ($settings['dynamic_pricing_enabled'] ?? 0) == 1 ? 'checked' : '' }}>
+                                <label class="form-check-label fw-bold">Enable AI-Powered Dynamic Pricing</label>
+                            </div>
+                            <div class="form-text text-muted small">Auto-adjust item price based on demand, inventory level, and external factors.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Pricing Strategy</label>
+                            <select class="form-select form-select-sm" id="dynamicPricingStrategy" name="dynamic_pricing_strategy">
+                                <option value="demand" {{ ($settings['dynamic_pricing_strategy'] ?? 'demand') == 'demand' ? 'selected' : '' }}>Demand-Based Pricing (Surge/Off-Peak)</option>
+                                <option value="inventory" {{ ($settings['dynamic_pricing_strategy'] ?? '') == 'inventory' ? 'selected' : '' }}>Inventory-Level Adjustment (Clearance/Scarcity)</option>
+                                <option value="competitor" {{ ($settings['dynamic_pricing_strategy'] ?? '') == 'competitor' ? 'selected' : '' }}>Competitor Matching (Match Lowest Online)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Max Price Adjustment Limit</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">&plusmn;</span>
+                                <input type="number" class="form-control" id="priceAdjustLimit" name="price_adjust_limit" value="{{ $settings['price_adjust_limit'] ?? 15 }}" min="1" max="100">
+                                <span class="input-group-text">% of original price</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Calculation Frequency</label>
+                            <select class="form-select form-select-sm" id="priceUpdateFreq" name="price_update_freq">
+                                <option value="realtime" {{ ($settings['price_update_freq'] ?? '') == 'realtime' ? 'selected' : '' }}>Real-time / Instant</option>
+                                <option value="daily" {{ ($settings['price_update_freq'] ?? 'daily') == 'daily' ? 'selected' : '' }}>Daily Recalculation</option>
+                                <option value="weekly" {{ ($settings['price_update_freq'] ?? '') == 'weekly' ? 'selected' : '' }}>Weekly Recalculation</option>
+                            </select>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary btn-sm shadow-sm w-100">💾 Save Pricing Engine Rules</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Discount Cap Controls Card -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-3">
+                    <h5 class="mb-0 fw-bold text-primary">🛑 Discount Cap Control</h5>
+                </div>
+                <div class="card-body">
+                    <form id="discountCapRulesForm" onsubmit="savePricingDiscountRules(event)">
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" id="discountCapEnabled" name="discount_cap_enabled" value="1" {{ ($settings['discount_cap_enabled'] ?? 1) == 1 ? 'checked' : '' }}>
+                                <label class="form-check-label fw-bold">Enable Strict Discount Cap Enforcement</label>
+                            </div>
+                            <div class="form-text text-muted small">Prevents coupon code and marketing discount stacking.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Maximum Allowed Discount Limit</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" class="form-control" id="discountCapPercent" name="discount_cap_percent" value="{{ $settings['discount_cap_percent'] ?? 30 }}" min="1" max="100">
+                                <span class="input-group-text">% of product listing price</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Maximum Coupon Cap Value</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="couponDiscountCap" name="coupon_discount_cap" value="{{ $settings['coupon_discount_cap'] ?? 500 }}" min="1">
+                                <span class="input-group-text">max absolute discount per item</span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Exceeded Cap Action</label>
+                            <select class="form-select form-select-sm" id="discountCapAction" name="discount_cap_action">
+                                <option value="adjust" {{ ($settings['discount_cap_action'] ?? 'adjust') == 'adjust' ? 'selected' : '' }}>Auto-Adjust (reduce discount to fit cap limit)</option>
+                                <option value="block" {{ ($settings['discount_cap_action'] ?? '') == 'block' ? 'selected' : '' }}>Block Checkout (show warning modal)</option>
+                                <option value="review" {{ ($settings['discount_cap_action'] ?? '') == 'review' ? 'selected' : '' }}>Flag Order (allow purchase but hold settlement)</option>
+                            </select>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary btn-sm shadow-sm w-100">💾 Save Discount Cap Controls</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 
@@ -1393,7 +1518,7 @@
         </div>
         <!-- 5th KPI: Settlement Delay Tracker with Speedometer -->
         <div class="col-xl col-sm-6">
-            <div class="kpi-card shadow-sm border-0 card bg-white border-start border-warning border-3">
+            <div class="kpi-card shadow-sm border-0 card bg-white border-start border-warning border-3" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;" onclick="showSettlementHoldModal()" onmouseover="this.style.transform='scale(1.02)';" onmouseout="this.style.transform='scale(1)';" title="Click to view all sellers' hold & delay history">
                 <div class="card-body text-center p-2">
                     <h6 class="text-muted mb-1 fs-7 fw-bold" style="color:#0057b8 !important;">Settlement Delay Tracker</h6>
                     @php
@@ -1443,6 +1568,11 @@
                     <div class="fw-bold fs-6 mt-0" style="color:#212529;">{{ $avgDelayDays }} Days</div>
                     <div class="fs-8 text-muted">Cycle: {{ $holdDaysSetting }} Days</div>
                     <span class="badge mt-1" style="background-color:{{ $statusColor }}20; color:{{ $statusColor }}; font-size:10px; font-weight:600;">{{ $delayStatus }}</span>
+                    <div class="mt-2 border-top pt-2">
+                        <span class="text-primary text-decoration-none fw-bold" style="font-size: 11px;">
+                            <iconify-icon icon="solar:history-bold-duotone" class="align-middle me-1" style="font-size: 14px;"></iconify-icon> View Hold History ➔
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1622,7 +1752,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <iconify-icon icon="solar:close-circle-bold-duotone" width="16" class="me-1"></iconify-icon> Close
                 </button>
-                <button type="button" class="btn btn-primary" onclick="processPayout()">
+                <button type="button" class="btn btn-primary" onclick="processPayoutApproval()">
                     <iconify-icon icon="solar:check-read-bold-duotone" width="16" class="me-1"></iconify-icon> Process Payout
                 </button>
             </div>
@@ -1691,6 +1821,81 @@
         </div>
     </div>
 </div>
+
+<!-- Modal for Settlement Hold Tracker (All Sellers) -->
+<div class="modal fade" id="settlementHoldModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-primary text-white border-0" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-white bg-opacity-20 p-2 me-2">
+                        <iconify-icon icon="solar:clock-circle-bold-duotone" width="24" class="text-white"></iconify-icon>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0">Settlement & Payout Delay Tracker</h5>
+                        <p class="mb-0 small text-white opacity-85">Monitor current payout release dates, delay windows, and SLA compliance</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle mb-0" id="settlementHoldTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Seller Code</th>
+                                <th>Seller Name</th>
+                                <th>App Platform</th>
+                                <th class="text-center">Hold Period</th>
+                                <th>Recorded Date</th>
+                                <th>Scheduled Release</th>
+                                <th class="text-center">Remaining / Delay</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="settlementHoldTableBody">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0 py-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <iconify-icon icon="solar:close-circle-bold-duotone" width="16" class="me-1"></iconify-icon> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Individual Seller Settlement Flow Details -->
+<div class="modal fade" id="sellerDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-primary text-white border-0" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-white bg-opacity-20 p-2 me-2">
+                        <iconify-icon icon="solar:route-bold-duotone" width="24" class="text-white"></iconify-icon>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="flowModalTitle">Settlement Flow & Status</h5>
+                        <p class="mb-0 small opacity-85">Live escrow pipeline status, rules and settlement details</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4" id="sellerDetailsModalContent">
+                <!-- Populated dynamically via JS -->
+            </div>
+            <div class="modal-footer bg-light border-0 py-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <iconify-icon icon="solar:close-circle-bold-duotone" width="16" class="me-1"></iconify-icon> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 
     <!-- TRANSACTION LEDGER (Full Dynamic) -->
@@ -2608,12 +2813,13 @@ function ledgerNextPage() {
 <script>
 // Initialize Charts
 function initRefundCharts() {
-    // Trend Chart
+    // Trend Chart - Dynamic data from controller
     const trendCtx = document.getElementById('refundTrendChart');
     if (trendCtx) {
+        const weeklyData = {!! json_encode($refundTrendWeekly) !!};
         new Chart(trendCtx, {
             type: 'line',
-            data: { labels: ['W1', 'W2', 'W3', 'W4'], datasets: [{ label: 'Refund ($)', data: [1850, 2100, 1950, 2450], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', fill: true, tension: 0.4 }] },
+            data: { labels: ['W1', 'W2', 'W3', 'W4'], datasets: [{ label: 'Refund ($)', data: weeklyData, borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', fill: true, tension: 0.4 }] },
             options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
         });
     }
@@ -2623,20 +2829,27 @@ function initRefundCharts() {
     if (catCtx) {
         new Chart(catCtx, {
             type: 'doughnut',
-            data: { labels: ['Electronics', 'Apparel', 'Travel', 'Services', 'Others'], datasets: [{ data: [35, 28, 18, 12, 7], backgroundColor: ['#3498db', '#e74c3c', '#27ae60', '#f39c12', '#9b59b6'] }] },
+            data: { labels: {!! json_encode(array_keys($refundReasonsData)) !!}, datasets: [{ data: {!! json_encode(array_values($refundReasonsData)) !!}, backgroundColor: ['#3498db', '#e74c3c', '#27ae60', '#f39c12', '#9b59b6'] }] },
             options: { responsive: true, maintainAspectRatio: true, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } } } }
         });
     }
 
-    // Recent Activities
+    // Recent Activities - Dynamic from database
     const activityList = document.getElementById('recentActivityList');
     if (activityList) {
+        @if($recentRefundActivity->count() > 0)
         activityList.innerHTML = `
-            <div class="d-flex justify-content-between p-2 border-bottom"><span>TechStore</span><span class="text-danger">$125</span><small class="text-muted">2 mins ago</small></div>
-            <div class="d-flex justify-content-between p-2 border-bottom"><span>FashionHub</span><span class="text-warning">$89</span><small class="text-muted">15 mins ago</small></div>
-            <div class="d-flex justify-content-between p-2 border-bottom"><span>TravelAgency</span><span class="text-danger">$450</span><small class="text-muted">1 hour ago</small></div>
-            <div class="d-flex justify-content-between p-2 border-bottom"><span>vCampus</span><span class="text-success">$75</span><small class="text-muted">3 hours ago</small></div>
+            @foreach($recentRefundActivity as $ra)
+            <div class="d-flex justify-content-between p-2 border-bottom">
+                <span>{{ $ra->seller->name ?? 'Unknown' }}</span>
+                <span class="text-danger">${{ number_format($ra->credit, 2) }}</span>
+                <small class="text-muted">{{ $ra->created_at ? $ra->created_at->diffForHumans() : '-' }}</small>
+            </div>
+            @endforeach
         `;
+        @else
+        activityList.innerHTML = '<div class="text-center py-3 text-muted small">No recent refund activity</div>';
+        @endif
     }
 }
 
@@ -3075,7 +3288,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             <tbody id="currencyTableBody2">
                                 @foreach($currenciesList as $c)
                                 <tr>
-                                    <td><input type="text" class="form-control form-control-sm currency-code-field2" value="{{ $c['currency'] }}" required></td>
+                                    <td>
+                                        <select class="form-select form-select-sm currency-code-field2" onchange="autoFetchSymbol2(this)" required>
+                                            <option value="USD" {{ $c['currency'] == 'USD' ? 'selected' : '' }}>USD (US Dollar)</option>
+                                            <option value="INR" {{ $c['currency'] == 'INR' ? 'selected' : '' }}>INR (Indian Rupee)</option>
+                                            <option value="EUR" {{ $c['currency'] == 'EUR' ? 'selected' : '' }}>EUR (Euro)</option>
+                                            <option value="GBP" {{ $c['currency'] == 'GBP' ? 'selected' : '' }}>GBP (British Pound)</option>
+                                            <option value="AUD" {{ $c['currency'] == 'AUD' ? 'selected' : '' }}>AUD (Australian Dollar)</option>
+                                            <option value="CAD" {{ $c['currency'] == 'CAD' ? 'selected' : '' }}>CAD (Canadian Dollar)</option>
+                                            <option value="JPY" {{ $c['currency'] == 'JPY' ? 'selected' : '' }}>JPY (Japanese Yen)</option>
+                                            <option value="AED" {{ $c['currency'] == 'AED' ? 'selected' : '' }}>AED (UAE Dirham)</option>
+                                            <option value="SGD" {{ $c['currency'] == 'SGD' ? 'selected' : '' }}>SGD (Singapore Dollar)</option>
+                                        </select>
+                                    </td>
                                     <td><input type="text" class="form-control form-control-sm currency-symbol-field2" value="{{ $c['symbol'] }}" required></td>
                                     <td><input type="number" step="0.0001" class="form-control form-control-sm currency-rate-field2" value="{{ $c['rate'] }}" required></td>
                                     <td>
@@ -3092,7 +3317,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             </tbody>
                         </table>
                     </div>
-                    <button class="btn btn-secondary btn-sm w-100 mt-2" onclick="addCurrencyRow2()">+ Add Currency</button>
+                    <button type="button" class="btn btn-secondary btn-sm w-100 mt-2" onclick="addCurrencyRow2()">+ Add Currency</button>
                 </div>
             </div>
         </div>
@@ -3183,6 +3408,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="d-flex gap-2">
                         <button class="btn btn-primary btn-sm w-50" onclick="generateInvoiceNew()">Generate Preview</button>
                         <button class="btn btn-outline-primary btn-sm w-50" onclick="downloadInvoiceNew()">Download PDF</button>
+                    </div>
+                    <div class="d-flex gap-2 mt-2">
+                        <button class="btn btn-info text-white btn-sm w-100" id="sendInvoiceEmailBtn" onclick="sendInvoiceEmailNew()">
+                            <iconify-icon icon="solar:send-square-bold-duotone" class="align-middle me-1"></iconify-icon> Send Invoice Email
+                        </button>
                     </div>
                     <!-- Export Reports -->
                     <div class="mt-4 pt-3 border-top">
@@ -4457,79 +4687,10 @@ function viewHistory(index) {
 
 let activePayoutSellerId = null;
 
-function showPayoutModal(sellerId) {
-    activePayoutSellerId = sellerId;
-    const row = earningsDetails.find(r => r.seller_id == sellerId);
-    if (!row) return;
-    
-    const currencySym = '{{ $currencySymbol }}';
-    
-    const purchaseDate = new Date(row.purchase_date);
-    const payoutDate = new Date(row.purchase_date);
-    payoutDate.setDate(payoutDate.getDate() + parseInt(row.hold_days));
-    
-    const fmtPurchase = purchaseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-    const fmtPayout = payoutDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
-    
-    const detailHtml = `
-        <div class="p-2">
-            <h5 class="fw-bold text-center text-success mb-3">Formula Remittance Statement</h5>
-            <div class="d-flex justify-content-between mb-2">
-                <span class="text-muted">Total Sales Revenue:</span>
-                <span class="fw-bold">${currencySym}${row.total_sales.toLocaleString()}</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2 text-danger">
-                <span>Less: Platform Commission (10%):</span>
-                <span>-${currencySym}${row.platform_commission.toLocaleString()}</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2 text-danger">
-                <span>Less: Referral Payout:</span>
-                <span>-${currencySym}${row.referral_payout.toLocaleString()}</span>
-            </div>
-            <div class="d-flex justify-content-between mb-2 text-danger">
-                <span>Less: Estimated Tax Draft (GST):</span>
-                <span>-${currencySym}${row.est_tax.toLocaleString()}</span>
-            </div>
-            <hr class="my-2">
-            <div class="d-flex justify-content-between mb-3 fw-bold fs-5 text-success">
-                <span>Net Payable Balance:</span>
-                <span>{{ $currencySymbol }}${row.net_payout.toLocaleString()}</span>
-            </div>
-            
-            <div class="bg-light p-3 rounded border">
-                <div class="mb-2 small"><strong>Remittance Schedule:</strong> ${row.payout_schedule}</div>
-                <div class="mb-2 small"><strong>Remittance Status:</strong> <span class="badge bg-warning-soft text-warning">${row.payout_status}</span></div>
-                
-                <div class="border-top pt-2 mt-2">
-                    <span class="d-block fw-bold text-primary small mb-1"><iconify-icon icon="solar:clock-circle-bold-duotone" class="align-middle"></iconify-icon> Payout Release Rule:</span>
-                    <ul class="ps-3 mb-0 small text-muted">
-                        <li>Payment Hold Period: <strong>${row.hold_days} Days</strong> (Return/Refund protection)</li>
-                        <li>Sales Recorded Date: <strong>${fmtPurchase}</strong></li>
-                        <li>Est. Release Date: <strong>${fmtPayout}</strong></li>
-                        <li class="mt-1"><span class="text-dark">Formula:</span> Purchase Date (${fmtPurchase}) + ${row.hold_days} days = Release Date (${fmtPayout})</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    `;
-    document.getElementById('payoutPreview').innerHTML = detailHtml;
-    
-    const confirmBtn = document.getElementById('confirmPayoutBtn');
-    if (row.payout_status !== 'Pending') {
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Already Approved';
-    } else {
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Approve & Pay';
-    }
-    
-    new bootstrap.Modal(document.getElementById('payoutModal')).show();
-}
-
 function processPayoutApproval() {
     if (!activePayoutSellerId) return;
     
-    fetch('{{ route("admin.finance.approve-payout") }}', {
+    fetch('/admin/finance/approve-payout', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -4544,47 +4705,6 @@ function processPayoutApproval() {
             setTimeout(() => location.reload(), 1500);
         }
     });
-}
-
-function showTaxBreakdown(sellerId) {
-    const row = earningsDetails.find(r => r.seller_id == sellerId);
-    if (!row) return;
-    
-    const currencySym = '{{ $currencySymbol }}';
-    const detailHtml = `
-        <h6 class="fw-bold mb-3">Estimated Tax (Draft Breakdown)</h6>
-        <div class="list-group list-group-flush mb-3">
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <span>Taxable Basis (Platform Commission)</span>
-                <span class="fw-semibold">${currencySym}${row.platform_commission.toLocaleString()}</span>
-            </div>
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <span>SGST / State Tax (9%)</span>
-                <span>${currencySym}${(row.est_tax / 2).toLocaleString()}</span>
-            </div>
-            <div class="list-group-item d-flex justify-content-between align-items-center">
-                <span>CGST / Central Tax (9%)</span>
-                <span>${currencySym}${(row.est_tax / 2).toLocaleString()}</span>
-            </div>
-            <div class="list-group-item d-flex justify-content-between align-items-center fw-bold bg-light">
-                <span>Total CGST + SGST (18%)</span>
-                <span class="text-danger">${currencySym}${row.est_tax.toLocaleString()}</span>
-            </div>
-        </div>
-    `;
-    document.getElementById('sellerDetailsPreview').innerHTML = detailHtml;
-    
-    const modalEl = document.getElementById('sellerDetailsModal');
-    const titleEl = modalEl.querySelector('.modal-title');
-    const oldTitle = titleEl.innerHTML;
-    titleEl.innerHTML = '<iconify-icon icon="solar:receipt-bold-duotone" class="align-middle me-1"></iconify-icon> Tax Ledger Detail';
-    
-    modalEl.addEventListener('hidden.bs.modal', function handler() {
-        titleEl.innerHTML = oldTitle;
-        modalEl.removeEventListener('hidden.bs.modal', handler);
-    });
-    
-    new bootstrap.Modal(modalEl).show();
 }
 
 // Generate Invoice dynamically
@@ -5130,10 +5250,41 @@ function saveRefundRules(e) {
     const data = {
         refund_mode: document.getElementById('refundModeSelect').value,
         partial_refund_enabled: document.getElementById('partialRefundToggle').checked ? 1 : 0,
-        refund_sla_days: document.getElementById('refundSlaDays').value
+        max_partial_percent: document.getElementById('maxPartialPercent').value,
+        refund_sla_days: document.getElementById('refundSlaDays').value,
+        fraud_detection: document.getElementById('fraudDetection').value,
+        reverse_commission: document.getElementById('reverseCommissionToggle').checked ? 1 : 0,
+        freeze_payout: document.getElementById('freezePayoutToggle').checked ? 1 : 0,
+        reverse_referral: document.getElementById('reverseReferralToggle').checked ? 1 : 0,
+        refund_lead_charges: document.getElementById('refundLeadChargesToggle').checked ? 1 : 0
     };
     
     fetch('{{ route("admin.finance.update-refund-rules") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(d => showToast(d.message, d.success ? 'success' : 'error'));
+}
+
+function savePricingDiscountRules(e) {
+    e.preventDefault();
+    const data = {
+        dynamic_pricing_enabled: document.getElementById('dynamicPricingEnabled').checked ? 1 : 0,
+        dynamic_pricing_strategy: document.getElementById('dynamicPricingStrategy').value,
+        price_adjust_limit: document.getElementById('priceAdjustLimit').value,
+        price_update_freq: document.getElementById('priceUpdateFreq').value,
+        discount_cap_enabled: document.getElementById('discountCapEnabled').checked ? 1 : 0,
+        discount_cap_percent: document.getElementById('discountCapPercent').value,
+        coupon_discount_cap: document.getElementById('couponDiscountCap').value,
+        discount_cap_action: document.getElementById('discountCapAction').value
+    };
+    
+    fetch('/admin/finance/save-pricing-discount-rules', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -5305,6 +5456,7 @@ function switchSubTab(targetId) {
     if (targetId === 'sub-config') document.getElementById('btn-sub-config').classList.add('active');
     else if (targetId === 'sub-table') document.getElementById('btn-sub-table').classList.add('active');
     else if (targetId === 'sub-boost') document.getElementById('btn-sub-boost').classList.add('active');
+    else if (targetId === 'sub-pricing') document.getElementById('btn-sub-pricing').classList.add('active');
 }
 
 function switchRefundSubTab(targetId) {
@@ -5846,57 +5998,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-</script>
 
-<script>
-let revenueChart;
 
-// Initialize Chart
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('leadRevenueChart')?.getContext('2d');
-    if(ctx) {
-        revenueChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                datasets: [{
-                    label: 'Revenue',
-                    data: [8500, 9200, 10500, 11800, 13200, 15700],
-                    borderColor: '#4361ee',
-                    backgroundColor: 'rgba(67, 97, 238, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: { legend: { position: 'top' } }
-            }
-        });
-    }
-});
-
-function updateRevenueChart() {
-    const timeframe = document.getElementById('revenueTimeframe').value;
-    let labels, data;
-    if(timeframe === 'weekly') labels = ['W1','W2','W3','W4'], data = [1850,2100,2450,2800];
-    else if(timeframe === 'monthly') labels = ['Jan','Feb','Mar','Apr','May','Jun'], data = [8500,9200,10500,11800,13200,15700];
-    else if(timeframe === 'quarterly') labels = ['Q1','Q2','Q3','Q4'], data = [28500,34200,39800,45100];
-    else labels = ['2022','2023','2024','2025'], data = [85000,112000,148000,195000];
-    
-    revenueChart.data.labels = labels;
-    revenueChart.data.datasets[0].data = data;
-    revenueChart.update();
-}
-
-function downloadRevenueChart() {
-    const canvas = document.getElementById('leadRevenueChart');
-    const link = document.createElement('a');
-    link.download = 'revenue-chart.png';
-    link.href = canvas.toDataURL();
-    link.click();
-}
 
 function addAppPricingRow() {
     const tbody = document.getElementById('appWisePricingBody');
@@ -6251,110 +6354,323 @@ function showProfessionalToast(message, type = 'success') {
     }, 3000);
 }
 
-// Professional Modal Functions
+// Professional Modal Functions (Dynamic Client-side from earningsDetails)
 function showPayoutModal(sellerId) {
-    $('#payoutModal').modal('show');
-    // Load payout details via AJAX
-    $.ajax({
-        url: `/admin/seller-payout/details/${sellerId}`,
-        method: 'GET',
-        success: function(response) {
-            $('#payoutModalContent').html(response.html);
-        },
-        error: function() {
-            $('#payoutModalContent').html('<div class="text-center py-4 text-danger">Failed to load payout details</div>');
-        }
-    });
+    activePayoutSellerId = sellerId;
+    const row = earningsDetails.find(r => r.seller_id == sellerId);
+    if (!row) return;
+    
+    const currencySym = '{{ $currencySymbol }}';
+    const purchaseDate = new Date(row.purchase_date);
+    const payoutDate = new Date(row.release_date);
+    const fmtPurchase = purchaseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    const fmtPayout = payoutDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    
+    const detailHtml = `
+        <div class="p-2">
+            <h5 class="fw-bold text-center text-success mb-3">Formula Remittance Statement</h5>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Total Sales Revenue:</span>
+                <span class="fw-bold">${currencySym}${parseFloat(row.total_sales).toFixed(2)}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 text-danger">
+                <span>Less: Platform Commission (10%):</span>
+                <span>-${currencySym}${parseFloat(row.platform_commission).toFixed(2)}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 text-danger">
+                <span>Less: Referral Payout:</span>
+                <span>-${currencySym}${parseFloat(row.referral_payout).toFixed(2)}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2 text-danger">
+                <span>Less: Estimated Tax Draft (GST):</span>
+                <span>-${currencySym}${parseFloat(row.est_tax).toFixed(2)}</span>
+            </div>
+            <hr class="my-2">
+            <div class="d-flex justify-content-between mb-3 fw-bold fs-5 text-success">
+                <span>Net Payable Balance:</span>
+                <span>${currencySym}${parseFloat(row.net_payout).toFixed(2)}</span>
+            </div>
+            
+            <div class="bg-light p-3 rounded border">
+                <div class="mb-2 small"><strong>Remittance Schedule:</strong> ${row.payout_schedule}</div>
+                <div class="mb-2 small"><strong>Remittance Status:</strong> <span class="badge bg-${row.payout_status == 'Approved' ? 'success' : 'warning'}-soft text-${row.payout_status == 'Approved' ? 'success' : 'warning'}">${row.payout_status}</span></div>
+                
+                <div class="border-top pt-2 mt-2">
+                    <span class="d-block fw-bold text-primary small mb-1"><iconify-icon icon="solar:clock-circle-bold-duotone" class="align-middle"></iconify-icon> Payout Release Rule:</span>
+                    <ul class="ps-3 mb-0 small text-muted">
+                        <li>Payment Hold Period: <strong>${row.hold_days} Days</strong> (Return/Refund protection)</li>
+                        <li>Sales Recorded Date: <strong>${fmtPurchase}</strong></li>
+                        <li>Est. Release Date: <strong>${fmtPayout}</strong></li>
+                        <li class="mt-1"><span class="text-dark">Formula:</span> Purchase Date (${fmtPurchase}) + ${row.hold_days} days = Release Date (${fmtPayout})</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
+    const targetEl = document.getElementById('payoutModalContent');
+    if (targetEl) targetEl.innerHTML = detailHtml;
+    new bootstrap.Modal(document.getElementById('payoutModal')).show();
 }
 
 function showTaxBreakdown(sellerId) {
-    $('#taxModal').modal('show');
-    // Load tax details via AJAX
-    $.ajax({
-        url: `/admin/seller-tax/details/${sellerId}`,
-        method: 'GET',
-        success: function(response) {
-            $('#taxModalContent').html(response.html);
-        },
-        error: function() {
-            $('#taxModalContent').html('<div class="text-center py-4 text-danger">Failed to load tax details</div>');
-        }
-    });
+    const row = earningsDetails.find(r => r.seller_id == sellerId);
+    if (!row) return;
+    
+    const currencySym = '{{ $currencySymbol }}';
+    const gstRate = '{{ $gstRate }}';
+    const html = `
+        <h6 class="fw-bold mb-3">Estimated Tax (Draft Breakdown) for ${row.name}</h6>
+        <div class="list-group list-group-flush mb-3">
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span>Taxable Basis (Platform Commission)</span>
+                <span class="fw-semibold">${currencySym}${parseFloat(row.platform_commission).toFixed(2)}</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center">
+                <span>GST / Tax Rate</span>
+                <span class="badge bg-primary-soft text-primary">${gstRate}%</span>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center bg-light">
+                <span class="fw-bold">Total Estimated Tax Collected</span>
+                <span class="fw-bold text-danger">${currencySym}${parseFloat(row.est_tax).toFixed(2)}</span>
+            </div>
+        </div>
+        <div class="bg-light p-3 rounded border fs-8 text-muted">
+            <iconify-icon icon="solar:info-circle-bold-duotone" class="align-middle text-info me-1"></iconify-icon>
+            Tax draft is calculated automatically based on platform commission fees and the configured regional GST/tax rates.
+        </div>
+    `;
+    const targetEl = document.getElementById('taxModalContent');
+    if (targetEl) targetEl.innerHTML = html;
+    new bootstrap.Modal(document.getElementById('taxModal')).show();
 }
 
 function showEarningBreakdown(sellerId) {
-    $('#earningBreakdownModal').modal('show');
-    // Load earning details via AJAX
-    $.ajax({
-        url: `/admin/seller-earning/details/${sellerId}`,
-        method: 'GET',
-        success: function(response) {
-            $('#earningBreakdownContent').html(response.html);
-        },
-        error: function() {
-            $('#earningBreakdownContent').html('<div class="text-center py-4 text-danger">Failed to load earning details</div>');
-        }
-    });
+    const row = earningsDetails.find(r => r.seller_id == sellerId);
+    if (!row) return;
+    
+    const currencySym = '{{ $currencySymbol }}';
+    const html = `
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 60%;">Component</th>
+                        <th class="text-end" style="width: 40%;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <strong>Gross Order Value (Total Sales)</strong>
+                            <div class="text-muted fs-9">Total revenue generated from buyer orders</div>
+                        </td>
+                        <td class="text-end text-success fw-bold">${currencySym}${parseFloat(row.total_sales).toFixed(2)}</td>
+                    </tr>
+                    <tr class="table-light">
+                        <td colspan="2" class="fw-semibold text-secondary py-1 bg-opacity-10 fs-8">Platform Fees & Deductions</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Platform / Admin Commission (10%)
+                            <div class="text-muted fs-9">Base commission collected by the marketplace admin</div>
+                        </td>
+                        <td class="text-end text-danger">-${currencySym}${parseFloat(row.platform_commission).toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Referral Partner Commission
+                            <div class="text-muted fs-9">Commission share distributed to referring partner (0.6%)</div>
+                        </td>
+                        <td class="text-end text-danger">-${currencySym}${parseFloat(row.referral_payout).toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            Estimated Tax & GST
+                            <div class="text-muted fs-9">GST tax draft on platform commission</div>
+                        </td>
+                        <td class="text-end text-danger">-${currencySym}${parseFloat(row.est_tax).toFixed(2)}</td>
+                    </tr>
+                    <tr class="table-success font-monospace">
+                        <td>
+                            <strong>Seller Share (Net Payout)</strong>
+                            <div class="text-muted fs-9">Amount scheduled for bank payout transfer to seller</div>
+                        </td>
+                        <td class="text-end text-success fw-bold">${currencySym}${parseFloat(row.net_payout).toFixed(2)}</td>
+                    </tr>
+                    <tr class="table-info font-monospace">
+                        <td>
+                            <strong>Platform Admin Earning (Net Admin Revenue)</strong>
+                            <div class="text-muted fs-9">Net commission profit retained by marketplace admin</div>
+                        </td>
+                        <td class="text-end text-primary fw-bold">${currencySym}${parseFloat(row.platform_commission).toFixed(2)}</td>
+                    </tr>
+                    <tr class="table-warning font-monospace">
+                        <td>
+                            <strong>Lead Enquiries & Clicks charges</strong>
+                            <div class="text-muted fs-9">Billing charges collected for platform dynamic leads</div>
+                        </td>
+                        <td class="text-end text-dark fw-bold">${currencySym}${parseFloat(parseFloat(row.per_enquiry_amount) + parseFloat(row.per_click_amount)).toFixed(2)}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+    const targetEl = document.getElementById('earningBreakdownContent');
+    if (targetEl) targetEl.innerHTML = html;
+    new bootstrap.Modal(document.getElementById('earningBreakdownModal')).show();
 }
 
-// Bulk Actions
-function bulkApprovePayouts() {
-    const selectedSellers = [];
-    $('.payout-checkbox:checked').each(function() {
-        selectedSellers.push($(this).val());
-    });
+function showSettlementHoldModal() {
+    const currencySym = '{{ $currencySymbol }}';
+    const today = new Date();
     
-    if (selectedSellers.length === 0) {
-        showProfessionalToast('Please select at least one seller', 'error');
-        return;
-    }
-    
-    if (confirm(`Are you sure you want to approve payouts for ${selectedSellers.length} seller(s)?`)) {
-        $.ajax({
-            url: '/admin/seller-payout/bulk-approve',
-            method: 'POST',
-            data: {
-                _token: '{{ csrf_token() }}',
-                seller_ids: selectedSellers
-            },
-            success: function(response) {
-                if (response.success) {
-                    showProfessionalToast(response.message, 'success');
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    showProfessionalToast(response.message || 'Error approving payouts', 'error');
-                }
-            },
-            error: function() {
-                showProfessionalToast('An error occurred', 'error');
+    let html = '';
+    earningsDetails.forEach(row => {
+        const purchaseDate = new Date(row.purchase_date);
+        const releaseDate = new Date(row.release_date);
+        const fmtPurchase = purchaseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+        const fmtRelease = releaseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+        
+        let remainingOrDelayText = '';
+        let badgeColor = '';
+        let isPending = row.payout_status.toLowerCase() === 'pending';
+        
+        if (isPending) {
+            if (today > releaseDate) {
+                const diffTime = Math.abs(today - releaseDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                remainingOrDelayText = `<span class="text-danger fw-bold">Delayed ${diffDays} Days</span>`;
+                badgeColor = 'danger';
+            } else {
+                const diffTime = Math.abs(releaseDate - today);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                remainingOrDelayText = `<span class="text-warning">Releasing in ${diffDays} Days</span>`;
+                badgeColor = 'warning';
             }
-        });
-    }
-}
-
-// Select All Checkbox
-$('#selectAllPayouts').on('change', function() {
-    $('.payout-checkbox').prop('checked', $(this).prop('checked'));
-});
-
-function exportEarningsLedger() {
-    window.location.href = '/admin/seller-payout/export';
-}
-
-function openBulkUpdateModal() {
-    const selectedSellers = [];
-    $('.payout-checkbox:checked').each(function() {
-        selectedSellers.push($(this).val());
+        } else {
+            remainingOrDelayText = `<span class="text-success">Released on Time</span>`;
+            badgeColor = 'success';
+        }
+        
+        html += `
+            <tr>
+                <td class="fw-bold">${row.seller_code}</td>
+                <td>${row.name}</td>
+                <td><span class="badge bg-secondary-soft text-secondary text-uppercase">${row.app}</span></td>
+                <td class="text-center fw-bold">${row.hold_days} Days</td>
+                <td>${fmtPurchase}</td>
+                <td>${fmtRelease}</td>
+                <td class="text-center">${remainingOrDelayText}</td>
+                <td>
+                    <span class="badge bg-${badgeColor}-soft text-${badgeColor}">
+                        ${row.payout_status}
+                    </span>
+                </td>
+            </tr>
+        `;
     });
     
-    if (selectedSellers.length === 0) {
-        showProfessionalToast('Please select at least one seller', 'error');
-        return;
-    }
-    
-    // Implement bulk update modal
-    alert('Bulk update for ' + selectedSellers.length + ' sellers');
+    const targetEl = document.getElementById('settlementHoldTableBody');
+    if (targetEl) targetEl.innerHTML = html;
+    new bootstrap.Modal(document.getElementById('settlementHoldModal')).show();
 }
+
+function showSellerDetails(sellerId) {
+    const row = earningsDetails.find(r => r.seller_id == sellerId);
+    if (!row) return;
+    
+    const titleEl = document.getElementById('flowModalTitle');
+    if (titleEl) titleEl.textContent = `Settlement Flow: ${row.name} (${row.seller_code})`;
+    
+    const currencySym = '{{ $currencySymbol }}';
+    const purchaseDate = new Date(row.purchase_date);
+    const releaseDate = new Date(row.release_date);
+    const fmtPurchase = purchaseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    const fmtRelease = releaseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    
+    const today = new Date();
+    const isReleased = row.payout_status.toLowerCase() !== 'pending';
+    const isDelayed = today > releaseDate && !isReleased;
+    
+    const timelineHtml = `
+        <div class="row mb-4">
+            <div class="col-md-6 border-end">
+                <h6 class="fw-bold text-secondary mb-3"><iconify-icon icon="solar:info-circle-bold-duotone" class="align-middle me-1"></iconify-icon> Escrow Parameters</h6>
+                <table class="table table-sm table-borderless fs-7">
+                    <tr><td class="text-muted">Application Source:</td><td class="fw-semibold text-uppercase">${row.app}</td></tr>
+                    <tr><td class="text-muted">Total Sales Value:</td><td class="fw-semibold">${currencySym}${parseFloat(row.total_sales).toFixed(2)}</td></tr>
+                    <tr><td class="text-muted">Platform Admin Share:</td><td class="fw-semibold text-primary">${currencySym}${parseFloat(row.platform_commission).toFixed(2)}</td></tr>
+                    <tr><td class="text-muted">Net Seller Payout:</td><td class="fw-semibold text-success">${currencySym}${parseFloat(row.net_payout).toFixed(2)}</td></tr>
+                    <tr><td class="text-muted">Billing Location:</td><td class="fw-semibold">${row.location}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6 class="fw-bold text-secondary mb-3"><iconify-icon icon="solar:clock-circle-bold-duotone" class="align-middle me-1"></iconify-icon> Hold Timeline</h6>
+                <table class="table table-sm table-borderless fs-7">
+                    <tr><td class="text-muted">Order Date:</td><td class="fw-semibold">${fmtPurchase}</td></tr>
+                    <tr><td class="text-muted">Release Period:</td><td class="fw-semibold text-warning">${row.hold_days} Days Hold</td></tr>
+                    <tr><td class="text-muted">Scheduled Release:</td><td class="fw-semibold text-success">${fmtRelease}</td></tr>
+                    <tr>
+                        <td class="text-muted">Flow Status:</td>
+                        <td>
+                            <span class="badge bg-${isReleased ? 'success' : (isDelayed ? 'danger' : 'warning')}-soft text-${isReleased ? 'success' : (isDelayed ? 'danger' : 'warning')}">
+                                ${isReleased ? 'Released & Paid' : (isDelayed ? 'Delayed Release' : 'In Hold Escrow')}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <h6 class="fw-bold text-secondary mb-3"><iconify-icon icon="solar:checklist-bold-duotone" class="align-middle me-1"></iconify-icon> Settlement Pipeline Flowchart</h6>
+        <div class="d-flex flex-column gap-3 p-3 bg-light rounded border">
+            <div class="d-flex align-items-start gap-3">
+                <div class="badge rounded-circle bg-success text-white p-2" style="z-index: 10;">
+                    <iconify-icon icon="solar:check-circle-bold" width="18"></iconify-icon>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold text-success">Step 1: Order Paid & Sales Logged</h6>
+                    <p class="mb-0 text-muted fs-8">Sales value of ${currencySym}${parseFloat(row.total_sales).toFixed(2)} recorded on ${fmtPurchase}.</p>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-start gap-3">
+                <div class="badge rounded-circle bg-${isReleased ? 'success' : 'warning'} text-white p-2" style="z-index: 10;">
+                    <iconify-icon icon="${isReleased ? 'solar:check-circle-bold' : 'solar:clock-circle-bold'}" width="18"></iconify-icon>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold text-${isReleased ? 'success' : 'warning'}">Step 2: Escrow Hold Period (${row.hold_days} Days)</h6>
+                    <p class="mb-0 text-muted fs-8">Funds locked in marketplace escrow pool to protect against returns. Scheduled release: ${fmtRelease}.</p>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-start gap-3">
+                <div class="badge rounded-circle bg-${isReleased ? 'success' : (isDelayed ? 'danger' : 'secondary')} text-white p-2" style="z-index: 10;">
+                    <iconify-icon icon="${isReleased ? 'solar:check-circle-bold' : (isDelayed ? 'solar:shield-warning-bold' : 'solar:shield-bold')}" width="18"></iconify-icon>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold text-${isReleased ? 'success' : (isDelayed ? 'danger' : 'secondary')}">Step 3: Dispute & Refund Window Cleared</h6>
+                    <p class="mb-0 text-muted fs-8">${isReleased ? 'Escrow cleared with no disputes.' : (isDelayed ? 'Hold period elapsed but payment approval is pending.' : 'Dispute/return window is currently active.')}</p>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-start gap-3">
+                <div class="badge rounded-circle bg-${isReleased ? 'success' : 'secondary'} text-white p-2" style="z-index: 10;">
+                    <iconify-icon icon="${isReleased ? 'solar:check-read-bold' : 'solar:card-send-bold'}" width="18"></iconify-icon>
+                </div>
+                <div>
+                    <h6 class="mb-0 fw-bold text-${isReleased ? 'success' : 'secondary'}">Step 4: Bank Remittance Complete</h6>
+                    <p class="mb-0 text-muted fs-8">${isReleased ? 'Payout generated and transferred to seller account.' : 'Pending release. Will transfer upon approval.'}</p>
+                </div>
+            </div>
+        </div>
+    `;
+    const targetEl = document.getElementById('sellerDetailsModalContent');
+    if (targetEl) targetEl.innerHTML = timelineHtml;
+    new bootstrap.Modal(document.getElementById('sellerDetailsModal')).show();
+}
+
+
 
 function processPayout() {
     showProfessionalToast('Payout processed successfully!', 'success');
@@ -6362,10 +6678,8 @@ function processPayout() {
 }
 
 // Other functions
-function showSellerDetails(sellerId) { console.log('Show details:', sellerId); }
 function generateInvoiceForSeller(sellerId) { console.log('Generate invoice:', sellerId); }
 function configureInvoiceTemplate(sellerId) { console.log('Configure template:', sellerId); }
-function releaseSellerHold(sellerId) { console.log('Release hold:', sellerId); }
 function showSellerHistory(sellerId) { console.log('Show history:', sellerId); }
 </script>
 <script>
@@ -7172,6 +7486,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Function to refresh the display table with current form data
 function refreshDisplayTable() {
     const tbody = document.getElementById('configuredRulesDisplayBody');
+    if (!tbody) return;
     const formRows = document.querySelectorAll('#globalRulesTableBody tr');
     
     if (formRows.length === 0) {
@@ -8909,6 +9224,38 @@ function reindexTaxRegionRows() {
     });
 }
 
+const currencySymbols = {
+    USD: '$',
+    INR: '₹',
+    EUR: '€',
+    GBP: '£',
+    AUD: 'A$',
+    CAD: 'C$',
+    JPY: '¥',
+    AED: 'د.إ',
+    SGD: 'S$'
+};
+
+function autoFetchSymbol(select) {
+    const row = select.closest('tr');
+    if (!row) return;
+    const symbolInput = row.querySelector('input[name*="[symbol]"]');
+    const currency = select.value;
+    if (symbolInput && currencySymbols[currency]) {
+        symbolInput.value = currencySymbols[currency];
+    }
+}
+
+function autoFetchSymbol2(select) {
+    const row = select.closest('tr');
+    if (!row) return;
+    const symbolInput = row.querySelector('.currency-symbol-field2');
+    const currency = select.value;
+    if (symbolInput && currencySymbols[currency]) {
+        symbolInput.value = currencySymbols[currency];
+    }
+}
+
 // Add new currency row
 function addCurrencyRow() {
     const tbody = document.getElementById('currencyTableBody');
@@ -8920,7 +9267,18 @@ function addCurrencyRow() {
     newRow.className = 'currency-row';
     newRow.innerHTML = `
         <td>
-            <input type="text" class="form-control form-control-sm" name="currencies[${rowCount}][currency]" placeholder="USD" required>
+            <select class="form-select form-select-sm" name="currencies[${rowCount}][currency]" onchange="autoFetchSymbol(this)" required>
+                <option value="">Select Currency</option>
+                <option value="USD">USD (US Dollar)</option>
+                <option value="INR">INR (Indian Rupee)</option>
+                <option value="EUR">EUR (Euro)</option>
+                <option value="GBP">GBP (British Pound)</option>
+                <option value="AUD">AUD (Australian Dollar)</option>
+                <option value="CAD">CAD (Canadian Dollar)</option>
+                <option value="JPY">JPY (Japanese Yen)</option>
+                <option value="AED">AED (UAE Dirham)</option>
+                <option value="SGD">SGD (Singapore Dollar)</option>
+            </select>
         </td>
         <td>
             <input type="text" class="form-control form-control-sm" name="currencies[${rowCount}][symbol]" placeholder="$" required>
@@ -8941,6 +9299,45 @@ function addCurrencyRow() {
         </td>
     `;
     tbody.appendChild(newRow);
+}
+
+function addCurrencyRow2() {
+    const tbody = document.getElementById('currencyTableBody2');
+    if (!tbody) return;
+    
+    const newRow = document.createElement('tr');
+    newRow.innerHTML = `
+        <td>
+            <select class="form-select form-select-sm currency-code-field2" onchange="autoFetchSymbol2(this)" required>
+                <option value="">Select Currency</option>
+                <option value="USD">USD (US Dollar)</option>
+                <option value="INR">INR (Indian Rupee)</option>
+                <option value="EUR">EUR (Euro)</option>
+                <option value="GBP">GBP (British Pound)</option>
+                <option value="AUD">AUD (Australian Dollar)</option>
+                <option value="CAD">CAD (Canadian Dollar)</option>
+                <option value="JPY">JPY (Japanese Yen)</option>
+                <option value="AED">AED (UAE Dirham)</option>
+                <option value="SGD">SGD (Singapore Dollar)</option>
+            </select>
+        </td>
+        <td><input type="text" class="form-control form-control-sm currency-symbol-field2" placeholder="Symbol" required></td>
+        <td><input type="number" step="0.0001" class="form-control form-control-sm currency-rate-field2" placeholder="1.0000" required></td>
+        <td>
+            <select class="form-select form-select-sm currency-update-field2">
+                <option value="Fixed">Fixed</option>
+                <option value="Daily API 🔄">Daily API 🔄</option>
+            </select>
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeCurrency2(this)">Delete</button>
+        </td>
+    `;
+    tbody.appendChild(newRow);
+}
+
+function removeCurrency2(btn) {
+    btn.closest('tr').remove();
 }
 
 // Remove currency row
@@ -9008,10 +9405,10 @@ function saveTaxInvoiceMain(suffix = '2') {
     const currencyTableBodyId = isSuffix2 ? 'currencyTableBody2' : 'currencyTableBody';
     const currencyRows = document.querySelectorAll(`#${currencyTableBodyId} tr`);
     currencyRows.forEach(row => {
-        const currency = row.querySelector('input[name*="[currency]"]')?.value;
-        const symbol = row.querySelector('input[name*="[symbol]"]')?.value;
-        const rate = row.querySelector('input[name*="[rate]"]')?.value;
-        const autoUpdate = row.querySelector('select[name*="[auto_update]"]')?.value;
+        const currency = row.querySelector('.currency-code-field2')?.value || row.querySelector('select[name*="[currency]"]')?.value || row.querySelector('input[name*="[currency]"]')?.value;
+        const symbol = row.querySelector('.currency-symbol-field2')?.value || row.querySelector('input[name*="[symbol]"]')?.value;
+        const rate = row.querySelector('.currency-rate-field2')?.value || row.querySelector('input[name*="[rate]"]')?.value;
+        const autoUpdate = row.querySelector('.currency-update-field2')?.value || row.querySelector('select[name*="[auto_update]"]')?.value;
         
         if (currency && symbol && rate) {
             currenciesList.push({
@@ -9062,6 +9459,7 @@ function saveTaxInvoiceMain(suffix = '2') {
         gst_rate: parseFloat(gstRate) || 18,
         base_currency: baseCurrency || 'INR',
         tax_regions: taxRegions,
+        currencies: currenciesList,
         currencies_list: currenciesList,
         invoice_template: invoiceTemplate
     };
@@ -9261,10 +9659,64 @@ function downloadInvoiceNew(section = 2) {
     document.body.removeChild(form);
 }
 
+// Send invoice email
+function sendInvoiceEmailNew(section = 2) {
+    const isSection1 = section === 1;
+    const sellerId = document.getElementById(isSection1 ? 'invoiceSelectSeller' : 'invoiceSelectSellerIdMain')?.value;
+    const startDate = document.getElementById(isSection1 ? 'invoiceStartDate' : 'invoiceStartDateMain')?.value;
+    const endDate = document.getElementById(isSection1 ? 'invoiceEndDate' : 'invoiceEndDateMain')?.value;
+    
+    if (!sellerId) {
+        showToast('Please select a seller', 'error');
+        return;
+    }
+    
+    const sendBtn = document.getElementById('sendInvoiceEmailBtn');
+    const originalText = sendBtn ? sendBtn.innerHTML : 'Send Invoice Email';
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Sending...';
+    }
+    
+    fetch('{{ route("admin.finance.send-invoice") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            seller_id: sellerId,
+            start_date: startDate,
+            end_date: endDate
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+        } else {
+            showToast(data.message || 'Error sending invoice email', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Server error, please try again', 'error');
+    })
+    .finally(() => {
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = originalText;
+        }
+    });
+}
+
 // Export report
 function exportReportNew(section = 2) {
     const isSection1 = section === 1;
     const reportType = document.getElementById(isSection1 ? 'reportType' : 'reportTypeMain')?.value;
+    const sellerId = document.getElementById(isSection1 ? 'invoiceSelectSeller' : 'invoiceSelectSellerIdMain')?.value;
+    const startDate = document.getElementById(isSection1 ? 'invoiceStartDate' : 'invoiceStartDateMain')?.value;
+    const endDate = document.getElementById(isSection1 ? 'invoiceEndDate' : 'invoiceEndDateMain')?.value;
     
     if (!reportType) {
         showToast('Please select a report type', 'error');
@@ -9287,6 +9739,30 @@ function exportReportNew(section = 2) {
     reportInput.name = 'report_type';
     reportInput.value = reportType;
     form.appendChild(reportInput);
+    
+    if (sellerId) {
+        const sellerInput = document.createElement('input');
+        sellerInput.type = 'hidden';
+        sellerInput.name = 'seller_id';
+        sellerInput.value = sellerId;
+        form.appendChild(sellerInput);
+    }
+    
+    if (startDate) {
+        const startInput = document.createElement('input');
+        startInput.type = 'hidden';
+        startInput.name = 'start_date';
+        startInput.value = startDate;
+        form.appendChild(startInput);
+    }
+    
+    if (endDate) {
+        const endInput = document.createElement('input');
+        endInput.type = 'hidden';
+        endInput.name = 'end_date';
+        endInput.value = endDate;
+        form.appendChild(endInput);
+    }
     
     document.body.appendChild(form);
     form.submit();

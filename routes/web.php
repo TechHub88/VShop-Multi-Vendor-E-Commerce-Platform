@@ -2607,9 +2607,12 @@ Route::prefix('admin/finance')->name('admin.finance.')->group(function () {
     Route::delete('/delete-currency/{index}', [AdminFinanceController::class, 'deleteCurrency'])->name('delete-currency');
     Route::post('/generate-invoice', [AdminFinanceController::class, 'generateInvoice'])->name('generate-invoice');
     Route::post('/download-invoice', [AdminFinanceController::class, 'downloadInvoice'])->name('download-invoice');
+    Route::post('/send-invoice', [AdminFinanceController::class, 'sendInvoiceEmail'])->name('send-invoice');
     Route::post('/export-report', [AdminFinanceController::class, 'exportReport'])->name('export-report');
     Route::post('/validate-gst', [AdminFinanceController::class, 'validateGST'])->name('validate-gst');
     Route::post('/save-all-tax-settings', [AdminFinanceController::class, 'saveAllTaxSettings'])->name('save-all-tax-settings');
+    Route::post('/save-pricing-discount-rules', [AdminFinanceController::class, 'savePricingDiscountRules'])->name('save-pricing-discount-rules');
+    Route::post('/release-hold', [AdminFinanceController::class, 'releaseHold'])->name('release-hold');
     
     // Auto Escalation Routes
     Route::post('/add-escalation-rule', [AdminFinanceController::class, 'addEscalationRule'])->name('add-escalation-rule');
@@ -2621,6 +2624,7 @@ Route::prefix('admin/finance')->name('admin.finance.')->group(function () {
     Route::post('/add-seller-cap', [AdminFinanceController::class, 'addSellerCap'])->name('add-seller-cap');
     Route::post('/remove-seller-cap', [AdminFinanceController::class, 'removeSellerCap'])->name('remove-seller-cap');
     Route::get('/get-lead-config', [AdminFinanceController::class, 'getLeadConfig'])->name('get-lead-config');
+    Route::get('/get-lead-rules', [AdminFinanceController::class, 'getLeadRules'])->name('get-lead-rules');
     Route::post('/update-lead-rules', [AdminFinanceController::class, 'updateLeadRules'])->name('update-lead-rules');
     Route::get('/get-revenue-data', [AdminFinanceController::class, 'getRevenueData'])->name('get-revenue-data');
     
@@ -2668,6 +2672,23 @@ Route::prefix('admin/settings')->name('admin.settings.')->middleware('auth:web,a
     Route::post('/boost/update/{id}', [SettingsController::class, 'updateBoost'])->name('boost.update');
     Route::delete('/boost/delete/{id}', [SettingsController::class, 'deleteBoost'])->name('boost.delete');
     Route::post('/boost/toggle/{id}', [SettingsController::class, 'toggleBoostStatus'])->name('boost.toggle');
+
+    // ---- Data Control ----
+    Route::get('/data-export', [SettingsController::class, 'dataExport'])->name('data.export');
+    Route::post('/data-retention/save', [SettingsController::class, 'saveDataRetention'])->name('data.retention.save');
+    Route::post('/data-retention/run', [SettingsController::class, 'runDataRetention'])->name('data.retention.run');
+    Route::get('/system/deletion', [SettingsController::class, 'getDeletionRequests'])->name('system.deletion.list');
+    Route::post('/user-deletion/process/{id}', [SettingsController::class, 'processUserDeletion'])->name('user.deletion.process');
+    Route::post('/backup/create-now', [SettingsController::class, 'createBackupNow'])->name('backup.create');
+    Route::delete('/backup/delete/{filename}', [SettingsController::class, 'deleteBackupFile'])->name('backup.delete');
+
+    // ---- Fraud Protection ----
+    Route::get('/fraud-dashboard', [SettingsController::class, 'fraudDashboard'])->name('fraud.dashboard');
+    Route::post('/fraud/block-ip', [SettingsController::class, 'blockSuspiciousIp'])->name('fraud.block.ip');
+    Route::post('/fraud/unblock-ip', [SettingsController::class, 'unblockIp'])->name('fraud.unblock.ip');
+    Route::post('/fraud/save-settings', [SettingsController::class, 'saveFraudSettings'])->name('fraud.settings.save');
+    Route::post('/fraud/dismiss-alert/{id}', [SettingsController::class, 'dismissFraudAlert'])->name('fraud.alert.dismiss');
+    Route::post('/fraud/flag-duplicate/{id}', [SettingsController::class, 'flagDuplicateProduct'])->name('fraud.product.flag');
 });
 
 

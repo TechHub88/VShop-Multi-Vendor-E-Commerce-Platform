@@ -956,6 +956,22 @@ public function saveBasic(Request $request, Product $product = null)
         'inventory_type' => 'nullable|in:own,dropshipping',
     ]);
 
+    // ================= DUPLICATE LISTING RESTRICTION =================
+    $existingProducts = Product::where('created_by_id', $seller->id)
+        ->where('status', '!=', 'inactive')
+        ->where('id', '!=', $product ? $product->id : 0)
+        ->get();
+    foreach ($existingProducts as $ep) {
+        if (strcasecmp($ep->name, $data['name']) === 0) {
+            return redirect()->back()->withErrors(['name' => 'You have already uploaded a product with this exact name. To prevent duplicate listings, please adjust the name.'])->withInput();
+        }
+        similar_text(strtolower($ep->name), strtolower($data['name']), $nameSim);
+        similar_text(strtolower($ep->description ?? ''), strtolower($data['description'] ?? ''), $descSim);
+        if ($nameSim > 85 && $descSim > 85) {
+            return redirect()->back()->withErrors(['name' => 'A product with very similar title and description already exists in your inventory. Duplicates are restricted.'])->withInput();
+        }
+    }
+
     // Handle professional sub-selection
     if ($request->type === 'professional' && $request->has('professional_module')) {
         $data['type'] = $request->professional_module . '-professional';
