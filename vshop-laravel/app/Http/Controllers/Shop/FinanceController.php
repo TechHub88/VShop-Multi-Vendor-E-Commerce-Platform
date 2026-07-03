@@ -1,7 +1,7 @@
 <?php
 // App\Http\Controllers\Admin\AdminFinanceController.php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Shop;
 
 use App\Http\Controllers\Controller;
 use App\Models\SellerFinance;
@@ -13,7 +13,7 @@ use App\Models\GlobalSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class AdminFinanceController extends Controller
+class FinanceController extends Controller
 {
     public function index(Request $request)
     {
