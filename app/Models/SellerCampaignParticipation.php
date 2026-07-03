@@ -12,6 +12,7 @@ class SellerCampaignParticipation extends Model
     protected $fillable = [
         'seller_id',
         'product_id',
+        'advertisement_id',
         'campaign_type',
         'combo_details',
         'status',

@@ -1678,6 +1678,18 @@ $(document).ready(function() {
 
                 <form id="globalCampaignForm">
                     @csrf
+
+                    <div class="mb-3 bg-white p-3 border rounded shadow-sm">
+                        <label class="form-label fw-bold text-primary"><i class="fa fa-calendar-alt me-1"></i> Select Global Campaign Event (Optional)</label>
+                        <select class="form-select shadow-sm border-0 bg-light" name="global_advertisement_id" id="globalCampaignSelect">
+                            <option value="">-- Select an active campaign event --</option>
+                        </select>
+                        <div id="campaignDatesDisplay" class="mt-2 text-muted small" style="display: none;">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fa fa-play-circle me-1"></i> Starts: <span id="campaignStartDate"></span></span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger ms-2"><i class="fa fa-stop-circle me-1"></i> Ends: <span id="campaignEndDate"></span></span>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-hover bg-white shadow-sm rounded-3 border" style="font-size: 0.9rem;">
                             <thead class="table-light">
@@ -1722,6 +1734,25 @@ $(document).ready(function() {
                 
                 let tbody = $('#globalCampaignProductList');
                 tbody.empty();
+
+                // Populate Global Campaigns dropdown
+                let adSelect = $('#globalCampaignSelect');
+                adSelect.find('option:not(:first)').remove();
+                if (response.advertisements && response.advertisements.length > 0) {
+                    let firstAdId = null;
+                    if (response.products && response.products.length > 0) {
+                        let p1 = response.products.find(p => p.participation && p.participation.advertisement_id);
+                        if (p1) firstAdId = p1.participation.advertisement_id;
+                    }
+
+                    response.advertisements.forEach(function(ad) {
+                        let sel = (firstAdId == ad.id) ? 'selected' : '';
+                        let sDate = ad.start_date ? new Date(ad.start_date).toLocaleDateString() : 'Immediate';
+                        let eDate = ad.end_date ? new Date(ad.end_date).toLocaleDateString() : 'Ongoing';
+                        adSelect.append(`<option value="${ad.id}" data-start="${sDate}" data-end="${eDate}" ${sel}>${ad.title}</option>`);
+                    });
+                    adSelect.trigger('change');
+                }
 
                 if (response.products.length === 0) {
                     tbody.append('<tr><td colspan="3" class="text-center py-4 text-muted">No products found.</td></tr>');
@@ -1801,6 +1832,19 @@ $(document).ready(function() {
             comboDiv.show();
         } else {
             comboDiv.hide();
+        }
+    });
+
+    $(document).on('change', '#globalCampaignSelect', function() {
+        let opt = $(this).find(':selected');
+        if (opt.val()) {
+            let start = opt.data('start');
+            let end = opt.data('end');
+            $('#campaignStartDate').text(start);
+            $('#campaignEndDate').text(end);
+            $('#campaignDatesDisplay').show();
+        } else {
+            $('#campaignDatesDisplay').hide();
         }
     });
 
