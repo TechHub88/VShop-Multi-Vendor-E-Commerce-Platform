@@ -275,12 +275,12 @@ public function index(Request $request)
     } else {
         $trendingQuery->orderBy('views', 'desc');
     }
-    $trendingProducts = $trendingQuery->paginate(6, ['*'], 'trending_page')->withQueryString();
+    $trendingProducts = $trendingQuery->paginate(8, ['*'], 'trending_page')->withQueryString();
 
     // 2. Most Viewed
     $mostViewedQuery = clone $query;
     $mostViewedProducts = $mostViewedQuery->orderBy('views', 'desc')
-        ->paginate(6, ['*'], 'views_page')
+        ->paginate(8, ['*'], 'views_page')
         ->withQueryString();
 
     // 3. Most Enquired
@@ -299,7 +299,7 @@ public function index(Request $request)
     } else {
         $mostEnquiredQuery->latest();
     }
-    $mostEnquiredProducts = $mostEnquiredQuery->paginate(6, ['*'], 'enquiries_page')->withQueryString();
+    $mostEnquiredProducts = $mostEnquiredQuery->paginate(8, ['*'], 'enquiries_page')->withQueryString();
 
     // 4. Highest Rated
     $highestRatedQuery = clone $query;
@@ -307,12 +307,12 @@ public function index(Request $request)
         ->select('products.*', DB::raw('AVG(product_reviews.rating) as avg_rating'))
         ->groupBy('products.id')
         ->orderByRaw('AVG(product_reviews.rating) DESC')
-        ->paginate(6, ['*'], 'rating_page')
+        ->paginate(8, ['*'], 'rating_page')
         ->withQueryString();
     if ($highestRatedProducts->isEmpty()) {
         $fallbackQuery = clone $query;
         $highestRatedProducts = $fallbackQuery->latest()
-            ->paginate(6, ['*'], 'rating_page')
+            ->paginate(8, ['*'], 'rating_page')
             ->withQueryString();
     }
 

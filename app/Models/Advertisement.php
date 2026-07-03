@@ -19,6 +19,7 @@ class Advertisement extends Model
         'target_type',
         'product_id',
         'category_id',
+        'category_name',
         'service_id',
         'start_date',
         'end_date',

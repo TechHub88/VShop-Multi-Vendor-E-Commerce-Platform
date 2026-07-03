@@ -14,7 +14,6 @@ use App\Models\State;
 use App\Models\City;
 use App\Models\ProductLog;
 use App\Models\RecommendationRule;
-
 use App\Models\ProductReview;
 use Illuminate\Http\Request;
 use App\Models\Notification;
@@ -230,7 +229,7 @@ public function index(Request $request)
     }
     // ================= END =================
 
-    $query = Product::where('created_by_id', $sellerId);
+    $query = Product::where('created_by_id', $sellerId)->with('campaignParticipations');
 
     // ================= SERVICE TYPES FILTER =================
     // Check if service_types parameter is present in the URL
@@ -443,11 +442,25 @@ public function index(Request $request)
 
     // Pass the selected service types to the view for maintaining checkboxes
     $selectedServiceTypes = $request->get('service_types');
-    
+        // Active Campaign Check
+    $currentDateTime = now();
+    $hasActiveCampaign = \App\Models\Advertisement::where('type', 'campaign')
+        ->where('is_active', 1)
+        ->where(function($q) use ($currentDateTime) {
+            $q->whereNull('start_date')
+              ->orWhere('start_date', '<=', $currentDateTime);
+        })
+        ->where(function($q) use ($currentDateTime) {
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>=', $currentDateTime);
+        })
+        ->exists();
+
     return view('vshop.seller.products.index', compact(
         'products',
         'categories',
-        'selectedServiceTypes'
+        'selectedServiceTypes',
+        'hasActiveCampaign'
     ));
 }
 
@@ -803,8 +816,9 @@ public function saveReferralSettings(Request $request)
 private function checkOwner($product)
 {
     abort_if(
-        $product->created_by_id != auth()->id(),
-        403
+        $product->created_by_id != auth('seller')->id(),
+        403,
+        'Unauthorized action.'
     );
 }
 
@@ -3687,5 +3701,123 @@ public function generateSeoAIContent(Request $request)
             'success' => false,
             'message' => 'Failed to parse AI response. Please try again.'
         ], 500);
+    }
+
+    public function getAllCampaignParticipations()
+    {
+        try {
+            $sellerId = auth('seller')->id();
+            
+            if (!$sellerId) {
+                return response()->json(['error' => 'Not authenticated as seller'], 401);
+            }
+
+            // Auto-create table if missing to prevent 500 errors
+            if (!\Illuminate\Support\Facades\Schema::hasTable('seller_campaign_participations')) {
+                \Illuminate\Support\Facades\Schema::create('seller_campaign_participations', function (\Illuminate\Database\Schema\Blueprint $table) {
+                    $table->id();
+                    $table->unsignedBigInteger('seller_id');
+                    $table->unsignedBigInteger('product_id');
+                    $table->string('campaign_type');
+                    $table->text('combo_details')->nullable();
+                    $table->string('status')->default('approved');
+                    $table->timestamps();
+
+                    $table->foreign('seller_id')->references('id')->on('sellers')->onDelete('cascade');
+                    $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
+                });
+            }
+
+            $products = Product::where('created_by_id', $sellerId)->with('campaignParticipations')->get();
+
+            $formatted = $products->map(function($product) {
+                $participation = $product->campaignParticipations->first();
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'price' => $product->price,
+                    'thumbnail_url' => $product->thumbnail ? asset($product->thumbnail) : asset('images/no-image.png'),
+                    'participation' => $participation
+                ];
+            });
+
+            return response()->json([
+                'products' => $formatted
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'products' => [],
+                'error_msg' => $e->getMessage()
+            ], 200); // Send 200 so ajax doesn't fail, we will see it in UI if we want
+        }
+    }
+
+    public function saveAllCampaignParticipations(Request $request)
+    {
+        try {
+            $sellerId = auth('seller')->id();
+            
+            // Auto-create table if missing to prevent 500 errors
+            if (!\Illuminate\Support\Facades\Schema::hasTable('seller_campaign_participations')) {
+                \Illuminate\Support\Facades\Schema::create('seller_campaign_participations', function (\Illuminate\Database\Schema\Blueprint $table) {
+                    $table->id();
+                    $table->unsignedBigInteger('seller_id');
+                    $table->unsignedBigInteger('product_id');
+                    $table->string('campaign_type');
+                    $table->text('combo_details')->nullable();
+                    $table->string('status')->default('approved');
+                    $table->timestamps();
+
+                    $table->foreign('seller_id')->references('id')->on('sellers')->onDelete('cascade');
+                    $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
+                });
+            }
+            
+            $request->validate([
+                'products' => 'nullable|array',
+                'products.*.id' => 'required|exists:products,id',
+                'products.*.campaign_type' => 'required|in:percentage_20,bogo,buy2_get1,combo,none',
+                'products.*.combo_details' => 'nullable|string'
+            ]);
+
+            if ($request->has('products')) {
+                foreach ($request->products as $pData) {
+                    $product = Product::find($pData['id']);
+                    if ($product && $product->created_by_id == $sellerId) {
+                        $isSelected = isset($pData['selected']) && $pData['selected'] == 1;
+                        $campaignType = $isSelected ? $pData['campaign_type'] : 'none';
+                        
+                        if ($campaignType === 'none') {
+                            \App\Models\SellerCampaignParticipation::where('product_id', $product->id)->delete();
+                        } else {
+                            $comboDetails = $pData['combo_details'] ?? null;
+                            if ($campaignType === 'combo') {
+                                $comboDetails = json_encode([
+                                    'buy_qty' => $pData['buy_qty'] ?? 1,
+                                    'get_qty' => $pData['get_qty'] ?? 1,
+                                    'free_product_id' => $pData['free_product_id'] ?? $product->id
+                                ]);
+                            }
+
+                            \App\Models\SellerCampaignParticipation::updateOrCreate(
+                                ['product_id' => $product->id],
+                                [
+                                    'seller_id' => $sellerId,
+                                    'campaign_type' => $campaignType,
+                                    'combo_details' => $comboDetails,
+                                    'status' => 'approved'
+                                ]
+                            );
+                        }
+                    }
+                }
+            }
+
+            return response()->json(['message' => 'Campaign participations saved successfully']);
+        } catch (\Throwable $e) {
+            \Log::error('Save Campaign Error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

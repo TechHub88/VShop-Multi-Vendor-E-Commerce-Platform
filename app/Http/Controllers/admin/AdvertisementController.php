@@ -84,7 +84,8 @@ class AdvertisementController extends Controller
                 'seller_id' => $seller->id,
                 'type' => 'campaign',
                 'message' => 'New ' . ucfirst($request->type) . ' "' . $request->title . '" created for category: ' . $categoryName . '. Please list your products with offers to participate!',
-                'link' => '#',
+                'link' => 'https://vshop.zelofx.com/seller/products',
+                'channel' => 'in_app',
                 'is_read' => 0
             ]);
         }

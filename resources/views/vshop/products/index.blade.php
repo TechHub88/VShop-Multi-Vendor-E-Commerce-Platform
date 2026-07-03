@@ -181,16 +181,10 @@
         width: 100% !important;
     }
     .home-seller-sec {
-        margin-bottom: 4px !important;
+        margin-bottom: 5px !important;
     }
     .home-seller-sec.mb-5 {
-        margin-bottom: 4px !important;
-    }
-    .campaign-banner-sec {
-        margin-bottom: 2px !important;
-    }
-    .campaign-banner-sec.mb-4 {
-        margin-bottom: 2px !important;
+        margin-bottom: 5px !important;
     }
     .home-seller-header.mb-3 {
         margin-bottom: 4px !important;
@@ -202,8 +196,11 @@
         margin-bottom: 4px !important;
     }
     .custom-pagination-wrapper {
-        margin-top: 0px !important;
-        margin-bottom: 2px !important;
+        margin-top: 5px !important;
+        margin-bottom: 5px !important;
+        display: flex;
+        justify-content: center;
+        width: 100%;
     }
     .custom-pagination-wrapper .pagination {
         margin: 0 !important;
@@ -760,7 +757,6 @@
 </ul>
 </div>
 
-    <div class="product-dtl-banner">
         @php
             $topAds = collect();
             if(isset($bannerAds)) $topAds = $topAds->merge($bannerAds);
@@ -772,6 +768,7 @@
         @endphp
 
         @if($topAds->count() > 0 && $topAds->contains(function($ad) { return $ad->media->count() > 0; }))
+        <div class="product-dtl-banner">
             <div id="bannerCarousel" class="carousel slide" data-bs-ride="carousel">
 
             <div class="carousel-inner">
@@ -795,14 +792,8 @@
             </div>
 
         </div>
-
-    @else
-
-        <img src="{{ asset('vtravelassets/images/product_banner1.png') }}">
-
-    @endif
-
-</div>
+        </div>
+        @endif
 
 {{-- ================= TOP BAR ================= --}}
 
@@ -1188,16 +1179,28 @@ PRODUCT GRID
             }
         }
     }
-    if (count($campaignMedia) == 1) {
-        $campaignMedia[] = $campaignMedia[0];
-    }
+    $campaignSectionIndex = 0;
+    $totalCampaignSections = 4;
 
-    $showCampaignCarousel = function() use (&$campaignMedia, $__env) {
-        if (count($campaignMedia) > 0) {
+    $showCampaignCarousel = function() use (&$campaignMedia, &$campaignSectionIndex, $totalCampaignSections, $__env) {
+        $sectionItems = [];
+        foreach($campaignMedia as $index => $item) {
+            if ($index % $totalCampaignSections === $campaignSectionIndex) {
+                $sectionItems[] = $item;
+            }
+        }
+        
+        $campaignSectionIndex++;
+
+        if (count($sectionItems) == 1) {
+            $sectionItems[] = $sectionItems[0];
+        }
+
+        if (count($sectionItems) > 0) {
             @endphp
             <div class="campaign-banner-sec mb-0">
                 <div class="campaign-slider-wrapper owl-carousel">
-                    @foreach($campaignMedia as $item)
+                    @foreach($sectionItems as $item)
                         <div class="campaign-banner-item item">
                             <a href="{{ ($item['banner']->redirect_url && $item['banner']->redirect_url !== '#') ? $item['banner']->redirect_url : route('discount.products') }}" class="d-block w-100">
                                 <img src="{{ asset($item['media']->file_path) }}" class="w-100" style="display: block; width: 100%; height: auto; border: none !important; box-shadow: none !important; margin-bottom: 0 !important;" alt="{{ $item['banner']->title }}">
@@ -1234,7 +1237,7 @@ PRODUCT GRID
             $firstVideoAd = $videoMediaList[$videoIndex];
             $videoIndex++;
             @endphp
-            <div class="col-6 col-md-4 col-lg-2 mb-4 ms-auto">
+            <div class="col-6 col-md-4 col-lg-3 mb-4 ms-auto">
                 <div class="card shadow-sm border-0 overflow-hidden position-relative" style="border-radius: 4px; background: #000; height: 200px !important; border: 1px solid #f0f0f0; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'" onclick="window.location.href='{{ route('vshop.visuals', ['tab' => 'videos']) }}'">
                     <video class="w-100 h-100 corner-video-player" style="object-fit: cover; opacity: 0.9;" autoplay muted loop playsinline preload="auto">
                         <source src="{{ asset($firstVideoAd['media']->file_path) }}" type="video/mp4">
@@ -1264,7 +1267,7 @@ PRODUCT GRID
                 <div class="row">
                     @php $videoRendered = false; @endphp
                     @foreach($trendingProducts as $product)
-                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
+                        <div class="col-6 col-md-4 col-lg-3 mb-4 product-box-outer">
                             @include('vshop.products._product_card_partial', ['product' => $product])
                         </div>
                         @if($loop->iteration % 5 == 0)
@@ -1295,7 +1298,7 @@ PRODUCT GRID
                 <div class="row">
                     @php $videoRendered = false; @endphp
                     @foreach($mostViewedProducts as $product)
-                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
+                        <div class="col-6 col-md-4 col-lg-3 mb-4 product-box-outer">
                             @include('vshop.products._product_card_partial', ['product' => $product])
                         </div>
                         @if($loop->iteration % 5 == 0)
@@ -1326,7 +1329,7 @@ PRODUCT GRID
                 <div class="row">
                     @php $videoRendered = false; @endphp
                     @foreach($mostEnquiredProducts as $product)
-                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
+                        <div class="col-6 col-md-4 col-lg-3 mb-4 product-box-outer">
                             @include('vshop.products._product_card_partial', ['product' => $product])
                         </div>
                         @if($loop->iteration % 5 == 0)
@@ -1357,7 +1360,7 @@ PRODUCT GRID
                 <div class="row">
                     @php $videoRendered = false; @endphp
                     @foreach($highestRatedProducts as $product)
-                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
+                        <div class="col-6 col-md-4 col-lg-3 mb-4 product-box-outer">
                             @include('vshop.products._product_card_partial', ['product' => $product])
                         </div>
                         @if($loop->iteration % 5 == 0)
@@ -1870,6 +1873,38 @@ border:1px solid #ddd;
             });
         }
         initCampaignSliders();
+
+        // AJAX Pagination for sections
+        $(document).on('click', '.custom-pagination-wrapper a', function(e) {
+            e.preventDefault();
+            let url = $(this).attr('href');
+            let section = $(this).closest('.home-seller-sec');
+            let sectionId = section.attr('id');
+            
+            if(!sectionId) return;
+
+            section.find('.home-seller-bottom').css('opacity', '0.5');
+            
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    let newContent = $(response).find('#' + sectionId + ' .home-seller-bottom').html();
+                    if(newContent) {
+                        section.find('.home-seller-bottom').html(newContent).css('opacity', '1');
+                        // Re-init videos
+                        section.find('video[autoplay]').each(function() {
+                            this.play();
+                        });
+                    } else {
+                        section.find('.home-seller-bottom').css('opacity', '1');
+                    }
+                },
+                error: function() {
+                    section.find('.home-seller-bottom').css('opacity', '1');
+                }
+            });
+        });
 
         // Force autoplay on load
         $('video[autoplay]').each(function() {
