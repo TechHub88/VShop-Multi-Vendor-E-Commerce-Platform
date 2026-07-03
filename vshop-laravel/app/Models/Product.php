@@ -512,4 +512,9 @@ class Product extends Model
 
         return true;
     }
+
+    public function campaignParticipations()
+    {
+        return $this->hasMany(\App\Models\SellerCampaignParticipation::class, 'product_id');
+    }
 }

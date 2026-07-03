@@ -510,7 +510,7 @@ Route::post('{id}/campaign-participation', [SellerProductController::class, 'sav
 
 
 
-Route::prefix('seller/products')->group(function(){
+Route::prefix('products')->group(function(){
 
     Route::get('/bulk', [SellerProductController::class,'bulkindex'])->name('products.bulk');
 

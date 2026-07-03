@@ -589,6 +589,31 @@ src="{{ $product->thumbnail ? asset($product->thumbnail) : asset('images/no-imag
 </span>
 @endif
 
+@if(isset($hasActiveCampaign) && $hasActiveCampaign && $product->campaignParticipations->isNotEmpty())
+@php
+    $participation = $product->campaignParticipations->first();
+    $campaignText = '';
+    if ($participation->campaign_type === 'percentage_20') {
+        $campaignText = '20% Offer';
+    } elseif ($participation->campaign_type === 'combo') {
+        $combo = json_decode($participation->combo_details);
+        if ($combo) {
+            $freeProdName = \App\Models\Product::find($combo->free_product_id)?->name ?? 'Product';
+            // Limit name length for badge
+            $freeProdName = Str::limit($freeProdName, 15);
+            $campaignText = "Buy {$combo->buy_qty} Get {$combo->get_qty} Free ({$freeProdName})";
+        } else {
+            $campaignText = 'Combo Offer';
+        }
+    } else {
+        $campaignText = ucfirst(str_replace('_', ' ', $participation->campaign_type));
+    }
+@endphp
+<span class="badge ms-1" style="background: linear-gradient(135deg, #ff416c, #ff4b2b) !important;">
+    <i class="fa fa-gift me-1"></i> {{ $campaignText }}
+</span>
+@endif
+
 </div>
 
 @if($product->price)
@@ -1653,6 +1678,18 @@ $(document).ready(function() {
 
                 <form id="globalCampaignForm">
                     @csrf
+
+                    <div class="mb-3 bg-white p-3 border rounded shadow-sm">
+                        <label class="form-label fw-bold text-primary"><i class="fa fa-calendar-alt me-1"></i> Select Global Campaign Event (Optional)</label>
+                        <select class="form-select shadow-sm border-0 bg-light" name="global_advertisement_id" id="globalCampaignSelect">
+                            <option value="">-- Select an active campaign event --</option>
+                        </select>
+                        <div id="campaignDatesDisplay" class="mt-2 text-muted small" style="display: none;">
+                            <span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fa fa-play-circle me-1"></i> Starts: <span id="campaignStartDate"></span></span>
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger ms-2"><i class="fa fa-stop-circle me-1"></i> Ends: <span id="campaignEndDate"></span></span>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-hover bg-white shadow-sm rounded-3 border" style="font-size: 0.9rem;">
                             <thead class="table-light">
@@ -1698,18 +1735,52 @@ $(document).ready(function() {
                 let tbody = $('#globalCampaignProductList');
                 tbody.empty();
 
+                // Populate Global Campaigns dropdown
+                let adSelect = $('#globalCampaignSelect');
+                adSelect.find('option:not(:first)').remove();
+                if (response.advertisements && response.advertisements.length > 0) {
+                    let firstAdId = null;
+                    if (response.products && response.products.length > 0) {
+                        let p1 = response.products.find(p => p.participation && p.participation.advertisement_id);
+                        if (p1) firstAdId = p1.participation.advertisement_id;
+                    }
+
+                    response.advertisements.forEach(function(ad) {
+                        let sel = (firstAdId == ad.id) ? 'selected' : '';
+                        let sDate = ad.start_date ? new Date(ad.start_date).toLocaleDateString() : 'Immediate';
+                        let eDate = ad.end_date ? new Date(ad.end_date).toLocaleDateString() : 'Ongoing';
+                        adSelect.append(`<option value="${ad.id}" data-start="${sDate}" data-end="${eDate}" ${sel}>${ad.title}</option>`);
+                    });
+                    adSelect.trigger('change');
+                }
+
                 if (response.products.length === 0) {
                     tbody.append('<tr><td colspan="3" class="text-center py-4 text-muted">No products found.</td></tr>');
                 } else {
                     response.products.forEach(function(product) {
                         let p = product.participation || {};
                         let pType = p.campaign_type || 'none';
-                        let pDetails = p.combo_details || '';
+                        let comboData = { buy_qty: 1, get_qty: 1, free_product_id: product.id };
+                        if (pType === 'combo' && p.combo_details) {
+                            try {
+                                comboData = JSON.parse(p.combo_details);
+                            } catch (e) {}
+                        }
+
+                        // Generate product options for free product dropdown
+                        let productOptions = '';
+                        response.products.forEach(function(optProd) {
+                            let selected = (comboData.free_product_id == optProd.id) ? 'selected' : '';
+                            productOptions += `<option value="${optProd.id}" ${selected}>${optProd.name}</option>`;
+                        });
 
                         let tr = `
                             <tr>
                                 <td class="align-middle">
                                     <div class="d-flex align-items-center">
+                                        <div class="form-check me-3">
+                                            <input class="form-check-input product-campaign-checkbox" type="checkbox" name="products[${product.id}][selected]" value="1" ${pType !== 'none' ? 'checked' : ''} style="transform: scale(1.2);">
+                                        </div>
                                         <img src="${product.thumbnail_url}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;" class="me-2 border">
                                         <div>
                                             <div class="fw-bold text-dark text-truncate" style="max-width: 150px;" title="${product.name}">${product.name}</div>
@@ -1722,12 +1793,22 @@ $(document).ready(function() {
                                     <select class="form-select form-select-sm border-0 shadow-sm campaign-type-select" name="products[${product.id}][campaign_type]">
                                         <option value="none" ${pType === 'none' ? 'selected' : ''}>None</option>
                                         <option value="percentage_20" ${pType === 'percentage_20' ? 'selected' : ''}>20% Offer</option>
-                                        <option value="bogo" ${pType === 'bogo' ? 'selected' : ''}>Buy 1 Get 1 (BOGO)</option>
-                                        <option value="buy2_get1" ${pType === 'buy2_get1' ? 'selected' : ''}>Buy 2 Get 1</option>
+                                        <option value="combo" ${pType === 'combo' ? 'selected' : ''}>Combo Offer (Buy X Get Y)</option>
                                     </select>
                                 </td>
                                 <td class="align-middle">
-                                    <input type="text" class="form-control form-control-sm border-0 shadow-sm combo-details-input" name="products[${product.id}][combo_details]" value="${pDetails}" placeholder="e.g. Any 2 items..." style="${(pType === 'bogo' || pType === 'buy2_get1') ? '' : 'display:none;'}">
+                                    <div class="combo-inputs" style="${pType === 'combo' ? '' : 'display:none;'}">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <span class="small fw-bold">Buy</span>
+                                            <input type="number" class="form-control form-control-sm border-0 shadow-sm" name="products[${product.id}][buy_qty]" value="${comboData.buy_qty}" min="1" style="width:60px;">
+                                            <span class="small fw-bold text-nowrap">Get</span>
+                                            <input type="number" class="form-control form-control-sm border-0 shadow-sm" name="products[${product.id}][get_qty]" value="${comboData.get_qty}" min="1" style="width:60px;">
+                                            <span class="small fw-bold text-nowrap">Free</span>
+                                        </div>
+                                        <select class="form-select form-select-sm border-0 shadow-sm" name="products[${product.id}][free_product_id]" style="max-width: 200px;">
+                                            ${productOptions}
+                                        </select>
+                                    </div>
                                 </td>
                             </tr>
                         `;
@@ -1746,11 +1827,24 @@ $(document).ready(function() {
 
     $(document).on('change', '.campaign-type-select', function() {
         let val = $(this).val();
-        let input = $(this).closest('tr').find('.combo-details-input');
-        if (val === 'bogo' || val === 'buy2_get1') {
-            input.show();
+        let comboDiv = $(this).closest('tr').find('.combo-inputs');
+        if (val === 'combo') {
+            comboDiv.show();
         } else {
-            input.hide().val('');
+            comboDiv.hide();
+        }
+    });
+
+    $(document).on('change', '#globalCampaignSelect', function() {
+        let opt = $(this).find(':selected');
+        if (opt.val()) {
+            let start = opt.data('start');
+            let end = opt.data('end');
+            $('#campaignStartDate').text(start);
+            $('#campaignEndDate').text(end);
+            $('#campaignDatesDisplay').show();
+        } else {
+            $('#campaignDatesDisplay').hide();
         }
     });
 

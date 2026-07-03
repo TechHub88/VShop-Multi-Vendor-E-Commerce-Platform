@@ -14,7 +14,6 @@ use App\Models\State;
 use App\Models\City;
 use App\Models\ProductLog;
 use App\Models\RecommendationRule;
-
 use App\Models\ProductReview;
 use Illuminate\Http\Request;
 use App\Models\Notification;
@@ -230,7 +229,7 @@ public function index(Request $request)
     }
     // ================= END =================
 
-    $query = Product::where('created_by_id', $sellerId);
+    $query = Product::where('created_by_id', $sellerId)->with('campaignParticipations');
 
     // ================= SERVICE TYPES FILTER =================
     // Check if service_types parameter is present in the URL
@@ -3719,6 +3718,7 @@ public function generateSeoAIContent(Request $request)
                     $table->id();
                     $table->unsignedBigInteger('seller_id');
                     $table->unsignedBigInteger('product_id');
+                    $table->unsignedBigInteger('advertisement_id')->nullable();
                     $table->string('campaign_type');
                     $table->text('combo_details')->nullable();
                     $table->string('status')->default('approved');
@@ -3727,16 +3727,18 @@ public function generateSeoAIContent(Request $request)
                     $table->foreign('seller_id')->references('id')->on('sellers')->onDelete('cascade');
                     $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
                 });
+            } else {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('seller_campaign_participations', 'advertisement_id')) {
+                    \Illuminate\Support\Facades\Schema::table('seller_campaign_participations', function (\Illuminate\Database\Schema\Blueprint $table) {
+                        $table->unsignedBigInteger('advertisement_id')->nullable()->after('product_id');
+                    });
+                }
             }
 
-            $products = Product::where('created_by_id', $sellerId)->get();
+            $products = Product::where('created_by_id', $sellerId)->with('campaignParticipations')->get();
 
             $formatted = $products->map(function($product) {
-                try {
-                    $participation = \App\Models\SellerCampaignParticipation::where('product_id', $product->id)->first();
-                } catch (\Exception $e) {
-                    $participation = null;
-                }
+                $participation = $product->campaignParticipations->first();
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -3747,8 +3749,23 @@ public function generateSeoAIContent(Request $request)
                 ];
             });
 
+            $currentDateTime = now();
+            $advertisements = \App\Models\Advertisement::where('type', 'campaign')
+                ->where('is_active', 1)
+                ->where(function($q) use ($currentDateTime) {
+                    $q->whereNull('start_date')
+                      ->orWhere('start_date', '<=', $currentDateTime);
+                })
+                ->where(function($q) use ($currentDateTime) {
+                    $q->whereNull('end_date')
+                      ->orWhere('end_date', '>=', $currentDateTime);
+                })
+                ->select('id', 'title', 'start_date', 'end_date')
+                ->get();
+
             return response()->json([
-                'products' => $formatted
+                'products' => $formatted,
+                'advertisements' => $advertisements
             ]);
         } catch (\Throwable $e) {
             return response()->json([
@@ -3780,27 +3797,41 @@ public function generateSeoAIContent(Request $request)
             }
             
             $request->validate([
+                'global_advertisement_id' => 'nullable|exists:advertisements,id',
                 'products' => 'nullable|array',
                 'products.*.id' => 'required|exists:products,id',
-                'products.*.campaign_type' => 'required|in:percentage_20,bogo,buy2_get1,none',
+                'products.*.campaign_type' => 'required|in:percentage_20,bogo,buy2_get1,combo,none',
                 'products.*.combo_details' => 'nullable|string'
             ]);
+
+            $globalAdId = $request->input('global_advertisement_id');
 
             if ($request->has('products')) {
                 foreach ($request->products as $pData) {
                     $product = Product::find($pData['id']);
                     if ($product && $product->created_by_id == $sellerId) {
-                        $campaignType = $pData['campaign_type'];
+                        $isSelected = isset($pData['selected']) && $pData['selected'] == 1;
+                        $campaignType = $isSelected ? $pData['campaign_type'] : 'none';
                         
                         if ($campaignType === 'none') {
                             \App\Models\SellerCampaignParticipation::where('product_id', $product->id)->delete();
                         } else {
+                            $comboDetails = $pData['combo_details'] ?? null;
+                            if ($campaignType === 'combo') {
+                                $comboDetails = json_encode([
+                                    'buy_qty' => $pData['buy_qty'] ?? 1,
+                                    'get_qty' => $pData['get_qty'] ?? 1,
+                                    'free_product_id' => $pData['free_product_id'] ?? $product->id
+                                ]);
+                            }
+
                             \App\Models\SellerCampaignParticipation::updateOrCreate(
                                 ['product_id' => $product->id],
                                 [
                                     'seller_id' => $sellerId,
+                                    'advertisement_id' => $globalAdId,
                                     'campaign_type' => $campaignType,
-                                    'combo_details' => $pData['combo_details'] ?? null,
+                                    'combo_details' => $comboDetails,
                                     'status' => 'approved'
                                 ]
                             );
