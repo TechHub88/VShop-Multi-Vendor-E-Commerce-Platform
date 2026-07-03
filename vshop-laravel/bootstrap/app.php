@@ -11,6 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->trustProxies(at: '*');
+
         // Register your custom middleware with an alias
         $middleware->alias([
             'check.type' => \App\Http\Middleware\CheckUserType::class,
