@@ -1695,8 +1695,7 @@ $(document).ready(function() {
                             <thead class="table-light">
                                 <tr>
                                     <th>Product</th>
-                                    <th>Campaign Type</th>
-                                    <th>Combo/Offer Details (Optional)</th>
+                                    <th>Combo Details (if applicable)</th>
                                 </tr>
                             </thead>
                             <tbody id="globalCampaignProductList">
@@ -1757,11 +1756,14 @@ $(document).ready(function() {
                 if (response.products.length === 0) {
                     tbody.append('<tr><td colspan="3" class="text-center py-4 text-muted">No products found.</td></tr>');
                 } else {
+                    // Store products globally for combo dropdown
+                    window._campaignProducts = response.products;
+
                     response.products.forEach(function(product) {
                         let p = product.participation || {};
                         let pType = p.campaign_type || 'none';
                         let comboData = { buy_qty: 1, get_qty: 1, free_product_id: product.id };
-                        if (pType === 'combo' && p.combo_details) {
+                        if (p.combo_details) {
                             try {
                                 comboData = JSON.parse(p.combo_details);
                             } catch (e) {}
@@ -1783,21 +1785,15 @@ $(document).ready(function() {
                                         </div>
                                         <img src="${product.thumbnail_url}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;" class="me-2 border">
                                         <div>
-                                            <div class="fw-bold text-dark text-truncate" style="max-width: 150px;" title="${product.name}">${product.name}</div>
+                                            <div class="fw-bold text-dark text-truncate" style="max-width: 200px;" title="${product.name}">${product.name}</div>
                                             <small class="text-muted">₹${parseFloat(product.price).toFixed(2)}</small>
                                         </div>
                                     </div>
                                     <input type="hidden" name="products[${product.id}][id]" value="${product.id}">
+                                    <input type="hidden" name="products[${product.id}][campaign_type]" value="${pType}" class="product-campaign-type-hidden">
                                 </td>
                                 <td class="align-middle">
-                                    <select class="form-select form-select-sm border-0 shadow-sm campaign-type-select" name="products[${product.id}][campaign_type]">
-                                        <option value="none" ${pType === 'none' ? 'selected' : ''}>None</option>
-                                        <option value="percentage_20" ${pType === 'percentage_20' ? 'selected' : ''}>20% Offer</option>
-                                        <option value="combo" ${pType === 'combo' ? 'selected' : ''}>Combo Offer (Buy X Get Y)</option>
-                                    </select>
-                                </td>
-                                <td class="align-middle">
-                                    <div class="combo-inputs" style="${pType === 'combo' ? '' : 'display:none;'}">
+                                    <div class="combo-inputs" style="display:none;">
                                         <div class="d-flex align-items-center gap-2 mb-2">
                                             <span class="small fw-bold">Buy</span>
                                             <input type="number" class="form-control form-control-sm border-0 shadow-sm" name="products[${product.id}][buy_qty]" value="${comboData.buy_qty}" min="1" style="width:60px;">
@@ -1814,6 +1810,9 @@ $(document).ready(function() {
                         `;
                         tbody.append(tr);
                     });
+
+                    // Show combo inputs if the selected ad is a combo type
+                    updateComboVisibility();
                 }
                 
                 $('#globalCampaignModal').modal('show');
@@ -1825,15 +1824,23 @@ $(document).ready(function() {
         });
     });
 
-    $(document).on('change', '.campaign-type-select', function() {
-        let val = $(this).val();
-        let comboDiv = $(this).closest('tr').find('.combo-inputs');
-        if (val === 'combo') {
-            comboDiv.show();
+    function updateComboVisibility() {
+        let adTitle = $('#globalCampaignSelect option:selected').text().toLowerCase();
+        let isCombo = (adTitle.includes('buy') && adTitle.includes('get')) || adTitle.includes('combo') || adTitle.includes('bogo');
+        if (isCombo) {
+            $('.combo-inputs').show();
+            // Set campaign_type hidden fields to 'combo'
+            $('.product-campaign-type-hidden').val('combo');
         } else {
-            comboDiv.hide();
+            $('.combo-inputs').hide();
+            // Set campaign_type hidden fields based on ad title
+            let campaignType = 'percentage_20';
+            if (adTitle.includes('discount') || adTitle.includes('offer') || adTitle.includes('%')) {
+                campaignType = 'percentage_20';
+            }
+            $('.product-campaign-type-hidden').val(campaignType);
         }
-    });
+    }
 
     $(document).on('change', '#globalCampaignSelect', function() {
         let opt = $(this).find(':selected');
@@ -1846,6 +1853,7 @@ $(document).ready(function() {
         } else {
             $('#campaignDatesDisplay').hide();
         }
+        updateComboVisibility();
     });
 
     $('#saveGlobalCampaignBtn').click(function() {
@@ -1858,6 +1866,9 @@ $(document).ready(function() {
             url: `/seller/products/campaign-participation/all`,
             type: 'POST',
             data: $('#globalCampaignForm').serialize(),
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
             success: function(response) {
                 btn.prop('disabled', false).html(originalText);
                 $('#globalCampaignModal').modal('hide');
@@ -1871,7 +1882,10 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 btn.prop('disabled', false).html(originalText);
-                alert(xhr.responseJSON?.message || 'Error saving campaign participations');
+                let msg = 'Error saving campaign participations';
+                if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                else if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
+                alert(msg);
             }
         });
     });
