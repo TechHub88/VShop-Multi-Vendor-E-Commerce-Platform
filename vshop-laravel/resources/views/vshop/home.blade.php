@@ -384,30 +384,6 @@
         color: #004392;
         border-color: #cbd5e1;
     }
-    
-    /* Vertical Campaign Slider */
-    .vertical-campaign-slider {
-        width: 100%;
-        overflow: hidden;
-        position: relative;
-        border-radius: 8px;
-        background: #fff;
-        height: auto;
-    }
-    .vertical-slider-track {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-    .vertical-slider-item {
-        width: 100%;
-        flex-shrink: 0;
-    }
-    .vertical-slider-item img {
-        width: 100%;
-        height: auto;
-        display: block;
-    }
 </style>
 
 @section('content')
@@ -573,13 +549,9 @@
         }
     }
     $campaignSectionIndex = 0;
-    $totalCampaignSections = 4;
+    $totalCampaignSections = 6;
 
     $showCampaignCarousel = function() use (&$campaignMedia, &$campaignSectionIndex, $totalCampaignSections, $__env) {
-        if ($campaignSectionIndex >= $totalCampaignSections) {
-            return;
-        }
-
         $sectionItems = [];
         foreach($campaignMedia as $index => $item) {
             if ($index % $totalCampaignSections === $campaignSectionIndex) {
@@ -589,19 +561,21 @@
         
         $campaignSectionIndex++;
 
+        if (count($sectionItems) == 1) {
+            $sectionItems[] = $sectionItems[0];
+        }
+
         if (count($sectionItems) > 0) {
             @endphp
-            <div class="campaign-banner-sec mb-3">
-                <div class="vertical-campaign-slider">
-                    <div class="vertical-slider-track">
-                        @foreach($sectionItems as $item)
-                            <div class="vertical-slider-item">
-                                <a href="{{ ($item['banner']->redirect_url && $item['banner']->redirect_url !== '#') ? $item['banner']->redirect_url : route('discount.products') }}" class="d-block w-100">
-                                    <img src="{{ asset($item['media']->file_path) }}" class="w-100" alt="{{ $item['banner']->title }}">
-                                </a>
-                            </div>
-                        @endforeach
-                    </div>
+            <div class="campaign-banner-sec mb-0">
+                <div class="campaign-slider-wrapper owl-carousel">
+                    @foreach($sectionItems as $item)
+                        <div class="campaign-banner-item item">
+                            <a href="{{ ($item['banner']->redirect_url && $item['banner']->redirect_url !== '#') ? $item['banner']->redirect_url : route('discount.products') }}" class="d-block w-100">
+                                <img src="{{ asset($item['media']->file_path) }}" class="w-100" style="display: block; width: 100%; height: auto; border: none !important; box-shadow: none !important; margin-bottom: 0 !important;" alt="{{ $item['banner']->title }}">
+                            </a>
+                        </div>
+                    @endforeach
                 </div>
             </div>
             @php
@@ -868,61 +842,26 @@
             }
         });
         
-        // Campaign Banners Vertical Slider
-        function initVerticalCampaignSliders() {
-            $(".vertical-campaign-slider").each(function() {
-                let slider = $(this);
-                if (slider.data('initialized')) return;
-                slider.data('initialized', true);
-
-                let track = slider.find('.vertical-slider-track');
-                let items = track.find('.vertical-slider-item');
-                if (items.length <= 1) return;
-
-                // Clone the first item at the end to make a seamless vertical infinite loop
-                track.append(items.first().clone());
-
-                let count = items.length; // original count
-                let index = 0;
-
-                function slideNext() {
-                    index++;
-                    let itemHeight = slider.height() || track.children().first().height() || 110;
-                    
-                    track.css('transition', 'transform 0.8s cubic-bezier(0.25, 1, 0.5, 1)');
-                    track.css('transform', `translateY(-${index * itemHeight}px)`);
-
-                    if (index === count) {
-                        setTimeout(function() {
-                            track.css('transition', 'none');
-                            track.css('transform', 'translateY(0)');
-                            index = 0;
-                        }, 800); // match transition duration
-                    }
+        // Campaign Banners Slider
+        function initCampaignSliders() {
+            $(".campaign-slider-wrapper").each(function() {
+                let carousel = $(this);
+                if (!carousel.hasClass('owl-loaded')) {
+                    let itemsCount = carousel.find('.item').length;
+                    carousel.owlCarousel({
+                        items: 1,
+                        loop: itemsCount > 1,
+                        autoplay: itemsCount > 1,
+                        autoplayTimeout: 2000,
+                        smartSpeed: 800,
+                        autoplayHoverPause: true,
+                        nav: false,
+                        dots: false
+                    });
                 }
-
-                // Scroll every 3 seconds
-                let timer = setInterval(slideNext, 3000);
-                
-                // Adjust container height to match the first image dynamically
-                function adjustHeight() {
-                    let firstImg = slider.find('img').first();
-                    if (firstImg.length && firstImg[0].complete) {
-                        let h = firstImg.height();
-                        if (h > 10) slider.height(h);
-                    } else if (firstImg.length) {
-                        firstImg.on('load', function() {
-                            let h = $(this).height();
-                            if (h > 10) slider.height(h);
-                        });
-                    }
-                }
-                
-                adjustHeight();
-                $(window).on('resize load', adjustHeight);
             });
         }
-        initVerticalCampaignSliders();
+        initCampaignSliders();
         
         // Category Carousel
         $(".category-wrapper").owlCarousel({
@@ -1001,8 +940,8 @@
                             section.find('video').each(function() {
                                 this.play();
                             });
-                            // Re-init vertical campaign sliders inside section
-                            initVerticalCampaignSliders();
+                            // Re-init campaign carousel inside section
+                            initCampaignSliders();
                         }
                     },
                     error: function() {
