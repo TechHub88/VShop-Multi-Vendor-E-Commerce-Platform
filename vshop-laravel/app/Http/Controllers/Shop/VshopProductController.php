@@ -302,10 +302,8 @@ public function index(Request $request)
 
     // 4. Highest Rated
     $highestRatedQuery = clone $query;
-    $highestRatedProducts = $highestRatedQuery->leftJoin('product_reviews', 'products.id', '=', 'product_reviews.product_id')
-        ->select('products.*', DB::raw('AVG(product_reviews.rating) as avg_rating'))
-        ->groupBy('products.id')
-        ->orderByRaw('AVG(product_reviews.rating) DESC')
+    $highestRatedProducts = $highestRatedQuery->withAvg('approvedReviews', 'rating')
+        ->orderByDesc('approved_reviews_avg_rating')
         ->paginate(8, ['*'], 'rating_page')
         ->withQueryString();
     if ($highestRatedProducts->isEmpty()) {
