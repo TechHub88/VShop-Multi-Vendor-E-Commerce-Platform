@@ -441,8 +441,8 @@ public function placeOrder(Request $request)
             }
         }
 
-        $paymentStatus = in_array($request->payment_method, ['upi', 'card', 'cod']) || $grandTotal == 0 ? 'paid' : 'pending';
-        $orderStatus = ($request->payment_method === 'cod') ? 'delivered' : 'pending'; // Initial order status should be pending or processing
+        $paymentStatus = in_array($request->payment_method, ['upi', 'card']) || $grandTotal == 0 ? 'paid' : 'pending';
+        $orderStatus = 'pending'; // Initial order status should be pending or processing
 
         // ================= CREATE ORDER =================
         $order = Order::create([
