@@ -1934,10 +1934,10 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Resource route for customers (if not already defined)
     Route::resource('customers', App\Http\Controllers\admin\CustomerController::class);
     
-     Route::get('/customers/duplicates', [App\Http\Controllers\Admin\CustomerController::class, 'validationDuplicates'])->name('admin.customers.duplicates');
-    Route::post('/customers/merge-verify', [App\Http\Controllers\Admin\CustomerController::class, 'mergeVerify'])->name('admin.customers.merge.verify');
-    Route::post('/customers/quick-merge', [App\Http\Controllers\Admin\CustomerController::class, 'quickMerge'])->name('admin.customers.quick.merge');
-    Route::get('/customers/duplicate-details', [App\Http\Controllers\Admin\CustomerController::class, 'getDuplicateDetails'])->name('admin.customers.duplicate.details');
+     Route::get('/customers/duplicates', [App\Http\Controllers\admin\CustomerController::class, 'validationDuplicates'])->name('admin.customers.duplicates');
+    Route::post('/customers/merge-verify', [App\Http\Controllers\admin\CustomerController::class, 'mergeVerify'])->name('admin.customers.merge.verify');
+    Route::post('/customers/quick-merge', [App\Http\Controllers\admin\CustomerController::class, 'quickMerge'])->name('admin.customers.quick.merge');
+    Route::get('/customers/duplicate-details', [App\Http\Controllers\admin\CustomerController::class, 'getDuplicateDetails'])->name('admin.customers.duplicate.details');
 });
 
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
@@ -2242,7 +2242,7 @@ Route::get('/commission/delete/{id}',[ReportController::class,'deleteCommission'
     Route::delete('partners-content/{id}', [PartnerController::class, 'destroyContent'])->name('partners-content.destroy');
 
     //homepage footer section
-    Route::resource('footers', \App\Http\Controllers\Admin\FooterController::class);
+    Route::resource('footers', \App\Http\Controllers\admin\FooterController::class);
 
    
 });
