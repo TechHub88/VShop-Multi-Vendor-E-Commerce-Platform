@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vshop_laravel.fullname" . }}
+  labels:
+    app: {{ include "vshop_laravel.fullname" . }}
+  {{- include "vshop_laravel.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.vshop_laravel.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "vshop_laravel.fullname" . }}
+    {{- include "vshop_laravel.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        rollout-id: {{ .Values.rolloutId | default "none" | quote }}
+      labels:
+        app: {{ include "vshop_laravel.fullname" . }}
+      {{- include "vshop_laravel.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ include "vshop_laravel.fullname" . }}
+        image: {{ .Values.vshop_laravel.image.repository }}:{{ .Values.vshop_laravel.image.tag | default .Chart.AppVersion }}
+        imagePullPolicy: {{ .Values.vshop_laravel.image.imagePullPolicy }}
+        env:
+          - name: APP_NAME
+            value: {{ .Values.vshop_laravel.env.APP_NAME | quote }}
+          - name: APP_ENV
+            value: {{ .Values.vshop_laravel.env.APP_ENV | quote }}
+          - name: APP_KEY
+            value: {{ .Values.vshop_laravel.env.APP_KEY | quote }}
+          - name: APP_DEBUG
+            value: {{ .Values.vshop_laravel.env.APP_DEBUG | quote }}
+          - name: APP_TIMEZONE
+            value: {{ .Values.vshop_laravel.env.APP_TIMEZONE | quote }}
+          - name: APP_URL
+            value: {{ .Values.vshop_laravel.env.APP_URL | quote }}
+          - name: DB_CONNECTION
+            value: {{ .Values.vshop_laravel.env.DB_CONNECTION | quote }}
+          - name: DB_HOST
+            value: {{ .Values.vshop_laravel.env.DB_HOST | quote }}
+          - name: DB_PORT
+            value: {{ .Values.vshop_laravel.env.DB_PORT | quote }}
+          - name: DB_DATABASE
+            value: {{ .Values.vshop_laravel.env.DB_DATABASE | quote }}
+          - name: DB_USERNAME
+            value: {{ .Values.vshop_laravel.env.DB_USERNAME | quote }}
+          - name: DB_PASSWORD
+            value: {{ .Values.vshop_laravel.env.DB_PASSWORD | quote }}
+          - name: SESSION_DRIVER
+            value: {{ .Values.vshop_laravel.env.SESSION_DRIVER | quote }}
+          - name: CACHE_STORE
+            value: {{ .Values.vshop_laravel.env.CACHE_STORE | quote }}
+          - name: QUEUE_CONNECTION
+            value: {{ .Values.vshop_laravel.env.QUEUE_CONNECTION | quote }}
+          - name: FILESYSTEM_DISK
+            value: {{ .Values.vshop_laravel.env.FILESYSTEM_DISK | quote }}
+          - name: WEBSOCKET_URL
+            value: {{ .Values.vshop_laravel.env.WEBSOCKET_URL | quote }}
+          - name: WEBSOCKET_INTERNAL_URL
+            value: {{ .Values.vshop_laravel.env.WEBSOCKET_INTERNAL_URL | quote }}
+          - name: LOG_CHANNEL
+            value: {{ .Values.vshop_laravel.env.LOG_CHANNEL | quote }}
+          - name: LOG_LEVEL
+            value: {{ .Values.vshop_laravel.env.LOG_LEVEL | quote }}
+        ports:
+          - name: http
+            containerPort: 80
+            protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /up
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /up
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+        resources:
+          requests:
+            memory: {{ .Values.vshop_laravel.resources.requests.minMemory }}
+            cpu: {{ .Values.vshop_laravel.resources.requests.minCpu }}
+          limits:
+            memory: {{ .Values.vshop_laravel.resources.limits.maxMemory }}
+            cpu: {{ .Values.vshop_laravel.resources.limits.maxCpu }}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      volumes: []
