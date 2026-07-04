@@ -290,7 +290,7 @@
                                             @foreach($banner->media as $media)
                                                 @if($media->media_type == 'image')
                                                     <div class="banner-img item shadow-sm" style="border-radius: 14px; overflow: hidden; width: 100%; height: 260px; background: #f8fafc; border: 1px solid #e2e8f0; transition: transform 0.2s ease;">
-                                                        <a href="{{ ($banner->redirect_url && $banner->redirect_url !== '#') ? $banner->redirect_url : route('vshop.visuals', ['tab' => 'features']) }}" target="_blank" class="d-block w-100 h-100">
+                                                        <a href="{{ ($banner->redirect_url && $banner->redirect_url !== '#') ? $banner->redirect_url : '#' }}" target="_blank" class="d-block w-100 h-100">
                                                             <img src="{{ asset($media->file_path) }}" class="w-100 h-100" style="object-fit: cover;" alt="{{ $banner->title }}">
                                                         </a>
                                                     </div>

@@ -1247,7 +1247,7 @@ PRODUCT GRID
             $videoIndex++;
             @endphp
             <div class="col-6 col-md-4 col-lg-2 mb-4 ms-auto">
-                <div class="card shadow-sm border-0 overflow-hidden position-relative" style="border-radius: 4px; background: #000; height: 200px !important; border: 1px solid #f0f0f0; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'" onclick="window.location.href='{{ route('vshop.visuals', ['tab' => 'videos']) }}'">
+                <div class="card shadow-sm border-0 overflow-hidden position-relative" style="border-radius: 4px; background: #000; height: 200px !important; border: 1px solid #f0f0f0; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'" onclick="window.location.href='{{ '#' }}'">
                     <video class="w-100 h-100 corner-video-player" style="object-fit: cover; opacity: 0.9;" autoplay muted loop playsinline preload="auto">
                         <source src="{{ asset($firstVideoAd['media']->file_path) }}" type="video/mp4">
                     </video>
