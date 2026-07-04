@@ -27,6 +27,7 @@ vshop_laravel:
     DB_USERNAME: "u605775003_shopAdmin"
     DB_PASSWORD: "WLUrYJv4lpfDgPayQpbdz7idsaNl48zM"
     SESSION_DRIVER: "cookie"
+    SESSION_COOKIE: "vshop_session_v2"
     CACHE_STORE: "file"
     QUEUE_CONNECTION: "database"
     FILESYSTEM_DISK: "public"
