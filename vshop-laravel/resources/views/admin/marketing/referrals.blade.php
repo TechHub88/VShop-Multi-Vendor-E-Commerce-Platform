@@ -248,12 +248,12 @@
                     <thead class="table-light">
                         <tr>
                             <th>Date</th>
-                            <th>Referrer (Buyer A)</th>
-                            <th>Customer (Buyer B)</th>
-                            <th>Seller</th>
+                            <th>Type</th>
+                            <th>Referrer (Paid To)</th>
+                            <th>Customer / Seller</th>
                             <th>Order ID</th>
-                            <th>Commission</th>
-                            <th>Status</th>
+                            <th>Reward / Commission</th>
+                           
                         </tr>
                     </thead>
                     <tbody id="referralTransactionsTable">
@@ -622,7 +622,7 @@ async function loadCategoryRewards() {
     const tbody = document.getElementById('categoryRewardsTable');
     tbody.innerHTML = '';
     data.forEach(item => {
-        const cat = categories.find(c => c.id == item.category_id);
+        const cat = categories.find(c => c.ids.split(',').includes(String(item.category_id)));
         const catName = cat ? cat.name : item.category_name;
         const rewardText = item.reward_type === 'fixed' ? `<span class="money" data-amount="${item.reward_value}">₹${item.reward_value}</span>` : `${item.reward_value}%`;
         tbody.innerHTML += `<tr>
@@ -865,12 +865,23 @@ async function loadTransactions() {
                 txns.forEach(t => {
                     tbody.innerHTML += `<tr>
                         <td>${new Date(t.created_at).toLocaleDateString()}</td>
-                        <td><div class="fw-bold">${t.referrer?.name || 'N/A'}</div><div class="small">${t.referrer?.email || ''}</div></td>
-                        <td><div class="fw-bold">${t.buyer?.name || 'N/A'}</div><div class="small">${t.buyer?.email || ''}</div></td>
-                        <td><div class="fw-bold">${t.seller?.company_name || t.seller?.contact_persons || 'N/A'}</div></td>
+                        <td><span class="badge bg-secondary">${t.referral_type}</span></td>
+                        <td>
+                            <div class="fw-bold">${t.referrer?.name || 'N/A'}</div>
+                            <div class="small">${t.referrer?.email || ''}</div>
+                           
+                        </td>
+                        <td>
+                            <div class="fw-bold">${t.buyer?.name || t.seller?.company_name || 'N/A'}</div>
+                            <div class="small">${t.buyer?.email || ''}</div>
+                        </td>
                         <td>#${t.order_id}</td>
-                        <td class="text-success fw-bold"><span class="money" data-amount="${t.amount}">₹${parseFloat(t.amount).toFixed(2)}</span></td>
-                        <td><span class="badge bg-success">${t.status}</span></td>
+                        <td class="fw-bold">
+                            ${t.payout_type === 'Buyer Points' 
+                                ? `<span class="text-warning"><i class="mdi mdi-star"></i> ${parseInt(t.amount)} Points</span>` 
+                                : `<span class="text-success money" data-amount="${t.amount}">₹${parseFloat(t.amount).toFixed(2)}</span> <span class="small text-muted">(Money)</span>`}
+                        </td>
+                      
                     </tr>`;
                 });
             }
@@ -936,26 +947,48 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
         }
     };
 
+    window.categoriesList = [];
+    window.loadCategories = async function() {
+        if (window.categoriesList.length === 0) {
+            try {
+                const res = await fetch(baseUrl + '/categories');
+                if (res.ok) window.categoriesList = await res.json();
+            } catch(e) { console.warn(e); }
+        }
+    };
+
     window.addRefConfigRow = async function() {
         await window.loadSellers();
-        let sellerOptions = '<option value="">Select Seller</option>';
-        window.sellersList.forEach(s => {
-            sellerOptions += `<option value="${s.id}">${s.name || s.org_name || 'Seller ' + s.id}</option>`;
-        });
-
+        await window.loadCategories();
+        if (products.length === 0) await loadProducts(); // Ensure products are loaded
+        
         const tbody = document.querySelector('#refConfigTable tbody');
         const rowCount = tbody.children.length;
         const tr = document.createElement('tr');
+        
+        // Build options
+        let sellerOptions = '<option value="">Select Seller</option>';
+        window.sellersList.forEach(s => { sellerOptions += `<option value="${s.id}">${s.name || s.org_name || 'Seller ' + s.id}</option>`; });
+        
+        let productOptions = '<option value="">Select Product</option>';
+        products.forEach(p => { productOptions += `<option value="${p.id}">${p.name}</option>`; });
+
+        let categoryOptions = '<option value="">All Categories</option>';
+        window.categoriesList.forEach(c => { categoryOptions += `<option value="${c.ids}">${c.name}</option>`; });
+
         tr.innerHTML = `
             <td>
-                <select name="configs[${rowCount}][type]" class="form-select form-select-sm ref-config-type" required>
+                <select name="configs[${rowCount}][type]" class="form-select form-select-sm ref-config-type" onchange="window.updateTargetDropdown(this, ${rowCount})" required>
                     <option value="buyer_to_buyer">Buyer to Buyer</option>
                     <option value="seller_to_seller">Seller to Seller</option>
                 </select>
             </td>
             <td>
-                <select name="configs[${rowCount}][reference_id]" class="form-select form-select-sm" required>
-                    ${sellerOptions}
+                <select id="cat_select_${rowCount}" class="form-select form-select-sm mb-1" onchange="window.filterProductsByCategory(this, ${rowCount})">
+                    ${categoryOptions}
+                </select>
+                <select name="configs[${rowCount}][reference_id]" id="target_select_${rowCount}" class="form-select form-select-sm" required>
+                    ${productOptions}
                 </select>
             </td>
             <td>
@@ -974,7 +1007,44 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
                 <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()"><i class="mdi mdi-delete"></i></button>
             </td>
         `;
+        
+        // Store raw options strings on the row for easy swapping
+        tr.dataset.sellerOptions = sellerOptions;
+        tr.dataset.productOptions = productOptions;
+        
         tbody.appendChild(tr);
+    };
+
+    window.updateTargetDropdown = function(selectEl, rowCount) {
+        const tr = selectEl.closest('tr');
+        const targetSelect = tr.querySelector(`#target_select_${rowCount}`);
+        const catSelect = tr.querySelector(`#cat_select_${rowCount}`);
+        if (selectEl.value === 'seller_to_seller') {
+            targetSelect.innerHTML = tr.dataset.sellerOptions;
+            catSelect.style.display = 'none';
+        } else {
+            targetSelect.innerHTML = tr.dataset.productOptions;
+            catSelect.style.display = 'block';
+            catSelect.value = '';
+        }
+    };
+
+    window.filterProductsByCategory = function(catSelect, rowCount) {
+        const tr = catSelect.closest('tr');
+        const targetSelect = tr.querySelector(`#target_select_${rowCount}`);
+        const catIds = catSelect.value;
+        if (!catIds) {
+            targetSelect.innerHTML = tr.dataset.productOptions;
+            return;
+        }
+        const idsArray = catIds.split(',');
+        let filteredOptions = '<option value="">Select Product</option>';
+        products.forEach(p => { 
+            if (idsArray.includes(String(p.category_id))) {
+                filteredOptions += `<option value="${p.id}">${p.name}</option>`;
+            }
+        });
+        targetSelect.innerHTML = filteredOptions;
     };
 
     window.saveRefConfigs = async function() {
@@ -1017,10 +1087,17 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
                     
                     let targetDisplay = item.reference_id || 'N/A';
                     if (item.reference_id) {
-                        const seller = window.sellersList.find(s => s.id == item.reference_id);
-                        if (seller) {
-                            const sName = seller.name || seller.org_name || '';
-                            targetDisplay = sName ? `${item.reference_id} - ${sName}` : item.reference_id;
+                        if (item.type === 'seller_to_seller') {
+                            const seller = window.sellersList.find(s => s.id == item.reference_id);
+                            if (seller) {
+                                const sName = seller.name || seller.org_name || '';
+                                targetDisplay = sName ? `${item.reference_id} - ${sName}` : item.reference_id;
+                            }
+                        } else if (item.type === 'buyer_to_buyer') {
+                            const prod = products.find(p => p.id == item.reference_id);
+                            if (prod) {
+                                targetDisplay = `${item.reference_id} - ${prod.name}`;
+                            }
                         }
                     }
 

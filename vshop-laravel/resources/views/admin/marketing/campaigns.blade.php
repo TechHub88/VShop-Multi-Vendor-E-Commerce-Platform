@@ -122,9 +122,7 @@
             <h2 class="camp-title">Campaign Performance Tracking</h2>
             <p class="camp-subtitle">Monitor and analyze the ROI of your marketing campaigns</p>
         </div>
-        <div>
-            <button class="btn btn-primary" style="background:#5b45f4; border:none; padding:10px 20px; border-radius:8px; font-weight:600;">+ New Campaign</button>
-        </div>
+      
     </div>
 
     <div class="dash-card">

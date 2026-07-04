@@ -41,6 +41,12 @@ class Customer extends Authenticatable
         'is_blocked',
         'is_active',
         'risk_level',
+        
+          'bank_name',
+    'account_holder',
+    'account_number',
+    'ifsc_code',
+    'upi_id',
 
         // Profile & personal info
         'gender',

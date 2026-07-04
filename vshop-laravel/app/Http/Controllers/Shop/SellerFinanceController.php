@@ -119,7 +119,7 @@ public function dashboard()
     /* ================= COMMISSIONS TABLE DATA ================= */
     $commissionsData = SellerFinance::with(['order.items.product'])
         ->where('seller_id', $seller->id)
-        ->where('transaction_type', 'commission')
+        ->where('transaction_type', 'earning')
         ->orderBy('created_at', 'desc')
         ->take(50)
         ->get()

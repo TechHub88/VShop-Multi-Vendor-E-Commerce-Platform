@@ -258,10 +258,6 @@
                                                             @if($mainFabric)
                                                             <div class="proSize ms-2"><strong>Fabric</strong> : {{ $mainFabric }}</div>
                                                             @endif
-                                                            
-                                                            @if(isset($mainProductAttributes['Booking Slots']))
-                                                            <div class="proSize mt-1"><strong>Booking Slots</strong> : {{ $mainProductAttributes['Booking Slots']['name'] ?? '' }}</div>
-                                                            @endif
                                                         </div>
                                                     </div>
                                                     <div class="rightSide">

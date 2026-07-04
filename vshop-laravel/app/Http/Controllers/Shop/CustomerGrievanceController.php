@@ -34,19 +34,13 @@ class CustomerGrievanceController extends Controller
             return redirect()->route('vshoplogin')->with('error', 'Please login first.');
         }
 
-        // 3. Determine seller from order or product
+        // 3. Determine seller from product
         $sellerId = null;
-        $order = \App\Models\Order::find($validated['order_id']);
-        if ($order) {
-            $sellerId = $order->seller_id;
-        }
-        if (!$sellerId) {
-            $productId = $request->input('product_id');
-            if ($productId) {
-                $product = Product::find($productId);
-                if ($product) {
-                    $sellerId = $product->created_by_id;
-                }
+        $productId = $request->input('product_id');
+        if ($productId) {
+            $product = Product::find($productId);
+            if ($product && $product->created_by === 'seller') {
+                $sellerId = $product->created_by_id;
             }
         }
 
@@ -88,7 +82,7 @@ class CustomerGrievanceController extends Controller
             'admin',
             'grievance',
             "New grievance raised by customer {$buyer->name}.",
-            route('admin.grievance.show', $grievance->id)
+            route('admin.grievances.show', $grievance->id)
         );
 
         if ($sellerId) {

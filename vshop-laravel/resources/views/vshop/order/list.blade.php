@@ -13,14 +13,14 @@
                             <i class="fa-solid fa-arrow-left"></i>
                         </button>
                         <ul>
-                            <li><a href="{{ route('vtravelhome') }}">Home</a> / </li>
+                            <li><a href="{{ route('home') }}">Home</a> /</li>
                             <li>Orders</li>
                         </ul>
                     </div>
                     <div class="date-short-sec d-flex align-items-center gap-3">
                         <!-- ===== RAISE COMPLAINT BUTTON ===== -->
-                        <button class="btn btn-danger btn-sm rounded-pill px-2 py-1" style="font-size: 11px; font-weight: 600;" id="openComplaintPopupFromOrders">
-                            <i class="bi bi-flag-fill"></i> Raise Complaint
+                        <button class="btn btn-danger " style="font-size: 10px;" id="openComplaintPopupFromOrders">
+                           Raise Complaint
                         </button>
 
                         <div class="date-sec">
@@ -55,7 +55,7 @@
                     <ul>
                         @forelse($orders as $order)
                         <li class="order-item" data-status="{{ $order->status }}">
-                            <div class="order-list-wrapper">
+                          
 
                                 {{-- LEFT --}}
                                 <div class="order-list-box">
@@ -68,6 +68,31 @@
                                     <div class="total-order-sec">
                                         <p>Total Items : {{ $order->items->count() }}</p>
                                         <p>Total Quantity : {{ $order->items->sum('quantity') }}</p>
+                                    </div>
+
+                                    {{-- 🆕 PRODUCT IMAGES --}}
+                                    <div class="product-thumbnails mt-2 d-flex gap-2 flex-wrap">
+                                        @php
+                                            $items = $order->items->take(4);
+                                        @endphp
+                                        @foreach($items as $item)
+                                            @php
+                                                $product = $item->product;
+                                                $image = $product && $product->thumbnail 
+                                                    ? asset($product->thumbnail) 
+                                                    : ($product && $product->images 
+                                                        ? asset(json_decode($product->images, true)[0] ?? '') 
+                                                        : asset('images/no-image.png'));
+                                            @endphp
+                                            <div class="product-thumb">
+                                                <img src="{{ $image }}" alt="{{ $product->name ?? 'Product' }}" class="img-thumbnail" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">
+                                            </div>
+                                        @endforeach
+                                        @if($order->items->count() > 4)
+                                            <div class="product-thumb more-thumb">
+                                                <span class="badge bg-secondary" style="width:50px; height:50px; display:flex; align-items:center; justify-content:center; border-radius:4px;">+{{ $order->items->count() - 4 }}</span>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
 
@@ -84,23 +109,6 @@
                                             {{ ucfirst($order->status) }}
                                         </span>
                                     </p>
-
-                                    {{-- Booking Slots --}}
-                                    @foreach($order->items as $oItem)
-                                        @php
-                                            $oAttrs = $oItem->main_product_attributes ? json_decode($oItem->main_product_attributes, true) : [];
-                                        @endphp
-                                        @if(isset($oAttrs['Booking Slots']))
-                                        <div class="mt-1">
-                                            <span style="font-size:11px;color:#0d6efd;font-weight:600;">
-                                                <i class="fa fa-calendar-alt me-1"></i> Slots:
-                                            </span>
-                                            @foreach(explode(', ', $oAttrs['Booking Slots']['name'] ?? '') as $sl)
-                                                <span class="badge bg-light text-dark border" style="font-size:10px;padding:2px 6px;">{{ $sl }}</span>
-                                            @endforeach
-                                        </div>
-                                        @endif
-                                    @endforeach
                                 </div>
 
                                 {{-- RIGHT --}}
@@ -116,70 +124,45 @@
                                         </span>
                                     </p>
 
-                                    @if(in_array(strtolower($order->status), ['cancelled', 'return', 'returned']))
+                                    @if(in_array(strtolower($order->status), ['return', 'returned']))
                                         @php
                                             $orderReturn = DB::table('order_returns')->where('order_id', $order->id)->first();
-                                            $isCancelled = strtolower($order->status) === 'cancelled';
-                                            
-                                            $rStatus = 'requested';
+                                            $rStatus = $orderReturn ? strtolower($orderReturn->status) : 'requested';
                                             $dispStatus = 'Processing';
                                             $statusColor = 'warning';
-                                            
-                                            if ($orderReturn) {
-                                                $rStatus = strtolower($orderReturn->status);
-                                            } elseif ($isCancelled) {
-                                                // If it's just cancelled without a formal return, we check transactions directly
-                                                $rStatus = 'cancelled';
-                                                $dispStatus = 'Cancelled';
-                                                $statusColor = 'danger';
-                                            }
-                                            
                                             if($rStatus == 'approved') { $dispStatus = 'Pending Refund'; $statusColor = 'info'; }
                                             if($rStatus == 'rejected') { $dispStatus = 'Rejected'; $statusColor = 'danger'; }
-                                            if($rStatus == 'refunded' || $isCancelled) {
-                                                // Check for actual refund transaction
+                                            if($rStatus == 'refunded') { $dispStatus = 'Refunded'; $statusColor = 'success'; }
+                                            
+                                            $rAmount = 0;
+                                            if($rStatus == 'refunded' && $orderReturn) {
                                                 $txn = DB::table('wallet_transactions')
                                                     ->where('customer_id', auth()->id())
                                                     ->where('transaction_type', 'refund')
-                                                    ->where('description', 'LIKE', '%Order #%' . $order->id . '%')
+                                                    ->where('description', 'LIKE', '%Order #' . $order->id . '%')
                                                     ->first();
-                                                    
-                                                if ($txn) {
-                                                    $rStatus = 'refunded';
-                                                    $dispStatus = 'Refunded Successfully';
-                                                    $statusColor = 'success';
-                                                    $rAmount = $txn->credit;
-                                                } elseif ($rStatus == 'refunded') {
-                                                    $dispStatus = 'Refund Processed';
-                                                    $statusColor = 'success';
-                                                    $rAmount = $orderReturn ? $orderReturn->refund_amount : $order->total_amount;
-                                                }
+                                                if ($txn) $rAmount = $txn->credit;
                                             }
                                         @endphp
-                                        
-                                        @if(isset($rAmount) || $rStatus != 'cancelled')
-                                        <div class="mt-3 p-2 rounded" style="background-color: #f8f9fa; border: 1px solid #e9ecef; border-left: 4px solid var(--bs-{{ $statusColor }});">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <span style="font-size:12px; font-weight:600; color:#495057;">Refund Status:</span>
-                                                <span class="badge bg-{{ $statusColor }}" style="font-size:11px;">{{ $dispStatus }}</span>
-                                            </div>
-                                            @if(isset($rAmount) && $rAmount > 0)
-                                            <div class="d-flex justify-content-between align-items-center mt-1">
-                                                <span style="font-size:12px; font-weight:600; color:#495057;">Refund Amount:</span>
-                                                <span class="fw-bold" style="font-size:13px; color:#198754;">₹{{ number_format($rAmount, 2) }}</span>
-                                            </div>
+                                        <div class="mt-2 text-end">
+                                            <p class="mb-1" style="font-size:13px; color:#555;"><strong>Refund Status:</strong> 
+                                                <span class="badge bg-{{ $statusColor }} px-2 py-1" style="font-size:11px; font-weight:600;">
+                                                    {{ $dispStatus }}
+                                                </span>
+                                            </p>
+                                            @if($rStatus == 'refunded' && $rAmount > 0)
+                                            <p class="mb-0" style="font-size:13px; color:#555;"><strong>Refunded:</strong> <span class="text-success fw-bold">₹{{ number_format($rAmount, 2) }}</span></p>
                                             @endif
                                         </div>
-                                        @endif
                                     @endif
 
                                     {{-- DETAILS BUTTON --}}
-                                    <a href="{{ route('vshop.order.details', $order->id) }}" class="btn btn-sm btn-outline-primary mt-3 rounded-pill px-4" style="font-weight: 500;">
+                                    <a href="{{ route('vshop.order.details', $order->id) }}" class="btn btn-sm btn-outline-primary mt-2 rounded-pill px-4" style="font-weight: 500;">
                                         View Details
                                     </a>
                                 </div>
 
-                            </div>
+                            
                         </li>
                         @empty
                             <p>No orders found.</p>
@@ -291,6 +274,21 @@
     background: #c82333;
     color: #fff;
 }
+
+/* 🆕 Product thumbnails */
+.product-thumbnails {
+    margin-top: 8px;
+}
+.product-thumb img {
+    border: 1px solid #ddd;
+    transition: transform 0.2s;
+}
+.product-thumb img:hover {
+    transform: scale(1.1);
+}
+.more-thumb .badge {
+    font-size: 12px;
+}
 </style>
 @endpush
 
@@ -299,9 +297,8 @@
 <script>
 $(document).ready(function() {
 
-    // ========== RAISE COMPLAINT POPUP (Same as My Account) ==========
+    // ========== RAISE COMPLAINT POPUP ==========
     function openComplaintPopup() {
-        // Build the order dropdown options dynamically from the page
         let orderOptions = '';
         @if(isset($orders) && $orders->count())
             @foreach($orders as $order)
@@ -456,7 +453,7 @@ $(document).ready(function() {
             }
         });
 
-        // File preview inside SweetAlert
+        // File preview
         setTimeout(() => {
             document.getElementById('swal_proof')?.addEventListener('change', function(e) {
                 const container = document.getElementById('swal_filePreview');
@@ -474,46 +471,36 @@ $(document).ready(function() {
         }, 100);
     }
 
-    // Bind complaint popup to the button
     $('#openComplaintPopupFromOrders').on('click', function(e) {
         e.preventDefault();
         openComplaintPopup();
     });
 
-    // ===== EXISTING SCRIPTS (filters, back, etc.) =====
-
-    // Back button functionality
+    // ===== BACK BUTTON =====
     $('.back-btn').click(function() {
         window.history.back();
     });
 
-    // Date filter functionality
+    // ===== DATE FILTER =====
     $('#filterBtn').click(function() {
         const startDate = $('#startDate').val();
         const endDate = $('#endDate').val();
-        
         if(startDate && endDate) {
             if(new Date(startDate) > new Date(endDate)) {
                 alert('Start date cannot be greater than end date');
                 return;
             }
-            // Here you would typically make an AJAX call to filter orders
-            console.log('Filtering orders from', startDate, 'to', endDate);
             alert(`Filtering orders from ${startDate} to ${endDate}`);
         }
     });
 
-    // Order status filter
+    // ===== ORDER STATUS FILTER =====
     $('.filter-order').click(function(e) {
         e.preventDefault();
         const status = $(this).data('status');
         const dropdownText = $(this).text();
-        
-        // Update dropdown button text
         $('.high-low-dropdown .dropdown-toggle').html(dropdownText + 
             ' <i class="fa-regular fa-filter" style="font-size: 15px; color: #5F6368;"></i>');
-        
-        // Filter orders
         if(status === 'all') {
             $('.order-item').show();
         } else {
@@ -522,62 +509,13 @@ $(document).ready(function() {
         }
     });
 
-    // Set today's date as max for date inputs
+    // ===== DATE INPUT LIMITS =====
     const today = new Date().toISOString().split('T')[0];
     $('#startDate').attr('max', today);
     $('#endDate').attr('max', today);
-
-    // Set min date for end date based on start date
     $('#startDate').change(function() {
         $('#endDate').attr('min', $(this).val());
     });
-
-    // Quick filter buttons (optional)
-    const quickFilters = {
-        'today': function() {
-            const today = new Date().toISOString().split('T')[0];
-            $('#startDate').val(today);
-            $('#endDate').val(today);
-        },
-        'last7days': function() {
-            const endDate = new Date();
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - 6);
-            
-            $('#startDate').val(startDate.toISOString().split('T')[0]);
-            $('#endDate').val(endDate.toISOString().split('T')[0]);
-        },
-        'last30days': function() {
-            const endDate = new Date();
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - 29);
-            
-            $('#startDate').val(startDate.toISOString().split('T')[0]);
-            $('#endDate').val(endDate.toISOString().split('T')[0]);
-        }
-    };
-
-    // Uncomment below to add quick filter buttons
-    // function addQuickFilters() {
-    //     const filterHtml = `
-    //         <div class="quick-filters mb-3">
-    //             <button class="btn btn-outline-secondary btn-sm me-2" data-filter="today">Today</button>
-    //             <button class="btn btn-outline-secondary btn-sm me-2" data-filter="last7days">Last 7 Days</button>
-    //             <button class="btn btn-outline-secondary btn-sm" data-filter="last30days">Last 30 Days</button>
-    //         </div>
-    //     `;
-    //     $('.date-short-sec').before(filterHtml);
-    //     
-    //     $('.quick-filters button').click(function() {
-    //         const filter = $(this).data('filter');
-    //         if(quickFilters[filter]) {
-    //             quickFilters[filter]();
-    //             $('#filterBtn').click();
-    //         }
-    //     });
-    // }
-    // addQuickFilters();
-
 });
 </script>
 

@@ -477,7 +477,7 @@ Professional Service Details
 
 @if($hasSlots)
     <div class="col-md-12 mb-3">
-        <label class="form-label text-primary"><i class="fa fa-calendar-check me-1"></i> Time Slots (From Basic Details)</label>
+        <label class="form-label text-primary"><i class="fa fa-calendar-check me-1"></i> Time Slots </label>
         <div class="d-flex flex-wrap gap-2">
             @foreach($slots as $slot)
                 <div class="px-3 py-2 bg-light border rounded" style="font-size:14px; border-color:#b6d4fe !important; background:linear-gradient(135deg, #e8f0fe, #d4e4fc) !important; color:#1a4d8f; font-weight:500;">

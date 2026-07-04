@@ -101,7 +101,7 @@
                 
                 <div class="row">
                     <div class="col-md-6 form-group-modern">
-                        <label>Campaign Title</label>
+                        <label> Title</label>
                         <input type="text" name="title" class="form-control form-control-modern" placeholder="Enter an engaging title" required>
                     </div>
 

@@ -96,49 +96,46 @@ $totalSteps
 ======================================== */
 
 .onboarding-card-vertical {
-    border-radius: 20px;
+    border-radius: 18px;
     overflow: hidden;
-    background: #ffffff;
-    box-shadow: 0 4px 20px rgba(0, 67, 146, 0.05);
-    border: 1px solid #e2e8f0;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     margin-bottom: 24px;
 }
 
 .card-body-vertical {
-    padding: 28px 24px;
+    padding: 24px;
 }
 
-/* Header */
+/* Header - Same as sample */
 .vertical-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 24px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e5e7eb;
 }
 
 .vertical-header h5 {
     font-size: 18px;
-    margin: 0 0 4px 0;
-    color: #0f172a;
-    font-weight: 800;
+    margin: 0;
+    color: #111827;
+    font-weight: 700;
 }
 
 .vertical-header small {
     font-size: 12px;
-    color: #64748b;
-    font-weight: 500;
+    color: #6b7280;
 }
 
 .progress-badge-vertical {
-    background: #eef2ff;
-    color: #004392;
+    background: #dcfce7;
+    color: #15803d;
     padding: 8px 16px;
     border-radius: 30px;
-    font-size: 14px;
-    font-weight: 800;
-    box-shadow: 0 2px 8px rgba(0, 67, 146, 0.1);
+    font-size: 13px;
+    font-weight: 700;
 }
 
 /* ========================================
@@ -157,19 +154,19 @@ $totalSteps
 
 .vertical-progress-bar-wrap {
     position: absolute;
-    left: 9px;
+    left: 8.5px;
     top: 10px;
     bottom: 10px;
-    width: 4px;
+    width: 3px;
     display: flex;
     justify-content: center;
     z-index: 1;
 }
 
 .vertical-progress-bar {
-    width: 4px;
+    width: 3px;
     height: 100%;
-    background: #f1f5f9;
+    background: #e5e7eb;
     border-radius: 30px;
     overflow: hidden;
     position: relative;
@@ -180,9 +177,9 @@ $totalSteps
     left: 0;
     top: 0;
     width: 100%;
-    background: linear-gradient(180deg, #0b4da1 0%, #1a73e8 100%);
+    background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%);
     border-radius: 30px;
-    transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: height 0.5s ease;
 }
 
 /* ========================================
@@ -206,36 +203,41 @@ $totalSteps
 
 /* Step Circle - SMALLER SIZE */
 .vertical-step-circle {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background: #ffffff;
-    border: 3px solid #e2e8f0;
+    background: #fff;
+    border: 2.5px solid #e5e7eb;
     flex-shrink: 0;
     position: relative;
     z-index: 2;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s ease;
 }
 
 /* Completed Step Circle */
 .vertical-step-item.completed .vertical-step-circle {
-    background: #004392;
-    border-color: #004392;
-    box-shadow: 0 0 0 3px rgba(0, 67, 146, 0.15);
+    background: #16a34a;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
 }
 
 /* Active Step Circle */
 .vertical-step-item.active:not(.completed) .vertical-step-circle {
-    border-color: #1a73e8;
-    background: #ffffff;
-    box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.15);
-    animation: pulseBlue 2s infinite;
+    border-color: #16a34a;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.15);
+    animation: pulse 2s infinite;
 }
 
-@keyframes pulseBlue {
-    0% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0.4); }
-    70% { box-shadow: 0 0 0 6px rgba(26, 115, 232, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(26, 115, 232, 0); }
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(22, 163, 74, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+    }
 }
 
 /* Step Content */
@@ -257,12 +259,12 @@ $totalSteps
 }
 
 .vertical-step-item.completed .vertical-step-title {
-    color: #004392 !important;
+    color: #16a34a !important;
 }
 
 .vertical-step-item.active:not(.completed) .vertical-step-title {
-    color: #0f172a !important;
-    font-weight: 800;
+    color: #111827 !important;
+    font-weight: 700;
 }
 
 .vertical-step-content small {
@@ -295,7 +297,7 @@ $totalSteps
 }
 
 .vertical-step-item.active:not(.disabled):hover .vertical-step-title {
-    color: #1a73e8 !important;
+    color: #059669 !important;
 }
 
 /* Responsive */

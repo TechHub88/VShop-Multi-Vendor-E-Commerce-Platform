@@ -35,7 +35,7 @@
                         <th>Order ID</th>
                         <th>Referred Buyer</th>
                         <th>Referrer (Code)</th>
-                        <th>Products Purchased</th>
+                      
                         <th>Commission %</th>
                         <th>Amount Deducted</th>
                         <th>Status</th>
@@ -57,22 +57,7 @@
                             <div class="small text-muted mb-1">{{ $ref->referrer->email ?? '' }}</div>
                             <span class="badge bg-secondary" style="font-size: 11px;">Code: {{ $ref->referrer->referral_code ?? 'N/A' }}</span>
                         </td>
-                        <td>
-                            @if($ref->order && $ref->order->items)
-                                <ul class="list-unstyled mb-0" style="font-size: 13px;">
-                                    @foreach($ref->order->items as $item)
-                                        @if($item->seller_id == Auth::guard('seller')->id())
-                                            <li>
-                                                - {{ $item->product_name ?? ($item->product ? $item->product->name : 'Product') }} 
-                                                <span class="text-muted">(Qty: {{ $item->quantity }})</span>
-                                            </li>
-                                        @endif
-                                    @endforeach
-                                </ul>
-                            @else
-                                <span class="text-muted small">No details</span>
-                            @endif
-                        </td>
+                       
                         <td>{{ $ref->commission_percent }}%</td>
                         <td class="text-danger fw-bold">-₹{{ number_format($ref->amount, 2) }}</td>
                         <td>

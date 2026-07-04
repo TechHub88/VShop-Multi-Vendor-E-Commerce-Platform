@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Frontend;
+namespace App\Http\Controllers\frontend;
 use App\Models\About;
 use App\Models\Category;
 use App\Models\Footer;

@@ -267,9 +267,7 @@
         <span>📊 Commission Structure</span>
         <span class="badge bg-primary px-3 py-2" style="font-size: 13px;">
             Seller Commission: {{ $sellerCommissionPct !== null ? number_format($sellerCommissionPct, 2) . '%' : 'N/A' }}
-            @if($platformCommissionPct !== null)
-                | Platform Fee: {{ number_format($platformCommissionPct, 2) }}%
-            @endif
+          
         </span>
     </div>
 
@@ -620,7 +618,7 @@
                     <tr>
                         <td colspan="7" class="text-center py-4 text-muted fw-semibold">
                             <i class="fa-solid fa-circle-exclamation text-warning me-2 fs-5"></i>
-                            No commission records or rules configured for this seller in <code>commission_management</code> table.
+                            No commission records or rules configured for this seller 
                         </td>
                     </tr>
                 @endforelse

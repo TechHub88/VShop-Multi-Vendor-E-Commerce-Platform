@@ -1071,7 +1071,7 @@ public function orderList(Request $request)
         ]);
     }
 
-    $orders = $query->latest()->paginate(2);
+    $orders = $query->latest()->paginate(10);
 
     return view('vshop.order.list', compact('orders'));
 }

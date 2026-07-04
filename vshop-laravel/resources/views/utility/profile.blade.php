@@ -6,7 +6,7 @@
 <div class="container-fluid">
     <div class="py-3 d-flex align-items-sm-center flex-sm-row flex-column">
         <div class="flex-grow-1">
-            <h4 class="fs-18 fw-semibold m-0">Admin Profile Control Center</h4>
+            <h4 class="fs-18 fw-semibold m-0">Admin Profile </h4>
         </div>
 
         <div class="text-end">
@@ -77,15 +77,7 @@
                         {{-- 1. MY PROFILE TAB --}}
                         <div class="tab-pane fade show active py-3" id="my-profile" role="tabpanel" aria-labelledby="my-profile-tab">
                             <div class="row">
-                                <div class="col-md-6 col-12 mb-4">
-                                    <div class="border-end-md pe-md-4">
-                                        <h5 class="fs-16 text-dark fw-bold mb-3"><i class="mdi mdi-information-outline text-primary me-1"></i> About My Account</h5>
-                                        <p class="text-muted leading-relaxed" style="font-size: 13.5px;">
-                                            This is your profile workspace. Here you can monitor your active credentials, system permission assignments, and check your registered phone or email status. All details display dynamically from the central user register.
-                                        </p>
-                                    </div>
-                                </div>
-
+                                
                                 <div class="col-md-6 col-12">
                                     <h5 class="fs-16 text-dark fw-bold mb-3"><i class="mdi mdi-card-account-details-outline text-primary me-1"></i> Account Specifications</h5>
                                     

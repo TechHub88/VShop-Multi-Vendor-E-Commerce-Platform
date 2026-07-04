@@ -11,10 +11,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        $middleware->trustProxies(at: '*');
-
-        $middleware->appendToGroup('web', \App\Http\Middleware\BlockIpMiddleware::class);
-        $middleware->appendToGroup('api', \App\Http\Middleware\BlockIpMiddleware::class);
+        $middleware->append(\App\Http\Middleware\BlockIpMiddleware::class);
 
         // Register your custom middleware with an alias
         $middleware->alias([

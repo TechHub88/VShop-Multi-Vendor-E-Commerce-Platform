@@ -111,50 +111,6 @@ private function notify($type, $message, $route = null)
 }
 
 /* =====================================================
-   UNIFIED SETUP WIZARD (SPA)
-===================================================== */
-public function setup()
-{
-    $sellerId = Auth::guard('seller')->id();
-
-    // 1. Progress
-    $progress = $this->marketplaceProgress();
-    $currentStep = $this->currentStep($progress);
-    $verificationStatus = $this->verificationStatus();
-
-    // 2. Category Data
-    $categories = MarketplaceCategory::with(['subCategories' => function ($q) {
-        $q->where('status', 1);
-    }])->where('status', 1)->where('seller_id', $sellerId)
-       ->whereIn('type', ['product', 'service'])->orderBy('name', 'ASC')->get();
-    $selectedCategories = SellerMarketplaceCategory::where('seller_id', $sellerId)->pluck('sub_category_id')->toArray();
-
-    // 3. Banner Data
-    $banner = SellerBanner::where('seller_id', $sellerId)->first();
-
-    // 4. Template Data
-    $templates = WebsiteTemplate::where(function($q) use ($sellerId){
-        $q->whereNull('seller_id')->orWhere('seller_id',$sellerId);
-    })->get();
-    $selectedTemplates = \DB::table('seller_website_templates')->where('seller_id', $sellerId)->pluck('template_id')->toArray();
-
-    // 5. SEO Data
-    $seo = SellerSeo::where('seller_id', $sellerId)->first();
-
-    // 6. Area Data
-    $countries = Country::select('id','name')->orderBy('name')->get();
-
-    return view('vshop.seller.marketplace.setup', compact(
-        'progress', 'currentStep', 'verificationStatus',
-        'categories', 'selectedCategories',
-        'banner',
-        'templates', 'selectedTemplates',
-        'seo',
-        'countries'
-    ));
-}
-
-/* =====================================================
    CATEGORY
 ===================================================== */
 
@@ -239,10 +195,6 @@ public function saveCategory(Request $request)
             count($insertData) . ' sub-categories selected for your marketplace',
             'seller.marketplace.category.list'
         );
-    }
-
-    if ($request->ajax()) {
-        return response()->json(['status' => true, 'message' => 'Category Saved Successfully']);
     }
 
     return redirect()
@@ -382,7 +334,7 @@ public function destroyCategory(Request $request)
     // delete subcategories
     MarketplaceSubCategory::where('category_id', $categoryId)->delete();
 
- 
+    // ðŸ”¥ FIX (seller_id issue removed)
     $deleted = MarketplaceCategory::where('id', $categoryId)->delete();
 
     if($deleted){
@@ -503,10 +455,6 @@ public function bannerUpdate(Request $request, $id)
         'seller.marketplace.banner.list'
     );
 
-    if ($request->ajax()) {
-        return response()->json(['status' => true, 'message' => 'Banner Updated Successfully']);
-    }
-
     return redirect()
         ->route('seller.marketplace.banner.list')
         ->with('success', 'Banner Updated Successfully');
@@ -522,7 +470,7 @@ public function bannerDelete($id)
 
     $bannerTitle = $banner->banner_title;
 
-    // ✅ FIX: ensure image is string
+    // âœ… FIX: ensure image is string
     $image = $banner->banner_image;
 
     if (is_array($image)) {
@@ -591,7 +539,7 @@ public function bannerStore(Request $request)
     // ================= UPLOAD LOOP =================
     foreach ($request->file('banner_image') as $index => $file) {
 
-        // 🔥 UNIQUE NAME (NO COLLISION)
+        // ðŸ”¥ UNIQUE NAME (NO COLLISION)
         $filename = time().'_'.$index.'_'.uniqid().'.'.$file->getClientOriginalExtension();
 
         $file->move(public_path($folder), $filename);
@@ -602,7 +550,7 @@ public function bannerStore(Request $request)
     // ================= SAVE =================
     $banner = SellerBanner::create([
         'seller_id'        => $seller->id,
-        'banner_image'     => $images, // ✅ AUTO JSON (if cast = array)
+        'banner_image'     => $images, // âœ… AUTO JSON (if cast = array)
         'banner_title'     => $request->banner_title,
         'banner_sub_title' => $request->banner_sub_title,
         'status'           => 'pending'
@@ -614,10 +562,6 @@ public function bannerStore(Request $request)
         count($images) . ' new banner image(s) uploaded: "' . $request->banner_title . '"',
         'seller.marketplace.banner.list'
     );
-
-    if ($request->ajax()) {
-        return response()->json(['status' => true, 'message' => 'Banner Saved Successfully']);
-    }
 
     return redirect()
         ->route('seller.marketplace.banner.list')
@@ -689,16 +633,12 @@ public function storeTemplate(Request $request)
         'status' => 1
     ]);
 
-    // ✅ NOTIFY
+    // âœ… NOTIFY
     $this->notify(
         'template',
         'Template "' . $template->name . '" Created Successfully',
         'seller.marketplace.template'
     );
-
-    if ($request->ajax()) {
-        return response()->json(['status' => true, 'message' => 'Template Configuration Saved']);
-    }
 
     return redirect()
         ->route('seller.marketplace.template')
@@ -751,7 +691,7 @@ public function updateTemplate(Request $request, $id)
 
     $template->update($data);
 
-    // ✅ NOTIFY
+    // âœ… NOTIFY
     $this->notify(
         'template',
         'Template "' . $template->name . '" Updated Successfully',
@@ -774,13 +714,13 @@ public function template()
         return redirect()->route('seller.marketplace.banner');
     }
 
-    // ✅ GET ALL TEMPLATES (ADMIN + SELLER)
+    // âœ… GET ALL TEMPLATES (ADMIN + SELLER)
     $templates = WebsiteTemplate::where(function($q) use ($sellerId){
         $q->whereNull('seller_id')
           ->orWhere('seller_id',$sellerId);
     })->where('status',1)->get();
 
-    // ✅ MULTI SELECT FIX (IMPORTANT)
+    // âœ… MULTI SELECT FIX (IMPORTANT)
     $selectedTemplates = \DB::table('seller_website_templates')
         ->where('seller_id', $sellerId)
         ->pluck('template_id')
@@ -800,12 +740,12 @@ public function saveTemplate(Request $request)
         'templates.*' => 'exists:website_templates,id',
     ]);
 
-    // 🔥 DELETE OLD
+    // ðŸ”¥ DELETE OLD
     \DB::table('seller_website_templates')
         ->where('seller_id', $sellerId)
         ->delete();
 
-    // 🔥 INSERT NEW
+    // ðŸ”¥ INSERT NEW
     foreach ($request->templates as $templateId) {
 
         \DB::table('seller_website_templates')->insert([
@@ -816,16 +756,12 @@ public function saveTemplate(Request $request)
         ]);
     }
 
-    // ✅ NOTIFY
+    // âœ… NOTIFY
     $this->notify(
         'template',
         count($request->templates) . ' template(s) selected for your marketplace',
         'seller.marketplace.seo'
     );
-
-    if ($request->ajax()) {
-        return response()->json(['status' => true, 'message' => 'SEO Settings Saved']);
-    }
 
     return redirect()
         ->route('seller.marketplace.seo')
@@ -936,10 +872,6 @@ public function saveSeo(Request $request)
         'SEO Settings "' . $seo->home_title . '" Updated Successfully',
         'seller.marketplace.seo.list'
     );
-
-    if ($request->ajax()) {
-        return response()->json(['status' => true, 'message' => 'SEO Settings Saved']);
-    }
 
     return redirect()
         ->route('seller.marketplace.seo.list')
@@ -1129,10 +1061,6 @@ public function saveArea(Request $request)
         $areaCount . ' operational area(s) added successfully',
         'seller.marketplace.area.list'
     );
-
-    if ($request->ajax()) {
-        return response()->json(['status' => true, 'message' => 'Area of Operation Saved']);
-    }
 
     return redirect()
         ->route('seller.marketplace.area.list')

@@ -485,7 +485,7 @@ if($customerLoggedIn){
                     {{-- RIGHT: Location, Notification, Wishlist, Cart, Profile --}}
                     <div class="d-flex align-items-center gap-2">
                         
-                        <a href="{{ url('seller/register') }}" class="btn btn-sm text-white fw-bold shadow-sm" style="background: linear-gradient(90deg, #de7921, #f59a4b); border-radius: 20px; font-size: 12px; padding: 5px 12px; white-space: nowrap; letter-spacing: 0.3px; border: none;">Want to be Seller?</a>
+                        <a href="{{ url('seller/register') }}" class="btn btn-sm text-white fw-bold shadow-sm" style="background: linear-gradient(90deg, #de7921, #f59a4b); border-radius: 20px; font-size: 12px; padding: 5px 12px; white-space: nowrap; letter-spacing: 0.3px; border: none;">Want to be a Seller?</a>
                         
                         <div class="location-box" id="fetchLocationBtn" style="cursor: pointer;" title="Click to update location">
                             <div class="left-part">

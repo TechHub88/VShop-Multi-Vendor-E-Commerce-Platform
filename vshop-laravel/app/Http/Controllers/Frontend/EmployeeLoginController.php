@@ -439,4 +439,4 @@ public function resetPassword(Request $request)
     return redirect()->route('home')
                      ->with('success', 'Password reset successful. You are now logged in.');
 }
-}
+}

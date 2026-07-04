@@ -132,19 +132,15 @@ label{
 
 <div class="marketplace-left">
 
-<div class="header-action-row">
-    <div class="top-back-heading-sec">
-        <a href="{{ url('seller/marketplace/category') }}" class="premium-nav-btn">
-            <i class="fa-solid fa-arrow-left"></i>
-        </a>
-        <h5>{{ !empty($category) ? 'Edit Category' : 'Create Category' }}</h5>
-    </div>
+{{-- TOP --}}
+<div class="d-flex align-items-center mb-4 top-back-heading-sec" style="gap:12px;">
+    <a href="{{ url('seller/marketplace/category') }}" class="nav-btn">
+        <i class="fa-solid fa-arrow-left"></i>
+    </a>
 
-    <div>
-        <a href="{{ route('seller.marketplace.category.list') }}" class="premium-list-btn" title="Category List">
-            <i class="bi bi-list"></i>
-        </a>
-    </div>
+    <h5 class="mb-0">
+        {{ !empty($category) ? 'Edit Category' : 'Create Category' }}
+    </h5>
 </div>
 
 {{-- ALERT --}}
@@ -164,7 +160,7 @@ action="{{ !empty($category)
 @csrf
 
 {{-- CATEGORY --}}
-<div class="premium-form-container mb-4">
+<div class="category-card">
 
     <div class="section-title">Category Information</div>
 
@@ -203,7 +199,7 @@ action="{{ !empty($category)
 </div>
 
 {{-- SUBCATEGORY --}}
-<div class="premium-form-container mb-4">
+<div class="category-card">
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="section-title mb-0">Sub Categories</div>
@@ -237,8 +233,8 @@ action="{{ !empty($category)
 
 </div>
 
-<div class="mt-3 text-end">
-    <button type="submit" class="premium-btn-save">
+<div class="mt-3">
+    <button type="submit" class="save-btn">
         {{ !empty($category) ? 'Update Category' : 'Save Category' }}
     </button>
 </div>

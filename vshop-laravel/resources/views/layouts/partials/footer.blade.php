@@ -241,39 +241,13 @@
         <div class="row">
             <button type="button" class="btn btn-outline-primary btn-sm ai-btn" id="openSupportChat">
                 <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s">
-                <span>VAI</span>
+                <span>V-Chat</span>
             </button>
         </div>
     </div>
 </footer>
 
 <!-- Floating Support Chat Popup (VAI Chat) -->
-@if(Auth::guard('web')->check())
-<script src="http://127.0.0.1:3000/socket.io/socket.io.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const socketUrlGlobal = window.location.protocol + '//' + window.location.hostname + ':3000';
-        const globalSocket = io(socketUrlGlobal);
-        globalSocket.on('connect', () => {
-            globalSocket.emit('join', 'admin_global');
-        });
-        globalSocket.on('escalated_chat', (data) => {
-            if(typeof toastr !== 'undefined') {
-                toastr.warning(`Buyer <strong>${data.customer_name}</strong> needs human support!<br><br><a href="/chat/communication-center" style="color:white;text-decoration:underline;font-weight:bold;">Click here to reply</a>`, 'New Support Request', {
-                    timeOut: 15000,
-                    extendedTimeOut: 5000,
-                    closeButton: true,
-                    progressBar: true,
-                    positionClass: "toast-top-right",
-                });
-            }
-        });
-    });
-</script>
-@endif
-
 <div id="supportChatWidget" class="support-chat-widget">
     <div class="chat-widget-header" id="chatWidgetHeader">
         <h6><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; margin-right: 4px;"> Chat with Ashmita </h6>
@@ -299,7 +273,6 @@
     </div>
 </div>
 
-<script src="http://127.0.0.1:3000/socket.io/socket.io.js"></script>
 <script>
     // DOM elements
     const chatWidget = document.getElementById('supportChatWidget');
@@ -308,10 +281,6 @@
     const messagesArea = document.getElementById('chatMessagesArea');
     const messageInput = document.getElementById('chatMessageText');
     const sendBtn = document.getElementById('sendChatMessageBtn');
-
-    let socket = null;
-    let conversationId = null;
-    let currentUserId = {{ Auth::id() ?? 0 }};
 
     // Draggable functionality
     const header = document.getElementById('chatWidgetHeader');
@@ -339,106 +308,33 @@
         document.body.style.userSelect = '';
     });
 
-    // Fetch history and initiate socket
-    async function initChat() {
-        try {
-            const res = await fetch('{{ route('chat.ashmita.history') }}');
-            const data = await res.json();
-            if (data.success) {
-                conversationId = data.conversation_id;
-                
-                // Clear and load history
-                messagesArea.innerHTML = '';
-                if (data.messages && data.messages.length > 0) {
-                    data.messages.forEach(msg => {
-                        appendMessage(msg);
-                    });
-                } else {
-                    messagesArea.innerHTML = `
-                        <div class="chat-message received">
-                            Hi this is Ashmita, how can I help you?
-                            <small>Just now</small>
-                        </div>
-                    `;
-                }
-                messagesArea.scrollTop = messagesArea.scrollHeight;
-
-                // Connect to Socket.io
-                connectSocket();
-            }
-        } catch (err) {
-            console.error('Failed to load chat history:', err);
-        }
-    }
-
-    function connectSocket() {
-        if (socket) return;
-
-        const socketUrl = window.location.protocol + '//' + window.location.hostname + ':3000';
-        socket = io(socketUrl);
-
-        socket.on('connect', () => {
-            console.log('Connected to socket server');
-            socket.emit('join', 'conversation_' + conversationId);
-        });
-
-        socket.on('message', (msg) => {
-            // Check if message is already in UI to prevent duplicates
-            if (document.getElementById('msg-' + msg.id)) return;
-            appendMessage(msg);
-            messagesArea.scrollTop = messagesArea.scrollHeight;
-        });
-
-        socket.on('disconnect', () => {
-            console.log('Disconnected from socket server');
-        });
-    }
-
-    function appendMessage(msg) {
-        const isSent = (msg.sender_id == currentUserId || msg.sender_type === 'seller') && msg.sender_type !== 'bot';
-        const msgClass = isSent ? 'sent' : 'received';
-        const senderName = isSent ? 'You' : 'Ashmita';
-        
-        // Format time
-        let timeStr = 'Just now';
-        if (msg.created_at) {
-            const date = new Date(msg.created_at);
-            timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-
-        const msgHtml = `
-            <div class="chat-message ${msgClass}" id="msg-${msg.id}">
-                <strong>${senderName}</strong><br>
-                ${escapeHtml(msg.message)}
-                <small>${timeStr}</small>
-            </div>
-        `;
-        messagesArea.insertAdjacentHTML('beforeend', msgHtml);
-    }
-
     // Send a message
-    async function sendMessage() {
+    function sendMessage() {
         const message = messageInput.value.trim();
         if (!message) return;
         
+        // Add sent message to UI
+        const sentHtml = `
+            <div class="chat-message sent">
+                ${escapeHtml(message)}
+                <small>Just now</small>
+            </div>
+        `;
+        messagesArea.insertAdjacentHTML('beforeend', sentHtml);
         messageInput.value = '';
-
-        try {
-            const response = await fetch('{{ route('chat.ashmita.message') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ message: message })
-            });
-            const data = await response.json();
-            if (!data.success) {
-                console.error('Failed to send message:', data.error);
-            }
-        } catch (err) {
-            console.error('Error sending message:', err);
-        }
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+        
+        // Simulate response
+        setTimeout(() => {
+            const receivedHtml = `
+                <div class="chat-message received">
+                    I am currently a demo UI. Your message was: "${escapeHtml(message)}"
+                    <small>Just now</small>
+                </div>
+            `;
+            messagesArea.insertAdjacentHTML('beforeend', receivedHtml);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }, 1000);
     }
 
     // Helper to escape HTML
@@ -459,7 +355,6 @@
             chatWidget.style.left = 'auto';
             chatWidget.style.top = 'auto';
         }
-        initChat();
     });
     
     closeBtn.addEventListener('click', () => {

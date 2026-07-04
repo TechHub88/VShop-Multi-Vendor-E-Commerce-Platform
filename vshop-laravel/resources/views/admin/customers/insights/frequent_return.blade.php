@@ -22,7 +22,7 @@
                     <thead class="table-light py-3">
                         <tr>
                             <th class="ps-4">Customer</th>
-                            <th>Brand</th>
+                          
                             <th>Total Orders Placed</th>
                             <th>Returned Orders</th>
                             <th>Return Rate Ratio</th>
@@ -46,11 +46,7 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td>
-                                    <span class="badge bg-purple bg-opacity-10 text-purple border border-purple border-opacity-25 px-2.5 py-1">
-                                        {{ $customer->brand->name ?? 'No Brand' }}
-                                    </span>
-                                </td>
+                               
                                 <td>
                                     <h6 class="mb-0 fw-semibold text-dark">{{ $customer->orders_count }}</h6>
                                     <small class="text-muted fs-11">Total orders</small>

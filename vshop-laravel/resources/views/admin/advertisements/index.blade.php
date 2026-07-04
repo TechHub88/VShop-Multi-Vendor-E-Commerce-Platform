@@ -51,7 +51,7 @@
                                     @if($row->description)
                                         <small class="text-muted">{{ Str::limit($row->description, 50) }}</small>
                                     @else
-                                        <span class="text-muted">—</span>
+                                        <span class="text-muted">�</span>
                                     @endif
                                 </td>
 
@@ -72,14 +72,14 @@
                                 {{-- Category (NEW) --}}
                                 <td>
                                     <span class="badge bg-primary">
-                                        {{ $row->category ? $row->category->name : '—' }}
+                                        {{ $row->category ? $row->category->name : '�' }}
                                     </span>
                                 </td>
 
                                 {{-- Position --}}
                                 <td>
                                     <span class="badge bg-dark">
-                                        {{ $row->position ?? '—' }}
+                                        {{ $row->position ?? '�' }}
                                     </span>
                                 </td>
 
@@ -106,7 +106,7 @@
                                                 <span class="badge bg-warning text-dark">Image Missing</span>
                                             @endif
                                         @else
-                                            <span class="badge bg-dark">ðŸŽ¥ Video</span>
+                                            <span class="badge bg-dark">🎥 Video</span>
                                         @endif
 
                                         {{-- Show count of extra media --}}

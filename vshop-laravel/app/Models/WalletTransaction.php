@@ -60,14 +60,4 @@ class WalletTransaction extends Model
     {
         return $query->where('transaction_type', $type);
     }
-
-    public function getTypeAttribute(): string
-    {
-        return $this->credit > 0 ? 'credit' : 'debit';
-    }
-
-    public function getAmountAttribute(): float
-    {
-        return $this->credit > 0 ? (float)$this->credit : (float)$this->debit;
-    }
 }

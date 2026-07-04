@@ -29,7 +29,42 @@
         color: orange;
         font-size: 14px;
     }
-
+    .marketplace-wrapper {
+        display: flex;
+        gap: 25px;
+    }
+    .marketplace-left {
+        flex: 1;
+    }
+    .nav-btn {
+        border: 1px solid #004392;
+        color: #004392;
+        background: transparent;
+        border-radius: 5px;
+        font-size: 4px;
+        width: 35px;
+        height: 38px;
+    }
+    .top-back-heading-sec {
+        align-items: center;
+        gap: 10px;
+    }
+    .nav-btn {
+        border: 1px solid #004392;
+        color: #004392;
+        background: transparent;
+        border-radius: 5px;
+        font-size: 4px;
+        width: 35px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.2s;
+    }
+    .top-back-heading-sec h5 {
+        color: #0f172a !important;
+    }
     .btn-success {
         background: linear-gradient(180deg, rgba(44, 127, 195, 1) 0%, rgba(35, 61, 121, 1) 100%);
         border: 0 !important;
@@ -50,18 +85,25 @@
         <div class="marketplace-left">
 
             {{-- HEADER --}}
-            <div class="header-action-row">
-                <div class="top-back-heading-sec">
-                    <a href="{{ route('seller.marketplace.category') }}" class="premium-nav-btn">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex top-back-heading-sec">
+                   <button onclick="window.location.href='{{ route('seller.marketplace.category') }}'" 
+                            class="nav-btn">
                         <i class="fa-solid fa-arrow-left"></i>
-                    </a>
-                    <h5>{{ !empty($banner) ? 'Edit Banner' : 'Banner Management' }}</h5>
+                    </button>
+                    <h5 class="mb-0 fw-semibold text-primary">
+                        {{ !empty($banner) ? 'Edit Banner' : 'Banner Management' }}
+                    </h5>
                 </div>
-                <div>
-                    <a href="{{ route('seller.marketplace.banner.list') }}" class="premium-list-btn" title="Banner List">
-                        <i class="bi bi-list"></i>
-                    </a>
-                </div>
+
+                {{-- LIST --}}
+                <a href="{{ route('seller.marketplace.banner.list') }}"
+                   class="">
+
+                    <i class="bi bi-list"></i>
+
+                </a>
+
             </div>
 
             {{-- SUCCESS --}}
@@ -76,9 +118,9 @@
             @endif
 
             {{-- CARD --}}
-            <div class="premium-form-container mb-4">
+            <div class="card border-0 shadow-sm rounded-4">
 
-                <div class="card-body p-0">
+                <div class="card-body p-4">
 
                     <form method="POST"
                           action="{{ !empty($banner)
@@ -87,8 +129,6 @@
                           enctype="multipart/form-data">
 
                         @csrf
-
-
 
                         {{-- IMAGE --}}
                         <div class="mb-4">
@@ -252,11 +292,12 @@
 
                         @endif
 
-                        <div class="text-end mt-4">
-                            <button type="submit" class="premium-btn-save">
-                                {{ !empty($banner) ? 'Update Banner' : 'Upload Banner' }}
-                            </button>
-                        </div>
+                        {{-- SUBMIT --}}
+                        <button class="btn btn-success px-4 rounded-3">
+
+                            {{ !empty($banner) ? 'Update Banner' : 'Upload Banner' }}
+
+                        </button>
 
                     </form>
 
@@ -364,8 +405,8 @@ let nsfwModel = null;
 async function loadNSFWModel() {
     try {
         if (!nsfwModel) {
-            // Load the model from GitHub CDN to bypass local server folder permission rules
-            nsfwModel = await nsfwjs.load('https://raw.githubusercontent.com/infinitered/nsfwjs/master/models/mobilenet_v2/');
+            // Load the model locally to guarantee availability and prevent CORS/network errors
+            nsfwModel = await nsfwjs.load('/models/mobilenet_v2/');
             console.log("NSFW model loaded successfully.");
         }
     } catch (e) {

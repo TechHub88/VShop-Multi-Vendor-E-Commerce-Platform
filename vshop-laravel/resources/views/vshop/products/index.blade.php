@@ -181,10 +181,19 @@
         width: 100% !important;
     }
     .home-seller-sec {
-        margin-bottom: 5px !important;
+        margin-bottom: 4px !important;
     }
     .home-seller-sec.mb-5 {
-        margin-bottom: 5px !important;
+        margin-bottom: 4px !important;
+    }
+    .campaign-banner-sec {
+        margin-bottom: 2px !important;
+    }
+    .campaign-banner-sec.mb-4 {
+        margin-bottom: 2px !important;
+    }
+    .home-seller-sec {
+        margin-bottom: 10px !important;
     }
     .home-seller-header.mb-3 {
         margin-bottom: 4px !important;
@@ -1237,7 +1246,7 @@ PRODUCT GRID
             $firstVideoAd = $videoMediaList[$videoIndex];
             $videoIndex++;
             @endphp
-            <div class="col-6 col-md-4 col-lg-3 mb-4 ms-auto">
+            <div class="col-6 col-md-4 col-lg-2 mb-4 ms-auto">
                 <div class="card shadow-sm border-0 overflow-hidden position-relative" style="border-radius: 4px; background: #000; height: 200px !important; border: 1px solid #f0f0f0; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='none'" onclick="window.location.href='{{ route('vshop.visuals', ['tab' => 'videos']) }}'">
                     <video class="w-100 h-100 corner-video-player" style="object-fit: cover; opacity: 0.9;" autoplay muted loop playsinline preload="auto">
                         <source src="{{ asset($firstVideoAd['media']->file_path) }}" type="video/mp4">
@@ -1267,7 +1276,7 @@ PRODUCT GRID
                 <div class="row">
                     @php $videoRendered = false; @endphp
                     @foreach($trendingProducts as $product)
-                        <div class="col-6 col-md-4 col-lg-3 mb-4 product-box-outer">
+                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
                             @include('vshop.products._product_card_partial', ['product' => $product])
                         </div>
                         @if($loop->iteration % 5 == 0)
@@ -1298,7 +1307,7 @@ PRODUCT GRID
                 <div class="row">
                     @php $videoRendered = false; @endphp
                     @foreach($mostViewedProducts as $product)
-                        <div class="col-6 col-md-4 col-lg-3 mb-4 product-box-outer">
+                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
                             @include('vshop.products._product_card_partial', ['product' => $product])
                         </div>
                         @if($loop->iteration % 5 == 0)
@@ -1329,7 +1338,7 @@ PRODUCT GRID
                 <div class="row">
                     @php $videoRendered = false; @endphp
                     @foreach($mostEnquiredProducts as $product)
-                        <div class="col-6 col-md-4 col-lg-3 mb-4 product-box-outer">
+                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
                             @include('vshop.products._product_card_partial', ['product' => $product])
                         </div>
                         @if($loop->iteration % 5 == 0)
@@ -1360,7 +1369,7 @@ PRODUCT GRID
                 <div class="row">
                     @php $videoRendered = false; @endphp
                     @foreach($highestRatedProducts as $product)
-                        <div class="col-6 col-md-4 col-lg-3 mb-4 product-box-outer">
+                        <div class="col-6 col-md-4 col-lg-2 mb-4 product-box-outer">
                             @include('vshop.products._product_card_partial', ['product' => $product])
                         </div>
                         @if($loop->iteration % 5 == 0)

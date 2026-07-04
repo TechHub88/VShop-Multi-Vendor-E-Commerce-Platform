@@ -4,7 +4,7 @@
     .ai-btn {
         display: flex !important;
         align-items: center !important;
-        font-size: 9px !important; 
+        font-size: 9px !important;
         font-weight: 700 !important;
         gap: 6px !important;
         white-space: nowrap;
@@ -17,6 +17,20 @@
         letter-spacing: 2px;
         line-height: 14px;
         text-transform: uppercase;
+        animation: glowing 1500ms infinite;
+        background: #fff !important;
+        padding: 0 !important;
+        border: 1px solid #004392 !important;
+    }
+    .ai-btn img {
+        width: 60px;
+        height: 60px;
+    }
+    
+    @-webkit-keyframes glowing {
+        0% { background: linear-gradient(180deg, #d7f1ff 0%, #9fd0ff 25%, #7bb8ff 55%, #6aa8ff 75%, #8fd4ff 100%); -webkit-box-shadow: 0 0 3px rgb(120 190 255 / 80%); }
+        50% { background: linear-gradient(180deg, #d7f1ff 0%, #9fd0ff 25%, #7bb8ff 55%, #6aa8ff 75%, #8fd4ff 100%); -webkit-box-shadow: 0 0 40px rgb(120 190 255 / 80%); }
+        100% { background: linear-gradient(180deg, #d7f1ff 0%, #9fd0ff 25%, #7bb8ff 55%, #6aa8ff 75%, #8fd4ff 100%); -webkit-box-shadow: 0 0 3px rgb(120 190 255 / 80%); }
     }
     .ai-btn:hover {
         box-shadow: inset 0 4px 10px rgba(255, 255, 255, 0.6), inset 0 -6px 12px rgba(0, 0, 0, 0.12), 0 0 20px rgba(120, 190, 255, 0.8);
@@ -29,7 +43,26 @@
         color: orange;
         font-size: 14px;
     }
-
+    .nav-btn {
+        border: 1px solid #004392;
+        color: #004392;
+        background: transparent;
+        border-radius: 5px;
+        font-size: 4px;
+        width: 35px;
+        height: 38px;
+    }
+    .top-back-heading-sec {
+        align-items: center;
+        gap: 10px;
+    }
+    .edit-btn {
+        width: 32px;
+        height: 32px;
+    }
+    .top-back-heading-sec h5 {
+        color: #0f172a !important;
+    }
     .btn-save {
     background: linear-gradient(180deg, rgba(44, 127, 195, 1) 0%, rgba(35, 61, 121, 1) 100%) !important;
 }
@@ -43,22 +76,28 @@
 {{-- LEFT --}}
 <div class="marketplace-left">
 
-<div class="header-action-row">
-<div class="top-back-heading-sec">
-    <a href="{{ route('seller.marketplace.template') }}" class="premium-nav-btn">
-        <i class="fa-solid fa-arrow-left"></i>
-    </a>
-    <h5>{{ isset($seo) ? 'Edit SEO' : 'SEO Management' }}</h5>
+<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex top-back-heading-sec mb-4">
+  <button onclick="window.location.href='{{ route('seller.marketplace.template') }}'" 
+        class="nav-btn">
+    <i class="fa-solid fa-arrow-left"></i>
+</button>
+    <h5 class="">
+    {{ isset($seo) ? 'Edit SEO' : 'SEO Management' }}
+    </h5>
 </div>
-<div>
-<a href="{{ route('seller.marketplace.seo.list') }}" class="premium-list-btn" title="SEO List">
-    <i class="bi bi-list"></i>
+
+
+<div class="header-actions">
+<a href="{{ route('seller.marketplace.seo.list') }}" class="">
+<i class="bi bi-list-ul"></i>
 </a>
 </div>
+
 </div>
 
 
-<div class="premium-form-container mb-4">
+<div class="market-card">
 
 <form method="POST"
 action="{{ route('seller.marketplace.seo.save') }}"
@@ -120,7 +159,16 @@ placeholder="e.g. business, marketing, growth">{{ old('meta_keywords', $seo->met
 
 <span>Search Hashtags</span>
 
-
+<div class="d-flex align-items-center gap-2">
+<button type="button"
+class="btn btn-sm btn-outline-primary ai-btn"
+onclick="generateAI()">
+<!--    <i class="fa-solid fa-bolt"></i>-->
+<!--V-AI-->
+<img src="https://vshop.zelofx.com/public/images/vAi-button-removebg-preview.png" alt="Boost Now" >
+                                    <!--<span>V-AI<br>Generate</span>-->
+</button>
+</div>
 
 </label>
 
@@ -132,11 +180,9 @@ placeholder="#business,#growth,#marketing">{{ old('search_hashtags', $seo->searc
 <small class="text-danger" id="hashtagError"></small>
 </div>
 
-<div class="text-end mt-4">
-    <button class="premium-btn-save">
-        {{ isset($seo) ? 'Update SEO' : 'Save SEO' }}
-    </button>
-</div>
+<button class="btn-save">
+{{ isset($seo) ? 'Update SEO' : 'Save SEO' }}
+</button>
 
 </form>
 

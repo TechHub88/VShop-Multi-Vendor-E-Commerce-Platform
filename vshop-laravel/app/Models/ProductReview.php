@@ -25,7 +25,7 @@ class ProductReview extends Model
         'helpful_no',
         'admin_reply',
         'replied_at',
-        'replied_by',
+        'replied_by',' product_reviews'
     ];
 
     protected $casts = [

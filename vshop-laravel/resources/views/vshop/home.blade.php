@@ -441,14 +441,7 @@
                                     <img src="{{ asset($media->file_path) }}" class="w-100" alt="{{ $banner->title }}">
                                 </a>
                             </div>
-                        @elseif($media->media_type == 'video')
-                            <div class="banner-img item" style="height: 280px; overflow: hidden;">
-                                <a href="{{ $banner->redirect_url ? $banner->redirect_url : route('discount.products') }}">
-                                    <video class="w-100 h-100" style="object-fit: cover;" autoplay muted loop playsinline>
-                                        <source src="{{ asset($media->file_path) }}" type="video/mp4">
-                                    </video>
-                                </a>
-                            </div>
+                     
                         @endif
                     @endforeach
                 @endif

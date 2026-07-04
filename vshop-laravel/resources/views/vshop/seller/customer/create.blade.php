@@ -24,6 +24,32 @@
         background: #233d78 !important; 
         border: 0 !important;
     }
+
+    /* ===== SMALL RED CIRCLE DELETE ICON ===== */
+    .remove-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #dc3545;
+        color: #fff;
+        border: none;
+        font-size: 12px;
+        cursor: pointer;
+        padding: 0;
+        transition: opacity 0.2s;
+        border-radius: 5px;
+    }
+    .remove-icon:hover {
+        opacity: 0.8;
+    }
+    .remove-icon i {
+        pointer-events: none; /* ensures click goes to button */
+        font-size: 13px;
+    }
+    /* ======================================== */
 </style>
 
 @section('content')
@@ -289,34 +315,29 @@ border:1px solid #ddd;
 {{ empty($customer->profile_picture)?'display:none;':'' }}
 ">
 
+{{-- SMALL RED CIRCLE DELETE ICON FOR PHOTO --}}
 <span id="removeBtn"
 onclick="removePhoto()"
 style="
 position:absolute;
 top:-8px;
 right:-8px;
-background:#ff0000;
-color:#fff;
-width:20px;
-height:20px;
+width:24px;
+height:24px;
 border-radius:50%;
+background:#dc3545;
+color:#fff;
 display:flex;
 align-items:center;
 justify-content:center;
 font-size:12px;
-font-weight:bold;
-line-height:20px;
 cursor:pointer;
 z-index:9999;
 border:2px solid #fff;
 box-shadow:0 2px 6px rgba(0,0,0,0.25);
-overflow:hidden;
-padding:0;
 {{ empty($customer->profile_picture)?'display:none;':'' }}
 ">
-
-×
-
+    <i class="fa fa-trash"></i>
 </span>
 
 </div>
@@ -357,9 +378,10 @@ data-city-id="{{ $b->city_id ?? '' }}">
 
 <input type="hidden" name="billing_id[]" value="{{ $b->id ?? '' }}">
 
+{{-- SMALL RED CIRCLE DELETE ICON --}}
 <button type="button"
-class="btn btn-danger btn-sm float-end removeBlock">
-X
+class="remove-icon float-end">
+    <i class="fa fa-trash"></i>
 </button>
 
 <div class="row g-3">
@@ -529,9 +551,10 @@ data-city-id="{{ $d->city_id ?? '' }}">
 
 <input type="hidden" name="delivery_id[]" value="{{ $d->id ?? '' }}">
 
+{{-- SMALL RED CIRCLE DELETE ICON --}}
 <button type="button"
-class="btn btn-danger btn-sm float-end removeBlock">
-X
+class="remove-icon float-end">
+    <i class="fa fa-trash"></i>
 </button>
 
 <div class="row g-3">

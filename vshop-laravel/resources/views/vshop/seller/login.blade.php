@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Seller Login</title>
 
+<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -430,7 +431,7 @@ $(document).on('click','.togglePass', function(){
 
 function showAlert(el, msg, type) {
     $(el).text(msg)
-         .removeClass('alert-success alert-danger')
+         .removeClass('alert-success alert-danger alert')
          .addClass(type === 'success' ? 'alert alert-success alert-msg' : 'alert alert-danger alert-msg')
          .show();
 }

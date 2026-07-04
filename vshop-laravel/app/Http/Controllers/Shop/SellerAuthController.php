@@ -307,7 +307,7 @@ public function login(Request $request)
         'status' => true,
         'otp_required' => true,
         'message' => $message,
-        'dev_otp' => $otp, // ALWAYS return OTP for dev testing locally
+        'dev_otp' => !$isEmail ? $otp : null, // returning OTP for dev testing since no SMS gateway exists
     ]);
 }
 
@@ -1373,14 +1373,10 @@ public function panelSelect()
             $seller->save();
 
             // Send email
-            try {
-                $subject = "Platform Request Approved";
-                $message = "Hello " . $seller->name . ",\n\nYour request for platform access has been automatically approved by the admin after 24 hours.\n\nThank you.";
-                $headers = "From: noreply@vshop.zelofx.com";
-                @mail($seller->email, $subject, $message, $headers);
-            } catch (\Throwable $e) {
-                // Ignore local SMTP errors
-            }
+            $subject = "Platform Request Approved";
+            $message = "Hello " . $seller->name . ",\n\nYour request for platform access has been automatically approved by the admin after 24 hours.\n\nThank you.";
+            $headers = "From: noreply@vshop.zelofx.com";
+            @mail($seller->email, $subject, $message, $headers);
         }
     }
 
@@ -1405,14 +1401,10 @@ public function switchPanelMulti(Request $request)
             $seller->save();
 
             // Send email
-            try {
-                $subject = "Platform Request Approved";
-                $message = "Hello " . $seller->name . ",\n\nYour request for platform access has been automatically approved by the admin after 24 hours.\n\nThank you.";
-                $headers = "From: noreply@vshop.zelofx.com";
-                @mail($seller->email, $subject, $message, $headers);
-            } catch (\Throwable $e) {
-                // Ignore local SMTP errors
-            }
+            $subject = "Platform Request Approved";
+            $message = "Hello " . $seller->name . ",\n\nYour request for platform access has been automatically approved by the admin after 24 hours.\n\nThank you.";
+            $headers = "From: noreply@vshop.zelofx.com";
+            @mail($seller->email, $subject, $message, $headers);
         }
     }
 

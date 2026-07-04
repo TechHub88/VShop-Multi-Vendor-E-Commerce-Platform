@@ -349,10 +349,7 @@ $payment = strtolower($order->payment_status ?? 'pending');
 @endif
 
 
-@if($status=='return_requested')
-<a href="{{ route('seller.orders.return.approve',$order->id) }}" class="btn btn-sm btn-success mb-1">Approve</a>
-<a href="{{ route('seller.orders.return.reject',$order->id) }}" class="btn btn-sm btn-danger mb-1">Reject</a>
-@endif
+
 </td>
 
 </tr>

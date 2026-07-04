@@ -88,7 +88,7 @@
     }
     
     if (count($activePanels) > 1) {
-        $dashboardTitle = 'Unified Dashboard';
+        $dashboardTitle = 'Dashboard';
         $managementTitle = 'Product & Service Management';
         $verificationTitle = 'Product & Service Verification';
         $categoryTitle = 'Product & Service Categories';
@@ -425,11 +425,11 @@ class="tp-link {{ request()->routeIs('admin.approval.categories') ? 'active' : '
         Coupon Engine
     </a>
 </li>
-<li>
-    <a href="{{ route('admin.tickets.index') }}" class="tp-link {{ request()->routeIs('admin.tickets.*') ? 'active' : '' }}">
-        {{ $ticketTitle }}
-    </a>
-</li>
+<!--<li>-->
+<!--    <a href="{{ route('admin.tickets.index') }}" class="tp-link {{ request()->routeIs('admin.tickets.*') ? 'active' : '' }}">-->
+<!--        {{ $ticketTitle }}-->
+<!--    </a>-->
+<!--</li>-->
 <li>
     <a href="{{ route('admin.referrals.index') }}" class="tp-link {{ request()->routeIs('admin.referrals.*') ? 'active' : '' }}">Referral System</a>
 </li>

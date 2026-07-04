@@ -347,7 +347,7 @@
                         <th>Rating</th>
                         <th>Review</th>
                         <th>Date</th>
-                        <th>Status</th>
+                      
                         <th>Reply</th>
                     </tr>
                 </thead>
@@ -420,13 +420,7 @@
                     <td style="white-space:nowrap;">{{ $rev->created_at->format('d M Y') }}</td>
 
                     {{-- STATUS --}}
-                    <td>
-                        @if($rev->is_approved)
-                            <span class="status-dot active">Active</span>
-                        @else
-                            <span class="status-dot inactive">Pending</span>
-                        @endif
-                    </td>
+                  
 
                     {{-- REPLY --}}
                     <td>

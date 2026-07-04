@@ -12,7 +12,7 @@
                 <div class="bed-cum-sec justify-content-between">
                     <div class="bedcum-left">
                         <ul>
-                            <li><a href="{{ route('vtravelhome') }}">Home</a> /</li>
+                            <li><a href="{{ route('home') }}">Home</a> /</li>
                             <li>Order Success</li>
                         </ul>
                     </div>

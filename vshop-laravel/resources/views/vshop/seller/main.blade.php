@@ -18,13 +18,19 @@
 
     {{-- LOCAL CSS --}}
     <link rel="stylesheet" href="{{ asset('vtravelassets/css/rs-spacing-min.css') }}">
-    <link rel="stylesheet" href="{{ asset('vtravelassets/css/style.css?=18') }}">
+    <link rel="stylesheet" href="{{ asset('vtravelassets/css/style.css?=17') }}">
     <link rel="stylesheet" href="{{ asset('vtravelassets/css/responsive.css') }}">
     <style>
         .dashboardPagesContent .container-fluid {
             width: 100%;
-            min-height: 100%;
+            height: 100%;
         }
+        .dashboardPagesContent {
+            width: calc(100% - 120px) !important;
+        }
+        .dashboardPagesContent .container-fluid {
+            height: auto;
+}
     </style>
 <meta name="csrf-token" content="{{ csrf_token() }}">
     @stack('styles')

@@ -148,26 +148,19 @@ class SellerOtpMail
         }
 
         // ── Send OTP via php mail() with proper envelope sender ──────────
-        $sent = false;
-        try {
-            $sent = @mail($to, $subject, $body, $headers, "-f {$fromEmail}");
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('SellerOtpMail: PHP mail() threw exception: ' . $e->getMessage());
-        }
+        $sent = mail($to, $subject, $body, $headers, "-f {$fromEmail}");
 
         // ── Log result ───────────────────────────────────────────────────
         if ($sent) {
             \Illuminate\Support\Facades\Log::info('SellerOtpMail: sent via mail()', [
                 'to'      => $to,
                 'purpose' => $purpose,
-                'otp'     => $otp, // Log OTP for local testing
             ]);
         } else {
             $err = error_get_last();
             \Illuminate\Support\Facades\Log::error('SellerOtpMail: mail() failed', [
                 'to'      => $to,
                 'purpose' => $purpose,
-                'otp'     => $otp, // Log OTP for local testing
                 'error'   => $err ? $err['message'] : 'Unknown',
             ]);
         }

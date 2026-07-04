@@ -60,10 +60,6 @@
                                 <input type="email" name="email" class="textfield" placeholder="Email Address" required>
                             </div>
 
-                            <div class="textfield-box mb-3">
-                                <input type="text" name="referral_code" class="textfield" value="{{ request()->query('ref') }}" placeholder="Referral Code (Optional)">
-                            </div>
-
                             <input type="hidden" name="client_id" value="1">
 
                             <div class="textfield-btn-sec text-center mt-3">

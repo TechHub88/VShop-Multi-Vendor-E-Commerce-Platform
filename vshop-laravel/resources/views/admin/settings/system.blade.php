@@ -126,11 +126,11 @@
                         <i class="bx bx-data me-1"></i> Data Control
                     </button>
                 </li>
-                <li class="nav-item">
-                    <button class="nav-link" id="platform-tab" data-bs-toggle="tab" data-bs-target="#platform" type="button">
-                        <i class="bx bx-cog me-1"></i> Platform Settings
-                    </button>
-                </li>
+                <!--<li class="nav-item">-->
+                <!--    <button class="nav-link" id="platform-tab" data-bs-toggle="tab" data-bs-target="#platform" type="button">-->
+                <!--        <i class="bx bx-cog me-1"></i> Platform Settings-->
+                <!--    </button>-->
+                <!--</li>-->
                 <li class="nav-item">
                     <button class="nav-link" id="invoice-logs-tab" data-bs-toggle="tab" data-bs-target="#invoice-logs" type="button">
                         <i class="bx bx-receipt me-1"></i> Invoice Logs

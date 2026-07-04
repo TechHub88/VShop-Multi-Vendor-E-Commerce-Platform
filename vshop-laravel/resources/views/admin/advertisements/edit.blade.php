@@ -193,22 +193,11 @@
                     <div class="col-md-6 form-group-modern">
                         <label>Upload Additional Images</label>
                         <input type="file" name="images[]" multiple class="form-control form-control-modern">
-                        <small class="text-muted d-block mt-2" style="font-size: 11px; line-height: 1.4;">
-                            <i class="fas fa-info-circle text-primary me-1"></i> <strong>Formats:</strong> JPG, PNG, WEBP. Max 2MB per image.<br>
-                            - <strong>Banner:</strong> 1200 x 380 px<br>
-                            - <strong>Campaign:</strong> 1600 x 88 px (Full-width divider)<br>
-                            - <strong>Featured:</strong> 263 x 162 px (Sidebar slider)
-                        </small>
                     </div>
 
                     <div class="col-md-6 form-group-modern">
                         <label>Upload Additional Videos</label>
                         <input type="file" name="videos[]" multiple class="form-control form-control-modern">
-                        <small class="text-muted d-block mt-2" style="font-size: 11px; line-height: 1.4;">
-                            <i class="fas fa-info-circle text-primary me-1"></i> <strong>Formats:</strong> MP4 (H.264), WEBM. Max 10MB.<br>
-                            - <strong>Dimensions:</strong> Vertical 9:16 (1080 x 1920 px or 720 x 1280 px)<br>
-                            - <strong>Duration:</strong> 10 to 15 seconds (Max 30 seconds)
-                        </small>
                     </div>
                 </div>
 
@@ -254,10 +243,10 @@ const instructionEl = document.querySelector('#type_instruction span');
 function updateInstruction() {
     let type = typeSelect.value;
     let text = "";
-    if(type === 'video') text = "Recommended: Vertical 9:16 (e.g. 1080 x 1920 px), Max 10MB, Max 30s";
-    else if(type === 'campaign') text = "Recommended: 1600 x 88 px (Thin horizontal strip)";
-    else if(type === 'banner') text = "Recommended: 1200 x 380 px (Standard Hero Banner)";
-    else if(type === 'featured') text = "Recommended: 263 x 162 px (Sidebar card slider)";
+    if(type === 'video') text = "Recommended Ratio: 300 x 500";
+    else if(type === 'campaign') text = "Recommended Ratio: 1600 x 88";
+    else if(type === 'banner') text = "Size as per Banner standard";
+    else if(type === 'featured') text = "Recommended Ratio: 263 x 162";
     
     instructionEl.innerText = text;
 }

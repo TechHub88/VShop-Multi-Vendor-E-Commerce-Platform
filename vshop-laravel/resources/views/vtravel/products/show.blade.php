@@ -71,9 +71,21 @@
                                                  @if($storeName && $storeSlug)
 
                                                 <p class="store-name">
-                                                    <a href="{{ route('vtravel.store.show',$storeSlug) }}">
-                                                        {{ $storeName }}
-                                                    </a>
+                                                
+                                                @auth('customer')
+                                                
+                                                <a href="{{ route('vtravel.store.show',$storeSlug) }}">
+                                                {{ $storeName }}
+                                                </a>
+                                                
+                                                @else
+                                                
+                                                <a href="{{ route('vshoplogin',['redirect'=>request()->fullUrl()]) }}">
+                                                {{ $storeName }}
+                                                </a>
+                                                
+                                                @endauth
+                                                
                                                 </p>
                                                 
                                                 @endif

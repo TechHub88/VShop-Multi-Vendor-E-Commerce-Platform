@@ -425,7 +425,8 @@ function moneySpan(amountINR, extraClass) {
 }
 // Listen for currency change from topbar and re-render dynamic JS content
 window.addEventListener('currencyChanged', function(e) {
-  
+    // Re-convert all .money elements (topbar already does this)
+    // Also update table column headers
     document.querySelectorAll('.currency-label').forEach(function(el) {
         el.textContent = '(' + e.detail.symbol + ')';
     });

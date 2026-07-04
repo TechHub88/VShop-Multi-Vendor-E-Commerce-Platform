@@ -711,7 +711,7 @@
 
 /* ================= CONVERT BTN ================= */
 .convert-btn{
-    background:#0f172a !important;
+    background:blue !important;
     color:#fff !important;
     border:none !important;
     border-radius:10px !important;

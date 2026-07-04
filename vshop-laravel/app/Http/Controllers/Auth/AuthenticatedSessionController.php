@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 class AuthenticatedSessionController extends Controller
 {
     /**
-     * ðŸ”¹ Show Login Page
+     * 🔹 Show Login Page
      */
     public function create()
     {
@@ -22,7 +22,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * ðŸ”¹ Handle Login (with Multi-guard & 2FA support)
+     * 🔹 Handle Login (with Multi-guard & 2FA support)
      */
     public function store(Request $request)
     {
@@ -112,7 +112,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * ðŸ”¹ Verify Staff OTP (AJAX)
+     * 🔹 Verify Staff OTP (AJAX)
      */
     public function verifyStaffOtp(Request $request)
     {
@@ -150,7 +150,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * ðŸ”¹ Show 2FA Form
+     * 🔹 Show 2FA Form
      */
     public function show2faForm()
     {
@@ -162,7 +162,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * ðŸ”¹ Verify 2FA
+     * 🔹 Verify 2FA
      */
     public function verify2fa(Request $request)
     {
@@ -204,7 +204,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * ðŸ”¹ Logout
+     * 🔹 Logout
      */
     public function destroy(Request $request)
     {
@@ -219,7 +219,7 @@ class AuthenticatedSessionController extends Controller
     }
 
     /**
-     * ðŸ”¹ Switch Panel (Vshop / Vtravel / Vcampus / Vedge)
+     * 🔹 Switch Panel (Vshop / Vtravel / Vcampus / Vedge)
      */
     public function switchPanel($type)
     {

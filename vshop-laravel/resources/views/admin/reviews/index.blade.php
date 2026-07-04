@@ -243,19 +243,7 @@ data-id="{{ $review->id }}">
 </button>
 
 
-{{-- EDIT --}}
-<a href="{{ route('admin.edit',$review->id) }}"
-class="btn btn-sm btn-secondary">
-<i class="bi bi-pencil-square"></i>
-</a>
 
-
-{{-- REPLY --}}
-<button class="btn btn-sm btn-info reply-btn"
-data-review-id="{{ $review->id }}"
-data-bs-toggle="modal"
-data-bs-target="#replyModal">
-<i class="bi bi-reply"></i>
 </button>
 
 </div>

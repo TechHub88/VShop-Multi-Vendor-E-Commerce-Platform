@@ -668,7 +668,7 @@ body {
                             Action Row
                         </span>
                         <button class="btn btn-recharge font-outfit" id="rechargeWalletBtn">
-                            <i class="fa-solid fa-circle-plus me-1"></i> Recharge Wallet
+                            <i class="fa-solid fa-circle-plus me-1"></i> Recharge Wallet/Account
                         </button>
                     </div>
 

@@ -15,9 +15,7 @@
             <p class="text-muted mb-0">Monitor, track & control all orders</p>
         </div>
         <div class="col-md-6 text-end">
-            <button class="btn btn-light border shadow-sm px-3" onclick="exportToCSV()">
-                <i class="bx bx-download me-1"></i> Export
-            </button>
+           
         </div>
     </div>
 
@@ -299,8 +297,8 @@
                                     <ul class="dropdown-menu dropdown-menu-end">
                                         <li><a class="dropdown-item" href="{{ route('admin.orders.edit', $order->id) }}">Manage Order</a></li>
                                         <li><a class="dropdown-item" href="{{ route('admin.orders.invoice', $order->id) }}">Invoice</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="viewOrderDetails({{ $order->id }})">View Details</a></li>
-                                        <li><hr class="dropdown-divider"></li>
+                                       
+                                       
                                         <li><a class="dropdown-item text-danger" href="#" onclick="deleteOrder({{ $order->id }})">Delete</a></li>
                                     </ul>
                                 </div>

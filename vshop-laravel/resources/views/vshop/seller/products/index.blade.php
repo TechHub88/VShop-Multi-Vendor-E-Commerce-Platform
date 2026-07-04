@@ -1755,7 +1755,7 @@ $(document).ready(function() {
                 }
 
                 if (response.products.length === 0) {
-                    
+
                     tbody.append('<tr><td colspan="3" class="text-center py-4 text-muted">No products found.</td></tr>');
                 } else {
                     // Store products globally for combo dropdown

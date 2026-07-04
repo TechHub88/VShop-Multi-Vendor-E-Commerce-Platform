@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -21,6 +21,55 @@ class MarketingGrowthController extends Controller
             ->paginate(20);
 
         return view('admin.marketing.referral-history', compact('referrals'));
+    }
+
+    public function getTransactions()
+    {
+        $txns = \App\Models\ReferralHistory::with(['referrer', 'buyer', 'seller'])
+            ->orderBy('id', 'desc')
+            ->limit(100)
+            ->get();
+            
+        // Map data to match JS frontend expectations
+        $mapped = $txns->map(function($t) {
+            $referrerData = null;
+            $referralType = 'Buyer to Buyer';
+            $payoutType = 'Buyer Points';
+            
+            if ($t->buyer_id) {
+                // Buyer-to-buyer
+                $referrerData = $t->referrer ? ['name' => $t->referrer->name, 'email' => $t->referrer->email] : null;
+                // Check if referrer is a seller
+                if ($t->referrer) {
+                    $isSeller = \App\Models\Seller::where('email', $t->referrer->email)
+                        ->orWhere('phone', $t->referrer->phone)
+                        ->exists();
+                    if ($isSeller) {
+                        $payoutType = 'Seller Wallet';
+                    }
+                }
+            } else {
+                // Seller-to-seller (referrer_id is seller ID)
+                $referralType = 'Seller to Seller';
+                $payoutType = 'Seller Wallet';
+                $sellerReferrer = \App\Models\Seller::find($t->referrer_id);
+                $referrerData = $sellerReferrer ? ['name' => $sellerReferrer->name ?? $sellerReferrer->org_name, 'email' => $sellerReferrer->email] : null;
+            }
+
+            return [
+                'created_at' => $t->created_at,
+                'referral_type' => $referralType,
+                'payout_type' => $payoutType,
+                'referrer' => $referrerData,
+                'buyer' => $t->buyer ? ['name' => $t->buyer->name, 'email' => $t->buyer->email] : null,
+                'seller' => $t->seller ? ['company_name' => $t->seller->name ?? $t->seller->org_name] : null,
+                'order_id' => $t->order_id,
+                'amount' => $t->amount,
+                'status' => $t->status,
+            ];
+        });
+
+        return response()->json($mapped);
     }
 
     public function getSystemStats()
@@ -181,15 +230,18 @@ class MarketingGrowthController extends Controller
     // ========== DROPDOWNS ==========
     public function getCategories()
     {
-        return response()->json(
-            DB::table('marketplace_categories')->select('id', 'name')->orderBy('name')->get()
-        );
+        $cats = DB::table('marketplace_categories')
+            ->select('name', \Illuminate\Support\Facades\DB::raw('GROUP_CONCAT(id) as ids'))
+            ->groupBy('name')
+            ->orderBy('name')
+            ->get();
+        return response()->json($cats);
     }
 
     public function getProducts()
     {
         return response()->json(
-            DB::table('products')->select('id', 'name')->orderBy('name')->get()
+            DB::table('products')->select('id', 'name', 'category_id')->orderBy('name')->get()
         );
     }
 

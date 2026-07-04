@@ -177,11 +177,7 @@
             </div>
             
             <div class="d-flex justify-content-center mt-3">
-                <button type="button" class="btn p-0 border-0 bg-transparent shadow-none boost-btn">
-                    <div class="boost-icon-wrapper">
-                        <img src="{{ asset('images/boost_icon.png') }}" alt="Boost Now" style="width: 100%; height: auto; display: block;">
-                    </div>
-                </button>
+              
             </div>
         </div>
     </div>

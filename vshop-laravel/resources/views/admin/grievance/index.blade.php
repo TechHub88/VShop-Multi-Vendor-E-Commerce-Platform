@@ -94,7 +94,7 @@
 @endsection
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid pt-3">
 
     <!-- ===== HEADER ===== -->
     <div class="row align-items-center mb-3">
@@ -103,9 +103,7 @@
             <small class="text-muted">Platform-wide ticket registry and escalation control</small>
         </div>
         <div class="col-sm-6 text-sm-end d-flex gap-2 justify-content-sm-end">
-            <button class="btn btn-outline-secondary btn-sm px-3" id="btnExportGrievance">
-                <i class="bx bx-export me-1"></i> Export
-            </button>
+          
             <button class="btn btn-primary px-4" data-bs-toggle="modal" data-bs-target="#createComplaintModal">
                 <i class="bx bx-plus-circle me-1"></i> File New Complaint
             </button>
@@ -836,10 +834,10 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>-->
+<!--<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>-->
 
 <script>
 // ===== DONUT CHART =====

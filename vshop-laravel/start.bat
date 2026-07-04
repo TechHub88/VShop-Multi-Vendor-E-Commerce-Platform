@@ -1,6 +1,0 @@
-@echo off
-echo Starting Socket.io server...
-start /B node websocket-server/index.cjs
-timeout /t 2 /nobreak >nul
-echo Starting Laravel server...
-php artisan serve
