@@ -152,8 +152,7 @@ public function index(Request $request)
         $selectedCategoryModels = DB::table('marketplace_categories')
             ->where('status', 1)
             ->where(function($q) use ($selectedCategory) {
-                $q->where('slug', $selectedCategory)
-                  ->orWhereRaw("LOWER(REPLACE(name,' ','-')) = ?", [strtolower($selectedCategory)])
+                $q->whereRaw("LOWER(REPLACE(name,' ','-')) = ?", [strtolower($selectedCategory)])
                   ->orWhereRaw("LOWER(name) = ?", [strtolower(str_replace('-', ' ', $selectedCategory))]);
             })
             ->get();
@@ -353,8 +352,7 @@ public function index(Request $request)
     if ($selectedCategory) {
         $matchingCats = DB::table('marketplace_categories')
             ->where(function($q) use ($selectedCategory) {
-                $q->where('slug', $selectedCategory)
-                  ->orWhereRaw("LOWER(REPLACE(name,' ','-')) = ?", [strtolower($selectedCategory)])
+                $q->whereRaw("LOWER(REPLACE(name,' ','-')) = ?", [strtolower($selectedCategory)])
                   ->orWhereRaw("LOWER(name) = ?", [strtolower(str_replace('-', ' ', $selectedCategory))]);
             })
             ->get();
