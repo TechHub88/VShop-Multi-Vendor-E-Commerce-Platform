@@ -118,6 +118,8 @@ websocket_build_and_deploy:
     # Helm deploy targeting the vshop-websocket/deploy folder
     # --------------------------------------------------
     - export DEPLOYMENT_NAME=$(echo ${COMPONENT_NAME} | tr '_' '-')
+    - helm uninstall ${DEPLOYMENT_NAME} --namespace default || true
+    - sleep 5
     - |
       helm upgrade --install ${DEPLOYMENT_NAME} ./vshop-websocket/deploy/${COMPONENT_NAME} \
         -f ./vshop-websocket/deploy/${COMPONENT_NAME}/${VALUES_FILE} \
@@ -221,6 +223,8 @@ laravel_build_and_deploy:
     # Helm deploy targeting the vshop-laravel/deploy folder
     # --------------------------------------------------
     - export DEPLOYMENT_NAME=$(echo ${COMPONENT_NAME} | tr '_' '-')
+    - helm uninstall ${DEPLOYMENT_NAME} --namespace default || true
+    - sleep 5
     - |
       helm upgrade --install ${DEPLOYMENT_NAME} ./vshop-laravel/deploy/${COMPONENT_NAME} \
         -f ./vshop-laravel/deploy/${COMPONENT_NAME}/${VALUES_FILE} \
