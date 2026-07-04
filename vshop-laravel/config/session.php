@@ -18,7 +18,16 @@ return [
     |
     */
 
-    'driver' => env('SESSION_DRIVER', 'database'),
+    'driver' => (function() {
+        $driver = env('SESSION_DRIVER', 'database');
+        if ($driver === 'file') {
+            $path = storage_path('framework/sessions');
+            if (!is_dir($path) || !is_writable($path)) {
+                return 'database';
+            }
+        }
+        return $driver;
+    })(),
 
     /*
     |--------------------------------------------------------------------------

@@ -43,6 +43,18 @@ use App\Http\Controllers\admin\GrievanceController;
 
 
 
+Route::get('/clear-cache', function() {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        \Illuminate\Support\Facades\Artisan::call('view:clear');
+        \Illuminate\Support\Facades\Artisan::call('route:clear');
+        return "Cache, config, view, and routes cleared successfully!";
+    } catch (\Exception $e) {
+        return $e->getMessage();
+    }
+});
+
 Route::get('/fix-storage-link', function() {
     try {
         $publicStorage = public_path('storage');
