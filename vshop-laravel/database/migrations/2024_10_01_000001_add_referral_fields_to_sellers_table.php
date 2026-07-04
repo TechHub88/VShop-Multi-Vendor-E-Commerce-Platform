@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::table('sellers', function (Blueprint $table) {
             // Add referral code column (unique) and referred_by foreign key
-            $table->string('referral_code')->unique()->after('referral_settings');
+            $table->string('referral_code')->nullable()->unique()->after('referral_settings');
             $table->unsignedBigInteger('referred_by')->nullable()->after('referral_code');
             $table->foreign('referred_by')->references('id')->on('sellers')->onDelete('set null');
         });
