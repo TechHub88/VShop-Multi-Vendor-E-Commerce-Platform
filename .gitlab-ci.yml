@@ -223,7 +223,6 @@ laravel_build_and_deploy:
     # Helm deploy targeting the vshop-laravel/deploy folder
     # --------------------------------------------------
     - export DEPLOYMENT_NAME=$(echo ${COMPONENT_NAME} | tr '_' '-')
-    - helm uninstall ${DEPLOYMENT_NAME} --namespace default --ignore-not-found --wait --timeout 2m || true
     - |
       helm upgrade --install ${DEPLOYMENT_NAME} ./vshop-laravel/deploy/${COMPONENT_NAME} \
         -f ./vshop-laravel/deploy/${COMPONENT_NAME}/${VALUES_FILE} \
