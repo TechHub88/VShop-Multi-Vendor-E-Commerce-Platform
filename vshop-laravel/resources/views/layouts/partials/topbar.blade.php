@@ -1,7 +1,5 @@
 <?php
-// =============================================
-// ADD THIS CODE AT THE VERY TOP OF YOUR TOPBAR BLADE FILE
-// =============================================
+
 
 use App\Models\Seller;
 use App\Models\Product;
@@ -11,12 +9,12 @@ use App\Models\OrderItem;
 use App\Models\AdminNotification;
 use Illuminate\Support\Facades\DB;
 
-// Fetch Dynamic Alert Counts from Database
+
 $pendingKYC = Seller::where('status', 'pending')->count();
 $pendingProducts = Product::where('status', 'pending')->count();
 $paymentFailures = Order::where('payment_status', 'failed')->where('created_at', '>=', now()->subDays(7))->count();
 
-// High Return Products (return rate > 15%)
+
 $highReturnProducts = OrderItem::select('product_id')
     ->selectRaw('COUNT(*) as total_orders')
     ->selectRaw('SUM(CASE WHEN status = "returned" THEN 1 ELSE 0 END) as returned_count')

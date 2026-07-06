@@ -1946,6 +1946,27 @@ $(document).ready(function() {
             }
         });
     });
+    $('#category').change(function() {
+        let catId = $(this).val();
+        let subcat = $('#subcategory');
+        subcat.empty().append('<option value="">Sub Category</option>');
+        
+        if (catId) {
+            $.get('/seller/get-subcategories/' + catId, function(data) {
+                if (data.success && data.data) {
+                    let oldSub = '{{ request("subcategory") }}';
+                    $.each(data.data, function(index, item) {
+                        let selected = (item.id == oldSub) ? 'selected' : '';
+                        subcat.append('<option value="' + item.id + '" ' + selected + '>' + item.name + '</option>');
+                    });
+                }
+            });
+        }
+    });
+
+    if ($('#category').val()) {
+        $('#category').trigger('change');
+    }
 });
 </script>
 
