@@ -17,7 +17,7 @@ class SellerEmailVerifyMail
      */
     public static function send(string $to, string $name, int $otp): bool
     {
-        $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@zelofx.com');
+        $fromEmail = env('MAIL_FROM_ADDRESS', 'no-reply@vridheewellness.com');
         $fromName  = env('MAIL_FROM_NAME', 'VSHOP Seller');
 
         // Ensure the envelope sender is set for PHP mail() on Windows/CPanel environments

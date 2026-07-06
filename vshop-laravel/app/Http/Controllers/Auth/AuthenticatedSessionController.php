@@ -117,7 +117,7 @@ class AuthenticatedSessionController extends Controller
                     $subject = 'VSHOP Admin - Login Verification OTP';
                     $html = "<h3>VSHOP Admin Login</h3><p>Dear {$staff->name},</p><p>Your login OTP is: <b><span style='font-size:24px'>{$otp}</span></b></p><p>This is valid for 15 minutes.</p>";
                     
-                    $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@zelofx.com');
+                    $fromEmail = env('MAIL_FROM_ADDRESS', 'no-reply@vridheewellness.com');
                     $fromName  = env('MAIL_FROM_NAME', 'VSHOP Admin');
                     ini_set('sendmail_from', $fromEmail);
                     

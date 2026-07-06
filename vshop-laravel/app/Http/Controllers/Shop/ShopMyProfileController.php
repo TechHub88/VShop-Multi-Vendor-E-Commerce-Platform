@@ -1497,7 +1497,7 @@ public function sendEmailOtp(Request $request)
         $sellerName = $seller->name ?? 'Seller';
         $html = "<h3>VSHOP Seller</h3><p>Dear {$sellerName},</p><p>Your email verification OTP is: <b><span style='font-size:24px'>{$otp}</span></b></p><p>This is valid for 5 minutes.</p>";
         
-        $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@zelofx.com');
+        $fromEmail = env('MAIL_FROM_ADDRESS', 'no-reply@vridheewellness.com');
         $fromName  = env('MAIL_FROM_NAME', 'VSHOP Seller');
         ini_set('sendmail_from', $fromEmail);
         

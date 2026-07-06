@@ -20,7 +20,7 @@ class BookingMsg
      */
     public static function send(string $to, string $name, $order, array $items): bool
     {
-        $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@zelofx.com');
+        $fromEmail = env('MAIL_FROM_ADDRESS', 'no-reply@vridheewellness.com');
         $fromName  = env('MAIL_FROM_NAME', 'VSHOP');
 
         ini_set('sendmail_from', $fromEmail);
