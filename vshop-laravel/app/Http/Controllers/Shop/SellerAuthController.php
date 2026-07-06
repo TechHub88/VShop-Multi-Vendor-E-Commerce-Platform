@@ -232,6 +232,19 @@ public function login(Request $request)
         ], 404);
     }
 
+    // CHECK IF BLOCKED OR INACTIVE
+    if ($seller->status === 'blocked' || $seller->status === 'inactive' || $seller->is_active === 0 || $seller->is_active === '0') {
+        $reason = $seller->deactivated_reason ?? 'Your account has been deactivated or blocked.';
+        if ($seller->status === 'blocked') {
+            $metadata = json_decode($seller->block_metadata, true);
+            $reason = $metadata['reason'] ?? $reason;
+        }
+        return response()->json([
+            'status' => false,
+            'message' => $reason . ' Please contact support.'
+        ], 403);
+    }
+
     // INVALID PASSWORD
     if (!Hash::check($request->password, $seller->password)) {
         return response()->json([

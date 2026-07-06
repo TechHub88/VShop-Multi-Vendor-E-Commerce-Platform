@@ -10,11 +10,7 @@ use Illuminate\Support\Facades\Auth;
 class AdminReviewController extends Controller
 {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Detect Product Type Based on Logged User
-    |--------------------------------------------------------------------------
-    */
+   
 
     private function getProductType()
     {
@@ -196,11 +192,15 @@ public function reject($id)
 
     public function blockSeller(Request $request, $id)
     {
+        $request->validate([
+            'reason' => 'required|string|max:500'
+        ]);
+
         $review = ProductReview::with('product.seller')->findOrFail($id);
         $seller = $review->product->seller;
 
         if ($seller) {
-            $seller->block('Blocked from Reviews page');
+            $seller->block($request->reason);
             return response()->json(['success' => true, 'message' => 'Seller blocked successfully.']);
         }
 
@@ -209,11 +209,20 @@ public function reject($id)
 
     public function inactiveSeller(Request $request, $id)
     {
+        $request->validate([
+            'reason' => 'required|string|max:500'
+        ]);
+
         $review = ProductReview::with('product.seller')->findOrFail($id);
         $seller = $review->product->seller;
 
         if ($seller) {
-            $seller->update(['status' => 'inactive', 'is_active' => 0]);
+            $seller->update([
+                'status' => 'inactive', 
+                'is_active' => 0,
+                'deactivated_reason' => $request->reason,
+                'deactivated_at' => now()
+            ]);
             return response()->json(['success' => true, 'message' => 'Seller inactivated successfully.']);
         }
 

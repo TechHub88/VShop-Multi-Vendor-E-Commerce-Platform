@@ -307,6 +307,59 @@ data-id="{{ $review->id }}" title="Inactive Seller">
                 </form>
             </div>
         </div>
+</div>
+    </div>
+</div>
+
+<!-- Block Seller Modal -->
+<div class="modal fade" id="blockSellerModal" tabindex="-1" aria-labelledby="blockSellerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="blockSellerModalLabel">Block Seller</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="blockSellerForm">
+                    @csrf
+                    <input type="hidden" name="review_id" id="blockReviewId">
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Blocking</label>
+                        <textarea class="form-control" name="reason" rows="4" placeholder="Enter reason..." required></textarea>
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">Block Seller</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inactive Seller Modal -->
+<div class="modal fade" id="inactiveSellerModal" tabindex="-1" aria-labelledby="inactiveSellerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="inactiveSellerModalLabel">Inactivate Seller</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="inactiveSellerForm">
+                    @csrf
+                    <input type="hidden" name="review_id" id="inactiveReviewId">
+                    <div class="mb-3">
+                        <label class="form-label">Reason for Inactivating</label>
+                        <textarea class="form-control" name="reason" rows="4" placeholder="Enter reason..." required></textarea>
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning">Inactivate Seller</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -481,52 +534,70 @@ location.reload();
 
 // BLOCK SELLER
 document.querySelectorAll('.block-seller-btn').forEach(btn => {
-btn.addEventListener('click', function(){
-if(confirm('Are you sure you want to block this seller?')){
-let id = this.dataset.id;
-fetch(`/admin/reviews/${id}/block-seller`, {
-method:"POST",
-headers:{
-"X-CSRF-TOKEN":"{{ csrf_token() }}",
-"Accept":"application/json"
-}
-})
-.then(res => res.json())
-.then(data => {
-if(data.success){
-alert(data.message);
-location.reload();
-} else {
-alert(data.message);
-}
+    btn.addEventListener('click', function(){
+        document.getElementById('blockReviewId').value = this.dataset.id;
+        $('#blockSellerModal').modal('show');
+    });
 });
-}
-});
+
+document.getElementById('blockSellerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const reviewId = document.getElementById('blockReviewId').value;
+    const formData = new FormData(this);
+
+    fetch(`/admin/reviews/${reviewId}/block-seller`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            $('#blockSellerModal').modal('hide');
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => console.error('Error:', error));
 });
 
 // INACTIVE SELLER
 document.querySelectorAll('.inactive-seller-btn').forEach(btn => {
-btn.addEventListener('click', function(){
-if(confirm('Are you sure you want to make this seller inactive?')){
-let id = this.dataset.id;
-fetch(`/admin/reviews/${id}/inactive-seller`, {
-method:"POST",
-headers:{
-"X-CSRF-TOKEN":"{{ csrf_token() }}",
-"Accept":"application/json"
-}
-})
-.then(res => res.json())
-.then(data => {
-if(data.success){
-alert(data.message);
-location.reload();
-} else {
-alert(data.message);
-}
+    btn.addEventListener('click', function(){
+        document.getElementById('inactiveReviewId').value = this.dataset.id;
+        $('#inactiveSellerModal').modal('show');
+    });
 });
-}
-});
+
+document.getElementById('inactiveSellerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const reviewId = document.getElementById('inactiveReviewId').value;
+    const formData = new FormData(this);
+
+    fetch(`/admin/reviews/${reviewId}/inactive-seller`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            $('#inactiveSellerModal').modal('hide');
+            alert(data.message);
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(error => console.error('Error:', error));
 });
 </script>
 
