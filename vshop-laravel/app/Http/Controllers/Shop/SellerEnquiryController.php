@@ -594,7 +594,8 @@ class SellerEnquiryController extends Controller
 
         $categories = MarketplaceCategory::where('seller_id', $sellerId)
             ->orderBy('name')
-            ->pluck('name', 'id');
+            ->pluck('name', 'id')
+            ->unique();
 
 
         /* ================= SUBCATEGORY LIST ================= */
@@ -751,7 +752,7 @@ class SellerEnquiryController extends Controller
     {
         $sellerId = auth('seller')->id();
 
-        $categories = MarketplaceCategory::where('seller_id', $sellerId)->get();
+        $categories = MarketplaceCategory::where('seller_id', $sellerId)->get()->unique('name');
 
         return view('vshop.seller.enquiry.create', compact('categories'));
     }

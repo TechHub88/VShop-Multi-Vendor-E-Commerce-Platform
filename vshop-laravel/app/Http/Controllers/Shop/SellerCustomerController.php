@@ -252,7 +252,7 @@ public function list(Request $request)
         ->distinct()
         ->pluck('city');
 
-    $categories = MarketplaceCategory::all();
+    $categories = MarketplaceCategory::all()->unique('name');
 
     $subcategories = MarketplaceSubCategory::all();
 

@@ -438,7 +438,7 @@ public function index(Request $request)
     }
     // ================= END =================
 
-    $categories = $categories->orderBy('name')->get();
+    $categories = $categories->orderBy('name')->get()->unique('name');
 
     // Pass the selected service types to the view for maintaining checkboxes
     $selectedServiceTypes = $request->get('service_types');
@@ -833,7 +833,9 @@ public function getCategories($type)
     return MarketplaceCategory::where('type', $type)
         ->where('seller_id', $sellerId)   // ← add this line
         ->orderBy('name')
-        ->get(['id', 'name']);
+        ->get(['id', 'name'])
+        ->unique('name')
+        ->values();
 }
 private function createLog($productId, $action, $old = null, $new = null)
 {
@@ -901,7 +903,7 @@ public function basic($id = null)
         $categories->where('type', 'course');
     }
 
-    $categories = $categories->orderBy('name')->get();
+    $categories = $categories->orderBy('name')->get()->unique('name');
 
     /*
     |--------------------------------------------------------------------------
@@ -2764,7 +2766,7 @@ public function bulkindex()
     elseif($moduleType == 'course'){
         $categories->where('type', 'course');
     }
-    $categories = $categories->orderBy('name')->get();
+    $categories = $categories->orderBy('name')->get()->unique('name');
 
     return view(
         'vshop.seller.products.bulk',

@@ -273,7 +273,7 @@ public function index(Request $request)
     | FIX: CATEGORIES + SUBCATEGORIES
     |--------------------------------------------------
     */
-    $categories = MarketplaceCategory::where('seller_id', auth()->id())->get();
+    $categories = MarketplaceCategory::where('seller_id', auth()->id())->get()->unique('name');
 
     $subcategories = MarketplaceSubCategory::when($request->category, function ($q) use ($request) {
         $q->where('category_id', $request->category);

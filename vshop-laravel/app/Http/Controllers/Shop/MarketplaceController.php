@@ -1313,7 +1313,7 @@ public function createCategory(Request $request, $id = null)
     $categories = MarketplaceCategory::where(function ($query) use ($sellerId) {
         $query->whereNull('seller_id')
               ->orWhere('seller_id', $sellerId);
-    })->get();
+    })->get()->unique('name');
 
     $category = null;
     $subcategories = [];
