@@ -418,7 +418,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                             socketUrl = 'http://' + window.location.hostname + ':3000';
                         } else {
-                            socketUrl = 'https://' + window.location.hostname;
+                            socketUrl = 'https://api.vridhee.com';
                             socketOptions = { secure: true, rejectUnauthorized: false };
                         }
                         sidebarSocket = io(socketUrl, socketOptions);
