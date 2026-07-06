@@ -12,7 +12,7 @@ class SellerApprovalMail
      */
     public static function send(string $to, string $name, string $purpose = 'account'): bool
     {
-        $fromEmail = env('MAIL_FROM_ADDRESS', 'no-reply@vridheewellness.com');
+        $fromEmail = env('MAIL_FROM_ADDRESS', 'support@vridhee.com');
         $fromName  = env('MAIL_FROM_NAME', 'VSHOP Seller');
 
         // Ensure the envelope sender is set for PHP mail() on Windows/CPanel environments

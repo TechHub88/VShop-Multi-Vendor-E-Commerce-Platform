@@ -19,7 +19,7 @@ class SellerOtpMail
      */
     public static function send(string $to, string $name, int $otp, string $purpose = 'registration'): bool
     {
-        $fromEmail = env('MAIL_FROM_ADDRESS', 'no-reply@vridheewellness.com');
+        $fromEmail = env('MAIL_FROM_ADDRESS', 'support@vridhee.com');
         $fromName  = env('MAIL_FROM_NAME', 'VSHOP Seller');
 
         // Ensure the envelope sender is set for PHP mail() on Windows/CPanel environments
