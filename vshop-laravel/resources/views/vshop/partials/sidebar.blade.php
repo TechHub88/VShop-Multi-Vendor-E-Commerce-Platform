@@ -526,7 +526,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             if(msg) {
                                 input.value = '';
                                 try {
-                                    await fetch('{{ route('chat.ashmita.message') }}', {
+                                    const response = await fetch('{{ route('chat.ashmita.message') }}', {
                                         method: 'POST',
                                         headers: {
                                             'Content-Type': 'application/json',
@@ -534,6 +534,18 @@ document.addEventListener("DOMContentLoaded", function () {
                                         },
                                         body: JSON.stringify({ message: msg, socket_id: socketId })
                                     });
+                                    
+                                    const data = await response.json();
+                                    if(data.success) {
+                                        if (data.buyer_message && !document.getElementById('msg-' + data.buyer_message.id)) {
+                                            appendMsg(data.buyer_message);
+                                            chatWindow.scrollTop = chatWindow.scrollHeight;
+                                        }
+                                        if (data.bot_message && !document.getElementById('msg-' + data.bot_message.id)) {
+                                            appendMsg(data.bot_message);
+                                            chatWindow.scrollTop = chatWindow.scrollHeight;
+                                        }
+                                    }
                                 } catch (err) {
                                     console.error(err);
                                 }
