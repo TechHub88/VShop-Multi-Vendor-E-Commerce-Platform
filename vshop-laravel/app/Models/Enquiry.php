@@ -33,7 +33,7 @@ class Enquiry extends Model
 
         'next_followup_date',
         'next_followup_time',
-        'followup_note','tags','message','followup_count','product_id','photo'
+        'followup_note','tags','message','followup_count','product_id','photo','ip_address'
     ];
 
     public function salesRep()
