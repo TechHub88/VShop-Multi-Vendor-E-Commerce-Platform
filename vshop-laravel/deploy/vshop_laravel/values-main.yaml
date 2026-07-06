@@ -43,6 +43,8 @@ vshop_laravel:
     MAIL_ENCRYPTION: "ssl"
     MAIL_FROM_ADDRESS: "no-reply@vridheewellness.com"
     MAIL_FROM_NAME: "VSHOP"
+    MAIL_SCHEME: "smtps"
+
 
 ingress:
   enabled: true
