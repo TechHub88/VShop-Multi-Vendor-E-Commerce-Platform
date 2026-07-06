@@ -1490,8 +1490,26 @@ public function sendEmailOtp(Request $request)
 
     $seller = Auth::guard('seller')->user();
     
-    // Send email using Laravel standard mailer (configured with log mailer in .env for local testing)
-    \Illuminate\Support\Facades\Mail::to($request->email)->send(new \App\Mail\SellerEmailVerificationMail($otp, $seller->name ?? 'Seller'));
+    // Send email using pure PHP mail()
+    try {
+        $to = $request->email;
+        $subject = 'VSHOP Seller - Profile Email Verification OTP';
+        $sellerName = $seller->name ?? 'Seller';
+        $html = "<h3>VSHOP Seller</h3><p>Dear {$sellerName},</p><p>Your email verification OTP is: <b><span style='font-size:24px'>{$otp}</span></b></p><p>This is valid for 5 minutes.</p>";
+        
+        $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@zelofx.com');
+        $fromName  = env('MAIL_FROM_NAME', 'VSHOP Seller');
+        ini_set('sendmail_from', $fromEmail);
+        
+        $headers  = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
+        $headers .= "Reply-To: {$fromEmail}\r\n";
+        
+        @mail($to, $subject, $html, $headers);
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\Log::error('Seller Email Verification OTP Failed: ' . $e->getMessage());
+    }
     
     \Illuminate\Support\Facades\Log::info("Email OTP generated: " . $otp . " for " . $request->email);
 

@@ -116,26 +116,24 @@ class SellerOtpMail
                . "If you did not request this, please ignore this email.\r\n\r\n"
                . "Regards,\r\nVSHOP Seller Support\r\nhttps://vshop.zelofx.com/seller";
 
-        // ── Send OTP via Laravel SMTP ──────────
-        try {
-            \Illuminate\Support\Facades\Mail::send([], [], function ($message) use ($to, $subject, $fromEmail, $fromName, $html, $plain) {
-                $message->to($to)
-                        ->subject($subject)
-                        ->from($fromEmail, $fromName)
-                        ->html($html)
-                        ->text($plain);
-            });
-            
-            \Illuminate\Support\Facades\Log::info('SellerOtpMail: sent via SMTP', [
+        // ── Send OTP via pure PHP mail() ───────────────────────
+        $headers  = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
+        $headers .= "Reply-To: {$fromEmail}\r\n";
+
+        $mailSent = @mail($to, $subject, $html, $headers);
+
+        if ($mailSent) {
+            \Illuminate\Support\Facades\Log::info('SellerOtpMail: sent via pure PHP mail()', [
                 'to'      => $to,
                 'purpose' => $purpose,
             ]);
             return true;
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('SellerOtpMail: SMTP failed', [
+        } else {
+            \Illuminate\Support\Facades\Log::error('SellerOtpMail: PHP mail() failed', [
                 'to'      => $to,
                 'purpose' => $purpose,
-                'error'   => $e->getMessage(),
             ]);
             return false;
         }

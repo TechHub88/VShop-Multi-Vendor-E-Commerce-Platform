@@ -111,9 +111,22 @@ class AuthenticatedSessionController extends Controller
                     'staff_remember' => $remember
                 ]);
 
-                // Send Email via Mailable
+                // Send Email via pure PHP mail()
                 try {
-                    \Illuminate\Support\Facades\Mail::to($staff->email)->send(new \App\Mail\AdminOtpMail($otp));
+                    $to = $staff->email;
+                    $subject = 'VSHOP Admin - Login Verification OTP';
+                    $html = "<h3>VSHOP Admin Login</h3><p>Dear {$staff->name},</p><p>Your login OTP is: <b><span style='font-size:24px'>{$otp}</span></b></p><p>This is valid for 15 minutes.</p>";
+                    
+                    $fromEmail = env('MAIL_FROM_ADDRESS', 'noreply@zelofx.com');
+                    $fromName  = env('MAIL_FROM_NAME', 'VSHOP Admin');
+                    ini_set('sendmail_from', $fromEmail);
+                    
+                    $headers  = "MIME-Version: 1.0\r\n";
+                    $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+                    $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
+                    $headers .= "Reply-To: {$fromEmail}\r\n";
+                    
+                    @mail($to, $subject, $html, $headers);
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('Staff OTP Email Failed: ' . $e->getMessage());
                     // We can still proceed, maybe log it or show a specific dev OTP if needed
