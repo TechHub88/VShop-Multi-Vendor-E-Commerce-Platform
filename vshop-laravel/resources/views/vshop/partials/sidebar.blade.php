@@ -413,8 +413,12 @@ document.addEventListener("DOMContentLoaded", function () {
                         const chatWindow = document.getElementById('liveChatWindow');
                         const chatContainer = document.getElementById('liveChatContainer');
 
-                        // Connect Socket FIRST to get socketId for guest users
-                        const socketUrl = window.location.protocol + '//' + window.location.hostname + ':3000';
+                        let socketUrl;
+                        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                            socketUrl = 'http://' + window.location.hostname + ':3000';
+                        } else {
+                            socketUrl = window.location.protocol + '//' + window.location.hostname;
+                        }
                         sidebarSocket = io(socketUrl);
                         await new Promise((resolve) => {
                             if (sidebarSocket.connected) resolve();
