@@ -13,6 +13,14 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # Proxy Socket.io to Node.js server on port 3000
+    RewriteCond %{REQUEST_URI} ^/socket\.io [NC]
+    RewriteCond %{QUERY_STRING} transport=websocket [NC]
+    RewriteRule ^(.*)$ ws://127.0.0.1:3000/$1 [P,L]
+
+    RewriteCond %{REQUEST_URI} ^/socket\.io [NC]
+    RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P,L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
