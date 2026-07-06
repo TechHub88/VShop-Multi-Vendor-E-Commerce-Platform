@@ -98,7 +98,7 @@ usort($alertDetails, function($a, $b) {
 });
 
 // Fetch Admin notifications from local database
-$adminNotifications = AdminNotification::latest()->limit(10)->get();
+$adminNotifications = AdminNotification::where('is_read', false)->latest()->limit(10)->get();
 $unreadAdminCount = AdminNotification::where('is_read', false)->count();
 ?>
 
@@ -1209,7 +1209,10 @@ document.addEventListener("DOMContentLoaded", function () {
             })
             .then(res => res.json())
             .then(res => {
-                document.querySelectorAll('#notifList .notify-item').forEach(el => el.classList.remove('bg-light'));
+                const notifList = document.getElementById('notifList');
+                if (notifList) {
+                    notifList.innerHTML = '<div class="text-center py-4 text-muted" id="emptyNotifMsg">No notifications</div>';
+                }
             })
             .catch(err => console.error(err));
         });
