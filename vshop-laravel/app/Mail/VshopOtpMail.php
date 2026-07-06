@@ -108,13 +108,29 @@ class VshopOtpMail
                . "If you did not request this, please ignore this email.\r\n\r\n"
                . "Regards,\r\nVSHOP Support Team\r\nhttps://vshop.zelofx.com";
 
-        // ── Send OTP via pure PHP mail() ───────────────────────
+        // ── Build multipart MIME ─────────────────────────────────────────
+        $boundary = '----VSHOP_OTP_' . md5(uniqid(rand(), true));
+
+        $body  = "--{$boundary}\r\n";
+        $body .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        $body .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
+        $body .= $plain . "\r\n";
+        $body .= "--{$boundary}\r\n";
+        $body .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $body .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
+        $body .= $html . "\r\n";
+        $body .= "--{$boundary}--";
+
+        // ── Headers ──────────────────────────────────────────────────────
         $headers  = "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
         $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
         $headers .= "Reply-To: {$fromEmail}\r\n";
+        $headers .= "Return-Path: {$fromEmail}\r\n";
+        $headers .= "X-Mailer: VSHOP/PHP-" . phpversion() . "\r\n";
+        $headers .= "X-Priority: 1\r\n";
 
-        $mailSent = @mail($to, $subject, $html, $headers, "-f {$fromEmail}");
+        $mailSent = @mail($to, $subject, $body, $headers, "-f {$fromEmail}");
 
         if ($mailSent) {
             \Illuminate\Support\Facades\Log::info('VshopOtpMail: sent via pure PHP mail()', [
