@@ -414,12 +414,14 @@ document.addEventListener("DOMContentLoaded", function () {
                         const chatContainer = document.getElementById('liveChatContainer');
 
                         let socketUrl;
+                        let socketOptions = {};
                         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                             socketUrl = 'http://' + window.location.hostname + ':3000';
                         } else {
-                            socketUrl = window.location.protocol + '//' + window.location.hostname;
+                            socketUrl = 'https://' + window.location.hostname;
+                            socketOptions = { secure: true, rejectUnauthorized: false };
                         }
-                        sidebarSocket = io(socketUrl);
+                        sidebarSocket = io(socketUrl, socketOptions);
                         await new Promise((resolve) => {
                             if (sidebarSocket.connected) resolve();
                             else sidebarSocket.on('connect', resolve);
