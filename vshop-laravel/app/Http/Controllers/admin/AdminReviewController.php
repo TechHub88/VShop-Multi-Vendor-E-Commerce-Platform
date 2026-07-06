@@ -188,6 +188,38 @@ public function reject($id)
     ]);
 }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Block / Inactivate Seller from Review
+    |--------------------------------------------------------------------------
+    */
+
+    public function blockSeller(Request $request, $id)
+    {
+        $review = ProductReview::with('product.seller')->findOrFail($id);
+        $seller = $review->product->seller;
+
+        if ($seller) {
+            $seller->block('Blocked from Reviews page');
+            return response()->json(['success' => true, 'message' => 'Seller blocked successfully.']);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Seller not found.'], 404);
+    }
+
+    public function inactiveSeller(Request $request, $id)
+    {
+        $review = ProductReview::with('product.seller')->findOrFail($id);
+        $seller = $review->product->seller;
+
+        if ($seller) {
+            $seller->update(['status' => 'inactive', 'is_active' => 0]);
+            return response()->json(['success' => true, 'message' => 'Seller inactivated successfully.']);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Seller not found.'], 404);
+    }
+
 
 
     /*

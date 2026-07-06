@@ -1604,6 +1604,8 @@ Route::delete(
     Route::get('/stats', [AdminReviewController::class, 'getStats'])->name('stats');
     Route::post('/reviews/{id}/approve',[AdminReviewController::class,'approve'])->name('review.approve');
     Route::post('/reviews/{id}/reject',[AdminReviewController::class,'reject'])->name('review.reject');
+    Route::post('/reviews/{id}/block-seller',[AdminReviewController::class,'blockSeller'])->name('review.block_seller');
+    Route::post('/reviews/{id}/inactive-seller',[AdminReviewController::class,'inactiveSeller'])->name('review.inactive_seller');
 
     // Logout Route
     Route::post('/adminlogout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');

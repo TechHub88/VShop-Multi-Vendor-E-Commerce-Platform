@@ -238,12 +238,20 @@ data-id="{{ $review->id }}">
 
 {{-- REJECT --}}
 <button class="btn btn-sm btn-warning reject-btn"
-data-id="{{ $review->id }}">
+data-id="{{ $review->id }}" title="Reject Review">
 <i class="bi bi-x-lg"></i>
 </button>
 
+{{-- BLOCK SELLER --}}
+<button class="btn btn-sm btn-danger block-seller-btn"
+data-id="{{ $review->id }}" title="Block Seller">
+<i class="fa-solid fa-ban"></i>
+</button>
 
-
+{{-- INACTIVE SELLER --}}
+<button class="btn btn-sm btn-secondary inactive-seller-btn"
+data-id="{{ $review->id }}" title="Inactive Seller">
+<i class="fa-solid fa-user-slash"></i>
 </button>
 
 </div>
@@ -469,6 +477,56 @@ location.reload();
 
 });
 
+});
+
+// BLOCK SELLER
+document.querySelectorAll('.block-seller-btn').forEach(btn => {
+btn.addEventListener('click', function(){
+if(confirm('Are you sure you want to block this seller?')){
+let id = this.dataset.id;
+fetch(`/admin/reviews/${id}/block-seller`, {
+method:"POST",
+headers:{
+"X-CSRF-TOKEN":"{{ csrf_token() }}",
+"Accept":"application/json"
+}
+})
+.then(res => res.json())
+.then(data => {
+if(data.success){
+alert(data.message);
+location.reload();
+} else {
+alert(data.message);
+}
+});
+}
+});
+});
+
+// INACTIVE SELLER
+document.querySelectorAll('.inactive-seller-btn').forEach(btn => {
+btn.addEventListener('click', function(){
+if(confirm('Are you sure you want to make this seller inactive?')){
+let id = this.dataset.id;
+fetch(`/admin/reviews/${id}/inactive-seller`, {
+method:"POST",
+headers:{
+"X-CSRF-TOKEN":"{{ csrf_token() }}",
+"Accept":"application/json"
+}
+})
+.then(res => res.json())
+.then(data => {
+if(data.success){
+alert(data.message);
+location.reload();
+} else {
+alert(data.message);
+}
+});
+}
+});
 });
 </script>
 
