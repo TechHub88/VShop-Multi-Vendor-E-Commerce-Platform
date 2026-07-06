@@ -2968,6 +2968,12 @@ document.addEventListener('DOMContentLoaded', function() {
             <p class="text-muted fs-8 mb-0">{{ $openDisputes }} open · {{ $resolvedDisputes }} resolved</p>
         </div>
         <div class="d-flex gap-2">
+            <select class="form-select form-select-sm" id="disputeByFilterNew" style="width:130px;" onchange="filterDisputeTableNew()">
+                <option value="all">All Disputed By</option>
+                <option value="Platform">Platform</option>
+                <option value="Buyer">Buyer</option>
+                <option value="Seller">Seller</option>
+            </select>
             <select class="form-select form-select-sm" id="disputeStatusFilterNew" style="width:130px;" onchange="filterDisputeTableNew()">
                 <option value="all">All Status</option>
                 <option value="open">Open</option>
@@ -8209,21 +8215,29 @@ function resolveFromEscalation(id, rowElement) {
 // Filter function for status
 function filterDisputeTableNew() {
     const filter = document.getElementById('disputeStatusFilterNew').value;
+    const byFilter = document.getElementById('disputeByFilterNew') ? document.getElementById('disputeByFilterNew').value.toLowerCase() : 'all';
     const rows = document.querySelectorAll('#disputeTableNew tbody tr');
     
     rows.forEach(row => {
         if(row.querySelector('td[colspan="9"]')) return;
         
+        const byCell = row.cells[1];
         const statusCell = row.cells[7];
+        
+        const byText = byCell?.innerText?.trim().toLowerCase() || '';
         const statusText = statusCell?.innerText?.trim().toLowerCase() || '';
-        let show = false;
         
-        if(filter === 'all') show = true;
-        else if(filter === 'open') show = statusText === 'open' || statusText === 'in_progress';
-        else if(filter === 'resolved') show = statusText === 'resolved';
-        else if(filter === 'escalated') show = statusText === 'escalated';
+        let showStatus = false;
+        if(filter === 'all') showStatus = true;
+        else if(filter === 'open') showStatus = statusText === 'open' || statusText === 'in_progress';
+        else if(filter === 'resolved') showStatus = statusText === 'resolved';
+        else if(filter === 'escalated') showStatus = statusText === 'escalated';
         
-        row.style.display = show ? '' : 'none';
+        let showBy = false;
+        if(byFilter === 'all') showBy = true;
+        else showBy = byText.includes(byFilter);
+        
+        row.style.display = (showStatus && showBy) ? '' : 'none';
     });
 }
 

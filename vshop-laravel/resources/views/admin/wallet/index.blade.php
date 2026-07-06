@@ -88,7 +88,7 @@
             <div class="col-md-2"><label class="form-label small mb-1">Order ID</label><input type="text" class="form-control form-control-sm" id="refundOrderFilter" placeholder="Search Order ID"></div>
             <div class="col-md-3"><label class="form-label small mb-1">Date Range</label><div class="d-flex gap-1"><input type="date" class="form-control form-control-sm" id="refundStartDate" value="{{ date('Y-m-d', strtotime('-30 days')) }}"><input type="date" class="form-control form-control-sm" id="refundEndDate" value="{{ date('Y-m-d') }}"></div></div>
             <div class="col-md-3"><div class="d-flex gap-2"><button class="btn btn-primary btn-sm" id="filterRefundsBtn"><i class="mdi mdi-filter-outline me-1"></i>Filter</button><button class="btn btn-outline-secondary btn-sm" id="resetRefundsFilterBtn">Reset</button></div></div></div></div>
-            <div class="card-body pt-2"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th><input type="checkbox" id="selectAllRefunds"></th><th>Order ID</th><th>Buyer ID</th><th>Buyer Name</th><th>Amount <span class="currency-label">(₹)</span></th><th>Reason</th><th>Request Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="refundsTableBody">
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th><input type="checkbox" id="selectAllRefunds"></th><th>Order ID</th><th>Buyer ID</th><th>Buyer Name</th><th>Amount <span class="currency-label">(₹)</span></th><th>Reason</th><th>Request Date</th><th>Pickup Req.</th><th>Pickup Status</th><th>Status</th><th>Actions</th></tr></thead><tbody id="refundsTableBody">
             @forelse($refundsData as $refund)
             <tr>
                 <td><input type="checkbox" class="refund-checkbox" data-id="{{ $refund->id }}"></td>
@@ -99,10 +99,23 @@
                 <td><span class="badge bg-soft-secondary">{{ $refund->reason ?? 'N/A' }}</span></td>
                 <td><small>{{ \Carbon\Carbon::parse($refund->created_at)->format('d M Y h:i A') }}</small></td>
                 <td>
+                    @if(isset($refund->seller_pickup_required) && $refund->seller_pickup_required)
+                        <span class="badge bg-soft-warning">Yes</span>
+                    @else
+                        <span class="badge bg-soft-success">No</span>
+                    @endif
+                </td>
+                <td>
+                    <span class="badge bg-soft-info">{{ ucfirst($refund->pickup_status ?? 'Pending') }}</span>
+                </td>
+                <td>
                     @if($refund->status == 'requested')
                         <span class="badge bg-soft-warning">Requested</span>
                     @elseif($refund->status == 'approved')
-                        <span class="badge bg-soft-info">Pending Refund</span>
+                        <span class="badge bg-soft-info">Initiated</span>
+                        @if(isset($refund->hold_date))
+                            <br><small class="text-muted">Hold Till: {{ \Carbon\Carbon::parse($refund->hold_date)->format('d M, Y') }}</small>
+                        @endif
                     @elseif($refund->status == 'rejected')
                         <span class="badge bg-soft-danger">Rejected</span>
                     @elseif($refund->status == 'refunded')
@@ -114,9 +127,10 @@
                 <td>
                     <div class="d-flex gap-1">
                         @if($refund->status == 'approved')
-                            <button class="btn btn-sm btn-success approve-refund" data-id="{{ $refund->id }}">Issue Refund</button>
+                            <button class="btn btn-sm btn-success approve-refund" data-id="{{ $refund->id }}" data-amount="{{ $refund->total_amount }}">Issue Refund</button>
                             <button class="btn btn-sm btn-danger decline-refund" data-id="{{ $refund->id }}">Decline</button>
                         @endif
+
                         <button class="btn btn-sm btn-info view-refund-detail" data-order-id="{{ $refund->order_id }}" data-refund-id="{{ $refund->id }}"><i class="mdi mdi-eye me-1"></i>View</button>
                     </div>
                 </td>
@@ -773,9 +787,77 @@ document.addEventListener('DOMContentLoaded', function() {
     // Issue Refund button
     $(document).on('click', '.approve-refund', function() {
         let id = $(this).data('id');
-        Swal.fire({ title: 'Issue Refund?', text: 'Platform commission will be deducted and remaining amount credited to buyer wallet.', icon: 'question', showCancelButton: true, confirmButtonText: 'Yes, Issue Refund' }).then(result => {
+        let amount = $(this).data('amount');
+        
+        let htmlContent = `
+            <div class="text-start mb-3">
+                <p>Total Refund Amount: <strong>₹${amount}</strong></p>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="refundType" id="fullRefund" value="full" checked>
+                    <label class="form-check-label" for="fullRefund">Full Refund</label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="radio" name="refundType" id="partialRefund" value="partial">
+                    <label class="form-check-label" for="partialRefund">Partial Refund</label>
+                </div>
+                <div id="partialAmountDiv" style="display:none;" class="mb-3">
+                    <label class="form-label small">Partial Amount (₹)</label>
+                    <input type="number" id="partialAmountInput" class="form-control form-control-sm" placeholder="Enter amount">
+                </div>
+                <div class="form-check mt-3 border-top pt-2">
+                    <input class="form-check-input" type="checkbox" id="isFakeLead" value="1">
+                    <label class="form-check-label small" for="isFakeLead">Reverse Lead Fee (Fake Lead)</label>
+                </div>
+            </div>
+        `;
+
+        Swal.fire({ 
+            title: 'Issue Refund', 
+            html: htmlContent, 
+            icon: 'info', 
+            showCancelButton: true, 
+            confirmButtonText: 'Submit Refund',
+            didOpen: () => {
+                const radioPartial = document.getElementById('partialRefund');
+                const radioFull = document.getElementById('fullRefund');
+                const partialDiv = document.getElementById('partialAmountDiv');
+                
+                radioPartial.addEventListener('change', (e) => {
+                    if (e.target.checked) partialDiv.style.display = 'block';
+                });
+                radioFull.addEventListener('change', (e) => {
+                    if (e.target.checked) partialDiv.style.display = 'none';
+                });
+            },
+            preConfirm: () => {
+                const isPartial = document.getElementById('partialRefund').checked;
+                const partialAmt = document.getElementById('partialAmountInput').value;
+                const isFakeLead = document.getElementById('isFakeLead').checked;
+                
+                if (isPartial && (!partialAmt || partialAmt <= 0 || partialAmt > parseFloat(amount))) {
+                    Swal.showValidationMessage('Please enter a valid partial amount');
+                    return false;
+                }
+                
+                return {
+                    is_partial: isPartial,
+                    partial_amount: partialAmt,
+                    is_fake_lead: isFakeLead
+                };
+            }
+        }).then(result => {
             if (result.isConfirmed) {
-                $.ajax({ url: `{{ url("admin/wallet/refund") }}/${id}/approve`, method: 'POST', data: { _token: '{{ csrf_token() }}' },
+                let data = {
+                    _token: '{{ csrf_token() }}',
+                    is_partial: result.value.is_partial,
+                    partial_amount: result.value.partial_amount,
+                    is_fake_lead: result.value.is_fake_lead
+                };
+                
+                $.ajax({ 
+                    url: `{{ url("admin/wallet/refund") }}/${id}/approve`, 
+                    method: 'POST', 
+                    data: data,
                     success: (res) => { Swal.fire('Success!', res.message || 'Refund issued successfully', 'success').then(() => location.reload()); },
                     error: (xhr) => { let msg = xhr.responseJSON?.message || 'Failed to process refund'; Swal.fire('Error', msg, 'error'); }
                 });

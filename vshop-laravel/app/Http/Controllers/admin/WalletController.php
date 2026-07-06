@@ -401,6 +401,18 @@ class WalletController extends Controller
         if ($withdrawal->status !== 'pending') {
             return response()->json(['success' => false, 'message' => 'Withdrawal is not pending'], 400);
         }
+
+        // ROI Tracking: Freeze payout on dispute
+        if ($withdrawal->user_type === 'seller') {
+            $hasActiveDispute = \App\Models\Grievance::where('seller_id', $withdrawal->seller_id)
+                ->where('status', 'open')
+                ->exists();
+                
+            if ($hasActiveDispute) {
+                return response()->json(['success' => false, 'message' => 'Payout frozen: Seller has active disputes.'], 400);
+            }
+        }
+
         
         DB::beginTransaction();
         
@@ -675,7 +687,10 @@ class WalletController extends Controller
                 'reason' => $refund->reason ?? 'Not specified',
                 'reason_color' => $this->getRefundReasonColor($refund->reason),
                 'status' => $displayStatus,
-                'created_at' => $refund->created_at
+                'created_at' => $refund->created_at,
+                'seller_pickup_required' => (bool)$refund->seller_pickup_required,
+                'pickup_status' => $refund->pickup_status ?? 'pending',
+                'hold_date' => $refund->hold_date
             ];
         });
         
@@ -738,7 +753,12 @@ class WalletController extends Controller
             }
 
             $platformCut = ($order->total_amount * $platformComm) / 100;
-            $refundAmount = $order->total_amount - $platformCut;
+            
+            // ROI Tracking: Partial Refund Check
+            $isPartial = $request->input('is_partial', false) == 'true' || $request->input('is_partial') == 1;
+            $partialAmount = (float) $request->input('partial_amount', 0);
+            
+            $refundAmount = $isPartial && $partialAmount > 0 ? $partialAmount : $order->total_amount;
             if ($refundAmount < 0) $refundAmount = 0;
 
             // 1. Update Customer's wallet_balance column directly
@@ -767,10 +787,87 @@ class WalletController extends Controller
                 'credit' => $refundAmount,
                 'debit' => 0,
                 'balance_after' => $customer ? $customer->wallet_balance : $wallet->balance,
-                'description' => "Refund for Order #{$orderReturn->order_id}",
+                'description' => ($isPartial ? "Partial " : "") . "Refund for Order #{$orderReturn->order_id}",
                 'reference_id' => 'REF_' . $orderReturn->id . '_' . time(),
                 'status' => 'completed'
             ]);
+            
+            // ROI Tracking: Reversing Seller Commission
+            $sellerWallet = \App\Models\Wallet::firstOrCreate(
+                ['user_type' => 'seller', 'seller_id' => $sellerId],
+                ['balance' => 0]
+            );
+            
+            // Deduct proportional amount from seller
+            $amountToDeductFromSeller = $isPartial ? ($refundAmount * (1 - ($platformComm/100))) : ($order->total_amount - $platformCut);
+            $sellerWallet->balance -= $amountToDeductFromSeller;
+            $sellerWallet->save();
+            
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $sellerWallet->id,
+                'seller_id' => $sellerId,
+                'customer_id' => null,
+                'user_type' => 'seller',
+                'transaction_type' => 'refund_reversal',
+                'credit' => 0,
+                'debit' => $amountToDeductFromSeller,
+                'balance_after' => $sellerWallet->balance,
+                'description' => "Commission & amount reversal for refunded order #{$orderReturn->order_id}",
+                'reference_id' => 'REV_' . $orderReturn->id . '_' . time(),
+                'status' => 'completed'
+            ]);
+            
+            // ROI Tracking: Reverse Referral Rewards
+            $referralHistory = DB::table('referral_histories')->where('order_id', $order->id)->where('status', 'completed')->first();
+            if ($referralHistory) {
+                $referrerWallet = \App\Models\Wallet::where('user_type', 'seller')->where('seller_id', $referralHistory->referrer_id)->first();
+                if ($referrerWallet) {
+                    $referrerWallet->balance -= $referralHistory->amount;
+                    $referrerWallet->save();
+                    
+                    \App\Models\WalletTransaction::create([
+                        'wallet_id' => $referrerWallet->id,
+                        'seller_id' => $referralHistory->referrer_id,
+                        'user_type' => 'seller',
+                        'transaction_type' => 'referral_reversal',
+                        'credit' => 0,
+                        'debit' => $referralHistory->amount,
+                        'balance_after' => $referrerWallet->balance,
+                        'description' => "Referral reward reversed for refunded order #{$orderReturn->order_id}",
+                        'reference_id' => 'REF_REV_' . $orderReturn->id . '_' . time(),
+                        'status' => 'completed'
+                    ]);
+                    
+                    DB::table('referral_histories')->where('id', $referralHistory->id)->update(['status' => 'reversed']);
+                }
+            }
+            
+            // ROI Tracking: Reverse Fake Lead Charge
+            $isFakeLead = $request->input('is_fake_lead', false) == 'true' || $request->input('is_fake_lead') == 1;
+            if ($isFakeLead) {
+                // Assuming lead fee was deducted from SellerFinance or WalletTransactions
+                $leadTransaction = \App\Models\WalletTransaction::where('seller_id', $sellerId)
+                    ->where('transaction_type', 'lead_fee')
+                    ->orderBy('id', 'desc')->first();
+                    
+                if ($leadTransaction) {
+                    $sellerWallet->balance += $leadTransaction->debit;
+                    $sellerWallet->save();
+                    
+                    \App\Models\WalletTransaction::create([
+                        'wallet_id' => $sellerWallet->id,
+                        'seller_id' => $sellerId,
+                        'user_type' => 'seller',
+                        'transaction_type' => 'lead_fee_reversal',
+                        'credit' => $leadTransaction->debit,
+                        'debit' => 0,
+                        'balance_after' => $sellerWallet->balance,
+                        'description' => "Fake lead fee reversed for refunded order #{$orderReturn->order_id}",
+                        'reference_id' => 'LEAD_REV_' . $orderReturn->id . '_' . time(),
+                        'status' => 'completed'
+                    ]);
+                }
+            }
             
             // 3. Update the order return status to 'refunded'/ Update order and order return status
             \App\Models\Order::where('id', $order->id)->update([
