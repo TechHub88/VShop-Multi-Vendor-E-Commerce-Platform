@@ -2,8 +2,8 @@
 <html lang="en">
 
 <head>
-    @include('layouts.partials/title-meta', ['title' => $title])
-    @include('layouts.partials/head-css')
+    @include('layouts.partials.title-meta', ['title' => $title])
+    @include('layouts.partials.head-css')
 </head>
 
 <body class="maintenance-bg-image">

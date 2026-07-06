@@ -25,9 +25,9 @@
         <!-- Begin page -->
         <div id="app-layout">
             
-            @include('layouts.partials/topbar')
+            @include('layouts.partials.topbar')
 
-            @include('layouts.partials/sidebar')
+            @include('layouts.partials.sidebar')
 
             <!-- ============================================================== -->
             <!-- Start Page Content here -->

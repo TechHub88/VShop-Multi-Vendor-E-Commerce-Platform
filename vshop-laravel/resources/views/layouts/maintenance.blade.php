@@ -2,8 +2,8 @@
     <html lang="en">
 
     <head>
-        @include('layouts.partials/title-meta', ['title' => $title])
-        @include('layouts.partials/head-css')
+        @include('layouts.partials.title-meta', ['title' => $title])
+        @include('layouts.partials.head-css')
     </head>
 
     <body class="bg-primary-subtle bg-opacity-10">
@@ -22,7 +22,7 @@
 
         <!-- App js-->
         @vite(['resources/js/app.js'])
-        @include('layouts.partials/vendor')
+        @include('layouts.partials.vendor')
 
     </body>
 </html>

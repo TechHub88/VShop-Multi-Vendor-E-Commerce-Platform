@@ -16,6 +16,10 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Install Node.js (required for Vite)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
+
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -33,6 +37,10 @@ COPY . .
 
 # Install dependencies (no dev, optimized autoloader)
 RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+# Install NPM dependencies and build Vite assets
+RUN npm install \
+    && npm run build
 
 # Set proper permissions for Laravel
 RUN chown -R www-data:www-data /var/www/html \

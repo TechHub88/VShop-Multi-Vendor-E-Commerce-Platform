@@ -18,8 +18,8 @@
 
     <div id="app-layout">
 
-        @include('layouts.partials/topbar')
-        @include('layouts.partials/sidebar')
+        @include('layouts.partials.topbar')
+        @include('layouts.partials.sidebar')
 
         <div class="content-page">
 
@@ -29,13 +29,13 @@
 
             </div>
             
-            @include('layouts.partials/footer')
+            @include('layouts.partials.footer')
 
         </div>
 
     </div>
 
-    @include('layouts.partials/vendor')
+    @include('layouts.partials.vendor')
 
 </body>
 
