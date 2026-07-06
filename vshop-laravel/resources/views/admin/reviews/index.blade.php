@@ -311,57 +311,6 @@ data-id="{{ $review->id }}" title="Inactive Seller">
     </div>
 </div>
 
-<!-- Block Seller Modal -->
-<div class="modal fade" id="blockSellerModal" tabindex="-1" aria-labelledby="blockSellerModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="blockSellerModalLabel">Block Seller</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="blockSellerForm">
-                    @csrf
-                    <input type="hidden" name="review_id" id="blockReviewId">
-                    <div class="mb-3">
-                        <label class="form-label">Reason for Blocking</label>
-                        <textarea class="form-control" name="reason" rows="4" placeholder="Enter reason..." required></textarea>
-                    </div>
-                    <div class="text-end">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-danger">Block Seller</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Inactive Seller Modal -->
-<div class="modal fade" id="inactiveSellerModal" tabindex="-1" aria-labelledby="inactiveSellerModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="inactiveSellerModalLabel">Inactivate Seller</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="inactiveSellerForm">
-                    @csrf
-                    <input type="hidden" name="review_id" id="inactiveReviewId">
-                    <div class="mb-3">
-                        <label class="form-label">Reason for Inactivating</label>
-                        <textarea class="form-control" name="reason" rows="4" placeholder="Enter reason..." required></textarea>
-                    </div>
-                    <div class="text-end">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-warning">Inactivate Seller</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
 
 
 <script>
@@ -535,69 +484,109 @@ location.reload();
 // BLOCK SELLER
 document.querySelectorAll('.block-seller-btn').forEach(btn => {
     btn.addEventListener('click', function(){
-        document.getElementById('blockReviewId').value = this.dataset.id;
-        $('#blockSellerModal').modal('show');
+        let id = this.dataset.id;
+        
+        Swal.fire({
+            title: 'Block Seller',
+            text: 'Please enter the reason for blocking this seller:',
+            input: 'textarea',
+            inputPlaceholder: 'Enter reason here...',
+            inputAttributes: {
+                'aria-label': 'Reason for blocking'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Block Seller',
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'You need to write something!'
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let formData = new FormData();
+                formData.append('reason', result.value);
+                
+                fetch(`/admin/reviews/${id}/block-seller`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success){
+                        Swal.fire('Blocked!', data.message, 'success').then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Error!', data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire('Error!', 'Something went wrong.', 'error');
+                });
+            }
+        });
     });
-});
-
-document.getElementById('blockSellerForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const reviewId = document.getElementById('blockReviewId').value;
-    const formData = new FormData(this);
-
-    fetch(`/admin/reviews/${reviewId}/block-seller`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        },
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.success){
-            $('#blockSellerModal').modal('hide');
-            alert(data.message);
-            location.reload();
-        } else {
-            alert(data.message);
-        }
-    })
-    .catch(error => console.error('Error:', error));
 });
 
 // INACTIVE SELLER
 document.querySelectorAll('.inactive-seller-btn').forEach(btn => {
     btn.addEventListener('click', function(){
-        document.getElementById('inactiveReviewId').value = this.dataset.id;
-        $('#inactiveSellerModal').modal('show');
+        let id = this.dataset.id;
+        
+        Swal.fire({
+            title: 'Inactivate Seller',
+            text: 'Please enter the reason for inactivating this seller:',
+            input: 'textarea',
+            inputPlaceholder: 'Enter reason here...',
+            inputAttributes: {
+                'aria-label': 'Reason for inactivating'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Inactivate Seller',
+            confirmButtonColor: '#f8bb86',
+            cancelButtonColor: '#3085d6',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'You need to write something!'
+                }
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let formData = new FormData();
+                formData.append('reason', result.value);
+                
+                fetch(`/admin/reviews/${id}/inactive-seller`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success){
+                        Swal.fire('Inactivated!', data.message, 'success').then(() => {
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('Error!', data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire('Error!', 'Something went wrong.', 'error');
+                });
+            }
+        });
     });
-});
-
-document.getElementById('inactiveSellerForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const reviewId = document.getElementById('inactiveReviewId').value;
-    const formData = new FormData(this);
-
-    fetch(`/admin/reviews/${reviewId}/inactive-seller`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'Accept': 'application/json'
-        },
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if(data.success){
-            $('#inactiveSellerModal').modal('hide');
-            alert(data.message);
-            location.reload();
-        } else {
-            alert(data.message);
-        }
-    })
-    .catch(error => console.error('Error:', error));
 });
 </script>
 
