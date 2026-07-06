@@ -364,10 +364,17 @@ $unreadAdminCount = AdminNotification::where('is_read', false)->count();
                         </div>
                         <div class="noti-scroll" id="notifList" style="max-height: 350px; overflow-y: auto;">
                             @forelse($adminNotifications as $notif)
-                            <a href="{{ $notif->url ?? '#' }}" class="dropdown-item notify-item border-bottom p-3 {{ !$notif->is_read ? 'bg-light' : '' }}" data-id="{{ $notif->id }}">
+                            @php
+                                $notifUrl = $notif->url ?? '#';
+                                if (strtolower($notif->type) === 'enquiry' || str_contains(strtolower($notif->message), 'enquiry')) {
+                                    $notifUrl = route('admin.enquiry.index');
+                                }
+                                $iconClass = $notif->type === 'order' ? 'bi-cart' : ($notif->type === 'product' ? 'bi-box-seam' : (strtolower($notif->type) === 'enquiry' ? 'bi-envelope' : 'bi-bell'));
+                            @endphp
+                            <a href="{{ $notifUrl }}" class="dropdown-item notify-item border-bottom p-3 {{ !$notif->is_read ? 'bg-light' : '' }}" data-id="{{ $notif->id }}">
                                 <div class="d-flex align-items-center">
                                     <div class="notify-icon bg-primary text-white rounded-circle p-2 me-3">
-                                        <i class="bi {{ $notif->type === 'order' ? 'bi-cart' : ($notif->type === 'product' ? 'bi-box-seam' : 'bi-bell') }}"></i>
+                                        <i class="bi {{ $iconClass }}"></i>
                                     </div>
                                     <div class="flex-grow-1">
                                         <p class="notify-details mb-0 fw-semibold">{{ ucfirst($notif->type) }}</p>
@@ -1165,9 +1172,13 @@ document.addEventListener("DOMContentLoaded", function () {
             emptyMsg.remove();
         }
 
-        const iconClass = data.type === 'order' ? 'bi-cart' : (data.type === 'product' ? 'bi-box-seam' : 'bi-bell');
+        let notifUrl = data.link || '#';
+        if ((data.type && data.type.toLowerCase() === 'enquiry') || (data.message && data.message.toLowerCase().includes('enquiry'))) {
+            notifUrl = "{{ route('admin.enquiry.index') }}";
+        }
+        const iconClass = data.type === 'order' ? 'bi-cart' : (data.type === 'product' ? 'bi-box-seam' : (data.type && data.type.toLowerCase() === 'enquiry' ? 'bi-envelope' : 'bi-bell'));
         const item = `
-            <a href="${data.link || '#'}" class="dropdown-item notify-item border-bottom p-3 bg-light">
+            <a href="${notifUrl}" class="dropdown-item notify-item border-bottom p-3 bg-light">
                 <div class="d-flex align-items-center">
                     <div class="notify-icon bg-primary text-white rounded-circle p-2 me-3">
                         <i class="bi ${iconClass}"></i>
