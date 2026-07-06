@@ -2,8 +2,8 @@
 <html lang="en">
 
 <head>
-    @include('layouts.partials/title-meta')
-    @include('layouts.partials/head-css')
+    @include('layouts.partials.title-meta')
+    @include('layouts.partials.head-css')
     
     <style>
         .account-page {
@@ -48,7 +48,7 @@
     </div>
     </div>
 
-    @include('layouts.partials/vendor')
+    @include('layouts.partials.vendor')
 
 </body>
 
