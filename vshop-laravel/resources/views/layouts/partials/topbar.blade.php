@@ -929,17 +929,42 @@ document.addEventListener('DOMContentLoaded', function() {
         const matches = [];
         const term = searchTerm.toLowerCase().trim();
         
+        // Dynamically scrape all sidebar menu links
+        const sidebarLinks = document.querySelectorAll('#sidebar-menu a, .app-sidebar-menu a');
+        sidebarLinks.forEach(link => {
+            const title = link.innerText.trim();
+            const url = link.href;
+            if (!title || url.includes('javascript:') || url.endsWith('#')) return;
+            
+            const keyword = title.toLowerCase();
+            if (keyword.includes(term)) {
+                if (!matches.some(m => m.url === url)) {
+                    matches.push({
+                        type: 'section',
+                        title: title,
+                        subtitle: `Menu Item`,
+                        url: url,
+                        icon: '📋'
+                    });
+                }
+            }
+        });
+        
+        // Fallback to hardcoded sectionRoutes
         for (const [keyword, route] of Object.entries(sectionRoutes)) {
             if (keyword.includes(term) || term.includes(keyword)) {
-                matches.push({
-                    type: 'section',
-                    title: keyword.charAt(0).toUpperCase() + keyword.slice(1),
-                    subtitle: `Navigate to ${keyword}`,
-                    url: route,
-                    icon: '📁'
-                });
+                if (!matches.some(m => m.url === route)) {
+                    matches.push({
+                        type: 'section',
+                        title: keyword.charAt(0).toUpperCase() + keyword.slice(1),
+                        subtitle: `Navigate to ${keyword}`,
+                        url: route,
+                        icon: '📁'
+                    });
+                }
             }
         }
+        
         return matches.slice(0, 8);
     }
     
