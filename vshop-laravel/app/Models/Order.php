@@ -15,6 +15,7 @@ class Order extends Model
         'user_id',
         'payment_method',
         'payment_status',
+        'payment_attempts',
         'payment_type', // full / partial
 
         'sub_total',
