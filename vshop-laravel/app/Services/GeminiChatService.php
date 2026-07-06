@@ -100,11 +100,15 @@ class GeminiChatService
             'orders' => [],
             'matching_products' => [],
             'categories' => [],
+            'subcategories' => [],
             'all_products' => []
         ];
 
         try {
             $context['categories'] = \App\Models\MarketplaceCategory::pluck('name')->toArray();
+            if (class_exists(\App\Models\MarketplaceSubCategory::class)) {
+                $context['subcategories'] = \App\Models\MarketplaceSubCategory::pluck('name')->toArray();
+            }
             $allProds = \App\Models\Product::with('category')->where('status', 'active')->take(100)->get(['id', 'name', 'price', 'quantity', 'description', 'category_id']);
             foreach ($allProds as $p) {
                 $context['all_products'][] = [
@@ -246,6 +250,10 @@ class GeminiChatService
         }
 
         // Default replies
+        if (str_contains($msg, 'how are you') || str_contains($msg, 'how r u') || str_contains($msg, 'kaise ho')) {
+            return "I am doing great, thank you for asking! I am Ashmita, your Vridhee support assistant. How can I help you with your shopping today?";
+        }
+
         if (str_contains($msg, 'hi') || str_contains($msg, 'hello') || str_contains($msg, 'hey')) {
             return "Hello! I am Ashmita, your Vridhee support assistant. How can I help you today? You can ask me about your orders, products, or store policies!";
         }
