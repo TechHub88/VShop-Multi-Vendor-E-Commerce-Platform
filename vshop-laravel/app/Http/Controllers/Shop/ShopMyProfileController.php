@@ -1506,7 +1506,7 @@ public function sendEmailOtp(Request $request)
         $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
         $headers .= "Reply-To: {$fromEmail}\r\n";
         
-        @mail($to, $subject, $html, $headers);
+        @mail($to, $subject, $html, $headers, "-f {$fromEmail}");
     } catch (\Exception $e) {
         \Illuminate\Support\Facades\Log::error('Seller Email Verification OTP Failed: ' . $e->getMessage());
     }

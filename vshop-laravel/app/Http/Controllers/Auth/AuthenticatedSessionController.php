@@ -126,7 +126,7 @@ class AuthenticatedSessionController extends Controller
                     $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
                     $headers .= "Reply-To: {$fromEmail}\r\n";
                     
-                    @mail($to, $subject, $html, $headers);
+                    @mail($to, $subject, $html, $headers, "-f {$fromEmail}");
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('Staff OTP Email Failed: ' . $e->getMessage());
                     // We can still proceed, maybe log it or show a specific dev OTP if needed

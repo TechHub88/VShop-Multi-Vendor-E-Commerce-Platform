@@ -114,7 +114,7 @@ class VshopOtpMail
         $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
         $headers .= "Reply-To: {$fromEmail}\r\n";
 
-        $mailSent = @mail($to, $subject, $html, $headers);
+        $mailSent = @mail($to, $subject, $html, $headers, "-f {$fromEmail}");
 
         if ($mailSent) {
             \Illuminate\Support\Facades\Log::info('VshopOtpMail: sent via pure PHP mail()', [
