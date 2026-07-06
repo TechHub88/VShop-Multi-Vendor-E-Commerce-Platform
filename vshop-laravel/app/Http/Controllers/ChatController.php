@@ -425,7 +425,7 @@ class ChatController extends Controller
 
             // 2. Publish buyer message to Socket.io server
             try {
-                Http::post('http://localhost:3000/publish', [
+                Http::timeout(1)->post('http://localhost:3000/publish', [
                     'room' => 'conversation_' . $conversation->id,
                     'event' => 'message',
                     'data' => [
@@ -454,7 +454,7 @@ class ChatController extends Controller
 
             // 5. Publish Ashmita message to Socket.io server
             try {
-                Http::post('http://localhost:3000/publish', [
+                Http::timeout(1)->post('http://localhost:3000/publish', [
                     'room' => 'conversation_' . $conversation->id,
                     'event' => 'message',
                     'data' => [
