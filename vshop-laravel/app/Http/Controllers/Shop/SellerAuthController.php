@@ -1387,9 +1387,17 @@ public function panelSelect()
 
             // Send email
             $subject = "Platform Request Approved";
-            $message = "Hello " . $seller->name . ",\n\nYour request for platform access has been automatically approved by the admin after 24 hours.\n\nThank you.";
-            $headers = "From: noreply@vshop.zelofx.com";
-            @mail($seller->email, $subject, $message, $headers);
+            $messageBody = "Hello " . $seller->name . ",\n\nYour request for platform access has been automatically approved by the admin after 24 hours.\n\nThank you.";
+            
+            try {
+                \Illuminate\Support\Facades\Mail::raw($messageBody, function ($message) use ($seller, $subject) {
+                    $message->to($seller->email)
+                            ->subject($subject)
+                            ->from(env('MAIL_FROM_ADDRESS', 'support@vridhee.com'), env('MAIL_FROM_NAME', 'VSHOP'));
+                });
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Platform Request Email Failed: ' . $e->getMessage());
+            }
         }
     }
 
@@ -1415,9 +1423,17 @@ public function switchPanelMulti(Request $request)
 
             // Send email
             $subject = "Platform Request Approved";
-            $message = "Hello " . $seller->name . ",\n\nYour request for platform access has been automatically approved by the admin after 24 hours.\n\nThank you.";
-            $headers = "From: noreply@vshop.zelofx.com";
-            @mail($seller->email, $subject, $message, $headers);
+            $messageBody = "Hello " . $seller->name . ",\n\nYour request for platform access has been automatically approved by the admin after 24 hours.\n\nThank you.";
+            
+            try {
+                \Illuminate\Support\Facades\Mail::raw($messageBody, function ($message) use ($seller, $subject) {
+                    $message->to($seller->email)
+                            ->subject($subject)
+                            ->from(env('MAIL_FROM_ADDRESS', 'support@vridhee.com'), env('MAIL_FROM_NAME', 'VSHOP'));
+                });
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Platform Request Email Failed: ' . $e->getMessage());
+            }
         }
     }
 

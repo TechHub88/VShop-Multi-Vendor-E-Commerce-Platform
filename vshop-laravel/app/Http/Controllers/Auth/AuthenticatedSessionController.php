@@ -121,28 +121,11 @@ class AuthenticatedSessionController extends Controller
                     $fromName  = env('MAIL_FROM_NAME', 'VSHOP Admin');
                     ini_set('sendmail_from', $fromEmail);
                     
-                    // ── Build multipart MIME ─────────────────────────────────────────
-                    $boundary = '----VSHOP_OTP_' . md5(uniqid(rand(), true));
-
-                    $body  = "--{$boundary}\r\n";
-                    $body .= "Content-Type: text/plain; charset=UTF-8\r\n";
-                    $body .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-                    $body .= strip_tags(str_replace(['<br>', '</p>'], "\r\n", $html)) . "\r\n";
-                    $body .= "--{$boundary}\r\n";
-                    $body .= "Content-Type: text/html; charset=UTF-8\r\n";
-                    $body .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-                    $body .= $html . "\r\n";
-                    $body .= "--{$boundary}--";
-
-                    $headers  = "MIME-Version: 1.0\r\n";
-                    $headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
-                    $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
-                    $headers .= "Reply-To: {$fromEmail}\r\n";
-                    $headers .= "Return-Path: {$fromEmail}\r\n";
-                    $headers .= "X-Mailer: VSHOP/PHP-" . phpversion() . "\r\n";
-                    $headers .= "X-Priority: 1\r\n";
-                    
-                    @mail($to, $subject, $body, $headers, "-f {$fromEmail}");
+                    \Illuminate\Support\Facades\Mail::html($html, function ($message) use ($to, $subject, $fromEmail, $fromName) {
+                        $message->to($to)
+                                ->subject($subject)
+                                ->from($fromEmail, $fromName);
+                    });
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('Staff OTP Email Failed: ' . $e->getMessage());
                     // We can still proceed, maybe log it or show a specific dev OTP if needed

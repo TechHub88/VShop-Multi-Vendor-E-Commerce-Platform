@@ -108,48 +108,23 @@ class SellerOtpMail
 </body>
 </html>';
 
-        // ── Plain text fallback ──────────────────────────────────────────
-        $plain = "Dear {$name},\r\n\r\n"
-               . "Your VSHOP Seller {$purposeTitle} OTP is: {$otp}\r\n\r\n"
-               . "This OTP is valid for 5 minutes only.\r\n"
-               . "Do NOT share this OTP with anyone.\r\n\r\n"
-               . "If you did not request this, please ignore this email.\r\n\r\n"
-               . "Regards,\r\nVSHOP Seller Support\r\nhttps://vshop.zelofx.com/seller";
+        try {
+            \Illuminate\Support\Facades\Mail::html($html, function ($message) use ($to, $name, $subject, $fromEmail, $fromName) {
+                $message->to($to, $name)
+                        ->subject($subject)
+                        ->from($fromEmail, $fromName);
+            });
 
-        // ── Build multipart MIME ─────────────────────────────────────────
-        $boundary = '----VSHOP_OTP_' . md5(uniqid(rand(), true));
-
-        $body  = "--{$boundary}\r\n";
-        $body .= "Content-Type: text/plain; charset=UTF-8\r\n";
-        $body .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-        $body .= $plain . "\r\n";
-        $body .= "--{$boundary}\r\n";
-        $body .= "Content-Type: text/html; charset=UTF-8\r\n";
-        $body .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-        $body .= $html . "\r\n";
-        $body .= "--{$boundary}--";
-
-        // ── Headers ──────────────────────────────────────────────────────
-        $headers  = "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
-        $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
-        $headers .= "Reply-To: {$fromEmail}\r\n";
-        $headers .= "Return-Path: {$fromEmail}\r\n";
-        $headers .= "X-Mailer: VSHOP/PHP-" . phpversion() . "\r\n";
-        $headers .= "X-Priority: 1\r\n";
-
-        $mailSent = @mail($to, $subject, $body, $headers, "-f {$fromEmail}");
-
-        if ($mailSent) {
-            \Illuminate\Support\Facades\Log::info('SellerOtpMail: sent via pure PHP mail()', [
+            \Illuminate\Support\Facades\Log::info('SellerOtpMail: sent via Laravel Mail (SMTP)', [
                 'to'      => $to,
                 'purpose' => $purpose,
             ]);
             return true;
-        } else {
-            \Illuminate\Support\Facades\Log::error('SellerOtpMail: PHP mail() failed', [
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('SellerOtpMail: Laravel Mail failed', [
                 'to'      => $to,
                 'purpose' => $purpose,
+                'error'   => $e->getMessage()
             ]);
             return false;
         }
