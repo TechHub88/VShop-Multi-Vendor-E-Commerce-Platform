@@ -9,6 +9,32 @@ use Illuminate\Support\Facades\Auth;
 class AuthenticatedSessionController extends Controller
 {
     /**
+     * 🔹 Helper for Activity Logging
+     */
+    private function logActivity($type, $email, $user = null)
+    {
+        try {
+            $name = $user ? ($user->name ?? 'User') : $email;
+            $desc = $name;
+            if (str_contains($type, 'failed')) {
+                $desc .= ' failed to log in';
+            } else {
+                $desc .= ' logged in';
+            }
+
+            \App\Models\ActivityLog::create([
+                'user_id' => $user ? $user->id : null,
+                'activity_type' => $type,
+                'description' => $desc,
+                'remarks' => 'IP: ' . request()->ip() . ', User Agent: ' . request()->userAgent(),
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent()
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Login activity log failed: ' . $e->getMessage());
+        }
+    }
+    /**
      * 🔹 Show Login Page
      */
     public function create()
@@ -56,6 +82,7 @@ class AuthenticatedSessionController extends Controller
                 } else {
                     // No 2FA -> Direct login
                     Auth::guard('web')->login($user, $remember);
+                    $this->logActivity('admin_login', $request->email, $user);
                     $request->session()->regenerate();
                     return $request->ajax()
                         ? response()->json(['redirect' => url('/dashboard/index')])
@@ -105,6 +132,19 @@ class AuthenticatedSessionController extends Controller
             }
         }
 
+        // Check if the user exists but failed password, or just log generally
+        $user = \App\Models\User::where('email', $request->email)->first();
+        if ($user) {
+            $this->logActivity('admin_login_failed', $request->email, $user);
+        } else {
+            $staff = \App\Models\AdminStaff::where('email', $request->email)->first();
+            if ($staff) {
+                $this->logActivity('staff_login_failed', $request->email, $staff);
+            } else {
+                $this->logActivity('login_failed', $request->email, null);
+            }
+        }
+
         $errorMsg = 'Invalid email or password';
         return $request->ajax()
             ? response()->json(['message' => $errorMsg], 422)
@@ -138,10 +178,14 @@ class AuthenticatedSessionController extends Controller
         // OTP is correct
         $staffId = session('staff_temp_id');
         $remember = session('staff_remember', false);
+        $staff = \App\Models\AdminStaff::find($staffId);
 
         session()->forget(['staff_temp_id', 'staff_otp', 'staff_otp_expires', 'staff_remember']);
 
         Auth::guard('admin_staff')->loginUsingId($staffId, $remember);
+        if ($staff) {
+            $this->logActivity('staff_login', $staff->email, $staff);
+        }
         $request->session()->regenerate();
 
         return response()->json([
@@ -194,8 +238,12 @@ class AuthenticatedSessionController extends Controller
 
         if ($userType === 'web') {
             Auth::guard('web')->loginUsingId($userId, $remember);
+            $user = \App\Models\User::find($userId);
+            if ($user) $this->logActivity('admin_login', $user->email, $user);
         } else if ($userType === 'admin_staff') {
             Auth::guard('admin_staff')->loginUsingId($userId, $remember);
+            $staff = \App\Models\AdminStaff::find($userId);
+            if ($staff) $this->logActivity('staff_login', $staff->email, $staff);
         }
 
         $request->session()->regenerate();

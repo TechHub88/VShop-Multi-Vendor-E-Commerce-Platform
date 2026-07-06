@@ -237,7 +237,11 @@
                                                     <span class="text-muted">{{ $log->user_agent ?? 'Unknown Client' }}</span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-success text-white px-2 py-0.5">Success</span>
+                                                    @if(str_contains($log->activity_type ?? '', 'failed'))
+                                                        <span class="badge bg-danger text-white px-2 py-0.5">Failed</span>
+                                                    @else
+                                                        <span class="badge bg-success text-white px-2 py-0.5">Success</span>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @empty

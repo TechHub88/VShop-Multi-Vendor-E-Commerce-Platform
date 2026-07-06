@@ -58,7 +58,7 @@ class RoutingController extends BaseController
             $staffs = \App\Models\AdminStaff::all();
             
             // Get login logs
-            $loginLogs = \App\Models\ActivityLog::whereIn('activity_type', ['login', 'admin_login', 'staff_login'])
+            $loginLogs = \App\Models\ActivityLog::whereIn('activity_type', ['login', 'admin_login', 'staff_login', 'login_failed', 'admin_login_failed', 'staff_login_failed'])
                 ->orderBy('created_at', 'desc')
                 ->get();
                 
@@ -97,6 +97,17 @@ class RoutingController extends BaseController
                         'user_agent' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) Mobile/15E148',
                         'created_at' => now()->subDays(2),
                         'user' => (object)['name' => 'Priya Sharma']
+                    ],
+                    (object)[
+                        'id' => 4,
+                        'user_id' => null,
+                        'activity_type' => 'admin_login_failed',
+                        'description' => 'Failed login attempt for admin@gmail.com',
+                        'remarks' => 'IP: 103.45.20.19, User Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
+                        'ip_address' => '103.45.20.19',
+                        'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0',
+                        'created_at' => now()->subHours(5),
+                        'user' => (object)['name' => 'Unknown User']
                     ]
                 ]);
             }
