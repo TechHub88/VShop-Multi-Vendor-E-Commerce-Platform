@@ -10,6 +10,7 @@ class ChatConversation extends Model
 {
     protected $fillable = [
         'type',
+        'socket_id',
         'seller_id',
         'admin_id',
         'subject',

@@ -412,6 +412,15 @@ document.addEventListener("DOMContentLoaded", function () {
                         const sendBtn = document.getElementById('liveChatSendBtn');
                         const chatWindow = document.getElementById('liveChatWindow');
                         const chatContainer = document.getElementById('liveChatContainer');
+
+                        // Connect Socket FIRST to get socketId for guest users
+                        const socketUrl = window.location.protocol + '//' + window.location.hostname + ':3000';
+                        sidebarSocket = io(socketUrl);
+                        await new Promise((resolve) => {
+                            if (sidebarSocket.connected) resolve();
+                            else sidebarSocket.on('connect', resolve);
+                        });
+                        const socketId = sidebarSocket.id;
                         
                         function escapeHtml(text) {
                             if (!text) return '';
@@ -448,7 +457,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                         // Load history
                         try {
-                            const res = await fetch('{{ route('chat.ashmita.history') }}', {
+                            const res = await fetch('{{ route('chat.ashmita.history') }}?socket_id=' + socketId, {
                                 headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                             });
 
@@ -491,9 +500,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                 }
                                 chatWindow.scrollTop = chatWindow.scrollHeight;
 
-                                // Connect Socket
-                                const socketUrl = window.location.protocol + '//' + window.location.hostname + ':3000';
-                                sidebarSocket = io(socketUrl);
+                                // Join room and listen for messages
                                 sidebarSocket.emit('join', 'conversation_' + conversationId);
                                 sidebarSocket.on('message', (msg) => {
                                     if (document.getElementById('msg-' + msg.id)) return;
@@ -519,7 +526,7 @@ document.addEventListener("DOMContentLoaded", function () {
                                             'Content-Type': 'application/json',
                                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                                         },
-                                        body: JSON.stringify({ message: msg })
+                                        body: JSON.stringify({ message: msg, socket_id: socketId })
                                     });
                                 } catch (err) {
                                     console.error(err);
@@ -532,7 +539,7 @@ document.addEventListener("DOMContentLoaded", function () {
                             clearChatBtn.addEventListener('click', async () => {
                                 if (confirm('Are you sure you want to clear your chat history?')) {
                                     try {
-                                        await fetch('{{ route('chat.ashmita.clear') }}', {
+                                        await fetch('{{ route('chat.ashmita.clear') }}?socket_id=' + socketId, {
                                             method: 'DELETE',
                                             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                                         });

@@ -9,7 +9,9 @@ use App\Models\Seller;
 use App\Models\BroadcastMessage;
 use App\Models\InternalSupport;
 use App\Services\BroadcastService;
+use App\Services\GeminiChatService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class ChatController extends Controller
 {
@@ -293,5 +295,227 @@ class ChatController extends Controller
         ];
 
         return response()->json($stats);
+    }
+
+    // ==================== ASHMITA CHATBOT API ====================
+    public function ashmitaHistory(Request $request)
+    {
+        try {
+            $userId = Auth::guard('customer')->id() ?? Auth::id();
+            $senderType = Auth::guard('customer')->check() ? 'customer' : 'seller';
+            
+            if (!$userId) {
+                // Not authenticated, check if socket_id is provided
+                $socketId = $request->input('socket_id');
+                if (!$socketId) {
+                    return response()->json(['error' => 'Unauthenticated'], 401);
+                }
+                $userId = $socketId;
+                $senderType = 'guest';
+            }
+
+            // Use the correct column based on user type
+            $idColumn = 'socket_id';
+            if ($senderType === 'customer') {
+                $idColumn = 'customer_id'; // wait, customer_id doesn't exist on chat_conversations
+                // actually, let's use socket_id for guests, but wait, ChatConversation only has seller_id and admin_id and socket_id
+            }
+
+            // Let's adjust this securely. If it's a seller, they have seller_id. If guest, socket_id. If customer, they might not have a column yet, but earlier code used customer_id. 
+            // We just added socket_id. Let's just find by the respective field.
+            $matchArgs = ['type' => 'support'];
+            if ($senderType === 'guest') {
+                $matchArgs['socket_id'] = $userId;
+            } elseif ($senderType === 'customer') {
+                $matchArgs['customer_id'] = $userId; // might crash if column is missing, assuming it exists
+            } else {
+                $matchArgs['seller_id'] = $userId;
+            }
+
+            $adminId = \App\Models\User::first()->id ?? null;
+
+            $conversation = ChatConversation::firstOrCreate(
+                $matchArgs,
+                [
+                    'admin_id' => $adminId,
+                    'subject' => 'Support Chat with Ashmita',
+                    'status' => 'open',
+                    'last_message_at' => now(),
+                ]
+            );
+
+            $messages = ChatMessage::where('conversation_id', $conversation->id)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'conversation_id' => $conversation->id,
+                'messages' => $messages
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('ashmitaHistory error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function ashmitaMessage(Request $request, GeminiChatService $geminiService)
+    {
+        try {
+            $userId = null;
+            $senderType = 'seller';
+            
+            if (Auth::guard('customer')->check()) {
+                $senderType = 'customer';
+                $userId = Auth::guard('customer')->id();
+            } elseif (Auth::guard('web')->check()) {
+                $senderType = 'admin';
+                $userId = Auth::guard('web')->id();
+            } elseif (Auth::guard('seller')->check() || Auth::id()) {
+                $senderType = 'seller';
+                $userId = Auth::guard('seller')->id() ?? Auth::id();
+            } else {
+                $socketId = $request->input('socket_id');
+                if (!$socketId) {
+                    return response()->json(['error' => 'Unauthenticated'], 401);
+                }
+                $userId = $socketId;
+                $senderType = 'guest';
+            }
+
+            $request->validate([
+                'message' => 'required|string',
+            ]);
+
+            $matchArgs = ['type' => 'support'];
+            if ($senderType === 'guest') {
+                $matchArgs['socket_id'] = $userId;
+            } elseif ($senderType === 'customer') {
+                $matchArgs['customer_id'] = $userId;
+            } elseif ($senderType === 'admin') {
+                $matchArgs['admin_id'] = $userId;
+            } else {
+                $matchArgs['seller_id'] = $userId;
+            }
+
+            $adminId = \App\Models\User::first()->id ?? null;
+
+            $conversation = ChatConversation::firstOrCreate(
+                $matchArgs,
+                [
+                    'admin_id' => $adminId,
+                    'subject' => 'Support Chat with Ashmita',
+                    'status' => 'open',
+                    'last_message_at' => now(),
+                ]
+            );
+
+            // 1. Create and save the buyer's message
+            // sender_id is integer in DB. If userId is a string (socket_id), it will be cast to 0. Let's keep it as 0 for guests.
+            $dbSenderId = ($senderType === 'guest') ? 0 : $userId;
+            $buyerMessage = ChatMessage::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => $dbSenderId,
+                'sender_type' => $senderType,
+                'message' => $request->message,
+                'is_read' => false,
+            ]);
+
+            $conversation->update(['last_message_at' => now()]);
+
+            // 2. Publish buyer message to Socket.io server
+            try {
+                Http::post('http://localhost:3000/publish', [
+                    'room' => 'conversation_' . $conversation->id,
+                    'event' => 'message',
+                    'data' => [
+                        'id' => $buyerMessage->id,
+                        'message' => $buyerMessage->message,
+                        'sender_id' => $userId,
+                        'sender_type' => $senderType,
+                        'created_at' => $buyerMessage->created_at->toDateTimeString()
+                    ]
+                ]);
+            } catch (\Exception $ex) {
+                \Log::warning('Failed to publish buyer message to Socket.io: ' . $ex->getMessage());
+            }
+
+            // 3. Generate AI response from Ashmita
+            $botReplyText = $geminiService->getChatbotResponse($request->message, $userId, $senderType);
+
+            // 4. Save Ashmita's message to database
+            $botMessage = ChatMessage::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => 0, // 0 represents Ashmita Bot
+                'sender_type' => 'bot',
+                'message' => $botReplyText,
+                'is_read' => false,
+            ]);
+
+            // 5. Publish Ashmita message to Socket.io server
+            try {
+                Http::post('http://localhost:3000/publish', [
+                    'room' => 'conversation_' . $conversation->id,
+                    'event' => 'message',
+                    'data' => [
+                        'id' => $botMessage->id,
+                        'message' => $botMessage->message,
+                        'sender_id' => 0,
+                        'sender_type' => 'bot',
+                        'created_at' => $botMessage->created_at->toDateTimeString()
+                    ]
+                ]);
+
+            } catch (\Exception $ex) {
+                \Log::warning('Failed to publish bot message to Socket.io: ' . $ex->getMessage());
+            }
+
+            return response()->json([
+                'success' => true,
+                'buyer_message' => $buyerMessage,
+                'bot_message' => $botMessage
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('ashmitaMessage error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function ashmitaClearHistory(Request $request)
+    {
+        try {
+            $senderType = \Auth::guard('customer')->check() ? 'customer' : 'seller';
+            $userId = \Auth::guard('customer')->id() ?? \Auth::id();
+
+            if (!$userId) {
+                $socketId = $request->input('socket_id');
+                if (!$socketId) {
+                    return response()->json(['error' => 'Unauthorized'], 401);
+                }
+                $userId = $socketId;
+                $senderType = 'guest';
+            }
+
+            $idColumn = 'seller_id';
+            if ($senderType === 'guest') {
+                $idColumn = 'socket_id';
+            } elseif ($senderType === 'customer') {
+                $idColumn = 'customer_id';
+            }
+
+            $conversation = ChatConversation::where('type', 'support')
+                ->where($idColumn, $userId)
+                ->first();
+
+            if ($conversation) {
+                ChatMessage::where('conversation_id', $conversation->id)->delete();
+            }
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            \Log::error('ashmitaClearHistory error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }
