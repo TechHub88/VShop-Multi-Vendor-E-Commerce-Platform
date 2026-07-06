@@ -98,34 +98,14 @@ class SellerEmailVerifyMail
                . "If you did not request this, please ignore this email.\r\n\r\n"
                . "Regards,\r\nVSHOP Seller Support\r\nhttps://vshop.zelofx.com/seller";
 
-        // ── Build multipart MIME ─────────────────────────────────────────
-        $boundary = '----SELLER_VERIFY_' . md5(uniqid(rand(), true));
-
-        $body  = "--{$boundary}\r\n";
-        $body .= "Content-Type: text/plain; charset=UTF-8\r\n";
-        $body .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-        $body .= $plain . "\r\n";
-        $body .= "--{$boundary}\r\n";
-        $body .= "Content-Type: text/html; charset=UTF-8\r\n";
-        $body .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-        $body .= $html . "\r\n";
-        $body .= "--{$boundary}--";
-
-        // ── Headers ──────────────────────────────────────────────────────
-        $headers  = "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
-        $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
-        $headers .= "Reply-To: {$fromEmail}\r\n";
-        $headers .= "Return-Path: {$fromEmail}\r\n";
-        $headers .= "X-Mailer: VSHOP-Seller/PHP-" . phpversion() . "\r\n";
-        $headers .= "X-Priority: 1\r\n";
-
         // ── Send OTP via Laravel SMTP ──────────
         try {
-            \Illuminate\Support\Facades\Mail::html($body, function ($message) use ($to, $subject, $fromEmail, $fromName) {
+            \Illuminate\Support\Facades\Mail::send([], [], function ($message) use ($to, $subject, $fromEmail, $fromName, $html, $plain) {
                 $message->to($to)
                         ->subject($subject)
-                        ->from($fromEmail, $fromName);
+                        ->from($fromEmail, $fromName)
+                        ->html($html)
+                        ->text($plain);
             });
             
             \Illuminate\Support\Facades\Log::info('SellerEmailVerifyMail: sent via SMTP', [
