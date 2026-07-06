@@ -35,6 +35,14 @@ vshop_laravel:
     WEBSOCKET_INTERNAL_URL: "http://vshop-websocket:3005"
     LOG_CHANNEL: "stderr"
     LOG_LEVEL: "error"
+    MAIL_MAILER: "smtp"
+    MAIL_HOST: "smtp.hostinger.com"
+    MAIL_PORT: "465"
+    MAIL_USERNAME: "no-reply@vridheewellness.com"
+    MAIL_PASSWORD: "9Uv!1&LWHS"
+    MAIL_ENCRYPTION: "ssl"
+    MAIL_FROM_ADDRESS: "no-reply@vridheewellness.com"
+    MAIL_FROM_NAME: "VSHOP"
 
 ingress:
   enabled: true

@@ -120,30 +120,24 @@ class SellerEmailVerifyMail
         $headers .= "X-Mailer: VSHOP-Seller/PHP-" . phpversion() . "\r\n";
         $headers .= "X-Priority: 1\r\n";
 
-        // Ensure the PHP mail() function exists
-        if (!function_exists('mail')) {
-            \Illuminate\Support\Facades\Log::error('SellerEmailVerifyMail: PHP mail() function not available.', [
-                'to' => $to,
+        // ── Send OTP via Laravel SMTP ──────────
+        try {
+            \Illuminate\Support\Facades\Mail::html($body, function ($message) use ($to, $subject, $fromEmail, $fromName) {
+                $message->to($to)
+                        ->subject($subject)
+                        ->from($fromEmail, $fromName);
+            });
+            
+            \Illuminate\Support\Facades\Log::info('SellerEmailVerifyMail: sent via SMTP', [
+                'to'      => $to,
+            ]);
+            return true;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('SellerEmailVerifyMail: SMTP failed', [
+                'to'      => $to,
+                'error'   => $e->getMessage(),
             ]);
             return false;
         }
-
-        // ── Send OTP via php mail() with proper envelope sender ──────────
-        $sent = mail($to, $subject, $body, $headers, "-f {$fromEmail}");
-
-        // ── Log result ───────────────────────────────────────────────────
-        if ($sent) {
-            \Illuminate\Support\Facades\Log::info('SellerEmailVerifyMail: sent via mail()', [
-                'to'      => $to,
-            ]);
-        } else {
-            $err = error_get_last();
-            \Illuminate\Support\Facades\Log::error('SellerEmailVerifyMail: mail() failed', [
-                'to'      => $to,
-                'error'   => $err ? $err['message'] : 'Unknown',
-            ]);
-        }
-
-        return $sent;
     }
 }

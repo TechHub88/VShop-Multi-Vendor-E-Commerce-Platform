@@ -257,28 +257,22 @@ class BookingMsg
 </html>';
 
         $headers  = "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-        $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
-        $headers .= "Reply-To: {$fromEmail}\r\n";
-        $headers .= "X-Mailer: VSHOP/PHP-" . phpversion() . "\r\n";
-
-        if (!function_exists('mail')) {
-            \Illuminate\Support\Facades\Log::error('BookingMsg: PHP mail() not available.', ['to' => $to]);
+        try {
+            \Illuminate\Support\Facades\Mail::html($html, function ($message) use ($to, $subject, $fromEmail, $fromName) {
+                $message->to($to)
+                        ->subject($subject)
+                        ->from($fromEmail, $fromName);
+            });
+            
+            \Illuminate\Support\Facades\Log::info('BookingMsg: sent via SMTP', ['to' => $to, 'order_id' => $order->id]);
+            return true;
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('BookingMsg: SMTP failed', [
+                'to' => $to,
+                'order_id' => $order->id,
+                'error' => $e->getMessage()
+            ]);
             return false;
         }
-
-        $sent = mail($to, $subject, $html, $headers, "-f {$fromEmail}");
-
-        if ($sent) {
-            \Illuminate\Support\Facades\Log::info('BookingMsg: sent', ['to' => $to, 'order_id' => $order->id]);
-        } else {
-            $err = error_get_last();
-            \Illuminate\Support\Facades\Log::error('BookingMsg: failed', [
-                'to' => $to, 'order_id' => $order->id,
-                'error' => $err ? $err['message'] : 'Unknown',
-            ]);
-        }
-
-        return $sent;
     }
 }
