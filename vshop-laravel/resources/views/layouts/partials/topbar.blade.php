@@ -114,19 +114,76 @@ $unreadAdminCount = AdminNotification::where('is_read', false)->count();
                     </button>
                 </li>
                 <li class="d-none d-lg-block">
-                    <form class="app-search d-none d-md-block me-auto" id="globalSearchForm">
-                        <div class="position-relative topbar-search">
-                            <i class="bi bi-search position-absolute text-muted top-50 translate-middle-y ms-3" style=" left: 14px; z-index: 10;"></i>
+                    <style>
+                        .search-input-pro {
+                            width: 320px;
+                            height: 42px;
+                            border-radius: 50px !important;
+                            background-color: #f3f4f6 !important;
+                            border: 1px solid transparent !important;
+                            font-size: 14px;
+                            color: #374151;
+                            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                            box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
+                            padding-right: 60px !important; /* Space for the kbd */
+                        }
+                        .search-input-pro:focus {
+                            background-color: #ffffff !important;
+                            border-color: #3b82f6 !important;
+                            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15) !important;
+                            width: 420px;
+                            outline: none;
+                        }
+                        .search-input-pro::placeholder {
+                            color: #9ca3af;
+                            font-weight: 400;
+                        }
+                        .shortcut-kbd {
+                            background-color: #ffffff;
+                            color: #6b7280;
+                            border-radius: 6px;
+                            padding: 3px 6px;
+                            font-size: 11px;
+                            font-weight: 600;
+                            border: 1px solid #d1d5db;
+                            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                            pointer-events: none;
+                            transition: all 0.2s ease;
+                        }
+                        .search-input-pro:focus + .shortcut-kbd-wrapper {
+                            opacity: 0;
+                            visibility: hidden;
+                        }
+                        .shortcut-kbd-wrapper {
+                            transition: all 0.2s ease;
+                        }
+                    </style>
+                    <form class="app-search d-none d-md-block me-auto" id="globalSearchForm" onsubmit="event.preventDefault();">
+                        <div class="position-relative topbar-search d-flex align-items-center">
+                            <i class="bi bi-search position-absolute text-muted ms-3" style="font-size: 15px; left: 4px; z-index: 10;"></i>
                             <input type="text" 
                                    id="globalSearchInput" 
-                                   class="form-control ps-5" 
+                                   class="form-control ps-5 search-input-pro" 
                                    placeholder="Search products, orders, sellers, customers..." 
-                                   style="width: 300px;" />
+                                   autocomplete="off" />
+                            <div class="position-absolute end-0 me-3 shortcut-kbd-wrapper" style="z-index: 10;">
+                                <kbd class="shortcut-kbd">Ctrl K</kbd>
+                            </div>
                         </div>
-                        <div id="searchSuggestions" class="search-suggestions-dropdown" style="display: none;">
+                        <div id="searchSuggestions" class="search-suggestions-dropdown shadow-lg rounded-3 border-0 mt-2" style="display: none; overflow:hidden;">
                             <div class="suggestions-list"></div>
                         </div>
                     </form>
+                    
+                    <script>
+                        // Keyboard shortcut for search
+                        document.addEventListener('keydown', function(e) {
+                            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                                e.preventDefault();
+                                document.getElementById('globalSearchInput').focus();
+                            }
+                        });
+                    </script>
                 </li>
             </ul>
 
