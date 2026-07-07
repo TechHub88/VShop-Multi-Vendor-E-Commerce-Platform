@@ -19,7 +19,7 @@ return [
     */
 
     'driver' => (function() {
-        $driver = env('SESSION_DRIVER', 'database');
+        $driver = env('SESSION_DRIVER', 'file');
         if ($driver === 'file') {
             $path = storage_path('framework/sessions');
             if (!is_dir($path) || !is_writable($path)) {
