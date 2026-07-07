@@ -795,4 +795,51 @@ public function destroy($id)
     return back()->with('success','Deleted successfully');
 }
 
+public function autocomplete(Request $request)
+{
+    $query = $request->get('q');
+    if (empty($query)) {
+        return response()->json([
+            'categories' => [],
+            'products' => []
+        ]);
+    }
+
+    $categories = DB::table('marketplace_categories')
+        ->where('status', 1)
+        ->where('type', 'product')
+        ->where('name', 'LIKE', '%' . $query . '%')
+        ->select('id', 'name')
+        ->take(5)
+        ->get()
+        ->map(function($cat) {
+            $cat->slug = strtolower(str_replace(' ', '-', $cat->name));
+            return $cat;
+        });
+
+    $products = Product::where(function($q) {
+            $q->whereNull('created_by')
+              ->orWhere(function ($seller) {
+                  $seller->where('created_by', 'seller')
+                         ->where('status', 'approved');
+              });
+        })
+        ->where(function($q) use ($query) {
+            $q->where('name', 'LIKE', '%' . $query . '%')
+              ->orWhere('description', 'LIKE', '%' . $query . '%');
+        })
+        ->select('id', 'name', 'price', 'thumbnail')
+        ->take(8)
+        ->get()
+        ->map(function($prod) {
+            $prod->thumbnail_url = $prod->thumbnail ? asset($prod->thumbnail) : 'https://placehold.co/100x100?text=No+Image';
+            return $prod;
+        });
+
+    return response()->json([
+        'categories' => $categories,
+        'products' => $products
+    ]);
+}
+
 }

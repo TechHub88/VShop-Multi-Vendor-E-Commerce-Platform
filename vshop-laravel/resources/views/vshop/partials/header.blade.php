@@ -279,6 +279,97 @@
         color: #fff;
     }
 
+    /* Autocomplete Search suggestions styles */
+    .top-search-bar-sec {
+        position: relative;
+    }
+    .search-suggestions-popup {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        z-index: 9999;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+    }
+    .suggestion-section {
+        padding: 5px 0;
+    }
+    .suggestion-section-title {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #6c757d;
+        font-weight: 700;
+        padding: 6px 15px;
+        letter-spacing: 0.5px;
+        background: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        border-bottom: 1px solid #e9ecef;
+    }
+    .suggestion-section:first-child .suggestion-section-title {
+        border-top: none;
+    }
+    .suggestion-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        cursor: pointer;
+        transition: background 0.2s;
+        text-decoration: none;
+        color: #333;
+    }
+    .suggestion-item:hover, .suggestion-item.active {
+        background: #f1f5fb;
+        color: #004392 !important;
+        text-decoration: none;
+    }
+    .suggestion-category-icon {
+        margin-right: 12px;
+        color: #004392;
+        font-size: 14px;
+        width: 20px;
+        text-align: center;
+    }
+    .suggestion-product-img {
+        width: 40px;
+        height: 40px;
+        object-fit: cover;
+        border-radius: 4px;
+        margin-right: 12px;
+        border: 1px solid #e9ecef;
+    }
+    .suggestion-product-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .suggestion-product-name {
+        font-weight: 600;
+        font-size: 13px;
+        color: #333;
+        line-height: 1.3;
+    }
+    .suggestion-item:hover .suggestion-product-name, .suggestion-item.active .suggestion-product-name {
+        color: #004392;
+    }
+    .suggestion-product-price {
+        font-size: 11px;
+        color: #28a745;
+        font-weight: 600;
+        margin-top: 2px;
+    }
+    .suggestion-no-results {
+        padding: 20px;
+        text-align: center;
+        color: #777;
+        font-size: 13px;
+        font-style: italic;
+    }
+
     /* Remove the old category links wrapper */
     .category-links-wrapper {
         display: none;
@@ -453,7 +544,7 @@ if($customerLoggedIn){
                     {{-- CENTER: Full Size Amazon Style Search Bar --}}
                     <div class="d-flex align-items-center top-search-bar-sec">
 
-                        <form action="{{ route('productmanage.index') }}" method="GET" class="amazon-search-form">
+                        <form action="{{ route('productmanage.index') }}" method="GET" class="amazon-search-form" id="global-search-form">
                             @foreach(request()->except(['q', 'filter', 'page']) as $key => $value)
                                 @if(is_array($value))
                                     @foreach($value as $k => $v)
@@ -480,6 +571,7 @@ if($customerLoggedIn){
                                 <i class="fa-solid fa-magnifying-glass"></i>
                             </button>
                         </form>
+                        <div id="search-suggestions" class="search-suggestions-popup" style="display: none;"></div>
                     </div>
 
                     {{-- RIGHT: Location, Notification, Wishlist, Cart, Profile --}}
@@ -685,6 +777,129 @@ if($customerLoggedIn){
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Autocomplete Search Suggestions Handler
+        const searchInput = document.querySelector('.amazon-search-input');
+        const suggestionsPopup = document.getElementById('search-suggestions');
+        let debounceTimer;
+
+        if (searchInput && suggestionsPopup) {
+            searchInput.setAttribute('autocomplete', 'off');
+
+            searchInput.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                const query = this.value.trim();
+
+                if (query.length < 2) {
+                    suggestionsPopup.innerHTML = '';
+                    suggestionsPopup.style.display = 'none';
+                    return;
+                }
+
+                debounceTimer = setTimeout(() => {
+                    fetch(`{{ route('productmanage.autocomplete') }}?q=${encodeURIComponent(query)}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            let html = '';
+                            let hasResults = false;
+
+                            if (data.categories && data.categories.length > 0) {
+                                hasResults = true;
+                                html += `<div class="suggestion-section">
+                                            <div class="suggestion-section-title">Categories</div>`;
+                                data.categories.forEach(cat => {
+                                    const categoryUrl = "{{ route('productmanage.index') }}?category=" + encodeURIComponent(cat.slug);
+                                    html += `
+                                        <a href="${categoryUrl}" class="suggestion-item">
+                                            <i class="fa-solid fa-list suggestion-category-icon"></i>
+                                            <span>${cat.name}</span>
+                                        </a>
+                                    `;
+                                });
+                                html += `</div>`;
+                            }
+
+                            if (data.products && data.products.length > 0) {
+                                hasResults = true;
+                                html += `<div class="suggestion-section">
+                                            <div class="suggestion-section-title">Products</div>`;
+                                data.products.forEach(prod => {
+                                    const productShowUrl = "{{ route('productmanage.show', ':id') }}".replace(':id', prod.id);
+                                    html += `
+                                        <a href="${productShowUrl}" class="suggestion-item">
+                                            <img src="${prod.thumbnail_url}" class="suggestion-product-img" alt="${prod.name}">
+                                            <div class="suggestion-product-info">
+                                                <span class="suggestion-product-name">${prod.name}</span>
+                                                <span class="suggestion-product-price">₹${parseFloat(prod.price).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                                            </div>
+                                        </a>
+                                    `;
+                                });
+                                html += `</div>`;
+                            }
+
+                            if (!hasResults) {
+                                html = `<div class="suggestion-no-results">No matches found for "${query}"</div>`;
+                            }
+
+                            suggestionsPopup.innerHTML = html;
+                            suggestionsPopup.style.display = 'block';
+                        })
+                        .catch(err => {
+                            console.error('Autocomplete fetch error:', err);
+                        });
+                }, 300);
+            });
+
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !suggestionsPopup.contains(e.target)) {
+                    suggestionsPopup.style.display = 'none';
+                }
+            });
+
+            // Show suggestions when clicking back into input if it has content
+            searchInput.addEventListener('click', function() {
+                if (this.value.trim().length >= 2 && suggestionsPopup.children.length > 0) {
+                    suggestionsPopup.style.display = 'block';
+                }
+            });
+
+            // Keyboard navigation
+            searchInput.addEventListener('keydown', function(e) {
+                const items = suggestionsPopup.querySelectorAll('.suggestion-item');
+                if (items.length === 0) return;
+
+                let activeIndex = -1;
+                items.forEach((item, idx) => {
+                    if (item.classList.contains('active')) {
+                        activeIndex = idx;
+                    }
+                });
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (activeIndex !== -1) {
+                        items[activeIndex].classList.remove('active');
+                    }
+                    activeIndex = (activeIndex + 1) % items.length;
+                    items[activeIndex].classList.add('active');
+                    items[activeIndex].scrollIntoView({ block: 'nearest' });
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (activeIndex !== -1) {
+                        items[activeIndex].classList.remove('active');
+                    }
+                    activeIndex = (activeIndex - 1 + items.length) % items.length;
+                    items[activeIndex].classList.add('active');
+                    items[activeIndex].scrollIntoView({ block: 'nearest' });
+                } else if (e.key === 'Enter') {
+                    if (activeIndex !== -1) {
+                        e.preventDefault();
+                        items[activeIndex].click();
+                    }
+                }
+            });
+        }
         // Firebase customer notification listener
         const customerId = "{{ Auth::guard('customer')->check() ? Auth::guard('customer')->id() : '' }}";
         if (customerId && window.fRef) {

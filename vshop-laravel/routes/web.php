@@ -1218,6 +1218,7 @@ Route::get('/order/confirmation/{id}', [VtravelOrderController::class, 'confirma
    Route::get('/productmanage', [VshopProductController::class, 'index'])->name('productmanage.index');
     // Show single product
     Route::get('/productmanage/{id}', [VshopProductController::class, 'show'])->name('productmanage.show');
+    Route::get('/productmanage/search/autocomplete', [VshopProductController::class, 'autocomplete'])->name('productmanage.autocomplete');
     
     // Enquiry store for product page
 
