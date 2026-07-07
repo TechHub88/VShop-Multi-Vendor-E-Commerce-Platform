@@ -290,80 +290,45 @@
         width: 100%;
         background: #fff;
         border: 1px solid #dee2e6;
-        border-radius: 8px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         z-index: 9999;
-        max-height: 450px;
+        max-height: 400px;
         overflow-y: auto;
-        margin-top: 5px;
-    }
-    .suggestion-section {
-        padding: 5px 0;
-    }
-    .suggestion-section-title {
-        font-size: 11px;
-        text-transform: uppercase;
-        color: #6c757d;
-        font-weight: 700;
-        padding: 6px 15px;
-        letter-spacing: 0.5px;
-        background: #f8f9fa;
-        border-top: 1px solid #e9ecef;
-        border-bottom: 1px solid #e9ecef;
-    }
-    .suggestion-section:first-child .suggestion-section-title {
-        border-top: none;
+        margin-top: 3px;
     }
     .suggestion-item {
         display: flex;
         align-items: center;
         padding: 10px 15px;
         cursor: pointer;
-        transition: background 0.2s;
+        transition: background 0.1s;
         text-decoration: none;
-        color: #333;
+        color: #111 !important;
+        font-size: 14px;
+        line-height: 1.4;
     }
     .suggestion-item:hover, .suggestion-item.active {
-        background: #f1f5fb;
-        color: #004392 !important;
+        background: #f3f3f3;
         text-decoration: none;
     }
-    .suggestion-category-icon {
+    .suggestion-search-icon {
         margin-right: 12px;
-        color: #004392;
-        font-size: 14px;
-        width: 20px;
+        color: #888;
+        font-size: 13px;
+        width: 16px;
         text-align: center;
     }
-    .suggestion-product-img {
-        width: 40px;
-        height: 40px;
-        object-fit: cover;
-        border-radius: 4px;
-        margin-right: 12px;
-        border: 1px solid #e9ecef;
+    .suggestion-item strong {
+        font-weight: 700;
+        color: #111;
     }
-    .suggestion-product-info {
-        display: flex;
-        flex-direction: column;
-    }
-    .suggestion-product-name {
-        font-weight: 600;
-        font-size: 13px;
-        color: #333;
-        line-height: 1.3;
-    }
-    .suggestion-item:hover .suggestion-product-name, .suggestion-item.active .suggestion-product-name {
+    .suggestion-category-name {
         color: #004392;
-    }
-    .suggestion-product-price {
-        font-size: 11px;
-        color: #28a745;
         font-weight: 600;
-        margin-top: 2px;
     }
     .suggestion-no-results {
-        padding: 20px;
+        padding: 15px;
         text-align: center;
         color: #777;
         font-size: 13px;

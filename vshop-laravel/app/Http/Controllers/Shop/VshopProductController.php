@@ -808,7 +808,10 @@ public function autocomplete(Request $request)
     $categories = DB::table('marketplace_categories')
         ->where('status', 1)
         ->where('type', 'product')
-        ->where('name', 'LIKE', '%' . $query . '%')
+        ->where(function($q) use ($query) {
+            $q->where('name', 'LIKE', '%' . $query . '%')
+              ->orWhereRaw("LOWER(REPLACE(name, ' ', '')) LIKE ?", ['%' . strtolower(str_replace(' ', '', $query)) . '%']);
+        })
         ->select('id', 'name')
         ->take(5)
         ->get()
@@ -826,7 +829,11 @@ public function autocomplete(Request $request)
         })
         ->where(function($q) use ($query) {
             $q->where('name', 'LIKE', '%' . $query . '%')
-              ->orWhere('description', 'LIKE', '%' . $query . '%');
+              ->orWhere('description', 'LIKE', '%' . $query . '%')
+              ->orWhereHas('category', function($catQuery) use ($query) {
+                  $catQuery->where('name', 'LIKE', '%' . $query . '%')
+                           ->orWhereRaw("LOWER(REPLACE(name, ' ', '')) LIKE ?", ['%' . strtolower(str_replace(' ', '', $query)) . '%']);
+              });
         })
         ->select('id', 'name', 'price', 'thumbnail')
         ->take(8)
