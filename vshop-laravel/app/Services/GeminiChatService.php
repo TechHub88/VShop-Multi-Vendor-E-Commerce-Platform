@@ -267,6 +267,8 @@ class GeminiChatService
 }
 
 // Helper function to safely output total/price
-function number_of_format_or_raw($val) {
-    return is_numeric($val) ? number_format($val, 2) : $val;
+if (!function_exists('number_of_format_or_raw')) {
+    function number_of_format_or_raw($val) {
+        return is_numeric($val) ? number_format($val, 2) : $val;
+    }
 }
