@@ -2094,7 +2094,9 @@ function timeAgo(date) {
     return "Just now";
 }
 
-setInterval(loadNotifications, 5000);
+// DISABLED: Polling every 5s was causing excessive DB connections (max_connections_per_hour limit).
+// Firebase real-time listener (onChildAdded) already handles live notification updates.
+// setInterval(loadNotifications, 5000);
 
 $(document).ready(function() {
     loadNotifications();

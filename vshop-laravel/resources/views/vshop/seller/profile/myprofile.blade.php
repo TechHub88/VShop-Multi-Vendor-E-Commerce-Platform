@@ -245,7 +245,7 @@ class="img-fluid rounded mb-3 shadow-sm" width="120">
             @php $countryName = \App\Models\Country::where('id',$c['address']['country'] ?? null)->value('name'); @endphp
             <div class="card shadow-sm border-0 mb-3 bg-light">
                 <div class="card-header border-bottom d-flex justify-content-between align-items-center">
-                    <span class="fw-bold"><i class="fa-solid fa-user text-muted me-2"></i> {{ $c['first_name'] }} {{ $c['last_name'] }}</span>
+                    <span class="fw-bold"><i class="fa-solid fa-user text-muted me-2"></i> {{ $c['first_name'] ?? '' }} {{ $c['last_name'] ?? '' }}</span>
                     <span class="badge bg-primary rounded-pill">{{ $c['designation'] ?? 'Contact' }}</span>
                 </div>
                 <div class="card-body bg-white">
