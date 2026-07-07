@@ -10,6 +10,7 @@ use App\Models\Attribute;
 use App\Models\ProductVersionHistory;
 use App\Models\Seller;
 use App\Models\ProductReview;
+use App\Models\ProductLog;
 use App\Models\OrderItem;
 use App\Models\Grievance;
 use Illuminate\Http\Request;
@@ -332,10 +333,15 @@ public function products(Request $request)
     $inProgressProducts = Product::where('created_by', 'seller')->whereIn('type', $panelTypes)->whereIn('status', ['pending', 'in-progress'])->count();
     $rejectedProducts = Product::where('created_by', 'seller')->whereIn('type', $panelTypes)->where('status', 'rejected')->count();
 
+    $productLogs = ProductLog::where('product_id', $id)
+                        ->orderBy('created_at', 'desc')
+                        ->get();
+
     return view('admin.approval.verify-product', compact(
         'product', 
         'performanceData', 
         'versionHistory',
+        'productLogs',
         'totalProducts',
         'verifiedProducts',
         'notVerifiedProducts',

@@ -837,14 +837,16 @@ public function getCategories($type)
         ->unique('name')
         ->values();
 }
-private function createLog($productId, $action, $old = null, $new = null)
+private function createLog($productId, $module, $old = null, $new = null)
 {
     ProductLog::create([
         'product_id' => $productId,
-        'user_id' => auth()->id(),
-        'action' => $action,
-        'old_value' => $old ? json_encode($old) : null,
-        'new_value' => $new ? json_encode($new) : null,
+        'module' => $module,
+        'action_by' => auth('seller')->id(),
+        'action_type' => $old ? 'update' : 'create',
+        'old_value' => $old,
+        'new_value' => $new,
+        'ip_address' => request()->ip(),
     ]);
 }
 
@@ -1143,14 +1145,15 @@ public function saveBasic(Request $request, Product $product = null)
     // ✅ SAVE
     // =====================================================
     if ($product && $product->exists) {
+        $oldData = $product->only(array_keys($data));
         $product->update($data);
         $productId = $product->id;
         
         // Notification for update
         $this->createNotification($seller->id, 'product', 'Product "' . $data['name'] . '" basic information updated successfully', route('seller.products.index'));
         
-        // Log the update
-        $this->createLog($productId, 'basic_update', null, $data);
+        // Log the update with old values
+        $this->createLog($productId, 'basic', $oldData, $data);
         
     } else {
         $data['created_by']    = 'seller';
@@ -1163,7 +1166,7 @@ public function saveBasic(Request $request, Product $product = null)
         $this->createNotification($seller->id, 'product', 'New product "' . $data['name'] . '" created successfully. Please complete all steps.', route('seller.products.index'));
         
         // Log the creation
-        $this->createLog($productId, 'create', null, $data);
+        $this->createLog($productId, 'basic', null, $data);
     }
 
     return redirect(route('seller.products.media.edit', $productId))
@@ -1381,16 +1384,20 @@ public function saveMedia(Request $request, Product $product)
     | SAVE
     |--------------------------------------------------------------------------
     */
+    $oldMedia = ['images' => $product->images, 'videos' => $product->videos, 'thumbnail' => $product->thumbnail];
+
     $product->images = json_encode($images);
     $product->videos = json_encode($videos);
 
     $product->save();
 
+    $newMedia = ['images' => json_encode($images), 'videos' => json_encode($videos), 'thumbnail' => $product->thumbnail];
+
     // Notification for media update
     $this->createNotification($product->created_by_id, 'product', 'Product "' . $product->name . '" media updated successfully', route('seller.products.index'));
     
     // Log the media update
-    $this->createLog($product->id, 'media_update', null, ['images' => $images, 'videos' => $videos, 'thumbnail' => $product->thumbnail]);
+    $this->createLog($product->id, 'media', $oldMedia, $newMedia);
 
     /*
     |--------------------------------------------------------------------------
@@ -1589,11 +1596,12 @@ public function saveSpecifications(Request $request, Product $product)
     | UPDATE PRODUCT
     |--------------------------------------------------
     */
+    $oldSpecs = $product->only(array_keys($data));
     $product->update($data);
 
     // Notification & Log
     $this->createNotification($product->created_by_id, 'product', 'Product "' . $product->name . '" specifications saved successfully', route('seller.products.index'));
-    $this->createLog($product->id, 'specifications_update', null, $data);
+    $this->createLog($product->id, 'specifications', $oldSpecs, $data);
 
     return redirect()
         ->route('seller.products.seo.edit', $product->id)
@@ -1683,13 +1691,14 @@ public function saveSeo(Request $request, Product $product = null)
         'target_audience'  => $request->target_audience,
     ];
     
+    $oldSeo = $product->only(array_keys($seoData));
     $product->update($seoData);
 
     // Notification for SEO update
     $this->createNotification($product->created_by_id, 'product', 'Product "' . $product->name . '" SEO information saved successfully', route('seller.products.index'));
     
     // Log the SEO update
-    $this->createLog($product->id, 'seo_update', null, $seoData);
+    $this->createLog($product->id, 'seo', $oldSeo, $seoData);
 
     return redirect(
         $product->id
@@ -2001,6 +2010,7 @@ public function savePrice(Request $request, Product $product)
         'notify_percentage' => $request->notify_percentage ?? 95,
     ];
     
+    $oldPrice = $product->only(array_keys($priceData));
     $product->update($priceData);
 
     // ================= UPDATE BOOSTED_LISTINGS TABLE =================
@@ -2052,7 +2062,7 @@ public function savePrice(Request $request, Product $product)
     $this->createNotification($product->created_by_id, 'product', 'Product "' . $product->name . '" pricing information saved successfully', route('seller.products.index'));
     
     // Log the price update
-    $this->createLog($product->id, 'price_update', null, $priceData);
+    $this->createLog($product->id, 'price', $oldPrice, $priceData);
 
     return redirect()->route('seller.products.faq', $product->id)->with('success', 'Pricing saved successfully!');
 }
@@ -2623,12 +2633,16 @@ public function saveFaq(Request $request, $id)
         }
     }
 
+    $oldFaqs = ['faqs' => $product->faqs];
     $product->update([
         'faqs' => json_encode($faqs)
     ]);
 
     // Notification for FAQ update
     $this->createNotification($product->created_by_id, 'product', 'FAQs updated for product "' . $product->name . '"', route('seller.products.faq.list', $product->id));
+    
+    // Log the FAQ update
+    $this->createLog($product->id, 'faq', $oldFaqs, ['faqs' => json_encode($faqs)]);
 
     return redirect()->route('seller.products.download', $product->id)
         ->with('success','FAQ Saved Successfully');

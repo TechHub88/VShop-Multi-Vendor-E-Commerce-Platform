@@ -110,7 +110,7 @@ $new = $log->new_value ?? [];
 <div class="timeline-content">
 
 <div class="d-flex justify-content-between mb-2">
-    <strong>{{ ucfirst($log->module) }} Updated</strong>
+    <strong>{{ $log->module ? ucfirst($log->module) : 'Product' }} Updated</strong>
     <small class="text-muted">{{ $time }}</small>
 </div>
 

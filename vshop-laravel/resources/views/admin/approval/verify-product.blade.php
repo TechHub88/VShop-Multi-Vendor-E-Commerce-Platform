@@ -699,15 +699,73 @@
             <div class="tab-pane fade" id="activityLogs">
                 <div class="card border-0 shadow-sm rounded-4 p-4">
                     <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-history text-primary me-2"></i> Audit Trail & Action History</h5>
-                    <div id="fullActivityLogs" class="d-flex flex-column gap-2" style="max-height: 450px; overflow-y: auto;">
-                        @if(isset($versionHistory) && count($versionHistory) > 0)
-                            @foreach($versionHistory as $log)
-                                <div class="p-3 bg-light rounded-3 border-start border-4 border-primary">
+                    <div id="fullActivityLogs" class="d-flex flex-column gap-3" style="max-height: 550px; overflow-y: auto;">
+                        @php
+                            $allLogs = collect();
+                            if(isset($versionHistory)) {
+                                foreach($versionHistory as $vh) {
+                                    $allLogs->push([
+                                        'type' => 'version',
+                                        'action' => $vh->action,
+                                        'created_at' => \Carbon\Carbon::parse($vh->created_at),
+                                        'user' => 'User ID #' . ($vh->changed_by ?? 'System Admin'),
+                                        'old' => null,
+                                        'new' => null
+                                    ]);
+                                }
+                            }
+                            if(isset($productLogs)) {
+                                foreach($productLogs as $pl) {
+                                    $allLogs->push([
+                                        'type' => 'seller_log',
+                                        'action' => ($pl->module ? ucfirst($pl->module) : 'Product') . ' Updated',
+                                        'created_at' => \Carbon\Carbon::parse($pl->created_at),
+                                        'user' => 'Seller (ID #' . ($pl->action_by ?? 'N/A') . ')',
+                                        'old' => is_string($pl->old_value) ? json_decode($pl->old_value, true) : $pl->old_value,
+                                        'new' => is_string($pl->new_value) ? json_decode($pl->new_value, true) : $pl->new_value
+                                    ]);
+                                }
+                            }
+                            $allLogs = $allLogs->sortByDesc('created_at');
+                        @endphp
+
+                        @if($allLogs->count() > 0)
+                            @foreach($allLogs as $log)
+                                <div class="p-3 bg-light rounded-3 border-start border-4 {{ $log['type'] == 'version' ? 'border-primary' : 'border-success' }}">
                                     <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <strong class="text-dark fs-14">{{ ucfirst(str_replace('_', ' ', $log->action)) }}</strong>
-                                        <span class="text-muted fs-12">{{ $log->created_at->format('d M Y, h:i A') }}</span>
+                                        <strong class="text-dark fs-14">{{ ucfirst(str_replace('_', ' ', $log['action'])) }}</strong>
+                                        <span class="text-muted fs-12">{{ $log['created_at']->format('d M Y, h:i A') }}</span>
                                     </div>
-                                    <small class="text-secondary d-block">Triggered by user ID #{{ $log->user_id ?? 'System Admin' }}</small>
+                                    <small class="text-secondary d-block mb-2">Triggered by {{ $log['user'] }}</small>
+
+                                    @if($log['type'] == 'seller_log' && is_array($log['new']))
+                                        <div class="mt-2 pt-2 border-top">
+                                            @php $hasChanges = false; @endphp
+                                            @foreach($log['new'] as $key => $newVal)
+                                                @php
+                                                    $oldVal = $log['old'][$key] ?? '-';
+                                                @endphp
+                                                @if(json_encode($oldVal) !== json_encode($newVal))
+                                                    @php $hasChanges = true; @endphp
+                                                    <div class="d-flex flex-column mb-2" style="font-size: 13px;">
+                                                        <span class="fw-bold text-muted">{{ ucfirst(str_replace('_', ' ', $key)) }}:</span>
+                                                        <div class="d-flex align-items-center gap-2 mt-1">
+                                                            <span class="text-danger bg-danger-subtle px-2 py-0.5 rounded" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                                {{ is_array($oldVal) ? json_encode($oldVal) : $oldVal }}
+                                                            </span>
+                                                            <i class="fa-solid fa-arrow-right text-muted fs-11"></i>
+                                                            <span class="text-success bg-success-subtle px-2 py-0.5 rounded" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                                {{ is_array($newVal) ? json_encode($newVal) : $newVal }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            @endforeach
+                                            @if(!$hasChanges)
+                                                <small class="text-muted italic">No field values changed</small>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </div>
                             @endforeach
                         @else
