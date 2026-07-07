@@ -335,7 +335,7 @@ value="{{ old('sku',$product->sku) }}">
 <label class="form-label required">Item Code</label>
 <input type="text" name="item_code"
 class="form-control @error('item_code') is-invalid @enderror"
-value="{{ old('item_code',$product->item_code ?? '') }}">
+value="{{ old('item_code', $product->item_code ?? $product->product_code ?? '') }}">
 @error('item_code') <div class="validation-error">{{ $message }}</div> @enderror
 </div>
 
