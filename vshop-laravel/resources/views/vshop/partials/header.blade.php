@@ -769,37 +769,28 @@ if($customerLoggedIn){
 
                             if (data.categories && data.categories.length > 0) {
                                 hasResults = true;
-                                html += `<div class="suggestion-section">
-                                            <div class="suggestion-section-title">Categories</div>`;
                                 data.categories.forEach(cat => {
                                     const categoryUrl = "{{ route('productmanage.index') }}?category=" + encodeURIComponent(cat.slug);
                                     html += `
                                         <a href="${categoryUrl}" class="suggestion-item">
-                                            <i class="fa-solid fa-list suggestion-category-icon"></i>
-                                            <span>${cat.name}</span>
+                                            <i class="fa-solid fa-magnifying-glass suggestion-search-icon"></i>
+                                            <span><strong>${cat.name}</strong> <span class="suggestion-category-name">in Categories</span></span>
                                         </a>
                                     `;
                                 });
-                                html += `</div>`;
                             }
 
                             if (data.products && data.products.length > 0) {
                                 hasResults = true;
-                                html += `<div class="suggestion-section">
-                                            <div class="suggestion-section-title">Products</div>`;
                                 data.products.forEach(prod => {
                                     const productShowUrl = "{{ route('productmanage.show', ':id') }}".replace(':id', prod.id);
                                     html += `
                                         <a href="${productShowUrl}" class="suggestion-item">
-                                            <img src="${prod.thumbnail_url}" class="suggestion-product-img" alt="${prod.name}">
-                                            <div class="suggestion-product-info">
-                                                <span class="suggestion-product-name">${prod.name}</span>
-                                                <span class="suggestion-product-price">₹${parseFloat(prod.price).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                                            </div>
+                                            <i class="fa-solid fa-magnifying-glass suggestion-search-icon"></i>
+                                            <span>${prod.name}</span>
                                         </a>
                                     `;
                                 });
-                                html += `</div>`;
                             }
 
                             if (!hasResults) {
