@@ -198,7 +198,7 @@ public function submitBoost(Request $request)
 
 public function index(Request $request)
 {
-    $sellerId = auth('seller')->id();
+    $sellerId = Auth::id();
     
     $moduleType = $this->getModuleType();
 
@@ -839,19 +839,15 @@ public function getCategories($type)
 }
 private function createLog($productId, $module, $old = null, $new = null)
 {
-    try {
-        ProductLog::create([
-            'product_id' => $productId,
-            'module' => $module,
-            'action_by' => auth('seller')->id(),
-            'action_type' => $old ? 'update' : 'create',
-            'old_value' => $old,
-            'new_value' => $new,
-            'ip_address' => request()->ip(),
-        ]);
-    } catch (\Exception $e) {
-        \Log::error('Product Log Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-    }
+    ProductLog::create([
+        'product_id' => $productId,
+        'module' => $module,
+        'action_by' => auth('seller')->id(),
+        'action_type' => $old ? 'update' : 'create',
+        'old_value' => $old,
+        'new_value' => $new,
+        'ip_address' => request()->ip(),
+    ]);
 }
 
 
@@ -952,7 +948,7 @@ private function getNextStatus($currentStatus)
 
 public function saveBasic(Request $request, Product $product = null)
 {
-    $seller = auth('seller')->user();
+    $seller = Auth::user();
 
     // ================= BASE VALIDATION =================
     $data = $request->validate([
@@ -1760,11 +1756,9 @@ public function price(Product $product = null)
 
 
 
-public function savePrice(Request $request, Product $product = null)
+public function savePrice(Request $request, Product $product)
 {
-    if ($product && $product->exists) {
-        $this->checkOwner($product);
-    }
+    $this->checkOwner($product);
 
     /*
     |--------------------------------------------------------------------------
@@ -1825,9 +1819,9 @@ public function savePrice(Request $request, Product $product = null)
     | PRODUCT VARIANTS
     |--------------------------------------------------------------------------
     */
-    $firstPrice = $product ? $product->price : 0;
+    $firstPrice = $product->price;
 
-    if($product && in_array($product->type, ['product', 'vshop-product'])){
+    if(in_array($product->type, ['product', 'vshop-product'])){
         // Delete existing combinations
         DB::table('product_attribute')->where('proid', $product->id)->delete();
         
@@ -1881,12 +1875,12 @@ public function savePrice(Request $request, Product $product = null)
     $basePrice = 0;
 
     // PRODUCT
-    if($product && in_array($product->type, ['product', 'vshop-product'])){
+    if(in_array($product->type, ['product', 'vshop-product'])){
         $basePrice = $firstPrice;
     }
     
     // PROFESSIONAL
-    elseif($product && in_array($product->type, ['professional', 'vshop-professional', 'vtravel-professional'])){
+    elseif(in_array($product->type, ['professional', 'vshop-professional', 'vtravel-professional'])){
         $basePrice = $request->professional_price ?? 0;
     }
     
@@ -2016,17 +2010,7 @@ public function savePrice(Request $request, Product $product = null)
         'notify_percentage' => $request->notify_percentage ?? 95,
     ];
     
-    // Check if product exists, if not return error
-    if (!$product || !$product->exists) {
-        return redirect()->back()->withErrors(['error' => 'Product not found. Please complete the basic details first.'])->withInput();
-    }
-    
-    $oldPrice = null;
-    try {
-        $oldPrice = $product->only(array_keys($priceData));
-    } catch (\Exception $e) {
-        \Log::error('Error fetching old price: ' . $e->getMessage());
-    }
+    $oldPrice = $product->only(array_keys($priceData));
     $product->update($priceData);
 
     // ================= UPDATE BOOSTED_LISTINGS TABLE =================
@@ -3385,7 +3369,7 @@ public function searchAjax(Request $request)
 {
     $q = trim($request->q);
     $excludeId = $request->exclude_id;
-    $sellerId = auth('seller')->id();
+    $sellerId = Auth::id();
 
     $query = Product::query()->where('created_by_id', $sellerId);
 

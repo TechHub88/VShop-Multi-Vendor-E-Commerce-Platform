@@ -203,7 +203,7 @@ public function store(Request $request)
     $staff->role = $request->role;
     $staff->login_type = 'staff'; // Important: to identify as staff
     $staff->permissions = json_encode($permissions); // Store as JSON
-    $staff->parent_id = auth('seller')->id(); // If you have this column to track parent seller
+    $staff->parent_id = auth()->id(); // If you have this column to track parent seller
     $staff->save();
     
     return back()->with('success', 'Staff created successfully');
