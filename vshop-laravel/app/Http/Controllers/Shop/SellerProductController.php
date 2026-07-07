@@ -839,15 +839,19 @@ public function getCategories($type)
 }
 private function createLog($productId, $module, $old = null, $new = null)
 {
-    ProductLog::create([
-        'product_id' => $productId,
-        'module' => $module,
-        'action_by' => auth('seller')->id(),
-        'action_type' => $old ? 'update' : 'create',
-        'old_value' => $old,
-        'new_value' => $new,
-        'ip_address' => request()->ip(),
-    ]);
+    try {
+        ProductLog::create([
+            'product_id' => $productId,
+            'module' => $module,
+            'action_by' => auth('seller')->id(),
+            'action_type' => $old ? 'update' : 'create',
+            'old_value' => $old,
+            'new_value' => $new,
+            'ip_address' => request()->ip(),
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Product Log Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    }
 }
 
 
@@ -1756,9 +1760,11 @@ public function price(Product $product = null)
 
 
 
-public function savePrice(Request $request, Product $product)
+public function savePrice(Request $request, Product $product = null)
 {
-    $this->checkOwner($product);
+    if ($product && $product->exists) {
+        $this->checkOwner($product);
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -1819,9 +1825,9 @@ public function savePrice(Request $request, Product $product)
     | PRODUCT VARIANTS
     |--------------------------------------------------------------------------
     */
-    $firstPrice = $product->price;
+    $firstPrice = $product ? $product->price : 0;
 
-    if(in_array($product->type, ['product', 'vshop-product'])){
+    if($product && in_array($product->type, ['product', 'vshop-product'])){
         // Delete existing combinations
         DB::table('product_attribute')->where('proid', $product->id)->delete();
         
@@ -1875,12 +1881,12 @@ public function savePrice(Request $request, Product $product)
     $basePrice = 0;
 
     // PRODUCT
-    if(in_array($product->type, ['product', 'vshop-product'])){
+    if($product && in_array($product->type, ['product', 'vshop-product'])){
         $basePrice = $firstPrice;
     }
     
     // PROFESSIONAL
-    elseif(in_array($product->type, ['professional', 'vshop-professional', 'vtravel-professional'])){
+    elseif($product && in_array($product->type, ['professional', 'vshop-professional', 'vtravel-professional'])){
         $basePrice = $request->professional_price ?? 0;
     }
     
@@ -2010,7 +2016,17 @@ public function savePrice(Request $request, Product $product)
         'notify_percentage' => $request->notify_percentage ?? 95,
     ];
     
-    $oldPrice = $product->only(array_keys($priceData));
+    // Check if product exists, if not return error
+    if (!$product || !$product->exists) {
+        return redirect()->back()->withErrors(['error' => 'Product not found. Please complete the basic details first.'])->withInput();
+    }
+    
+    $oldPrice = null;
+    try {
+        $oldPrice = $product->only(array_keys($priceData));
+    } catch (\Exception $e) {
+        \Log::error('Error fetching old price: ' . $e->getMessage());
+    }
     $product->update($priceData);
 
     // ================= UPDATE BOOSTED_LISTINGS TABLE =================
