@@ -198,7 +198,7 @@ public function submitBoost(Request $request)
 
 public function index(Request $request)
 {
-    $sellerId = Auth::id();
+    $sellerId = auth('seller')->id();
     
     $moduleType = $this->getModuleType();
 
@@ -952,7 +952,7 @@ private function getNextStatus($currentStatus)
 
 public function saveBasic(Request $request, Product $product = null)
 {
-    $seller = Auth::user();
+    $seller = auth('seller')->user();
 
     // ================= BASE VALIDATION =================
     $data = $request->validate([
@@ -3385,7 +3385,7 @@ public function searchAjax(Request $request)
 {
     $q = trim($request->q);
     $excludeId = $request->exclude_id;
-    $sellerId = Auth::id();
+    $sellerId = auth('seller')->id();
 
     $query = Product::query()->where('created_by_id', $sellerId);
 

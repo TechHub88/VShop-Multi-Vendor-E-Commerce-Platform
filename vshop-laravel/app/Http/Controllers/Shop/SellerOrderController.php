@@ -273,12 +273,12 @@ public function index(Request $request)
     | FIX: CATEGORIES + SUBCATEGORIES
     |--------------------------------------------------
     */
-    $categories = MarketplaceCategory::where('seller_id', auth()->id())->get()->unique('name');
+    $categories = MarketplaceCategory::where('seller_id', auth('seller')->id())->get()->unique('name');
 
     $subcategories = MarketplaceSubCategory::when($request->category, function ($q) use ($request) {
         $q->where('category_id', $request->category);
     })
-    ->where('seller_id', auth()->id())
+    ->where('seller_id', auth('seller')->id())
     ->get();
 
     // Defining variables to prevent undefined variable error in view
@@ -940,7 +940,7 @@ public function updateTracking(Request $request, $id)
 public function getSubcategories(Request $request)
 {
     return MarketplaceSubCategory::where('category_id', $request->category_id)
-        ->where('seller_id', auth()->id())
+        ->where('seller_id', auth('seller')->id())
         ->select('id','name')
         ->get();
 }
@@ -949,7 +949,7 @@ public function getProducts(Request $request)
 {
     return \App\Models\Product::where('subcategory_id', $request->subcategory_id)
         ->where('created_by','seller')
-        ->where('created_by_id', auth()->id())
+        ->where('created_by_id', auth('seller')->id())
         ->select('id','name')
         ->get();
 }

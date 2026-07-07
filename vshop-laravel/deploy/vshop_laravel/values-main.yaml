@@ -1,5 +1,5 @@
 vshop_laravel:
-  replicaCount: 2
+  replicaCount: 1
   image:
     repository: "asia-south1-docker.pkg.dev/vridhee-464216/backend/vshop_laravel"
     tag: "latest"
@@ -7,11 +7,11 @@ vshop_laravel:
   type: ClusterIP
   resources:
     requests:
-      minMemory: "300Mi"
-      minCpu: "300m"
+      minMemory: "256Mi"
+      minCpu: "250m"
     limits:
-      maxMemory: "1Gi"
-      maxCpu: "1000m"
+      maxMemory: "512Mi"
+      maxCpu: "500m"
 
   env:
     APP_NAME: "VShop"
@@ -21,11 +21,11 @@ vshop_laravel:
     APP_TIMEZONE: "Asia/Kolkata"
     APP_URL: "https://vshop.vridhee.com"
     DB_CONNECTION: "mysql"
-    DB_HOST: "srv1643.hstgr.io"
-    DB_PORT: "3306"
-    DB_DATABASE: "u605775003_shop"
-    DB_USERNAME: "u605775003_shopAdmin"
-    DB_PASSWORD: "WLUrYJv4lpfDgPayQpbdz7idsaNl48zM"
+    DB_HOST: "mysql-vshop-task-b624.g.aivencloud.com"
+    DB_PORT: "25051"
+    DB_DATABASE: "vshop"
+    DB_USERNAME: "avnadmin"
+    DB_PASSWORD: "AVNS_968n6uT_w-ChKMGDXGJ"
     SESSION_DRIVER: "cookie"
     SESSION_COOKIE: "vshop_session_v2"
     CACHE_STORE: "file"

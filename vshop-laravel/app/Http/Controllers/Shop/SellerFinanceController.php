@@ -1770,7 +1770,7 @@ public function rechargeWallet(Request $request)
         ]);
 
         Transaction::create([
-            'user_id' => auth()->id(),
+            'user_id' => auth('seller')->id(),
             'reference_no' => $request->reference_no,
             'transaction_type' => $request->transaction_type,
             'credit' => $request->credit ?? 0,
