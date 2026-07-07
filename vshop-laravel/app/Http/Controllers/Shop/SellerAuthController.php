@@ -130,11 +130,24 @@ class SellerAuthController extends Controller
         $seller = Seller::create($sellerData);
 
         // ✅ Initialize Wallet with 50k
-        \App\Models\Wallet::create([
+        $wallet = \App\Models\Wallet::create([
             'seller_id' => $seller->id,
             'user_type' => 'seller',
             'balance'   => 50000,
             'is_frozen' => 0,
+        ]);
+
+        // ✅ Add Wallet Transaction for the Welcome Bonus
+        \App\Models\WalletTransaction::create([
+            'wallet_id'        => $wallet->id,
+            'seller_id'        => $seller->id,
+            'user_type'        => 'seller',
+            'transaction_type' => 'credit',
+            'credit'           => 50000,
+            'debit'            => 0,
+            'balance_after'    => 50000,
+            'description'      => 'Welcome Dummy Balance',
+            'status'           => 'completed',
         ]);
 
         // Clear session
