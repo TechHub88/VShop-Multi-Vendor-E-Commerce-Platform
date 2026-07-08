@@ -19,8 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log; // ADD THIS LINE
-
+use Illuminate\Support\Facades\Log; 
 use App\Models\RecommendationRule;
 class AdminMarketplaceController extends Controller
 {
@@ -1198,6 +1197,7 @@ public function recommendationsIndex(Request $request)
             }
 
             $productsWithRecs[] = [
+                'rule_id' => null, // Needs refactoring if rule ID is strictly needed, as multiple rules could merge to the same source
                 'product' => $product,
                 'category_name' => $product->category ? $product->category->name : null,
                 'recommended_products' => $recommendedProducts,
@@ -1205,8 +1205,48 @@ public function recommendationsIndex(Request $request)
         }
     }
 
+    // LOCATION RULES
+    $locationRulesRaw = RecommendationRule::where('type', 'location')->get();
+    $locationRules = [];
+    
+    // Collect all product IDs needed for location rules
+    $allLocRecIds = [];
+    foreach ($locationRulesRaw as $rule) {
+        $targets = is_array($rule->targets) ? $rule->targets : json_decode($rule->targets, true);
+        if (!empty($targets)) {
+            $allLocRecIds = array_merge($allLocRecIds, $targets);
+        }
+    }
+    
+    // Fetch products
+    $locRecProducts = Product::whereIn('id', array_unique($allLocRecIds))->get()->keyBy('id');
+    
+    foreach ($locationRulesRaw as $rule) {
+        $targets = is_array($rule->targets) ? $rule->targets : json_decode($rule->targets, true);
+        $recommendedProducts = [];
+        if (!empty($targets)) {
+            foreach ($targets as $recId) {
+                if ($locRecProducts->has($recId)) {
+                    $recommendedProducts[] = $locRecProducts->get($recId);
+                }
+            }
+        }
+        
+        $locationRules[] = [
+            'rule_id' => $rule->id,
+            'location' => $rule->source,
+            'recommended_products' => $recommendedProducts,
+        ];
+    }
+
+    // SPONSORED RECOMMENDATIONS
+    $sponsoredRules = RecommendationRule::where('type', 'sponsored')->get();
+
+    // AI RECOMMENDATIONS
+    $aiRules = RecommendationRule::where('type', 'ai')->get();
+
     // Return the view with the data
-    return view('admin.marketplace-recommendations', compact('productsWithRecs'));
+    return view('admin.marketplace-recommendations', compact('productsWithRecs', 'locationRules', 'sponsoredRules', 'aiRules'));
 }
 public function recommendationStore(Request $request)
 {
