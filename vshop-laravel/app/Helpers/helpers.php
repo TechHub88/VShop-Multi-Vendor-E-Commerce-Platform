@@ -13,6 +13,10 @@ if (!function_exists('getCurrencySymbol')) {
 
 if (!function_exists('uploadToR2')) {
     function uploadToR2($file, $folder, $filename = null) {
+        // Prevent 502 Bad Gateway due to memory limits or timeouts during heavy uploads
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
+        
         if (!$file) return null;
         if (!$filename) {
             $filename = \Illuminate\Support\Str::random(40) . '.' . $file->getClientOriginalExtension();
@@ -43,8 +47,9 @@ if (!function_exists('uploadToR2')) {
                 @unlink($tempPath);
                 
                 return \Illuminate\Support\Facades\Storage::disk('r2')->url($path);
-            } catch (\Exception $e) {
-                // Fallback to default if compression fails
+            } catch (\Throwable $e) {
+                // If compression fails (e.g. Memory Exhaustion), gracefully fallback to normal upload
+                \Illuminate\Support\Facades\Log::error('Image Compression Failed: ' . $e->getMessage());
             }
         }
 

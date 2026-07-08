@@ -438,7 +438,7 @@ public function bannerUpdate(Request $request, $id)
                 $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
                 $image = $manager->read($file->getRealPath());
                 $image->save(public_path($folder).'/'.$filename, 75);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 $file->move(public_path($folder), $filename);
             }
 
@@ -552,7 +552,7 @@ public function bannerStore(Request $request)
             $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
             $image = $manager->read($file->getRealPath());
             $image->save(public_path($folder).'/'.$filename, 75);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $file->move(public_path($folder), $filename);
         }
 
@@ -638,7 +638,7 @@ public function storeTemplate(Request $request)
         $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
         $image = $manager->read($file->getRealPath());
         $image->save(public_path('templates').'/'.$filename, 75);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         $file->move(public_path('templates'), $filename);
     }
 
@@ -706,7 +706,7 @@ public function updateTemplate(Request $request, $id)
             $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
             $image = $manager->read($file->getRealPath());
             $image->save(public_path('templates').'/'.$filename, 75);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $file->move(public_path('templates'), $filename);
         }
 
