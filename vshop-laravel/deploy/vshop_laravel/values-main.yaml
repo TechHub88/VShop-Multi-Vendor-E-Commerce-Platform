@@ -50,7 +50,7 @@ vshop_laravel:
     R2_ACCOUNT_ID: "c23f91e4a967cfdfb201728e14075985"
     R2_BUCKET: "vshop"
     R2_ENDPOINT: "https://c23f91e4a967cfdfb201728e14075985.r2.cloudflarestorage.com"
-    R2_URL: "shopasset.vridhee.com"
+    R2_URL: "https://shopasset.vridhee.com"
     R2_DEFAULT_REGION: "auto"
 
 
