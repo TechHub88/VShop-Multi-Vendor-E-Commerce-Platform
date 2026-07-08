@@ -482,26 +482,170 @@
                 </div>
                 @endif
             </div>
-        </div>
-
         <!-- Tab 3: Conversion Tracking -->
         <div class="tab-pane fade" id="conversion-tracking" role="tabpanel" aria-labelledby="conversion-tracking-tab">
-            <div class="card border-0 shadow-sm mt-4">
-                <div class="card-body py-5 text-center text-muted">
-                    <i class="bx bx-target-lock fs-1 mb-2"></i>
-                    <h5>Conversion Tracking Data</h5>
-                    <p class="mb-0">Coming soon or specific details to be displayed here.</p>
+            <div class="row g-3 mt-3 mb-4">
+                <div class="col-xl-4 col-md-6">
+                    <div class="card metric-card h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="metric-icon-box bg-success bg-opacity-10 text-success me-3">
+                                <i class="bx bx-target-lock"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted text-uppercase mb-1 fs-11">Conversion Rate</h6>
+                                <h3 class="mb-0 fw-bold text-success">{{ $conversionRate }}%</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-md-6">
+                    <div class="card metric-card h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="metric-icon-box bg-primary bg-opacity-10 text-primary me-3">
+                                <i class="bx bx-check-double"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted text-uppercase mb-1 fs-11">Converted Leads</h6>
+                                <h3 class="mb-0 fw-bold">{{ number_format($convertedEnquiries) }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-md-6">
+                    <div class="card metric-card h-100">
+                        <div class="card-body d-flex align-items-center">
+                            <div class="metric-icon-box bg-danger bg-opacity-10 text-danger me-3">
+                                <i class="bx bx-x-circle"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted text-uppercase mb-1 fs-11">Lost Leads</h6>
+                                <h3 class="mb-0 fw-bold text-danger">{{ number_format($lostEnquiries) }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0">Seller Conversion Metrics</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-uppercase fs-12 text-muted fw-semibold">
+                            <tr>
+                                <th class="ps-4">Seller</th>
+                                <th>Total Enquiries</th>
+                                <th>Converted</th>
+                                <th class="pe-4">Conversion %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($sellerConversions as $sc)
+                            <tr>
+                                <td class="ps-4 fw-semibold text-dark">{{ $sc->seller_name }}</td>
+                                <td>{{ $sc->total_enquiries }}</td>
+                                <td class="text-success fw-semibold">{{ $sc->converted }}</td>
+                                <td class="pe-4">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span>{{ $sc->conversion_pct }}%</span>
+                                        <div class="progress" style="height: 6px; width: 60px;">
+                                            <div class="progress-bar {{ $sc->conversion_pct >= 20 ? 'bg-success' : ($sc->conversion_pct >= 10 ? 'bg-warning' : 'bg-danger') }}" 
+                                                 role="progressbar" style="width: {{ min(100, $sc->conversion_pct) }}%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">No conversion data available</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
         <!-- Tab 4: Follow-up Tracking -->
         <div class="tab-pane fade" id="followup-tracking" role="tabpanel" aria-labelledby="followup-tracking-tab">
-            <div class="card border-0 shadow-sm mt-4">
-                <div class="card-body py-5 text-center text-muted">
-                    <i class="bx bx-phone-call fs-1 mb-2"></i>
-                    <h5>Follow-up Tracking Data</h5>
-                    <p class="mb-0">Coming soon or specific details to be displayed here.</p>
+            <div class="row g-3 mt-3 mb-4">
+                <div class="col-xl-4 col-md-6">
+                    <div class="card border border-light-subtle shadow-sm rounded-4 h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex flex-column align-items-center text-center">
+                                <div class="rounded-circle bg-warning-subtle p-3 mb-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                    <i class="bx bx-time fs-3 text-warning"></i>
+                                </div>
+                                <span class="text-secondary fw-medium fs-13 mb-1">Pending Follow-ups</span>
+                                <h3 class="fw-bold text-dark mb-0">{{ $pendingFollowups }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-md-6">
+                    <div class="card border border-light-subtle shadow-sm rounded-4 h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex flex-column align-items-center text-center">
+                                <div class="rounded-circle bg-danger-subtle p-3 mb-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                    <i class="bx bx-calendar-x fs-3 text-danger"></i>
+                                </div>
+                                <span class="text-secondary fw-medium fs-13 mb-1">Overdue Follow-ups</span>
+                                <h3 class="fw-bold text-danger mb-0">{{ $overdueFollowups }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-md-6">
+                    <div class="card border border-light-subtle shadow-sm rounded-4 h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex flex-column align-items-center text-center">
+                                <div class="rounded-circle bg-info-subtle p-3 mb-3 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
+                                    <i class="bx bx-error fs-3 text-info"></i>
+                                </div>
+                                <span class="text-secondary fw-medium fs-13 mb-1">Unhandled (>48h)</span>
+                                <h3 class="fw-bold text-info mb-0">{{ $unhandledEnquiries->count() }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border border-light-subtle shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h6 class="fw-bold text-dark mb-0">Unhandled Enquiries (Needs Immediate Action)</h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-uppercase fs-12 text-muted fw-semibold">
+                            <tr>
+                                <th class="ps-4">Enquiry ID</th>
+                                <th>Customer</th>
+                                <th>Received On</th>
+                                <th>Source</th>
+                                <th class="pe-4 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($unhandledEnquiries as $enq)
+                            <tr>
+                                <td class="ps-4 fw-bold text-primary">#{{ $enq->enquiry_no ?? 'ENQ'.$enq->id }}</td>
+                                <td class="fw-semibold text-dark">{{ $enq->user_name ?? 'N/A' }}</td>
+                                <td>{{ $enq->created_at->format('d M Y, h:i A') }} <span class="badge bg-danger-subtle text-danger ms-1">{{ $enq->created_at->diffForHumans() }}</span></td>
+                                <td>{{ ucfirst(str_replace('_', ' ', $enq->source)) }}</td>
+                                <td class="pe-4 text-end">
+                                    <button class="btn btn-outline-primary btn-sm px-3 viewEnquiryBtn" data-id="{{ $enq->id }}">
+                                        <i class="bx bx-show-alt me-1"></i> View
+                                    </button>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">Great job! No unhandled enquiries.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
