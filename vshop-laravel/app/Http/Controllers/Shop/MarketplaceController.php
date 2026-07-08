@@ -434,7 +434,13 @@ public function bannerUpdate(Request $request, $id)
 
             $filename = time().'_'.$index.'_'.uniqid().'.'.$file->getClientOriginalExtension();
 
-            $file->move(public_path($folder), $filename);
+            try {
+                $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+                $image = $manager->read($file->getRealPath());
+                $image->save(public_path($folder).'/'.$filename, 75);
+            } catch (\Exception $e) {
+                $file->move(public_path($folder), $filename);
+            }
 
             $oldImages[] = $folder.'/'.$filename;
         }
@@ -542,7 +548,13 @@ public function bannerStore(Request $request)
         // ðŸ”¥ UNIQUE NAME (NO COLLISION)
         $filename = time().'_'.$index.'_'.uniqid().'.'.$file->getClientOriginalExtension();
 
-        $file->move(public_path($folder), $filename);
+        try {
+            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            $image = $manager->read($file->getRealPath());
+            $image->save(public_path($folder).'/'.$filename, 75);
+        } catch (\Exception $e) {
+            $file->move(public_path($folder), $filename);
+        }
 
         $images[] = $folder . '/' . $filename;
     }
@@ -622,7 +634,13 @@ public function storeTemplate(Request $request)
         mkdir(public_path('templates'), 0777, true);
     }
 
-    $file->move(public_path('templates'), $filename);
+    try {
+        $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+        $image = $manager->read($file->getRealPath());
+        $image->save(public_path('templates').'/'.$filename, 75);
+    } catch (\Exception $e) {
+        $file->move(public_path('templates'), $filename);
+    }
 
     $template = WebsiteTemplate::create([
         'seller_id' => $sellerId,
@@ -684,7 +702,13 @@ public function updateTemplate(Request $request, $id)
         $file = $request->file('preview_image');
         $filename = time().'_'.$file->getClientOriginalName();
 
-        $file->move(public_path('templates'), $filename);
+        try {
+            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            $image = $manager->read($file->getRealPath());
+            $image->save(public_path('templates').'/'.$filename, 75);
+        } catch (\Exception $e) {
+            $file->move(public_path('templates'), $filename);
+        }
 
         $data['preview_image'] = 'templates/'.$filename;
     }
