@@ -442,7 +442,7 @@ public function placeOrder(Request $request)
         }
 
         $paymentStatus = in_array($request->payment_method, ['upi', 'card', 'cod']) || $grandTotal == 0 ? 'paid' : 'pending';
-        $orderStatus = 'pending'; // Initial order status should be pending or processing
+        $orderStatus = $paymentStatus === 'paid' ? 'paid' : 'pending'; // User requested order status to match payment status
 
         // ================= CREATE ORDER =================
         $order = Order::create([
@@ -1102,6 +1102,7 @@ public function orderDetails($id)
     // Get status badge class
     $statusClasses = [
         'pending' => 'badge-warning',
+        'paid' => 'badge-success',
         'processing' => 'badge-info',
         'confirmed' => 'badge-primary',
         'dispatched' => 'badge-info',

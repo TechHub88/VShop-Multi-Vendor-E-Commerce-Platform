@@ -177,6 +177,7 @@
                     <select id="filterOrderStatus" class="form-select">
                         <option value="">All Status</option>
                         <option value="pending" {{ request('order_status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                        <option value="paid" {{ request('order_status') == 'paid' ? 'selected' : '' }}>Paid</option>
                         <option value="processing" {{ request('order_status') == 'processing' ? 'selected' : '' }}>Processing</option>
                         <option value="approved" {{ request('order_status') == 'approved' ? 'selected' : '' }}>Approved</option>
                         <option value="out for delivery" {{ request('order_status') == 'out for delivery' ? 'selected' : '' }}>Out For Delivery</option>
@@ -279,6 +280,7 @@
                                     @csrf
                                     <select name="prev_status" class="form-select order-status">
                                         <option value="Pending" {{ ($order->status ?? '') == 'Pending' ? 'selected' : '' }}>Pending</option>
+                                        <option value="Paid" {{ strtolower($order->status ?? '') == 'paid' ? 'selected' : '' }}>Paid</option>
                                         <option value="Processing" {{ ($order->status ?? '') == 'Processing' ? 'selected' : '' }}>Processing</option>
                                         <option value="Approved" {{ ($order->status ?? '') == 'Approved' ? 'selected' : '' }}>Approved</option>
                                         <option value="Out For Delivery" {{ ($order->status ?? '') == 'Out For Delivery' ? 'selected' : '' }}>Out for Delivery</option>
