@@ -14,67 +14,84 @@
     <!-- Metrics Cards (White background, subtle shadow) -->
     <div class="row g-3 mb-4">
         <div class="col-md-2 col-6">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-3">
-                    <h6 class="text-muted mb-1">Total Spend</h6>
-                    <h3 class="mb-0 fw-bold" id="totalSpend">₹2.45L</h3>
+                    <h6 class="text-muted mb-1 fs-12 text-uppercase">Total Spend</h6>
+                    <h3 class="mb-0 fw-bold" id="totalSpend">₹{{ number_format($totalSpend ?? 0) }}</h3>
                 </div>
             </div>
         </div>
         <div class="col-md-2 col-6">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-3">
-                    <h6 class="text-muted mb-1">Leads Generated</h6>
-                    <h3 class="mb-0 fw-bold" id="totalLeads">18,650</h3>
+                    <h6 class="text-muted mb-1 fs-12 text-uppercase">Leads Generated</h6>
+                    <h3 class="mb-0 fw-bold" id="totalLeads">{{ number_format($totalLeads ?? 0) }}</h3>
                 </div>
             </div>
         </div>
         <div class="col-md-2 col-6">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-3">
-                    <h6 class="text-muted mb-1">Cost Per Lead (CPL)</h6>
-                    <h3 class="mb-0 fw-bold" id="avgCPA">₹13.15</h3>
+                    <h6 class="text-muted mb-1 fs-12 text-uppercase">Cost Per Lead (CPL)</h6>
+                    <h3 class="mb-0 fw-bold" id="avgCPA">₹{{ number_format($avgCPA ?? 0, 2) }}</h3>
                 </div>
             </div>
         </div>
         <div class="col-md-2 col-6">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-3">
-                    <h6 class="text-muted mb-1">Conversions</h6>
-                    <h3 class="mb-0 fw-bold" id="totalConversions">3,200</h3>
+                    <h6 class="text-muted mb-1 fs-12 text-uppercase">Conversions</h6>
+                    <h3 class="mb-0 fw-bold" id="totalConversions">{{ number_format($totalConversions ?? 0) }}</h3>
                 </div>
             </div>
         </div>
         <div class="col-md-2 col-6">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-3">
-                    <h6 class="text-muted mb-1">Avg ROI</h6>
-                    <h3 class="mb-0 fw-bold text-success" id="avgROI">275%</h3>
+                    <h6 class="text-muted mb-1 fs-12 text-uppercase">Avg ROI</h6>
+                    <h3 class="mb-0 fw-bold {{ ($avgROI ?? 0) >= 0 ? 'text-success' : 'text-danger' }}" id="avgROI">{{ number_format($avgROI ?? 0, 1) }}%</h3>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Campaign Performance Table -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white border-0 pt-3">
-            <h5 class="mb-0">Campaign Performance</h5>
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-3">
+            <h6 class="fw-bold text-dark mb-0">Campaign Performance</h6>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                    <thead class="table-light text-uppercase fs-12 text-muted fw-semibold">
                         <tr>
-                            <th>Campaign</th>
+                            <th class="ps-4">Campaign</th>
                             <th>Spend (₹)</th>
                             <th>Leads</th>
                             <th>Conversions</th>
                             <th>CPA (₹)</th>
-                            <th>ROI (%)</th>
+                            <th class="pe-4">ROI (%)</th>
                         </tr>
                     </thead>
                     <tbody id="campaignTableBody">
-                        <!-- Dummy data rows (will be populated via JS or directly) -->
+                        @forelse($campaigns as $campaign)
+                        <tr>
+                            <td class="ps-4 fw-semibold text-dark">{{ $campaign->name }}</td>
+                            <td>₹{{ number_format($campaign->boost_amount ?? 0) }}</td>
+                            <td>{{ number_format($campaign->total_enquiries ?? 0) }}</td>
+                            <td>{{ number_format($campaign->total_orders ?? 0) }}</td>
+                            <td>₹{{ number_format($campaign->cpa ?? 0, 2) }}</td>
+                            <td class="pe-4">
+                                <span class="badge {{ ($campaign->roi ?? 0) >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }} rounded-pill px-2 py-1">
+                                    {{ number_format($campaign->roi ?? 0, 1) }}%
+                                </span>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">No Campaign ROI Data Found</td>
+                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>

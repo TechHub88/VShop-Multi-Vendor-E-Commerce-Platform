@@ -218,52 +218,52 @@
     <!-- Summary Cards -->
     <div class="row mt-3">
         <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body py-2">
+            <div class="card bg-primary text-white border-0 shadow-sm h-100">
+                <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div><i class="ri-mouse-line fs-4"></i></div>
+                        <div><i class="ri-mouse-line fs-1 opacity-75"></i></div>
                         <div class="text-end">
-                            <h6 class="mb-0">Total Clicks</h6>
-                            <h3 class="mb-0">{{ number_format($totalClicks ?? 12500) }}</h3>
+                            <h6 class="mb-1 text-white-50 text-uppercase fs-12">Total Clicks</h6>
+                            <h3 class="mb-0 fw-bold">{{ number_format($totalClicks ?? 0) }}</h3>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body py-2">
+            <div class="card bg-success text-white border-0 shadow-sm h-100">
+                <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div><i class="ri-mail-send-line fs-4"></i></div>
+                        <div><i class="ri-mail-send-line fs-1 opacity-75"></i></div>
                         <div class="text-end">
-                            <h6 class="mb-0">Total Enquiries</h6>
-                            <h3 class="mb-0">{{ number_format($totalEnquiries ?? 1850) }}</h3>
+                            <h6 class="mb-1 text-white-50 text-uppercase fs-12">Total Enquiries</h6>
+                            <h3 class="mb-0 fw-bold">{{ number_format($totalEnquiries ?? 0) }}</h3>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body py-2">
+            <div class="card bg-info text-white border-0 shadow-sm h-100">
+                <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div><i class="ri-percent-line fs-4"></i></div>
+                        <div><i class="ri-percent-line fs-1 opacity-75"></i></div>
                         <div class="text-end">
-                            <h6 class="mb-0">Avg. Conversion</h6>
-                            <h3 class="mb-0">{{ number_format($avgConversionRate ?? 32.5, 1) }}%</h3>
+                            <h6 class="mb-1 text-white-50 text-uppercase fs-12">Avg. Conversion</h6>
+                            <h3 class="mb-0 fw-bold">{{ number_format($avgConversionRate ?? 0, 1) }}%</h3>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body py-2">
+            <div class="card bg-warning text-white border-0 shadow-sm h-100">
+                <div class="card-body py-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <div><i class="ri-exchange-dollar-line fs-4"></i></div>
+                        <div><i class="ri-exchange-dollar-line fs-1 opacity-75"></i></div>
                         <div class="text-end">
-                            <h6 class="mb-0">Lead Value</h6>
-                            <h3 class="mb-0">₹{{ number_format($leadValue ?? 285, 0) }}</h3>
+                            <h6 class="mb-1 text-white-50 text-uppercase fs-12">Lead Value</h6>
+                            <h3 class="mb-0 fw-bold">₹{{ number_format($leadValue ?? 0, 0) }}</h3>
                         </div>
                     </div>
                 </div>
@@ -275,11 +275,12 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
     canvas { max-width: 100%; display: block; }
-    .table-sm td, .table-sm th { padding: 0.4rem; font-size: 0.8rem; }
-    .card { transition: transform 0.2s; }
+    .table-sm td, .table-sm th { padding: 0.6rem; font-size: 0.85rem; }
+    .card { transition: transform 0.2s; border-radius: 12px; }
     .card:hover { transform: translateY(-2px); }
-    .fs-6 { font-size: 0.85rem !important; }
+    .fs-12 { font-size: 0.75rem !important; }
     .progress { background-color: #e9ecef; border-radius: 10px; }
+    .badge { padding: 0.35em 0.65em; font-weight: 500; }
 </style>
 
 <script>
@@ -287,9 +288,9 @@
         // ============================================
         // CHART 1: Clicks vs Enquiries (Line Chart)
         // ============================================
-        const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'];
-        const clicksData = [1250, 1350, 1420, 1380, 1550, 1680];
-        const enquiriesData = [180, 195, 210, 205, 230, 250];
+        const weeks = {!! isset($graphDates) ? $graphDates->toJson() : "['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6']" !!};
+        const clicksData = {!! isset($graphClicks) ? $graphClicks->toJson() : "[1250, 1350, 1420, 1380, 1550, 1680]" !!};
+        const enquiriesData = {!! isset($graphEnquiries) ? $graphEnquiries->toJson() : "[180, 195, 210, 205, 230, 250]" !!};
         
         const ctx1 = document.getElementById('clicksEnquiriesLineChart');
         if (ctx1) {

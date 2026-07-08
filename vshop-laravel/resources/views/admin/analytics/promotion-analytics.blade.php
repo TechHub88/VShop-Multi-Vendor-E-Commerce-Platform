@@ -46,35 +46,35 @@
                 <div class="col">
                     <div class="kpi-card">
                         <small>Active Campaigns</small>
-                        <h3>{{ $boostStats['active_boosts'] ?? 24 }}</h3>
+                        <h3>{{ $boostStats['active_boosts'] ?? 0 }}</h3>
                     </div>
                 </div>
 
                 <div class="col">
                     <div class="kpi-card">
                         <small>Total Ad Spend</small>
-                        <h3>₹{{ number_format($boostStats['total_boost_revenue'] ?? 245000) }}</h3>
+                        <h3>₹{{ number_format($boostStats['total_boost_spend'] ?? 0) }}</h3>
                     </div>
                 </div>
 
                 <div class="col">
                     <div class="kpi-card">
                         <small>Total Impressions</small>
-                        <h3>{{ number_format($boostStats['impressions'] ?? 1250000) }}</h3>
+                        <h3>{{ number_format($boostStats['impressions'] ?? 0) }}</h3>
                     </div>
                 </div>
 
                 <div class="col">
                     <div class="kpi-card">
                         <small>Total Enquiries</small>
-                        <h3>{{ number_format($boostStats['enquiries'] ?? 18650) }}</h3>
+                        <h3>{{ number_format($boostStats['enquiries'] ?? 0) }}</h3>
                     </div>
                 </div>
 
                 <div class="col">
                     <div class="kpi-card">
                         <small>Avg. CTR</small>
-                        <h3>{{ number_format($boostStats['ctr'] ?? 3.45,2) }}%</h3>
+                        <h3>{{ number_format($boostStats['ctr'] ?? 0, 2) }}%</h3>
                     </div>
                 </div>
 
@@ -120,16 +120,16 @@
                                     </td>
 
                                     <td>
-                                        {{ number_format($campaign->total_orders ?? 0) }}
+                                        {{ number_format($campaign->total_enquiries ?? 0) }}
                                     </td>
 
                                     <td>
-                                        {{ number_format($campaign->boost_conversion_rate ?? 0,1) }}%
+                                        {{ number_format($campaign->boost_conversion_rate ?? 0, 2) }}%
                                     </td>
 
                                     <td>
-                                        <span class="roi-badge">
-                                            {{ number_format($campaign->roi ?? 0,1) }}%
+                                        <span class="roi-badge {{ ($campaign->roi ?? 0) > 0 ? 'bg-success bg-opacity-10 text-success' : 'bg-warning bg-opacity-10 text-warning' }}">
+                                            {{ number_format($campaign->roi ?? 0, 1) }}%
                                         </span>
                                     </td>
                                 </tr>
