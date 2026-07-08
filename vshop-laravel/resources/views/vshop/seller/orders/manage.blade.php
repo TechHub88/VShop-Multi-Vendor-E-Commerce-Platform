@@ -109,8 +109,10 @@
     </div>
 
     <div>
-        <span class="badge bg-success">{{ ucfirst($order->payment_status) }}</span>
-        <span class="badge bg-primary">{{ ucfirst($order->status) }}</span>
+        @php
+            $badgeColor = in_array(strtolower($order->payment_status), ['paid', 'success']) ? 'bg-success' : 'bg-warning text-dark';
+        @endphp
+        <span class="badge {{ $badgeColor }}">{{ ucfirst($order->payment_status) }}</span>
     </div>
 </div>
 
