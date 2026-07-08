@@ -224,6 +224,9 @@ laravel_build_and_deploy:
     # --------------------------------------------------
     - export DEPLOYMENT_NAME=$(echo ${COMPONENT_NAME} | tr '_' '-')
     - |
+      # Fix for corrupted helm state: uninstall existing release to clear bad history, then reinstall
+      helm uninstall ${DEPLOYMENT_NAME} -n default || true
+      
       helm upgrade --install ${DEPLOYMENT_NAME} ./vshop-laravel/deploy/${COMPONENT_NAME} \
         -f ./vshop-laravel/deploy/${COMPONENT_NAME}/${VALUES_FILE} \
         --namespace default \
