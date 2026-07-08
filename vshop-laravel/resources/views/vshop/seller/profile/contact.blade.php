@@ -45,7 +45,7 @@ $seller = auth()->guard('seller')->user();
 $contacts = $seller->contact_persons ?? [];
 
 $editIndex = request()->edit;
-$editContact = isset($contacts[$editIndex]) ? $contacts[$editIndex] : null;
+$editContact = isset($contacts[$editIndex]) ? $contacts[$editIndex] : ($contacts[0] ?? null);
 
 $address = $editContact['address'] ?? [];
 @endphp
