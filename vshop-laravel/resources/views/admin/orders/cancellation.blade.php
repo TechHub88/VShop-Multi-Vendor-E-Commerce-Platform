@@ -203,7 +203,13 @@
             <p class="text-muted small mb-0">Manage customer cancellations, returns, and refunds</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-primary btn-sm" id="exportReport" style="background: linear-gradient(135deg, #004392, #0066cc); border: none;">
+            <button class="btn btn-info btn-sm text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#monitorReturnModal" style="background: linear-gradient(135deg, #0ea5e9, #0284c7); border: none;">
+                <i class="ri-flow-chart"></i> Monitor return flow
+            </button>
+            <button class="btn btn-success btn-sm text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#verifyRefundModal" style="background: linear-gradient(135deg, #10b981, #059669); border: none;">
+                <i class="ri-checkbox-circle-line"></i> Verify refund completion
+            </button>
+            <button class="btn btn-primary btn-sm shadow-sm" id="exportReport" style="background: linear-gradient(135deg, #004392, #0066cc); border: none;">
                 <i class="ri-file-excel-line"></i> Export Report
             </button>
         </div>
@@ -523,6 +529,90 @@
                     <div class="spinner-border text-primary"></div>
                     <p class="mt-2">Loading...</p>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Monitor Return Flow -->
+<div class="modal fade" id="monitorReturnModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header text-white border-0" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-white bg-opacity-20 p-2 me-2">
+                        <i class="ri-flow-chart fs-4 text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0">Monitor Return Flow</h5>
+                        <p class="mb-0 small text-white opacity-85">Track items returning to the warehouse/seller</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Product</th>
+                                <th>Customer</th>
+                                <th>Return Status</th>
+                                <th>Courier Tracking</th>
+                                <th>Expected Arrival</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="6" class="text-center text-muted py-4">No active return flows to monitor.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0 py-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Verify Refund Completion -->
+<div class="modal fade" id="verifyRefundModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header text-white border-0" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-white bg-opacity-20 p-2 me-2">
+                        <i class="ri-checkbox-circle-line fs-4 text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0">Verify Refund Completion</h5>
+                        <p class="mb-0 small text-white opacity-85">Monitor and verify processed refunds with payment gateways</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Amount</th>
+                                <th>Gateway</th>
+                                <th>Transaction ID</th>
+                                <th>Refund Date</th>
+                                <th>Verification Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="6" class="text-center text-muted py-4">No pending refunds to verify.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer bg-light border-0 py-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

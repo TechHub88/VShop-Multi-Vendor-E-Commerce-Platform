@@ -105,11 +105,11 @@
 
        <div class="col-md-6 text-md-end">
     
-    <div class="d-inline-flex align-items-center gap-2 flex-nowrap" style="overflow-x: auto; white-space: nowrap; padding-bottom: 5px;">
+    <div class="d-flex justify-content-start justify-content-md-end align-items-center gap-2 flex-nowrap" style="overflow-x: auto; white-space: nowrap; padding-bottom: 5px;">
 
         {{-- Invoice --}}
-        <button class="btn btn-primary btn-sm invoice-btn rounded-pill px-3 fw-bold" style="font-size:12px;" onclick="downloadInvoice({{ $order->id }})">
-            <i class="fa-regular fa-file-pdf me-1"></i>Invoice
+        <button type="button" class="btn btn-primary btn-sm invoice-btn rounded-pill px-3 fw-bold d-inline-flex align-items-center" style="font-size:12px;" onclick="downloadInvoice({{ $order->id }})">
+            <i class="fa-regular fa-file-pdf me-1"></i> Invoice
         </button>
 
         {{-- ===== CANCEL ORDER BUTTON ===== --}}
@@ -121,11 +121,11 @@
         @endphp
 
         @if($canCancel)
-        <button class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold" style="font-size:12px;" data-id="{{ $order->id }}">
+        <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold d-inline-flex align-items-center" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
             <i class="fa-solid fa-ban me-1"></i> Cancel
         </button>
         @elseif($isOutForDelivery)
-        <button class="btn btn-danger btn-sm cancelOrderBtn rounded-pill px-3" style="font-size:12px;" onclick="showCancelNotPossible()">
+        <button type="button" class="btn btn-danger btn-sm cancelOrderBtn rounded-pill px-3 d-inline-flex align-items-center" style="font-size:12px;" onclick="showCancelNotPossible()">
             <i class="fa-solid fa-ban me-1"></i> Cancel
         </button>
         @endif
@@ -249,6 +249,53 @@
              </div>
          </div>
          @endif
+
+         <!-- Cancel Order Modal -->
+         <div class="modal fade" id="cancelOrderModal" tabindex="-1" aria-hidden="true">
+             <div class="modal-dialog modal-dialog-centered">
+                 <div class="modal-content shadow-lg border-0" style="border-radius: 16px;">
+                     <div class="modal-header border-0 pb-0 pt-4 px-4 text-center d-block position-relative">
+                         <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Close"></button>
+                         <div class="mb-3">
+                             <div class="d-inline-flex align-items-center justify-content-center bg-danger text-white rounded-circle" style="width: 60px; height: 60px; font-size: 24px;">
+                                 <i class="fa-solid fa-ban"></i>
+                             </div>
+                         </div>
+                         <h4 class="modal-title fw-bold">Cancel Order</h4>
+                         <p class="text-muted small mb-0">Are you sure you want to cancel this order?</p>
+                     </div>
+                     <div class="modal-body p-4">
+                         <form action="{{ route('vshop.order.action') }}" method="POST" class="ajax-action-form">
+                             @csrf
+                             <input type="hidden" name="order_id" value="{{ $order->id }}">
+                             <input type="hidden" name="type" value="cancel">
+                             
+                             <div class="mb-4">
+                                 <label class="form-label fw-semibold text-dark" style="font-size: 14px;">Reason for Cancellation</label>
+                                 <select name="reason" class="form-select bg-light" required style="border-radius: 8px;">
+                                     <option value="">-- Select Reason --</option>
+                                     <option value="Changed my mind">Changed my mind</option>
+                                     <option value="Ordered by mistake">Ordered by mistake</option>
+                                     <option value="Found a better price elsewhere">Found a better price elsewhere</option>
+                                     <option value="Delivery is taking too long">Delivery is taking too long</option>
+                                     <option value="Other">Other</option>
+                                 </select>
+                             </div>
+                             
+                             <div class="mb-4">
+                                 <label class="form-label fw-semibold text-dark" style="font-size: 14px;">Additional Comments (Optional)</label>
+                                 <textarea name="note" class="form-control bg-light" rows="2" style="border-radius: 8px;" placeholder="Any additional information..."></textarea>
+                             </div>
+                             
+                             <div class="d-flex gap-2">
+                                 <button type="button" class="btn btn-light w-50 fw-bold py-2" data-bs-dismiss="modal" style="border-radius: 8px; font-size: 16px;">Keep Order</button>
+                                 <button type="submit" class="btn btn-danger w-50 fw-bold py-2" style="border-radius: 8px; font-size: 16px;">Confirm Cancel</button>
+                             </div>
+                         </form>
+                     </div>
+                 </div>
+             </div>
+         </div>
     </div>
 
 </div>
