@@ -94,8 +94,7 @@ class AdvertisementController extends Controller
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $img) {
                 $filename = \Illuminate\Support\Str::random(40) . '.' . $img->getClientOriginalExtension();
-                $img->move(public_path('ads/images'), $filename);
-                $path = 'ads/images/' . $filename;
+                $path = uploadToR2($img, 'ads/images', $filename);
 
                 AdvertisementMedia::create([
                     'advertisement_id' => $ad->id,
@@ -109,8 +108,7 @@ class AdvertisementController extends Controller
         if ($request->hasFile('videos')) {
             foreach ($request->file('videos') as $vid) {
                 $filename = \Illuminate\Support\Str::random(40) . '.' . $vid->getClientOriginalExtension();
-                $vid->move(public_path('ads/videos'), $filename);
-                $path = 'ads/videos/' . $filename;
+                $path = uploadToR2($vid, 'ads/videos', $filename);
 
                 AdvertisementMedia::create([
                     'advertisement_id' => $ad->id,
@@ -174,8 +172,7 @@ class AdvertisementController extends Controller
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $img) {
                 $filename = \Illuminate\Support\Str::random(40) . '.' . $img->getClientOriginalExtension();
-                $img->move(public_path('ads/images'), $filename);
-                $path = 'ads/images/' . $filename;
+                $path = uploadToR2($img, 'ads/images', $filename);
 
                 AdvertisementMedia::create([
                     'advertisement_id' => $ad->id,
@@ -189,8 +186,7 @@ class AdvertisementController extends Controller
         if ($request->hasFile('videos')) {
             foreach ($request->file('videos') as $vid) {
                 $filename = \Illuminate\Support\Str::random(40) . '.' . $vid->getClientOriginalExtension();
-                $vid->move(public_path('ads/videos'), $filename);
-                $path = 'ads/videos/' . $filename;
+                $path = uploadToR2($vid, 'ads/videos', $filename);
 
                 AdvertisementMedia::create([
                     'advertisement_id' => $ad->id,
@@ -208,8 +204,14 @@ class AdvertisementController extends Controller
      */
     public function destroy($id)
     {
-        // delete media first
-        AdvertisementMedia::where('advertisement_id', $id)->delete();
+        // delete media first and cleanup R2 files
+        $medias = AdvertisementMedia::where('advertisement_id', $id)->get();
+        foreach ($medias as $media) {
+            if ($media->file_path) {
+                deleteFromR2($media->file_path);
+            }
+            $media->delete();
+        }
 
         // delete ad
         Advertisement::destroy($id);
@@ -224,8 +226,8 @@ class AdvertisementController extends Controller
     {
         try {
             $media = AdvertisementMedia::findOrFail($id);
-            if ($media->file_path && file_exists(public_path($media->file_path))) {
-                @unlink(public_path($media->file_path));
+            if ($media->file_path) {
+                deleteFromR2($media->file_path);
             }
             $media->delete();
             return response()->json(['success' => true, 'message' => 'Media removed successfully']);
