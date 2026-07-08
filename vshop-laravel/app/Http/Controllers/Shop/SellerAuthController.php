@@ -15,25 +15,20 @@ use App\Models\Complaint;
 use App\Models\ProductReview;
 use App\Models\OrderItem;
 use App\Models\SellerStaff;
-
 use App\Models\Grievance;
 use App\Models\SellerFinance;
 use Carbon\Carbon;
 use App\Models\Notification;
 use App\Mail\SellerOtpMail;
+
 class SellerAuthController extends Controller
 {
-    /**
-     * Show seller registration form
-     */
+    
     public function showRegister()
     {
         return view('vshop.seller.register');
     }
 
-    /**
-     * Store seller registration (status = pending)
-     */
    
    public function storeRegister(Request $request)
 {
@@ -44,10 +39,9 @@ class SellerAuthController extends Controller
        'password' => 'required|string|min:6',
     ]);
 
-    // Generate 4-digit OTP
+  
     $otp = rand(1000, 9999);
 
-    // Store registration data + OTP in session for verification
     session([
         'seller_register_data' => [
             'name'          => $request->name,

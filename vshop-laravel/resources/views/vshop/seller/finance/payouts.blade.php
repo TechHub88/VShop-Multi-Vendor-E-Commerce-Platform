@@ -1006,7 +1006,7 @@
 <div class="bank-form-wrapper mt-4">
     <div class="bank-form-title">Bank & UPI Details</div>
     <div style="padding: 20px">
-    <form method="POST" action="{{ route('seller.bank.save') }}" enctype="multipart/form-data" id="bankForm">
+    <form method="POST" action="{{ route('seller.bank.save_account') }}" enctype="multipart/form-data" id="bankForm">
         @csrf
         <div class="row g-3">
             
@@ -2280,7 +2280,7 @@ document.addEventListener("DOMContentLoaded", function() {
             let deleteBtn = document.querySelector(`.delete-account-btn[data-account-id="${accountId}"]`);
             if(!deleteBtn) deleteBtn = document.querySelector(`.delete-account-btn[data-id="${accountId}"]`);
             if(deleteBtn) { deleteBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>'; deleteBtn.disabled = true; }
-            const deleteUrl = `{{ route("seller.bank.delete", "") }}/${accountId}`;
+            const deleteUrl = `{{ route("seller.bank.delete_account", "") }}/${accountId}`;
             fetch(deleteUrl, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' }

@@ -689,9 +689,9 @@ Route::delete('/contact-delete/{index}', [ShopMyProfileController::class, 'delet
 
 /* BANK */
 Route::get('bank-list',[ShopMyProfileController::class,'bankList'])->name('bank.list');
-Route::get('bank',[ShopMyProfileController::class,'bank'])->name('bank');
-Route::post('bank',[ShopMyProfileController::class,'saveBank']);
-Route::delete('bank/delete/{id}',
+Route::get('bank-details',[ShopMyProfileController::class,'bank'])->name('bank');
+Route::post('bank-details',[ShopMyProfileController::class,'saveBank']);
+Route::delete('bank-details/delete/{id}',
     [ShopMyProfileController::class,'deleteBank']
 )->name('bank.delete');
 
@@ -968,11 +968,11 @@ Route::get('/transactions/export',
     Route::post('/payout/settings', [SellerFinanceController::class,'savePayoutSettings'])
         ->name('payout.settings');
 
-    Route::post('/bank/save', [SellerFinanceController::class,'saveBankDetails'])
-        ->name('bank.save');
+    Route::post('/finance/bank/save', [SellerFinanceController::class,'saveBankDetails'])
+        ->name('bank.save_account');
         
         // In web.php
-Route::delete('/bank/delete/{id}', [SellerFinanceController::class, 'deleteBankAccount'])->name('bank.delete');
+Route::delete('/finance/bank/delete/{id}', [SellerFinanceController::class, 'deleteBankAccount'])->name('bank.delete_account');
 
 Route::post('/withdraw',[SellerFinanceController::class,'withdraw'])->name('finance.withdraw');
 Route::get('/payouts',[SellerFinanceController::class,'payouts'])->name('finance.payouts');
