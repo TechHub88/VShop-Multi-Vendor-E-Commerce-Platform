@@ -114,6 +114,16 @@
                 <i class="bx bx-bar-chart-alt-2 me-1"></i> Lead Interaction Tracking
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold fs-14" id="conversion-tracking-tab" data-bs-toggle="tab" data-bs-target="#conversion-tracking" type="button" role="tab" aria-controls="conversion-tracking" aria-selected="false">
+                <i class="bx bx-target-lock me-1"></i> Conversion Tracking
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold fs-14" id="followup-tracking-tab" data-bs-toggle="tab" data-bs-target="#followup-tracking" type="button" role="tab" aria-controls="followup-tracking" aria-selected="false">
+                <i class="bx bx-phone-call me-1"></i> Follow-up Tracking
+            </button>
+        </li>
     </ul>
 
     <!-- Tabs Content -->
@@ -471,6 +481,28 @@
                     {{ $trackingLeads->links() }}
                 </div>
                 @endif
+            </div>
+        </div>
+
+        <!-- Tab 3: Conversion Tracking -->
+        <div class="tab-pane fade" id="conversion-tracking" role="tabpanel" aria-labelledby="conversion-tracking-tab">
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body py-5 text-center text-muted">
+                    <i class="bx bx-target-lock fs-1 mb-2"></i>
+                    <h5>Conversion Tracking Data</h5>
+                    <p class="mb-0">Coming soon or specific details to be displayed here.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Follow-up Tracking -->
+        <div class="tab-pane fade" id="followup-tracking" role="tabpanel" aria-labelledby="followup-tracking-tab">
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body py-5 text-center text-muted">
+                    <i class="bx bx-phone-call fs-1 mb-2"></i>
+                    <h5>Follow-up Tracking Data</h5>
+                    <p class="mb-0">Coming soon or specific details to be displayed here.</p>
+                </div>
             </div>
         </div>
     </div>
