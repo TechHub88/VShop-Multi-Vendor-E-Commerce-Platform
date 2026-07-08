@@ -39,7 +39,8 @@
 <td>
     <div class="status-flow">
 
-        <span class="step {{ in_array($order->status, ['processing','completed']) ? 'active' : '' }}">
+        @php $paymentStat = strtolower($order->payment_status ?? 'pending'); @endphp
+        <span class="step {{ in_array($order->status, ['processing','completed']) || in_array($paymentStat, ['paid', 'success']) ? 'active' : '' }}">
             Payment
         </span>
 

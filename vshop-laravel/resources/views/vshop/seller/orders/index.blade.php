@@ -276,7 +276,7 @@ $payment = strtolower($order->payment_status ?? 'pending');
 <span class="badge bg-danger">Cancelled</span>
 @else
 <div class="status-flow">
-<span class="step payment {{ in_array($status,['paid','processing','dispatch','completed'])?'active':'' }}">Payment</span>
+<span class="step payment {{ in_array($status,['paid','processing','dispatch','completed']) || in_array($payment, ['paid', 'success']) ?'active':'' }}">Payment</span>
 <span class="step dispatch {{ in_array($status,['dispatch','completed'])?'active':'' }}">Dispatch</span>
 <span class="step delivery {{ in_array($status,['completed'])?'active':'' }}">Delivery</span>
 <span class="step closure {{ $status=='completed'?'active':'' }}">Closure</span>
