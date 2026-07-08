@@ -314,7 +314,7 @@
     <!-- Product Hero Banner -->
     <div class="hero-product-card">
         <div class="row align-items-center g-3">
-            <div class="col-md-8">
+            <div class="col-md-12">
                 <div class="d-flex align-items-center gap-2 mb-2">
                     <span class="badge bg-indigo text-white px-3 py-1 rounded-pill fs-11 text-uppercase tracking-wider">{{ ucfirst($product->type) }}</span>
                     <span id="productStatusBadge" class="badge {{ $product->status == 'verified' || $product->status == 'approved' || $product->status == 'active' ? 'bg-success-subtle text-success' : ($product->status == 'rejected' ? 'bg-danger-subtle text-danger' : 'bg-warning-subtle text-warning') }} px-3 py-1 rounded-pill fs-11 fw-bold">
@@ -327,12 +327,6 @@
                     <span><i class="fa-solid fa-store text-info me-1"></i> <strong>Seller:</strong> {{ $product->seller->name ?? 'N/A' }}</span>
                     <span><i class="fa-solid fa-layer-group text-warning me-1"></i> <strong>Category:</strong> {{ $product->category->name ?? 'N/A' }}</span>
                     <span><i class="fa-solid fa-industry text-secondary me-1"></i> <strong>Manufacturer:</strong> {{ $product->manufactured_by ?? 'N/A' }}</span>
-                </div>
-            </div>
-            <div class="col-md-4 text-md-end">
-                <div class="d-inline-block score-badge-box">
-                    <div class="score-value" id="liveProductScore">{{ $performanceData['product_score'] ?? 60 }}</div>
-                    <span class="text-muted fs-12 fw-bold text-uppercase tracking-wider">Product Score</span>
                 </div>
             </div>
         </div>
