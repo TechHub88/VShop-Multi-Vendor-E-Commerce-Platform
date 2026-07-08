@@ -53,7 +53,7 @@ class NotificationService
             $targetId = $userType === 'admin' ? 'all' : $userId;
             $firebaseUrl = "https://mafatlalshop-90155-default-rtdb.asia-southeast1.firebasedatabase.app/notifications/{$userType}/{$targetId}.json";
 
-            Http::post($firebaseUrl, [
+            Http::timeout(3)->post($firebaseUrl, [
                 'type' => $type,
                 'message' => $message,
                 'link' => $link,

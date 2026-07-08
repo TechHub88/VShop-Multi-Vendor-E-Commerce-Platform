@@ -660,6 +660,7 @@ $this->notifySeller(
 
                 if ($sid && $token) {
                     $response = \Illuminate\Support\Facades\Http::asForm()
+                        ->timeout(5)
                         ->withBasicAuth($sid, $token)
                         ->post("https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json", [
                             'From' => $from,
