@@ -166,7 +166,7 @@ Route::get('/reset-storage', function () {
 
     \File::copyDirectory($target, $link);
 
-    return "âœ” Storage reset (copied because symlink is disabled on server).";
+    return "✔ Storage reset (copied because symlink is disabled on server).";
 });
 
 // Route::get('/', [HomeController::class, 'Home'])->name('dashboard');
@@ -2763,15 +2763,6 @@ Route::prefix('chat')->name('chat.')->middleware('auth:web,customer')->group(fun
 
 // ==================== LOCATION ROUTES ====================
 Route::post('/update-current-location', [App\Http\Controllers\vtravel\HomeController::class, 'updateCurrentLocation'])->name('update.current.location');
-
-Route::get('/debug-logs-vshop-secret', function() {
-    $logPath = storage_path('logs/laravel.log');
-    if (!file_exists($logPath)) {
-        return "Log file does not exist.";
-    }
-    $logs = file_get_contents($logPath);
-    return '<pre>' . htmlspecialchars(substr($logs, -50000)) . '</pre>';
-});
 
 // ==================== DYNAMIC ROUTING ====================
 Route::group(['prefix' => '/', 'middleware' => 'auth:web,admin_staff'], function () {
