@@ -136,7 +136,7 @@ class SellerAuthController extends Controller
             'wallet_id'        => $wallet->id,
             'seller_id'        => $seller->id,
             'user_type'        => 'seller',
-            'transaction_type' => 'credit',
+            'transaction_type' => 'add_money',
             'credit'           => 50000,
             'debit'            => 0,
             'balance_after'    => 50000,
