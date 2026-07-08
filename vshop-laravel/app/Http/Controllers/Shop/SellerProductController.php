@@ -424,18 +424,11 @@ public function index(Request $request)
 
     $products = $query->paginate(10)->withQueryString();
 
-    $categories = MarketplaceCategory::query();
+    $categories = MarketplaceCategory::query()->where('seller_id', $sellerId);
 
     // ================= UPDATED CATEGORY =================
-    if($moduleType == 'product'){
-        $categories->whereIn('type', ['product','professional']);
-    }
-    elseif($moduleType == 'service'){
-        $categories->whereIn('type', ['service','tour']);
-    }
-    elseif($moduleType == 'course'){
-        $categories->where('type', 'course');
-    }
+    // Removed type filtering so both product and service categories 
+    // created by the seller will appear in the filter dropdown.
     // ================= END =================
 
     $categories = $categories->orderBy('name')->get()->unique('name');
@@ -894,16 +887,7 @@ public function basic($id = null)
     $sellerId = auth()->guard('seller')->id();
 
     $categories = MarketplaceCategory::query()
-        ->where('seller_id', $sellerId);   // ← only this seller's categories
-
-    // Further filter by type based on module
-    if ($moduleType == 'product') {
-        $categories->where('type', 'product');
-    } elseif ($moduleType == 'service') {
-        $categories->where('type', 'service');
-    } elseif ($moduleType == 'course') {
-        $categories->where('type', 'course');
-    }
+        ->where('seller_id', $sellerId);   
 
     $categories = $categories->orderBy('name')->get()->unique('name');
 
@@ -3561,7 +3545,7 @@ public function generateSeoAIContent(Request $request)
     }
 
     try {
-        $prompt = "You are an e-commerce SEO expert. Generate SEO details for a product named '{$name}'. Return strictly valid JSON format with keys: 'seo_tags' (comma separated tags, max 100 chars), 'meta_title' (around 60 chars), 'meta_keywords' (comma separated keywords, max 150 chars), 'meta_description' (around 150 chars), 'bullet_points' (3-5 short bullet points as an HTML unordered list), and 'target_audience' (choose ONE from: 'kids', 'students', 'professionals', 'seniors', 'all'). Do not include markdown code blocks like ```json.";
+        $prompt = "You are an e-commerce SEO expert. Generate SEO details for a product named '{$name}'. Return strictly valid JSON format with keys: 'seo_tags' (comma separated tags, each starting with #, max 100 chars), 'meta_title' (around 60 chars), 'meta_keywords' (comma separated keywords, each starting with #, max 150 chars), 'meta_description' (around 150 chars), 'bullet_points' (3-5 short bullet points as an HTML unordered list), and 'target_audience' (choose ONE from: 'kids', 'students', 'professionals', 'seniors', 'all'). Do not include markdown code blocks like ```json.";
         
         $response = \Illuminate\Support\Facades\Http::timeout(120)->withHeaders([
             'Authorization' => "Bearer {$apiKey}",
@@ -3583,11 +3567,25 @@ public function generateSeoAIContent(Request $request)
             $parsed = json_decode(trim($content), true);
 
             if ($parsed && isset($parsed['seo_tags'])) {
+                // Ensure every tag has a '#' prefix
+                $seoTags = collect(explode(',', $parsed['seo_tags'] ?? ''))->map(function($tag) {
+                    $tag = trim($tag);
+                    if ($tag && !str_starts_with($tag, '#')) return '#' . $tag;
+                    return $tag;
+                })->filter()->implode(', ');
+
+                // Ensure every keyword has a '#' prefix
+                $metaKeywords = collect(explode(',', $parsed['meta_keywords'] ?? ''))->map(function($keyword) {
+                    $keyword = trim($keyword);
+                    if ($keyword && !str_starts_with($keyword, '#')) return '#' . $keyword;
+                    return $keyword;
+                })->filter()->implode(', ');
+
                 return response()->json([
                     'success' => true,
-                    'seo_tags' => $parsed['seo_tags'] ?? '',
+                    'seo_tags' => $seoTags,
                     'meta_title' => $parsed['meta_title'] ?? '',
-                    'meta_keywords' => $parsed['meta_keywords'] ?? '',
+                    'meta_keywords' => $metaKeywords,
                     'meta_description' => $parsed['meta_description'] ?? '',
                     'bullet_points' => $parsed['bullet_points'] ?? '',
                     'target_audience' => strtolower($parsed['target_audience'] ?? 'all')
