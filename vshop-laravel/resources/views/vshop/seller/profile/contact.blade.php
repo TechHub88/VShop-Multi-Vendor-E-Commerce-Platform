@@ -133,13 +133,20 @@ $address = $editContact['address'] ?? [];
 <div class="border p-3 mb-4 bg-light">
     <h6 class="text-primary mb-3">Address Details <span class="text-danger">*</span></h6>
 
+@php
+    $oldCountry = old('contact_country.0', $address['country'] ?? '');
+    $oldState = old('contact_state.0', $address['state'] ?? '');
+    $oldCity = old('contact_city.0', $address['city'] ?? '');
+    $oldStreet = old('contact_address.0', $address['street'] ?? '');
+@endphp
+
     <div class="row mb-3">
         <div class="col-md-4 mb-2">
             <label>Country <span class="text-danger">*</span></label>
             <select name="contact_country[0]" id="country" class="form-control @error('contact_country.0') is-invalid @enderror">
                 <option value="">Select Country</option>
                 @foreach($countries as $c)
-                    <option value="{{ $c->id }}" {{ (string)$c->id === (string)($address['country'] ?? '') ? 'selected' : '' }}>
+                    <option value="{{ $c->id }}" {{ (string)$c->id === (string)$oldCountry ? 'selected' : '' }}>
                         {{ $c->name }}
                     </option>
                 @endforeach
@@ -172,7 +179,7 @@ $address = $editContact['address'] ?? [];
 
     <div class="mb-3">
         <label>Street Address <span class="text-danger">*</span></label>
-        <textarea name="contact_address[0]" class="form-control @error('contact_address.0') is-invalid @enderror" rows="2">{{ $address['street'] ?? '' }}</textarea>
+        <textarea name="contact_address[0]" class="form-control @error('contact_address.0') is-invalid @enderror" rows="2">{{ $oldStreet }}</textarea>
         @error('contact_address.0')
             <span class="text-danger small">{{ $message }}</span>
         @enderror
@@ -240,12 +247,14 @@ Photo
 
     @php
         $photo = $c['photo'] ?? null;
+        if (!empty($photo)) {
+            $imgSrc = str_starts_with($photo, 'http') ? $photo : (file_exists(public_path($photo)) ? asset($photo) : asset('default.png'));
+        } else {
+            $imgSrc = asset('default.png');
+        }
     @endphp
 
-    <img src="{{ (!empty($photo) && file_exists(public_path($photo)))
-        ? asset($photo)
-        : asset('default.png') }}"
-         class="previewImg mt-1">
+    <img src="{{ $imgSrc }}" class="previewImg mt-1">
 
     <span class="remove-image {{ empty($photo) ? 'd-none' : '' }}">
         ×
@@ -428,9 +437,9 @@ Only PDF allowed, Max 2MB
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-let selectedCountry = "{{ $address['country'] ?? '' }}";
-let selectedState   = "{{ $address['state'] ?? '' }}";
-let selectedCity    = "{{ $address['city'] ?? '' }}";
+let selectedCountry = "{{ $oldCountry }}";
+let selectedState   = "{{ $oldState }}";
+let selectedCity    = "{{ $oldCity }}";
 let editMode        = {{ $editContact ? 'true' : 'false' }};
 </script>
 
