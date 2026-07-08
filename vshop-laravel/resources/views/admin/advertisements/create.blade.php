@@ -172,7 +172,7 @@
                         <label>Videos</label>
                         <input type="file" name="videos[]" multiple class="form-control form-control-modern">
                         <small class="text-muted d-block mt-2" style="font-size: 11px; line-height: 1.4;">
-                            <i class="fas fa-info-circle text-primary me-1"></i> <strong>Formats:</strong> MP4 (H.264), WEBM. Max 10MB.<br>
+                            <i class="fas fa-info-circle text-primary me-1"></i> <strong>Formats:</strong> MP4 (H.264), WEBM. Max 50MB.<br>
                             - <strong>Dimensions:</strong> Vertical 9:16 (1080 x 1920 px or 720 x 1280 px)<br>
                             - <strong>Duration:</strong> 10 to 15 seconds (Max 30 seconds)
                         </small>
@@ -221,7 +221,7 @@ const instructionEl = document.querySelector('#type_instruction span');
 function updateInstruction() {
     let type = typeSelect.value;
     let text = "";
-    if(type === 'video') text = "Recommended: Vertical 9:16 (e.g. 1080 x 1920 px), Max 10MB, Max 30s";
+    if(type === 'video') text = "Recommended: Vertical 9:16 (e.g. 1080 x 1920 px), Max 50MB, Max 30s";
     else if(type === 'campaign') text = "Recommended: 1600 x 88 px (Thin horizontal strip)";
     else if(type === 'banner') text = "Recommended: 1200 x 380 px (Standard Hero Banner)";
     else if(type === 'featured') text = "Recommended: 263 x 162 px (Sidebar card slider)";
