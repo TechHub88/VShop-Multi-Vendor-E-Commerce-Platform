@@ -547,7 +547,7 @@ public function placeOrder(Request $request)
             \App\Models\WalletTransaction::create([
                 'customer_id' => $customer->id,
                 'user_type' => 'customer',
-                'transaction_type' => 'debit',
+                'transaction_type' => 'payment',
                 'debit' => $walletDeduction,
                 'credit' => 0,
                 'balance_after' => $customer->wallet_balance ?? 0,

@@ -234,12 +234,12 @@ class MyAccountController extends Controller
         WalletTransaction::create([
             'customer_id' => $customer->id,
             'user_type' => 'customer',
-            'transaction_type' => 'credit',
+            'transaction_type' => 'add_money',
             'credit' => $amount,
             'debit' => 0,
             'balance_after' => $customer->wallet_balance,
             'description' => 'Wallet recharge',
-            'status' => 'success',
+            'status' => 'completed',
             'reference_id' => 'TXN' . time(),
         ]);
 
@@ -331,12 +331,12 @@ class MyAccountController extends Controller
         WalletTransaction::create([
             'customer_id' => $customer->id,
             'user_type' => 'customer',
-            'transaction_type' => 'credit',
+            'transaction_type' => 'add_money',
             'credit' => $amount,
             'debit' => 0,
             'balance_after' => $customer->wallet_balance,
             'description' => 'Wallet recharge via Razorpay',
-            'status' => 'success',
+            'status' => 'completed',
             'reference_id' => $razorpayPaymentId,
         ]);
 
