@@ -1224,21 +1224,9 @@ public function saveMedia(Request $request, Product $product)
 
     /*
     |--------------------------------------------------------------------------
-    | CREATE FOLDERS
-    |--------------------------------------------------------------------------
-    */
-    if (!file_exists(public_path($galleryPath))) {
-        mkdir(public_path($galleryPath), 0755, true);
-    }
-
-    if (!file_exists(public_path($thumbPath))) {
-        mkdir(public_path($thumbPath), 0755, true);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
     | EXISTING DATA
     |--------------------------------------------------------------------------
+    |
     */
     $oldImages = json_decode($product->images, true) ?? [];
 
@@ -1250,9 +1238,7 @@ public function saveMedia(Request $request, Product $product)
     | THUMBNAIL
     |--------------------------------------------------------------------------
     */
-    $hasOldThumb =
-        !empty($product->thumbnail) &&
-        file_exists(public_path($product->thumbnail));
+    $hasOldThumb = !empty($product->thumbnail);
 
     if ($request->hasFile('thumbnail')) {
 
@@ -1267,17 +1253,15 @@ public function saveMedia(Request $request, Product $product)
         }
 
         // delete old
-        if ($product->thumbnail && file_exists(public_path($product->thumbnail))) {
-            unlink(public_path($product->thumbnail));
+        if ($product->thumbnail) {
+            deleteFromR2($product->thumbnail);
         }
 
         $file = $request->file('thumbnail');
 
         $name = time() . '_thumb_' . $file->getClientOriginalName();
 
-        $file->move(public_path($thumbPath), $name);
-
-        $product->thumbnail = $thumbPath . '/' . $name;
+        $product->thumbnail = uploadToR2($file, $thumbPath, $name);
 
     } elseif (!$hasOldThumb) {
 
@@ -1295,7 +1279,7 @@ public function saveMedia(Request $request, Product $product)
     $existingImages = $request->existing_images ?? [];
 
     foreach ($existingImages as $img) {
-        if (!empty($img) && file_exists(public_path($img))) {
+        if (!empty($img)) {
             $images[] = $img;
         }
     }
@@ -1307,9 +1291,7 @@ public function saveMedia(Request $request, Product $product)
     */
     foreach ($oldImages as $oldImg) {
         if (!in_array($oldImg, $existingImages)) {
-            if (file_exists(public_path($oldImg))) {
-                unlink(public_path($oldImg));
-            }
+            deleteFromR2($oldImg);
         }
     }
 
@@ -1334,9 +1316,7 @@ public function saveMedia(Request $request, Product $product)
 
             $name = time() . '_' . uniqid() . '_' . $file->getClientOriginalName();
 
-            $file->move(public_path($galleryPath), $name);
-
-            $images[] = $galleryPath . '/' . $name;
+            $images[] = uploadToR2($file, $galleryPath, $name);
         }
     }
 

@@ -644,20 +644,10 @@ public function store(Request $request)
 
     // ================= PHOTO =================
     if ($request->hasFile('photo')) {
-
         $file = $request->file('photo');
-
         $filename = time().'_'.str_replace(' ','_',$file->getClientOriginalName());
-
-        $path = 'uploads/customer/';
-
-        if (!file_exists(public_path($path))) {
-            mkdir(public_path($path), 0777, true);
-        }
-
-        $file->move(public_path($path), $filename);
-
-        $customer->profile_picture = $path.$filename;
+        $path = 'uploads/customer';
+        $customer->profile_picture = uploadToR2($file, $path, $filename);
     }
 
     $customer->save();
@@ -789,29 +779,19 @@ public function update(Request $request, $id)
 
     // ================= PHOTO =================
     if ($request->hasFile('photo')) {
-
-        if (!empty($customer->profile_picture) && file_exists(public_path($customer->profile_picture))) {
-            unlink(public_path($customer->profile_picture));
+        if (!empty($customer->profile_picture)) {
+            deleteFromR2($customer->profile_picture);
         }
 
         $file = $request->file('photo');
-
         $filename = time().'_'.str_replace(' ','_',$file->getClientOriginalName());
-
-        $path = 'uploads/customer/';
-
-        if (!file_exists(public_path($path))) {
-            mkdir(public_path($path), 0777, true);
-        }
-
-        $file->move(public_path($path), $filename);
-
-        $customer->profile_picture = $path.$filename;
+        $path = 'uploads/customer';
+        $customer->profile_picture = uploadToR2($file, $path, $filename);
     }
 
     if ($request->remove_photo == 1) {
-        if (!empty($customer->profile_picture) && file_exists(public_path($customer->profile_picture))) {
-            unlink(public_path($customer->profile_picture));
+        if (!empty($customer->profile_picture)) {
+            deleteFromR2($customer->profile_picture);
         }
         $customer->profile_picture = null;
     }

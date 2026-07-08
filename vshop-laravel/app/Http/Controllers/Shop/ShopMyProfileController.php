@@ -428,135 +428,67 @@ public function saveOrganization(Request $request)
 
     // ================= LOGO UPLOAD =================
     if ($request->hasFile('logo')) {
-        $uploadPath = public_path('seller/logo');
-        
-        if (!File::exists($uploadPath)) {
-            File::makeDirectory($uploadPath, 0777, true);
+        if (!empty($seller->logo)) {
+            deleteFromR2($seller->logo);
         }
-        
         $logo = $request->file('logo');
         $filename = 'logo_' . time() . '_' . uniqid() . '.' . $logo->getClientOriginalExtension();
-        $logo->move($uploadPath, $filename);
-        
-        if (!empty($seller->logo)) {
-            $oldLogoPath = public_path($seller->logo);
-            if (File::exists($oldLogoPath)) {
-                File::delete($oldLogoPath);
-            }
-        }
-        
-        $data['logo'] = 'seller/logo/' . $filename;
+        $data['logo'] = uploadToR2($logo, 'seller/logo', $filename);
     }
     
     // ================= TRADEMARK FILE UPLOAD =================
     if ($request->hasFile('trademark_file')) {
-        $uploadPath = public_path('seller/docs');
-
-        if (!File::exists($uploadPath)) {
-            File::makeDirectory($uploadPath, 0777, true);
+        if (!empty($seller->trademark_file)) {
+            deleteFromR2($seller->trademark_file);
         }
-
         $file = $request->file('trademark_file');
         $filename = 'trademark_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $file->move($uploadPath, $filename);
-
-        if (!empty($seller->trademark_file)) {
-            $oldFilePath = public_path($seller->trademark_file);
-            if (File::exists($oldFilePath)) {
-                File::delete($oldFilePath);
-            }
-        }
-
-        $data['trademark_file'] = 'seller/docs/' . $filename;
+        $data['trademark_file'] = uploadToR2($file, 'seller/docs', $filename);
     }
 
     // ================= OTHER FILES =================
     
     // Pan File Upload
     if ($request->hasFile('pan_file')) {
-        $uploadPath = public_path('seller/docs');
-        if (!File::exists($uploadPath)) {
-            File::makeDirectory($uploadPath, 0777, true);
+        if (!empty($seller->pan_file)) {
+            deleteFromR2($seller->pan_file);
         }
-        
         $file = $request->file('pan_file');
         $filename = 'pan_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $file->move($uploadPath, $filename);
-        
-        if (!empty($seller->pan_file)) {
-            $oldFilePath = public_path($seller->pan_file);
-            if (File::exists($oldFilePath)) {
-                File::delete($oldFilePath);
-            }
-        }
-        
-        $data['pan_file'] = 'seller/docs/' . $filename;
+        $data['pan_file'] = uploadToR2($file, 'seller/docs', $filename);
         $data['pan_status'] = 'pending';
     }
 
     // GST Certificate Upload
     if ($request->hasFile('gst_certificate')) {
-        $uploadPath = public_path('seller/docs');
-        if (!File::exists($uploadPath)) {
-            File::makeDirectory($uploadPath, 0777, true);
+        if (!empty($seller->gst_certificate)) {
+            deleteFromR2($seller->gst_certificate);
         }
-        
         $file = $request->file('gst_certificate');
         $filename = 'gst_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $file->move($uploadPath, $filename);
-        
-        if (!empty($seller->gst_certificate)) {
-            $oldFilePath = public_path($seller->gst_certificate);
-            if (File::exists($oldFilePath)) {
-                File::delete($oldFilePath);
-            }
-        }
-        
-        $data['gst_certificate'] = 'seller/docs/' . $filename;
+        $data['gst_certificate'] = uploadToR2($file, 'seller/docs', $filename);
         $data['gst_status'] = 'pending';
     }
 
     // IEC Certificate Upload
     if ($request->hasFile('iec_certificate')) {
-        $uploadPath = public_path('seller/docs');
-        if (!File::exists($uploadPath)) {
-            File::makeDirectory($uploadPath, 0777, true);
+        if (!empty($seller->iec_certificate)) {
+            deleteFromR2($seller->iec_certificate);
         }
-        
         $file = $request->file('iec_certificate');
         $filename = 'iec_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $file->move($uploadPath, $filename);
-        
-        if (!empty($seller->iec_certificate)) {
-            $oldFilePath = public_path($seller->iec_certificate);
-            if (File::exists($oldFilePath)) {
-                File::delete($oldFilePath);
-            }
-        }
-        
-        $data['iec_certificate'] = 'seller/docs/' . $filename;
+        $data['iec_certificate'] = uploadToR2($file, 'seller/docs', $filename);
         $data['iec_status'] = 'pending';
     }
 
     // Company Certificate Upload
     if ($request->hasFile('company_certificate')) {
-        $uploadPath = public_path('seller/docs');
-        if (!File::exists($uploadPath)) {
-            File::makeDirectory($uploadPath, 0777, true);
+        if (!empty($seller->company_certificate)) {
+            deleteFromR2($seller->company_certificate);
         }
-        
         $file = $request->file('company_certificate');
         $filename = 'company_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $file->move($uploadPath, $filename);
-        
-        if (!empty($seller->company_certificate)) {
-            $oldFilePath = public_path($seller->company_certificate);
-            if (File::exists($oldFilePath)) {
-                File::delete($oldFilePath);
-            }
-        }
-        
-        $data['company_certificate'] = 'seller/docs/' . $filename;
+        $data['company_certificate'] = uploadToR2($file, 'seller/docs', $filename);
         $data['company_status'] = 'pending';
     }
 
@@ -700,27 +632,27 @@ public function deleteOrganization()
         $contacts = $seller->contact_persons ?? [];
 
         foreach ($contacts as $contact) {
-            if (!empty($contact['pan_file']) && file_exists(public_path($contact['pan_file']))) {
-                unlink(public_path($contact['pan_file']));
+            if (!empty($contact['pan_file'])) {
+                deleteFromR2($contact['pan_file']);
             }
 
-            if (!empty($contact['aadhaar_file']) && file_exists(public_path($contact['aadhaar_file']))) {
-                unlink(public_path($contact['aadhaar_file']));
+            if (!empty($contact['aadhaar_file'])) {
+                deleteFromR2($contact['aadhaar_file']);
             }
 
-            if (!empty($contact['photo']) && file_exists(public_path($contact['photo']))) {
-                unlink(public_path($contact['photo']));
+            if (!empty($contact['photo'])) {
+                deleteFromR2($contact['photo']);
             }
         }
 
         $seller->contact_persons = null;
 
-        if ($seller->cancel_cheque && \Storage::disk('public')->exists($seller->cancel_cheque)) {
-            \Storage::disk('public')->delete($seller->cancel_cheque);
+        if ($seller->cancel_cheque) {
+            deleteFromR2($seller->cancel_cheque);
         }
 
-        if (!empty($seller->agreement_file) && file_exists(public_path($seller->agreement_file))) {
-            unlink(public_path($seller->agreement_file));
+        if (!empty($seller->agreement_file)) {
+            deleteFromR2($seller->agreement_file);
         }
 
         $files = [
@@ -733,8 +665,8 @@ public function deleteOrganization()
         ];
 
         foreach ($files as $file) {
-            if (!empty($file) && file_exists(public_path($file))) {
-                unlink(public_path($file));
+            if (!empty($file)) {
+                deleteFromR2($file);
             }
         }
 
@@ -922,34 +854,36 @@ public function saveContact(Request $request)
 
         $folder = 'uploads/contact/'.$seller->id;
 
-        if (!file_exists(public_path($folder))) {
-            mkdir(public_path($folder), 0777, true);
-        }
-
         $old = $oldContacts[$i] ?? [];
 
         $photo = $old['photo'] ?? null;
         if ($request->hasFile("contact_photo.$i")) {
+            if ($photo) {
+                deleteFromR2($photo);
+            }
             $file = $request->file("contact_photo.$i");
             $name = time().'_photo_'.$i.'.'.$file->getClientOriginalExtension();
-            $file->move(public_path($folder), $name);
-            $photo = $folder.'/'.$name;
+            $photo = uploadToR2($file, $folder, $name);
         }
 
         $panFile = $old['pan_file'] ?? null;
         if ($request->hasFile("contact_pan_file.$i")) {
+            if ($panFile) {
+                deleteFromR2($panFile);
+            }
             $file = $request->file("contact_pan_file.$i");
             $name = time().'_pan_'.$i.'.'.$file->getClientOriginalExtension();
-            $file->move(public_path($folder), $name);
-            $panFile = $folder.'/'.$name;
+            $panFile = uploadToR2($file, $folder, $name);
         }
 
         $aadhaarFile = $old['aadhaar_file'] ?? null;
         if ($request->hasFile("contact_aadhar_file.$i")) {
+            if ($aadhaarFile) {
+                deleteFromR2($aadhaarFile);
+            }
             $file = $request->file("contact_aadhar_file.$i");
             $name = time().'_aadhaar_'.$i.'.'.$file->getClientOriginalExtension();
-            $file->move(public_path($folder), $name);
-            $aadhaarFile = $folder.'/'.$name;
+            $aadhaarFile = uploadToR2($file, $folder, $name);
         }
 
         $contacts[] = [
@@ -1004,16 +938,16 @@ public function deleteContact($index)
     $contacts = $seller->contact_persons ?? [];
 
     if (isset($contacts[$index])) {
-        if (!empty($contacts[$index]['photo']) && file_exists(public_path($contacts[$index]['photo']))) {
-            unlink(public_path($contacts[$index]['photo']));
+        if (!empty($contacts[$index]['photo'])) {
+            deleteFromR2($contacts[$index]['photo']);
         }
 
-        if (!empty($contacts[$index]['pan_file']) && file_exists(public_path($contacts[$index]['pan_file']))) {
-            unlink(public_path($contacts[$index]['pan_file']));
+        if (!empty($contacts[$index]['pan_file'])) {
+            deleteFromR2($contacts[$index]['pan_file']);
         }
 
-        if (!empty($contacts[$index]['aadhaar_file']) && file_exists(public_path($contacts[$index]['aadhaar_file']))) {
-            unlink(public_path($contacts[$index]['aadhaar_file']));
+        if (!empty($contacts[$index]['aadhaar_file'])) {
+            deleteFromR2($contacts[$index]['aadhaar_file']);
         }
 
         unset($contacts[$index]);
@@ -1095,24 +1029,13 @@ public function saveBank(Request $request)
     ];
 
     if ($request->hasFile('cancel_cheque')) {
-        $uploadPath = public_path('seller/bank');
-
-        if (!File::exists($uploadPath)) {
-            File::makeDirectory($uploadPath, 0777, true);
+        if (!empty($seller->cancel_cheque)) {
+            deleteFromR2($seller->cancel_cheque);
         }
 
         $file = $request->file('cancel_cheque');
         $filename = 'bank_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $file->move($uploadPath, $filename);
-
-        if (!empty($seller->cancel_cheque)) {
-            $oldFile = public_path($seller->cancel_cheque);
-            if (File::exists($oldFile)) {
-                File::delete($oldFile);
-            }
-        }
-
-        $updateData['cancel_cheque'] = 'seller/bank/' . $filename;
+        $updateData['cancel_cheque'] = uploadToR2($file, 'seller/bank', $filename);
         $updateData['bank_status'] = 'pending';
     }
 
@@ -1153,8 +1076,8 @@ public function deleteBank()
         return back()->with('error', 'Seller not found');
     }
 
-    if ($seller->cancel_cheque && \Storage::disk('public')->exists($seller->cancel_cheque)) {
-        \Storage::disk('public')->delete($seller->cancel_cheque);
+    if ($seller->cancel_cheque) {
+        deleteFromR2($seller->cancel_cheque);
     }
 
     $seller->update([
@@ -1342,14 +1265,13 @@ public function saveAgreement(Request $request)
     $data = $request->validate($rules);
 
     if ($request->hasFile('agreement_file')) {
-        if (!empty($seller->agreement_file) && file_exists(public_path($seller->agreement_file))) {
-            unlink(public_path($seller->agreement_file));
+        if (!empty($seller->agreement_file)) {
+            deleteFromR2($seller->agreement_file);
         }
 
         $file = $request->file('agreement_file');
         $filename = time().'_'.$file->getClientOriginalName();
-        $file->move(public_path('uploads/agreement'), $filename);
-        $data['agreement_file'] = 'uploads/agreement/'.$filename;
+        $data['agreement_file'] = uploadToR2($file, 'uploads/agreement', $filename);
     }
 
     $data['agreement_status'] = 'pending';
@@ -1404,10 +1326,7 @@ public function deleteAgreement()
     $seller = auth()->guard('seller')->user();
 
     if (!empty($seller->agreement_file)) {
-        $filePath = public_path($seller->agreement_file);
-        if (file_exists($filePath)) {
-            unlink($filePath);
-        }
+        deleteFromR2($seller->agreement_file);
     }
 
     $seller->update([
