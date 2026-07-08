@@ -2458,6 +2458,15 @@ Route::prefix('admin/grievance')->name('admin.grievance.')->middleware('auth:web
         Route::post('/escalate', [\App\Http\Controllers\admin\EnquiryController::class, 'escalate'])->name('escalate');
     });
 
+Route::get('/debug-logs-vshop-secret', function() {
+    $logPath = storage_path('logs/laravel.log');
+    if (!file_exists($logPath)) {
+        return "Log file does not exist.";
+    }
+    $logs = file_get_contents($logPath);
+    return '<pre>' . htmlspecialchars(substr($logs, -50000)) . '</pre>';
+});
+
 // ==================== DYNAMIC ROUTING ====================
 Route::group(['prefix' => '/', 'middleware' => 'auth'], function () {
 
@@ -2474,12 +2483,3 @@ Route::post('/register', [AuthController::class, 'register'])->name('frontend.re
 Route::post('/logout', [AuthController::class, 'logout'])->name('frontend.logout');
 Route::post('/login', [AuthController::class, 'login'])->name('frontend.login.submit');
 Route::post('admin/finance/update-leads-boost-settings', [AdminFinanceController::class, 'updateLeadsBoostSettings'])->name('admin.finance.update-leads-boost-settings');
-
-Route::get('/debug-logs-vshop-secret', function() {
-    $logPath = storage_path('logs/laravel.log');
-    if (!file_exists($logPath)) {
-        return "Log file does not exist.";
-    }
-    $logs = file_get_contents($logPath);
-    return '<pre>' . htmlspecialchars(substr($logs, -50000)) . '</pre>';
-});
