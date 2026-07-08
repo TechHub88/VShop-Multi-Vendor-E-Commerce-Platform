@@ -350,42 +350,50 @@
             <div class="rule-col-header" style="margin-left: 50px;">Then Recommend</div>
         </div>
 
+        @forelse($productsWithRecs as $item)
         <div class="rule-row">
             <div class="product-box">
                 <div class="product-img">
-                    <i class="ri-smartphone-line" style="font-size: 40px; color: #4b5563;"></i>
+                    @if($item['product']->image)
+                        <img src="{{ asset($item['product']->image) }}" alt="{{ $item['product']->name }}">
+                    @else
+                        <i class="ri-smartphone-line" style="font-size: 40px; color: #4b5563;"></i>
+                    @endif
                 </div>
-                <div class="product-name">Mobile</div>
+                <div class="product-name" title="{{ $item['product']->name }}">
+                    {{ Str::limit($item['product']->name, 15) }}
+                </div>
             </div>
 
             <i class="ri-arrow-right-line arrow-icon"></i>
 
             <div class="recommendations-wrapper">
+                @forelse($item['recommended_products'] as $rec)
                 <div class="product-box">
                     <div class="product-img">
-                        <i class="ri-plug-line" style="font-size: 32px; color: #9ca3af;"></i>
+                        @if($rec->image)
+                            <img src="{{ asset($rec->image) }}" alt="{{ $rec->name }}">
+                        @else
+                            <i class="ri-plug-line" style="font-size: 32px; color: #9ca3af;"></i>
+                        @endif
                     </div>
-                    <div class="product-name">Charger</div>
-                </div>
-                <div class="product-box">
-                    <div class="product-img">
-                        <i class="ri-smartphone-line" style="font-size: 32px; color: #9ca3af; transform: scaleX(-1);"></i>
+                    <div class="product-name" title="{{ $rec->name }}">
+                        {{ Str::limit($rec->name, 15) }}
                     </div>
-                    <div class="product-name">Mobile Cover</div>
                 </div>
-                <div class="product-box">
-                    <div class="product-img">
-                        <i class="ri-customer-service-2-line" style="font-size: 32px; color: #9ca3af;"></i>
-                    </div>
-                    <div class="product-name">Earbuds</div>
-                </div>
+                @empty
+                <div class="text-muted small">No active targets found</div>
+                @endforelse
             </div>
 
             <div class="action-icons">
-                <i class="ri-edit-2-line"></i>
-                <i class="ri-delete-bin-line" style="color:#ef4444;"></i>
+                <i class="ri-edit-2-line" onclick="editRule({{ $item['rule_id'] }})"></i>
+                <i class="ri-delete-bin-line" style="color:#ef4444;" onclick="deleteRule({{ $item['rule_id'] }})"></i>
             </div>
         </div>
+        @empty
+        <div class="text-center text-muted py-4">No product recommendation rules configured yet.</div>
+        @endforelse
     </div>
 
     <!-- 2. Location Based Rules -->
@@ -397,65 +405,40 @@
             <button class="btn-add"><i class="ri-add-line"></i> Add Rule</button>
         </div>
 
+        @forelse($locationRules as $locRule)
         <div class="rule-row">
             <div class="location-box">
                 <i class="ri-map-pin-line location-icon"></i>
-                Banaras
+                {{ ucfirst($locRule['location']) }}
             </div>
 
             <i class="ri-arrow-right-line arrow-icon"></i>
 
             <div class="recommendations-wrapper" style="border:none; padding:0; background:transparent;">
-                <div class="product-box" style="width: auto;">
+                @forelse($locRule['recommended_products'] as $rec)
+                <div class="product-box" style="width: auto; max-width: 120px;">
                     <div class="location-img">
-                        <img src="https://images.unsplash.com/photo-1571536802807-30451e3955d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Boat Ride">
+                        @if($rec->image)
+                            <img src="{{ asset($rec->image) }}" alt="{{ $rec->name }}">
+                        @else
+                            <img src="https://images.unsplash.com/photo-1571536802807-30451e3955d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Placeholder">
+                        @endif
                     </div>
-                    <div class="product-name mt-2">Boat Ride</div>
+                    <div class="product-name mt-2 text-wrap">{{ Str::limit($rec->name, 25) }}</div>
                 </div>
-                <div class="product-box" style="width: auto;">
-                    <div class="location-img">
-                        <img src="https://images.unsplash.com/photo-1600055106192-386d34e628fc?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Ganga Aarti">
-                    </div>
-                    <div class="product-name mt-2">Ganga Aarti</div>
-                </div>
-                <div class="product-box" style="width: auto;">
-                    <div class="location-img">
-                        <img src="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Food Walk">
-                    </div>
-                    <div class="product-name mt-2">Food Walk</div>
-                </div>
+                @empty
+                <div class="text-muted small">No active targets found</div>
+                @endforelse
+            </div>
+            
+            <div class="action-icons">
+                <i class="ri-edit-2-line" onclick="editRule({{ $locRule['rule_id'] }})"></i>
+                <i class="ri-delete-bin-line" style="color:#ef4444;" onclick="deleteRule({{ $locRule['rule_id'] }})"></i>
             </div>
         </div>
-
-        <div class="rule-row">
-            <div class="location-box">
-                <i class="ri-map-pin-line location-icon"></i>
-                Goa
-            </div>
-
-            <i class="ri-arrow-right-line arrow-icon"></i>
-
-            <div class="recommendations-wrapper" style="border:none; padding:0; background:transparent;">
-                <div class="product-box" style="width: auto;">
-                    <div class="location-img">
-                        <img src="https://images.unsplash.com/photo-1544550581-5f7ceaf7f992?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Water Sports">
-                    </div>
-                    <div class="product-name mt-2">Water Sports</div>
-                </div>
-                <div class="product-box" style="width: auto;">
-                    <div class="location-img">
-                        <img src="https://images.unsplash.com/photo-1599839619722-39751411ea63?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Cruise">
-                    </div>
-                    <div class="product-name mt-2">Cruise</div>
-                </div>
-                <div class="product-box" style="width: auto;">
-                    <div class="location-img">
-                        <img src="https://images.unsplash.com/photo-1520108253160-c3d5e219fb09?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Parasailing">
-                    </div>
-                    <div class="product-name mt-2">Parasailing</div>
-                </div>
-            </div>
-        </div>
+        @empty
+        <div class="text-center text-muted py-4">No location recommendation rules configured yet.</div>
+        @endforelse
     </div>
 
     <!-- 3. Sponsored Recommendations -->
@@ -480,45 +463,25 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @forelse($sponsoredRules as $rule)
                     <tr>
-                        <td class="fw-medium">iPhone Accessories</td>
-                        <td>Product</td>
-                        <td>iPhone 14</td>
-                        <td>CellCity</td>
-                        <td class="status-active">Active</td>
+                        <td class="fw-medium">{{ $rule->source }}</td>
+                        <td>{{ ucfirst($rule->source_type ?? 'Campaign') }}</td>
+                        <td>{{ implode(', ', is_array($rule->targets) ? $rule->targets : json_decode($rule->targets, true) ?? []) }}</td>
+                        <td>-</td>
+                        <td class="{{ $rule->is_active ? 'status-active' : 'status-paused' }}">{{ $rule->is_active ? 'Active' : 'Paused' }}</td>
                         <td>
                             <div class="d-flex gap-2">
-                                <i class="ri-edit-2-line" style="cursor:pointer; color:#9ca3af;"></i>
-                                <i class="ri-delete-bin-line" style="cursor:pointer; color:#ef4444;"></i>
+                                <i class="ri-edit-2-line" style="cursor:pointer; color:#9ca3af;" onclick="editRule({{ $rule->id }})"></i>
+                                <i class="ri-delete-bin-line" style="cursor:pointer; color:#ef4444;" onclick="deleteRule({{ $rule->id }})"></i>
                             </div>
                         </td>
                     </tr>
+                    @empty
                     <tr>
-                        <td class="fw-medium">Summer Sale Boost</td>
-                        <td>Category</td>
-                        <td>Travel & Tours</td>
-                        <td>Goa Trips</td>
-                        <td class="status-active">Active</td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                <i class="ri-edit-2-line" style="cursor:pointer; color:#9ca3af;"></i>
-                                <i class="ri-delete-bin-line" style="cursor:pointer; color:#ef4444;"></i>
-                            </div>
-                        </td>
+                        <td colspan="6" class="text-center text-muted">No sponsored campaigns configured.</td>
                     </tr>
-                    <tr>
-                        <td class="fw-medium">Featured Cruises</td>
-                        <td>Service</td>
-                        <td>Cruise Ride</td>
-                        <td>Oceanic Travels</td>
-                        <td class="status-paused">Paused</td>
-                        <td>
-                            <div class="d-flex gap-2">
-                                <i class="ri-edit-2-line" style="cursor:pointer; color:#9ca3af;"></i>
-                                <i class="ri-delete-bin-line" style="cursor:pointer; color:#ef4444;"></i>
-                            </div>
-                        </td>
-                    </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
@@ -545,27 +508,19 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @forelse($aiRules as $rule)
                     <tr>
-                        <td class="fw-medium">People bought A → Recommend B</td>
-                        <td>If customer buys Product A, show Product B</td>
-                        <td class="status-active">Active</td>
-                        <td class="fw-medium">High</td>
-                        <td><button class="btn-action-sm"><i class="ri-more-fill"></i></button></td>
+                        <td class="fw-medium">{{ $rule->source }}</td>
+                        <td>{{ implode(', ', is_array($rule->targets) ? $rule->targets : json_decode($rule->targets, true) ?? []) }}</td>
+                        <td class="{{ $rule->is_active ? 'status-active' : 'status-paused' }}">{{ $rule->is_active ? 'Active' : 'Paused' }}</td>
+                        <td class="fw-medium">{{ $rule->priority == 1 ? 'High' : ($rule->priority == 0 ? 'Medium' : 'Low') }}</td>
+                        <td><button class="btn-action-sm" onclick="editRule({{ $rule->id }})"><i class="ri-more-fill"></i></button></td>
                     </tr>
+                    @empty
                     <tr>
-                        <td class="fw-medium">Frequently Bought Together</td>
-                        <td>Show items frequently bought together</td>
-                        <td class="status-active">Active</td>
-                        <td class="fw-medium">High</td>
-                        <td><button class="btn-action-sm"><i class="ri-more-fill"></i></button></td>
+                        <td colspan="5" class="text-center text-muted">No AI recommendation rules configured.</td>
                     </tr>
-                    <tr>
-                        <td class="fw-medium">Recently Viewed</td>
-                        <td>Show recently viewed similar items</td>
-                        <td class="status-active">Active</td>
-                        <td class="fw-medium">Medium</td>
-                        <td><button class="btn-action-sm"><i class="ri-more-fill"></i></button></td>
-                    </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
