@@ -26,7 +26,7 @@ vshop_laravel:
     DB_DATABASE: "vshop"
     DB_USERNAME: "avnadmin"
     DB_PASSWORD: "AVNS_968n6uT_w-ChKMGDXGJ"
-    SESSION_DRIVER: "cookie"
+    SESSION_DRIVER: "database"
     SESSION_COOKIE: "vshop_session_v2"
     CACHE_STORE: "file"
     QUEUE_CONNECTION: "database"
