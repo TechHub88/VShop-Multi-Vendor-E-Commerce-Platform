@@ -84,6 +84,20 @@ spec:
             value: {{ .Values.vshop_laravel.env.MAIL_FROM_ADDRESS | default "" | quote }}
           - name: MAIL_FROM_NAME
             value: {{ .Values.vshop_laravel.env.MAIL_FROM_NAME | default "" | quote }}
+          - name: R2_ACCESS_KEY_ID
+            value: {{ .Values.vshop_laravel.env.R2_ACCESS_KEY_ID | default "" | quote }}
+          - name: R2_SECRET_ACCESS_KEY
+            value: {{ .Values.vshop_laravel.env.R2_SECRET_ACCESS_KEY | default "" | quote }}
+          - name: R2_ACCOUNT_ID
+            value: {{ .Values.vshop_laravel.env.R2_ACCOUNT_ID | default "" | quote }}
+          - name: R2_BUCKET
+            value: {{ .Values.vshop_laravel.env.R2_BUCKET | default "" | quote }}
+          - name: R2_ENDPOINT
+            value: {{ .Values.vshop_laravel.env.R2_ENDPOINT | default "" | quote }}
+          - name: R2_URL
+            value: {{ .Values.vshop_laravel.env.R2_URL | default "" | quote }}
+          - name: R2_DEFAULT_REGION
+            value: {{ .Values.vshop_laravel.env.R2_DEFAULT_REGION | default "auto" | quote }}
         ports:
           - name: http
             containerPort: 80
