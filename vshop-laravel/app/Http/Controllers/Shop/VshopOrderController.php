@@ -1172,36 +1172,15 @@ public function orderAction(Request $request)
             'updated_at' => now(),
         ]);
 
-        // Refund to wallet if order was paid
+        // If order was paid, send to admin refund page instead of auto-refund
         if (in_array($order->payment_status, ['paid', 'completed']) && $order->total_amount > 0) {
-            try {
-                $wallet = \App\Models\Wallet::firstOrCreate(
-                    ['customer_id' => $order->customer_id, 'user_type' => 'customer'],
-                    ['balance' => 0]
-                );
-                
-                $refundAmount = $order->total_amount;
-                $wallet->increment('balance', $refundAmount);
-                
-                \App\Models\WalletTransaction::create([
-                    'wallet_id' => $wallet->id,
-                    'customer_id' => $order->customer_id,
-                    'user_type' => 'customer',
-                    'transaction_type' => 'manual_credit',
-                    'credit' => $refundAmount,
-                    'debit' => 0,
-                    'balance_after' => $wallet->balance,
-                    'description' => 'Refund for Cancelled Order #' . $order->id,
-                    'reference_id' => 'ORD-' . $order->id,
-                    'status' => 'completed',
-                ]);
-                
-                $order->payment_status = 'refunded';
-            } catch (\Exception $e) {
-                \Log::error('Wallet Refund Error: ' . $e->getMessage());
-                // Silently ignore wallet insertion constraint error, just change payment status
-                $order->payment_status = 'refund_failed';
-            }
+            \App\Models\OrderReturn::create([
+                'order_id'    => $order->id,
+                'customer_id' => $order->customer_id,
+                'reason'      => 'Order Cancelled: ' . $request->reason,
+                'note'        => $request->note,
+                'status'      => 'approved', // Maps to 'pending' in Admin Buyer Refunds
+            ]);
         }
 
         $order->status = 'cancelled';
@@ -1214,7 +1193,7 @@ public function orderAction(Request $request)
             'seller.orders.index'
         );
 
-        return response()->json(['message' => 'Order cancelled successfully and refund credited to your wallet.']);
+        return response()->json(['message' => 'Order cancelled successfully. Refund request sent to admin.']);
     }
 
     if ($request->type == 'return' || $request->type == 'replace') {

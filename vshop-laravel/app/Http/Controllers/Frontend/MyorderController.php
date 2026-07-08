@@ -232,6 +232,17 @@ class MyorderController extends Controller
                              ($request->note ? ' | Note: ' . $request->note : ''),
             ]);
 
+            // ✅ If payment was made online and is paid, create a refund request
+            if (strtolower($order->payment_method) !== 'cod' && strtolower($order->payment_status) === 'paid') {
+                \App\Models\OrderReturn::create([
+                    'order_id'    => $order->id,
+                    'customer_id' => $order->customer_id,
+                    'reason'      => 'Order Cancelled: ' . $request->reason,
+                    'note'        => $request->note,
+                    'status'      => 'approved', // 'approved' maps to 'pending' admin refund in WalletController
+                ]);
+            }
+
             // ✅ Log the activity
             $this->logOrderActivity(
                 order: $order,
