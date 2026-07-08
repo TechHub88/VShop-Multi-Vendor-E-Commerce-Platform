@@ -670,13 +670,85 @@ public function exportCancellation(Request $request)
 
     public function validateInvoice($id)
     {
-        $order = Order::findOrFail($id);
-        $isValid = !empty($order->total_amount) && $order->total_amount > 0;
+        $order = Order::with('items')->findOrFail($id);
+        
+        $errors = [];
+        if (in_array(strtolower($order->payment_type), ['credit_card', 'debit_card', 'upi', 'paypal', 'net_banking']) && empty($order->transaction_id)) {
+            $errors[] = 'Missing transaction ID for online payment.';
+        }
+        
+        if (strtolower($order->payment_status) !== 'success' && strtolower($order->payment_status) !== 'paid' && strtolower($order->payment_status) !== 'completed') {
+            $errors[] = 'Payment status is ' . ucfirst($order->payment_status) . ' (not successful).';
+        }
+        
+        $calculatedTotal = 0;
+        if($order->items) {
+            foreach ($order->items as $item) {
+                $calculatedTotal += ($item->price * $item->quantity);
+            }
+        }
+        
+        if (empty($order->total_amount) || $order->total_amount <= 0) {
+            $errors[] = 'Order total is zero or missing.';
+        } else if ($calculatedTotal > 0 && abs($calculatedTotal - $order->total_amount) > 100) {
+            $errors[] = 'Order total (₹' . number_format($order->total_amount, 2) . ') mismatches with items total (₹' . number_format($calculatedTotal, 2) . ').';
+        }
+        
+        $isValid = count($errors) === 0;
+        
         return response()->json([
             'valid' => $isValid,
             'message' => $isValid 
                 ? '<strong>Invoice Validated & Verified.</strong><br>Order #' . $order->id . ' has matching payment records and total (₹' . number_format($order->total_amount, 2) . ').' 
-                : 'Invoice validation warning: Order total is 0 or missing.'
+                : '<strong>Invoice Validation Failed!</strong><br>' . implode('<br>', $errors)
+        ]);
+    }
+
+    public function runFraudDetection($id)
+    {
+        $order = Order::findOrFail($id);
+        
+        $fraudScore = 0;
+        $reasons = [];
+
+        if (strtolower($order->payment_status) === 'failed') {
+            $fraudScore += 10;
+            $reasons[] = 'Payment failed previously.';
+        }
+
+        if ($order->total_amount > 10000) {
+            $fraudScore += 20;
+            $reasons[] = 'Unusually high transaction amount (>' . number_format(10000, 2) . ').';
+        }
+
+        if (in_array(strtolower($order->payment_type), ['credit_card', 'debit_card', 'upi', 'paypal']) && empty($order->transaction_id)) {
+            $fraudScore += 40;
+            $reasons[] = 'Missing transaction ID for online payment.';
+        }
+
+        if (empty($order->customer_id)) {
+            $fraudScore += 15;
+            $reasons[] = 'Guest checkout.';
+        }
+
+        if ($fraudScore >= 70) {
+            $order->fraud_status = 'flagged';
+        } elseif ($fraudScore >= 30) {
+            $order->fraud_status = 'suspicious';
+        } else {
+            $order->fraud_status = 'clean';
+        }
+
+        $order->fraud_score = $fraudScore;
+        $order->fraud_reason = empty($reasons) ? null : implode(' | ', $reasons);
+        $order->save();
+
+        return response()->json([
+            'success' => true,
+            'score' => $fraudScore,
+            'status' => ucfirst($order->fraud_status),
+            'reasons' => $reasons,
+            'message' => 'Fraud detection completed. Score: ' . $fraudScore . '%'
         ]);
     }
 

@@ -2305,7 +2305,8 @@ Route::prefix('admin/orders')->name('admin.orders.')->group(function () {
     // Fraud management
     Route::post('/payments/{id}/suspicious', [OrderController::class, 'markSuspicious'])->name('payments.suspicious');
     Route::post('/payments/{id}/fraud', [OrderController::class, 'flagFraud'])->name('payments.fraud');
-    Route::post('/payments/{id}/clear-fraud', [OrderController::class, 'clearFraud'])->name('payments.clear-fraud');
+    Route::post('/payments/{id}/clear-fraud', [OrderController::class, 'clearFraudFlag'])->name('payments.clear-fraud');
+    Route::post('/payments/{id}/run-fraud-detection', [OrderController::class, 'runFraudDetection'])->name('payments.run-fraud-detection');
     
     // Refund
     Route::post('/payments/{id}/refund', [OrderController::class, 'refundPayment'])->name('payments.refund');

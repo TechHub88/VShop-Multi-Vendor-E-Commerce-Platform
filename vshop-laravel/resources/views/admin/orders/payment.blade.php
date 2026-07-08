@@ -274,6 +274,7 @@
                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="viewPaymentDetails({{ $order->id }})">View Details</a></li>
                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="validateInvoice({{ $order->id }})">Validate Invoice</a></li>
                                         <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="runFraudDetection({{ $order->id }})">Run Fraud Detection</a></li>
                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="markAsSuspicious({{ $order->id }})">Mark Suspicious</a></li>
                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="flagFraud({{ $order->id }})">Flag as Fraud</a></li>
                                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="clearFraudFlag({{ $order->id }})">Clear Fraud Flag</a></li>
@@ -436,6 +437,34 @@ function validateInvoice(orderId) {
         },
         error: function() {
             Swal.fire('Error', 'Failed to validate invoice', 'error');
+        }
+    });
+}
+
+// Run Fraud Detection
+function runFraudDetection(orderId) {
+    Swal.fire({
+        title: 'Running Fraud Detection...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+    
+    $.ajax({
+        url: '/admin/orders/payments/' + orderId + '/run-fraud-detection',
+        method: 'POST',
+        data: { _token: '{{ csrf_token() }}' },
+        success: function(response) {
+            Swal.fire({
+                icon: response.score > 30 ? 'warning' : 'success',
+                title: 'Fraud Detection Complete',
+                html: 'Score: <strong>' + response.score + '%</strong><br>Status: <strong>' + response.status + '</strong><br><br>' + (response.reasons.length > 0 ? response.reasons.join('<br>') : 'No issues found.'),
+                confirmButtonColor: '#004392'
+            }).then(() => {
+                location.reload();
+            });
+        },
+        error: function() {
+            Swal.fire('Error', 'Failed to run fraud detection', 'error');
         }
     });
 }
