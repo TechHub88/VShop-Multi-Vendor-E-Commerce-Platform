@@ -630,57 +630,7 @@ $this->notifySeller(
     'seller.orders.index'
 );
 
-        // 🟢 AUTO-SEND INVOICE ON WHATSAPP VIA TWILIO
-        try {
-            if ($customer->phone) {
-                $toNumber = $customer->phone;
-                // Normalize phone number to international format
-                $toNumber = preg_replace('/[^0-9]/', '', $toNumber);
-                if (strlen($toNumber) == 10) {
-                    $toNumber = '91' . $toNumber; // India country code
-                }
-
-                $invoiceUrl = route('vshop.order.invoice', $order->id);
-                $body = "Hi {$customer->name},\n\n";
-                $body .= "✅ Your order *#{$order->id}* from *VRIDHEE INNOVATIONS PRIVATE LIMITED* has been placed successfully!\n\n";
-                if ($order->payment_method === 'cod') {
-                    $body .= "💰 Payment: Cash on Delivery (Marked as Paid & Delivered)\n";
-                }
-                $body .= "📄 Download Invoice: {$invoiceUrl}\n\n";
-                $body .= "Thank you for shopping with us! 🛍️";
-
-                // Generate wa.me fallback link for confirmation page
-                $waLink = 'https://wa.me/' . $toNumber . '?text=' . urlencode($body);
-                session(['order_whatsapp_link' => $waLink]);
-
-                // Auto-send via Twilio API (free trial)
-                $sid = env('TWILIO_SID');
-                $token = env('TWILIO_AUTH_TOKEN');
-                $from = env('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886');
-
-                if ($sid && $token) {
-                    $response = \Illuminate\Support\Facades\Http::asForm()
-                        ->timeout(5)
-                        ->withBasicAuth($sid, $token)
-                        ->post("https://api.twilio.com/2010-04-01/Accounts/{$sid}/Messages.json", [
-                            'From' => $from,
-                            'To'   => 'whatsapp:+' . $toNumber,
-                            'Body' => $body,
-                        ]);
-
-                    if ($response->successful()) {
-                        \Illuminate\Support\Facades\Log::info("✅ WhatsApp sent for Order #{$order->id} to +{$toNumber}");
-                    } else {
-                        \Illuminate\Support\Facades\Log::warning("⚠️ Twilio response for Order #{$order->id}: " . $response->body());
-                    }
-                } else {
-                    \Illuminate\Support\Facades\Log::info("Twilio credentials not set. wa.me fallback link: {$waLink}");
-                }
-            }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error("WhatsApp Send Error: " . $e->getMessage());
-        }
-
+        // 🟢 WhatsApp Auto-Send Disabled by User Request
         /* ================= GLOBAL COMMISSION SETTINGS ================= */
 
         // Fetch all commission rules once to avoid repeated queries in loop
@@ -828,17 +778,19 @@ $this->notifySeller(
 
         DB::commit();
 
-        // Send booking confirmation email
-        try {
-            $order->load('items.product');
-            $customerEmail = $customer->email ?? '';
-            $customerName  = $customer->name ?? 'Customer';
-            if (!empty($customerEmail)) {
-                \App\Mail\BookingMsg::send($customerEmail, $customerName, $order, $order->items->all());
+        // Send booking confirmation email AFTER response is sent to avoid 502 Bad Gateway timeouts
+        app()->terminating(function () use ($customer, $order) {
+            try {
+                $order->load('items.product');
+                $customerEmail = $customer->email ?? '';
+                $customerName  = $customer->name ?? 'Customer';
+                if (!empty($customerEmail)) {
+                    \App\Mail\BookingMsg::send($customerEmail, $customerName, $order, $order->items->all());
+                }
+            } catch (\Exception $mailEx) {
+                \Illuminate\Support\Facades\Log::error('BookingMsg email failed: ' . $mailEx->getMessage());
             }
-        } catch (\Exception $mailEx) {
-            \Illuminate\Support\Facades\Log::error('BookingMsg email failed: ' . $mailEx->getMessage());
-        }
+        });
 
         return redirect()->route('vshop.order.confirmation', $order->id)
             ->with('success', 'Order placed successfully!');

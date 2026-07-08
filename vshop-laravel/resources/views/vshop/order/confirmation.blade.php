@@ -78,18 +78,7 @@
 
                         </div>
 
-                        {{-- ===== WHATSAPP SHARE INVOICE ===== --}}
-                        @php $waLink = session('order_whatsapp_link'); @endphp
-                        @if($waLink)
-                        <div class="whatsapp-share-sec" style="margin-top: 20px;">
-                            <a href="{{ $waLink }}" target="_blank" class="btn-whatsapp" id="waShareBtn">
-                                <i class="fa-brands fa-whatsapp me-2"></i> Share Invoice on WhatsApp
-                            </a>
-                            <p style="font-size: 12px; color: #888; margin-top: 8px;">
-                                Click above to send the invoice link to your WhatsApp number.
-                            </p>
-                        </div>
-                        @endif
+                        {{-- WhatsApp Share Removed as per request --}}
 
                         {{-- ===== DOWNLOAD INVOICE ===== --}}
                         <div style="margin-top: 15px;">
