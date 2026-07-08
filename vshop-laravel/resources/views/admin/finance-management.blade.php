@@ -38,6 +38,15 @@
             <p class="text-muted fs-7 mb-0">Manage system commissions, payouts, leads, pricing engines, refunds, and disputes.</p>
         </div>
         <div class="d-flex gap-2 mt-2 mt-sm-0">
+            <div class="dropdown">
+                <button class="btn btn-warning btn-sm shadow-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <iconify-icon icon="solar:chart-square-bold-duotone" class="align-middle me-1"></iconify-icon> Trackers
+                </button>
+                <ul class="dropdown-menu shadow">
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#holdReasonModal"><iconify-icon icon="solar:clipboard-list-bold-duotone" class="me-2 text-warning"></iconify-icon> Hold Reason Tracking</a></li>
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#settlementHoldModal"><iconify-icon icon="solar:clock-circle-bold-duotone" class="me-2 text-warning"></iconify-icon> Settlement Delay Tracker</a></li>
+                </ul>
+            </div>
             <button class="btn btn-primary btn-sm shadow-sm" onclick="exportData()">
                 <iconify-icon icon="solar:file-excel-bold-duotone" class="align-middle me-1"></iconify-icon> Export
             </button>
@@ -1795,7 +1804,7 @@
 <div class="modal fade" id="earningBreakdownModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-gradient-success text-white border-0" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            <div class="modal-header bg-gradient-primary text-white border-0" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
                 <div class="d-flex align-items-center">
                     <div class="rounded-circle bg-white bg-opacity-20 p-2 me-2">
                         <iconify-icon icon="solar:chart-2-bold-duotone" width="24" class="text-white"></iconify-icon>
@@ -1809,7 +1818,7 @@
             </div>
             <div class="modal-body p-4" id="earningBreakdownContent">
                 <div class="text-center py-4">
-                    <div class="spinner-border text-success"></div>
+                    <div class="spinner-border text-primary"></div>
                     <p class="mt-2 text-muted">Loading earning details...</p>
                 </div>
             </div>
@@ -1839,6 +1848,14 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
+                <div class="d-flex justify-content-between mb-3">
+                    <input type="text" id="searchHoldTracker" class="form-control form-control-sm w-25" placeholder="Search Seller...">
+                    <select id="sortHoldTracker" class="form-select form-select-sm w-25">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                        <option value="longest">Longest Hold</option>
+                    </select>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-striped table-hover align-middle mb-0" id="settlementHoldTable">
                         <thead class="table-light">
@@ -1872,7 +1889,7 @@
 <div class="modal fade" id="sellerDetailsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-gradient-primary text-white border-0" style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);">
+            <div class="modal-header bg-gradient-primary text-white border-0" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
                 <div class="d-flex align-items-center">
                     <div class="rounded-circle bg-white bg-opacity-20 p-2 me-2">
                         <iconify-icon icon="solar:route-bold-duotone" width="24" class="text-white"></iconify-icon>
@@ -1886,6 +1903,58 @@
             </div>
             <div class="modal-body p-4" id="sellerDetailsModalContent">
                 <!-- Populated dynamically via JS -->
+            </div>
+            <div class="modal-footer bg-light border-0 py-3">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <iconify-icon icon="solar:close-circle-bold-duotone" width="16" class="me-1"></iconify-icon> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Hold Reason Tracking -->
+<div class="modal fade" id="holdReasonModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-gradient-primary text-white border-0" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-white bg-opacity-20 p-2 me-2">
+                        <iconify-icon icon="solar:clipboard-list-bold-duotone" width="24" class="text-white"></iconify-icon>
+                    </div>
+                    <div>
+                        <h5 class="modal-title fw-bold text-white mb-0">Hold Reason Tracking</h5>
+                        <p class="mb-0 small text-white opacity-85">Track reasons for settlement holds</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="d-flex justify-content-between mb-3">
+                    <input type="text" id="searchHoldReason" class="form-control form-control-sm w-25" placeholder="Search Reason...">
+                    <select id="sortHoldReason" class="form-select form-select-sm w-25">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle mb-0" id="holdReasonTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Seller Code</th>
+                                <th>Seller Name</th>
+                                <th>Hold Reason</th>
+                                <th>Applied By</th>
+                                <th>Date Applied</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holdReasonTableBody">
+                            <!-- Populated dynamically via JS -->
+                            <tr><td colspan="6" class="text-center text-muted">No hold reasons found.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <div class="modal-footer bg-light border-0 py-3">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">

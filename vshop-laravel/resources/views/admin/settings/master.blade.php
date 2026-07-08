@@ -766,6 +766,112 @@
                 </div>
             </div>
 
+            <!-- Top Spending Sellers -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2 class="section-title"><i class='bx bx-trophy'></i> Top Spending Sellers</h2>
+                </div>
+                <div class="table-container">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Seller Name</th>
+                                <th>Active Campaigns</th>
+                                <th>Total Boost Spend</th>
+                                <th>Total Revenue Generated</th>
+                                <th>Avg ROI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $topSellers = collect($settingsData['boosts'] ?? [])
+                                    ->groupBy('seller_id')
+                                    ->map(function($boosts) use ($settingsData) {
+                                        $sellerId = $boosts->first()['seller_id'];
+                                        $sellerName = $sellerId ? ($settingsData['sellers']->firstWhere('id', $sellerId)->name ?? 'Unknown') : 'Global Admin';
+                                        return [
+                                            'name' => $sellerName,
+                                            'campaigns' => $boosts->count(),
+                                            'spend' => $boosts->sum('boost_amount'),
+                                            'revenue' => $boosts->sum('revenue_generated'),
+                                            'roi' => $boosts->sum('boost_amount') > 0 ? round($boosts->sum('revenue_generated') / $boosts->sum('boost_amount'), 2) : 0
+                                        ];
+                                    })
+                                    ->sortByDesc('spend')
+                                    ->take(5);
+                            @endphp
+
+                            @forelse($topSellers as $seller)
+                                <tr>
+                                    <td class="fw-bold">{{ $seller['name'] }}</td>
+                                    <td>{{ $seller['campaigns'] }}</td>
+                                    <td class="money text-danger fw-semibold" data-amount="{{ $seller['spend'] }}">₹{{ number_format($seller['spend'], 2) }}</td>
+                                    <td class="money text-success fw-bold" data-amount="{{ $seller['revenue'] }}">₹{{ number_format($seller['revenue'], 2) }}</td>
+                                    <td class="text-info fw-bold">{{ $seller['roi'] }}x</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">No data available for top spending sellers.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Campaign Revenue -->
+            <div class="section-card">
+                <div class="section-header">
+                    <h2 class="section-title"><i class='bx bx-line-chart'></i> Campaign Revenue</h2>
+                </div>
+                <div class="table-container">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Campaign / Target</th>
+                                <th>Seller</th>
+                                <th>Spend</th>
+                                <th>Revenue</th>
+                                <th>Performance Indicator</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $campaignRevenues = collect($settingsData['boosts'] ?? [])
+                                    ->sortByDesc('revenue_generated')
+                                    ->take(5);
+                            @endphp
+
+                            @forelse($campaignRevenues as $campaign)
+                                @php
+                                    $seller = $settingsData['sellers']->firstWhere('id', $campaign['seller_id']);
+                                    $product = $settingsData['products']->firstWhere('id', $campaign['product_id']);
+                                    $roi = $campaign['boost_amount'] > 0 ? ($campaign['revenue_generated'] / $campaign['boost_amount']) * 100 : 0;
+                                @endphp
+                                <tr>
+                                    <td class="fw-bold">{{ $product->name ?? 'All Products/Category' }}</td>
+                                    <td class="text-muted">{{ $seller->name ?? 'Global' }}</td>
+                                    <td class="money text-danger" data-amount="{{ $campaign['boost_amount'] }}">₹{{ number_format($campaign['boost_amount'], 2) }}</td>
+                                    <td class="money text-success fw-bold" data-amount="{{ $campaign['revenue_generated'] }}">₹{{ number_format($campaign['revenue_generated'], 2) }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2 text-dark fw-semibold">{{ round($roi, 0) }}%</span>
+                                            <div class="progress w-100" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" style="width: {{ min(100, $roi) }}%" aria-valuenow="{{ min(100, $roi) }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">No campaign revenue data available.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- ROI Chart -->
             <div class="section-card">
                 <div class="section-header">
