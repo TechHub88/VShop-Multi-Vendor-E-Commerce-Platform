@@ -8,7 +8,7 @@
 # Components:
 #   - vshop_websocket  (Node.js WebSocket server)
 #   - vshop_laravel    (PHP Laravel application)
-#
+# 
 # Environments:
 #   - main branch → PRODUCTION  (GKE cluster)
 #   - dev  branch → DEVELOPMENT (VM Kubernetes cluster)
