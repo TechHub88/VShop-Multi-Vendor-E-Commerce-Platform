@@ -1,3 +1,19 @@
+# =============================================================================
+# VShop CI/CD Pipeline — Kaniko + Helm (Kubernetes Executor)
+#
+# Architecture:
+#   build stage  → Kaniko (builds & pushes container images, no Docker daemon)
+#   deploy stage → gcloud + kubectl + helm (connects to cluster, deploys via Helm)
+#
+# Components:
+#   - vshop_websocket  (Node.js WebSocket server)
+#   - vshop_laravel    (PHP Laravel application)
+#
+# Environments:
+#   - main branch → PRODUCTION  (GKE cluster)
+#   - dev  branch → DEVELOPMENT (VM Kubernetes cluster)
+# =============================================================================
+
 stages:
   - build
   - deploy
@@ -5,107 +21,100 @@ stages:
 variables:
   REPO_NAME: "backend"
   IMAGE_REGISTRY: "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}"
-  DOCKER_HOST: tcp://docker:2375/
-  DOCKER_TLS_CERTDIR: ""
-  DOCKER_DRIVER: overlay2
 
-# ============================================================
-# SHARED BUILD TEMPLATE
-# ============================================================
+# =============================================================================
+# SHARED TEMPLATES
+# =============================================================================
+
+# ---- Kaniko Build Template ----
+# Builds container image and pushes to Google Artifact Registry.
+# No Docker daemon, no DinD, no privileged mode.
 .build_template:
   stage: build
   tags:
     - kube
-  image: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
-  services:
-    - docker:24.0-dind
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
   before_script:
-    # Install dependencies
-    - apt-get update && apt-get install -y docker.io unzip
+    # Determine environment, image tag, and latest tag
     - |
-      echo "Waiting for docker daemon..."
-      for i in $(seq 1 30); do
-        if docker info >/dev/null 2>&1; then
-          echo "Docker daemon is ready"
-          break
-        fi
-        sleep 1
-      done
-    - apt-get install -y kubectl google-cloud-sdk-gke-gcloud-auth-plugin
+      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
+        export ENV="PRODUCTION"
+        export LATEST_TAG="latest"
+      else
+        export ENV="DEVELOPMENT"
+        export LATEST_TAG="${CI_COMMIT_BRANCH}-latest"
+      fi
+    - export IMAGE_TAG="${ENV}-${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}"
+    - export IMAGE_URI="${IMAGE_REGISTRY}/${COMPONENT_NAME}:${IMAGE_TAG}"
 
-    # GCP auth
-    - echo "$GCP_SA_KEY" > ${CI_PROJECT_DIR}/gcp-key.json
+    # Configure Kaniko to authenticate with Google Artifact Registry
+    - mkdir -p /kaniko/.docker
+    - echo "${GCP_SA_KEY}" > /kaniko/gcp-key.json
+    - |
+      cat > /kaniko/.docker/config.json <<EOF
+      {
+        "credHelpers": {
+          "${GCP_REGION}-docker.pkg.dev": "gcr"
+        }
+      }
+      EOF
+    - export GOOGLE_APPLICATION_CREDENTIALS=/kaniko/gcp-key.json
+
+# ---- Helm Deploy Template ----
+# Authenticates to GKE or dev VM cluster, deploys via Helm.
+.deploy_template:
+  stage: deploy
+  tags:
+    - kube
+  image: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+  before_script:
+    # Install kubectl, gke-gcloud-auth-plugin, and helm
+    - apt-get update && apt-get install -y kubectl google-cloud-sdk-gke-gcloud-auth-plugin > /dev/null 2>&1
+    - curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash > /dev/null 2>&1
+
+    # Determine environment, image tag, and values file
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
+        export ENV="PRODUCTION"
+        export VALUES_FILE="values-main.yaml"
+      else
+        export ENV="DEVELOPMENT"
+        export VALUES_FILE="values-dev.yaml"
+      fi
+    - export IMAGE_TAG="${ENV}-${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}"
+    - export IMAGE_URI="${IMAGE_REGISTRY}/${COMPONENT_NAME}:${IMAGE_TAG}"
+    - export DEPLOYMENT_NAME=$(echo ${COMPONENT_NAME} | tr '_' '-')
+
+    # GCP authentication
+    - echo "${GCP_SA_KEY}" > ${CI_PROJECT_DIR}/gcp-key.json
     - gcloud auth activate-service-account --key-file=${CI_PROJECT_DIR}/gcp-key.json
-    - gcloud config set project $GCP_PROJECT_ID
-    - gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev --quiet
+    - gcloud config set project ${GCP_PROJECT_ID}
 
-# ============================================================
-# WEBSOCKET SERVER - Build & Deploy
-# ============================================================
-websocket_build_and_deploy:
-  extends: .build_template
-  variables:
-    COMPONENT_NAME: "vshop_websocket"
-  script:
-    # --------------------------------------------------
-    # Determine environment & image tag
-    # --------------------------------------------------
-    - |
-      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
-        ENV="PRODUCTION"
-        VALUES_FILE="values-main.yaml"
-      else
-        ENV="DEVELOPMENT"
-        VALUES_FILE="values-dev.yaml"
-      fi
-
-    - IMAGE_TAG="${ENV}-${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}"
-    - IMAGE_URI="${IMAGE_REGISTRY}/${COMPONENT_NAME}:${IMAGE_TAG}"
-
-    # --------------------------------------------------
-    # Build & push image
-    # --------------------------------------------------
-    - docker build -t ${IMAGE_URI} -f vshop-websocket/Dockerfile vshop-websocket
-    - docker push ${IMAGE_URI}
-    - |
-      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
-        LATEST_TAG="latest"
-      else
-        LATEST_TAG="${CI_COMMIT_BRANCH}-latest"
-      fi
-    - docker tag ${IMAGE_URI} ${IMAGE_REGISTRY}/${COMPONENT_NAME}:${LATEST_TAG}
-    - docker push ${IMAGE_REGISTRY}/${COMPONENT_NAME}:${LATEST_TAG}
-
-    # --------------------------------------------------
-    # Install helm
-    # --------------------------------------------------
-    - curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
-    # --------------------------------------------------
-    # Cluster Selection (GKE for main, VM K8s for dev)
-    # --------------------------------------------------
+    # Connect to the appropriate cluster
     - |
       if [ "$CI_COMMIT_BRANCH" = "main" ]; then
         echo "Connecting to GKE (production)..."
         if [ -n "$GCP_CLUSTER_REGION" ]; then
-          gcloud container clusters get-credentials $GCP_CLUSTER_NAME \
-            --region $GCP_CLUSTER_REGION \
-            --project $GCP_PROJECT_ID
+          gcloud container clusters get-credentials ${GCP_CLUSTER_NAME} \
+            --region ${GCP_CLUSTER_REGION} \
+            --project ${GCP_PROJECT_ID}
         else
-          gcloud container clusters get-credentials $GCP_CLUSTER_NAME \
-            --zone $GCP_CLUSTER_ZONE \
-            --project $GCP_PROJECT_ID
+          gcloud container clusters get-credentials ${GCP_CLUSTER_NAME} \
+            --zone ${GCP_CLUSTER_ZONE} \
+            --project ${GCP_PROJECT_ID}
         fi
       else
         echo "Connecting to DEV VM Kubernetes cluster..."
-        echo "$KUBE_CONFIG_DEV" | base64 -d > ${CI_PROJECT_DIR}/kubeconfig
+        echo "${KUBE_CONFIG_DEV}" | base64 -d > ${CI_PROJECT_DIR}/kubeconfig
         export KUBECONFIG=${CI_PROJECT_DIR}/kubeconfig
 
-        # Create/update image pull secret so dev cluster can pull from GCP Artifact Registry
+        # Create/update image pull secret for dev cluster
         kubectl create secret docker-registry gcr-pull-secret \
           --docker-server=${GCP_REGION}-docker.pkg.dev \
           --docker-username=_json_key \
-          --docker-password="$GCP_SA_KEY" \
+          --docker-password="${GCP_SA_KEY}" \
           -n default \
           --dry-run=client -o yaml | kubectl apply -f -
 
@@ -114,26 +123,22 @@ websocket_build_and_deploy:
           -p '{"imagePullSecrets": [{"name": "gcr-pull-secret"}]}' || true
       fi
 
-    # --------------------------------------------------
-    # Helm deploy targeting the vshop-websocket/deploy folder
-    # --------------------------------------------------
-    - export DEPLOYMENT_NAME=$(echo ${COMPONENT_NAME} | tr '_' '-')
-    - helm uninstall ${DEPLOYMENT_NAME} --namespace default || true
-    - sleep 5
-    - |
-      helm upgrade --install ${DEPLOYMENT_NAME} ./vshop-websocket/deploy/${COMPONENT_NAME} \
-        -f ./vshop-websocket/deploy/${COMPONENT_NAME}/${VALUES_FILE} \
-        --namespace default \
-        --create-namespace \
-        --set ${COMPONENT_NAME}.image.repository=${IMAGE_REGISTRY}/${COMPONENT_NAME} \
-        --set ${COMPONENT_NAME}.image.tag=${IMAGE_TAG} \
-        --set rolloutId=${CI_PIPELINE_ID}
+# =============================================================================
+# WEBSOCKET SERVER
+# =============================================================================
 
-    # --------------------------------------------------
-    # Verify rollout
-    # --------------------------------------------------
-    - echo "Deployment initiated successfully! Pods are starting in the background."
-
+websocket_build:
+  extends: .build_template
+  variables:
+    COMPONENT_NAME: "vshop_websocket"
+  script:
+    - /kaniko/executor
+        --context "${CI_PROJECT_DIR}/vshop-websocket"
+        --dockerfile "${CI_PROJECT_DIR}/vshop-websocket/Dockerfile"
+        --destination "${IMAGE_URI}"
+        --destination "${IMAGE_REGISTRY}/${COMPONENT_NAME}:${LATEST_TAG}"
+        --cache=true
+        --cache-repo="${IMAGE_REGISTRY}/kaniko-cache"
   rules:
     - if: '$CI_COMMIT_BRANCH == "dev"'
       changes:
@@ -144,98 +149,78 @@ websocket_build_and_deploy:
         - vshop-websocket/**/*
       when: always
 
-# ============================================================
-# LARAVEL APP - Build & Deploy
-# ============================================================
-laravel_build_and_deploy:
+websocket_deploy:
+  extends: .deploy_template
+  variables:
+    COMPONENT_NAME: "vshop_websocket"
+  needs:
+    - job: websocket_build
+      artifacts: false
+  script:
+    - |
+      helm upgrade --install ${DEPLOYMENT_NAME} \
+        ./vshop-websocket/deploy/${COMPONENT_NAME} \
+        -f ./vshop-websocket/deploy/${COMPONENT_NAME}/${VALUES_FILE} \
+        --namespace default \
+        --create-namespace \
+        --set ${COMPONENT_NAME}.image.repository=${IMAGE_REGISTRY}/${COMPONENT_NAME} \
+        --set ${COMPONENT_NAME}.image.tag=${IMAGE_TAG} \
+        --set rolloutId=${CI_PIPELINE_ID}
+    - echo "✅ ${DEPLOYMENT_NAME} deployed successfully (rolling update)."
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      changes:
+        - vshop-websocket/**/*
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - vshop-websocket/**/*
+      when: always
+
+# =============================================================================
+# LARAVEL APP
+# =============================================================================
+
+laravel_build:
   extends: .build_template
   variables:
     COMPONENT_NAME: "vshop_laravel"
   script:
-    # --------------------------------------------------
-    # Determine environment & image tag
-    # --------------------------------------------------
+    - /kaniko/executor
+        --context "${CI_PROJECT_DIR}/vshop-laravel"
+        --dockerfile "${CI_PROJECT_DIR}/vshop-laravel/Dockerfile"
+        --destination "${IMAGE_URI}"
+        --destination "${IMAGE_REGISTRY}/${COMPONENT_NAME}:${LATEST_TAG}"
+        --cache=true
+        --cache-repo="${IMAGE_REGISTRY}/kaniko-cache"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+      changes:
+        - vshop-laravel/**/*
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - vshop-laravel/**/*
+      when: always
+
+laravel_deploy:
+  extends: .deploy_template
+  variables:
+    COMPONENT_NAME: "vshop_laravel"
+  needs:
+    - job: laravel_build
+      artifacts: false
+  script:
     - |
-      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
-        ENV="PRODUCTION"
-        VALUES_FILE="values-main.yaml"
-      else
-        ENV="DEVELOPMENT"
-        VALUES_FILE="values-dev.yaml"
-      fi
-
-    - IMAGE_TAG="${ENV}-${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}"
-    - IMAGE_URI="${IMAGE_REGISTRY}/${COMPONENT_NAME}:${IMAGE_TAG}"
-
-    # --------------------------------------------------
-    # Build & push image
-    # --------------------------------------------------
-    - docker build -t ${IMAGE_URI} -f vshop-laravel/Dockerfile vshop-laravel
-    - docker push ${IMAGE_URI}
-    - |
-      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
-        LATEST_TAG="latest"
-      else
-        LATEST_TAG="${CI_COMMIT_BRANCH}-latest"
-      fi
-    - docker tag ${IMAGE_URI} ${IMAGE_REGISTRY}/${COMPONENT_NAME}:${LATEST_TAG}
-    - docker push ${IMAGE_REGISTRY}/${COMPONENT_NAME}:${LATEST_TAG}
-
-    # --------------------------------------------------
-    # Install helm
-    # --------------------------------------------------
-    - curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
-    # --------------------------------------------------
-    # Cluster Selection (GKE for main, VM K8s for dev)
-    # --------------------------------------------------
-    - |
-      if [ "$CI_COMMIT_BRANCH" = "main" ]; then
-        echo "Connecting to GKE (production)..."
-        if [ -n "$GCP_CLUSTER_REGION" ]; then
-          gcloud container clusters get-credentials $GCP_CLUSTER_NAME \
-            --region $GCP_CLUSTER_REGION \
-            --project $GCP_PROJECT_ID
-        else
-          gcloud container clusters get-credentials $GCP_CLUSTER_NAME \
-            --zone $GCP_CLUSTER_ZONE \
-            --project $GCP_PROJECT_ID
-        fi
-      else
-        echo "Connecting to DEV VM Kubernetes cluster..."
-        echo "$KUBE_CONFIG_DEV" | base64 -d > ${CI_PROJECT_DIR}/kubeconfig
-        export KUBECONFIG=${CI_PROJECT_DIR}/kubeconfig
-
-        # Create/update image pull secret so dev cluster can pull from GCP Artifact Registry
-        kubectl create secret docker-registry gcr-pull-secret \
-          --docker-server=${GCP_REGION}-docker.pkg.dev \
-          --docker-username=_json_key \
-          --docker-password="$GCP_SA_KEY" \
-          -n default \
-          --dry-run=client -o yaml | kubectl apply -f -
-
-        # Patch default service account to auto-use the pull secret
-        kubectl patch serviceaccount default -n default \
-          -p '{"imagePullSecrets": [{"name": "gcr-pull-secret"}]}' || true
-      fi
-
-    # --------------------------------------------------
-    # Helm deploy targeting the vshop-laravel/deploy folder
-    # --------------------------------------------------
-    - export DEPLOYMENT_NAME=$(echo ${COMPONENT_NAME} | tr '_' '-')
-    - |
-      # Fix for corrupted helm state: uninstall existing release to clear bad history, then reinstall
-      helm uninstall ${DEPLOYMENT_NAME} -n default || true
-      
-      helm upgrade --install ${DEPLOYMENT_NAME} ./vshop-laravel/deploy/${COMPONENT_NAME} \
+      helm upgrade --install ${DEPLOYMENT_NAME} \
+        ./vshop-laravel/deploy/${COMPONENT_NAME} \
         -f ./vshop-laravel/deploy/${COMPONENT_NAME}/${VALUES_FILE} \
         --namespace default \
         --create-namespace \
         --set ${COMPONENT_NAME}.image.repository=${IMAGE_REGISTRY}/${COMPONENT_NAME} \
         --set ${COMPONENT_NAME}.image.tag=${IMAGE_TAG} \
         --set rolloutId=${CI_PIPELINE_ID}
-    - echo "Deployment initiated successfully! Pods are starting in the background."
-
+    - echo "✅ ${DEPLOYMENT_NAME} deployed successfully (rolling update)."
   rules:
     - if: '$CI_COMMIT_BRANCH == "dev"'
       changes:
