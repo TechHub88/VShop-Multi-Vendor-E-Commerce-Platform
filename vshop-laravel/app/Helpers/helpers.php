@@ -35,7 +35,13 @@ if (!function_exists('uploadToR2')) {
                     $encoded = $image->toJpeg(75);
                 }
                 
-                \Illuminate\Support\Facades\Storage::disk('r2')->put($path, (string) $encoded, 'public');
+                // Write to a temporary file locally so putFileAs can detect the correct MIME type
+                $tempPath = sys_get_temp_dir() . '/' . $filename;
+                file_put_contents($tempPath, (string) $encoded);
+                
+                \Illuminate\Support\Facades\Storage::disk('r2')->putFileAs($folder, new \Illuminate\Http\File($tempPath), $filename, 'public');
+                @unlink($tempPath);
+                
                 return \Illuminate\Support\Facades\Storage::disk('r2')->url($path);
             } catch (\Exception $e) {
                 // Fallback to default if compression fails
