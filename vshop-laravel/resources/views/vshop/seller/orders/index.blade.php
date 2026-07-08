@@ -33,6 +33,12 @@
 .completed.active { background:#16a34a;color:#fff; }
 .failed.active { background:#ef4444;color:#fff; }
 
+.btn-xs {
+    padding: 2px 6px;
+    font-size: 11px;
+    border-radius: 4px;
+}
+
 .table thead { background:#f9fafb; font-size:13px; }
 .table td { font-size:13px; }
 
@@ -279,8 +285,8 @@ $payment = strtolower($order->payment_status ?? 'pending');
 </td>
 
 <td>
-@if(in_array($status,['return_requested','returned']) || $refund)
-<div class="status-flow mb-1">
+@if(in_array($status,['return_requested','return_approved','return_rejected','returned']) || $refund)
+<div class="status-flow mb-2">
 
 <span class="step initiated {{ $refund=='initiated'?'active':'' }}">Initiated</span>
 <span class="step processing {{ $refund=='processing'?'active':'' }}">Processing</span>
@@ -289,8 +295,36 @@ $payment = strtolower($order->payment_status ?? 'pending');
 
 </div>
 
+@php
+$returnRecord = $order->returns->first();
+$targetId = $returnRecord ? $returnRecord->id : $order->id;
+@endphp
+
+@if($refund == 'initiated')
+<div class="mt-2 d-flex flex-column gap-1" style="max-width: 180px;">
+    <button type="button" class="btn btn-xs btn-outline-info text-start" onclick="handleReturnAction('/seller/orders/return/approve', {{ $targetId }}, 'Initiate Return Pickup')">
+        <i class="fa-solid fa-truck-ramp-box me-1"></i> Initiate Pickup
+    </button>
+    <button type="button" class="btn btn-xs btn-outline-success text-start" onclick="handleReturnAction('/seller/orders/return/verify', {{ $targetId }}, 'Direct Refund')">
+        <i class="fa-solid fa-money-bill-transfer me-1"></i> Direct Refund (No Pickup)
+    </button>
+    <button type="button" class="btn btn-xs btn-outline-danger text-start" onclick="handleReturnAction('/seller/orders/return/reject', {{ $targetId }}, 'Reject Return')">
+        <i class="fa-solid fa-xmark me-1"></i> Reject Return
+    </button>
+</div>
+@elseif($refund == 'processing')
+<div class="mt-2 d-flex flex-column gap-1" style="max-width: 180px;">
+    <button type="button" class="btn btn-xs btn-success text-white text-start" onclick="handleReturnAction('/seller/orders/return/verify', {{ $targetId }}, 'Complete Pickup & Refund')">
+        <i class="fa-solid fa-circle-check me-1"></i> Complete Pickup & Refund
+    </button>
+    <button type="button" class="btn btn-xs btn-outline-danger text-start" onclick="handleReturnAction('/seller/orders/return/reject', {{ $targetId }}, 'Reject Return')">
+        <i class="fa-solid fa-xmark me-1"></i> Reject Return
+    </button>
+</div>
+@endif
+
 @if($order->return_reason)
-<div class="text-danger small">
+<div class="text-danger small mt-1">
 <strong>Reason:</strong> {{ $order->return_reason }}
 </div>
 @endif
@@ -395,6 +429,33 @@ document.getElementById('returnForm').action='/seller/orders/return/'+this.datas
 new bootstrap.Modal(document.getElementById('returnModal')).show();
 }
 });
+
+function handleReturnAction(url, id, actionName) {
+    if (!confirm('Are you sure you want to ' + actionName + '?')) {
+        return;
+    }
+    
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: {
+            _token: "{{ csrf_token() }}",
+            id: id,
+            refund_mode: 'wallet'
+        },
+        success: function(res) {
+            if (res.status) {
+                alert('Success: ' + actionName + ' completed.');
+                location.reload();
+            } else {
+                alert('Error: ' + (res.msg || res.message || 'Operation failed.'));
+            }
+        },
+        error: function(xhr) {
+            alert('Error: Something went wrong.');
+        }
+    });
+}
 
 const categoryEl = document.getElementById('category');
 const subcategoryEl = document.getElementById('subcategory');
