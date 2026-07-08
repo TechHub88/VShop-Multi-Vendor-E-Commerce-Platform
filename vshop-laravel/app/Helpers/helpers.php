@@ -53,8 +53,13 @@ if (!function_exists('uploadToR2')) {
             }
         }
 
-        \Illuminate\Support\Facades\Storage::disk('r2')->putFileAs($folder, $file, $filename, 'public');
-        return \Illuminate\Support\Facades\Storage::disk('r2')->url($path);
+        try {
+            $path = \Illuminate\Support\Facades\Storage::disk('r2')->putFileAs($folder, $file, $filename, 'public');
+            return \Illuminate\Support\Facades\Storage::disk('r2')->url($path);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Upload to R2 Failed: ' . $e->getMessage());
+            return null;
+        }
     }
 }
 
