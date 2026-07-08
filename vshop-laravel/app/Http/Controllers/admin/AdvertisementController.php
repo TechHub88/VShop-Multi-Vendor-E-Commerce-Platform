@@ -39,96 +39,86 @@ class AdvertisementController extends Controller
      */
     public function store(Request $request)
     {
-        try {
-            // VALIDATION 🔥
-            $request->validate([
-                'title' => 'required|string|max:255',
-                'type' => 'required',
-                'target_type' => 'required',
-                'product_id' => 'nullable|exists:products,id',
-                'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-                'videos.*' => 'nullable|mimes:mp4,mov,avi|max:10240',
-            ]);
+        // VALIDATION 🔥
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'type' => 'required',
+            'target_type' => 'required',
+            'product_id' => 'nullable|exists:products,id',
+            'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'videos.*' => 'nullable|mimes:mp4,mov,avi|max:10240',
+        ]);
 
-            $catName = null;
-            if ($request->category_id) {
-                $cat = DB::table('marketplace_categories')->where('id', $request->category_id)->first();
-                if ($cat) $catName = $cat->name;
+        $catName = null;
+        if ($request->category_id) {
+            $cat = DB::table('marketplace_categories')->where('id', $request->category_id)->first();
+            if ($cat) $catName = $cat->name;
+        }
+
+        $ad = Advertisement::create([
+            'title' => $request->title,
+            'type' => $request->type,
+            'description' => $request->description,
+            'redirect_url' => $request->redirect_url,
+            'target_type' => $request->target_type,
+            'category_id' => $request->category_id,
+            'category_name' => $catName,
+            'product_id' => $request->product_id,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'is_active' => 1,
+        ]);
+
+        // Send notification to all active sellers
+        $categoryName = 'All Categories';
+        if ($request->category_id) {
+            $category = DB::table('marketplace_categories')->where('id', $request->category_id)->first();
+            if ($category) {
+                $categoryName = $category->name;
             }
-
-            $ad = Advertisement::create([
-                'title' => $request->title,
-                'type' => $request->type,
-                'description' => $request->description,
-                'redirect_url' => $request->redirect_url,
-                'target_type' => $request->target_type,
-                'category_id' => $request->category_id,
-                'category_name' => $catName,
-                'product_id' => $request->product_id,
-                'start_date' => $request->start_date,
-                'end_date' => $request->end_date,
-                'is_active' => 1,
-            ]);
-
-            // Send notification to all active sellers
-            $categoryName = 'All Categories';
-            if ($request->category_id) {
-                $category = DB::table('marketplace_categories')->where('id', $request->category_id)->first();
-                if ($category) {
-                    $categoryName = $category->name;
-                }
-            }
-            
-            $sellers = \App\Models\Seller::where('status', 'approved')->get();
-            foreach ($sellers as $seller) {
-                \App\Models\Notification::create([
-                    'seller_id' => $seller->id,
-                    'type' => 'campaign',
-                    'message' => 'New ' . ucfirst($request->type) . ' "' . $request->title . '" created for category: ' . $categoryName . '. Please list your products with offers to participate!',
-                    'link' => 'https://vshop.zelofx.com/seller/products',
-                    'channel' => 'in_app',
-                    'is_read' => 0
-                ]);
-            }
-
-            // IMAGE UPLOAD
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $img) {
-                    $filename = \Illuminate\Support\Str::random(40) . '.' . $img->getClientOriginalExtension();
-                    $path = uploadToR2($img, 'ads/images', $filename);
-
-                    AdvertisementMedia::create([
-                        'advertisement_id' => $ad->id,
-                        'media_type' => 'image',
-                        'file_path' => $path
-                    ]);
-                }
-            }
-
-            // VIDEO UPLOAD
-            if ($request->hasFile('videos')) {
-                foreach ($request->file('videos') as $vid) {
-                    $filename = \Illuminate\Support\Str::random(40) . '.' . $vid->getClientOriginalExtension();
-                    $path = uploadToR2($vid, 'ads/videos', $filename);
-
-                    AdvertisementMedia::create([
-                        'advertisement_id' => $ad->id,
-                        'media_type' => 'video',
-                        'file_path' => $path
-                    ]);
-                }
-            }
-
-            return redirect()->route('admin.ads.index')->with('success', 'Advertisement Created Successfully');
-        } catch (\Throwable $e) {
-            // Dump the exact error to the screen so the user can see it!
-            dd([
-                'ERROR_MESSAGE' => $e->getMessage(),
-                'FILE' => $e->getFile(),
-                'LINE' => $e->getLine(),
-                'TRACE' => $e->getTraceAsString()
+        }
+        
+        $sellers = \App\Models\Seller::where('status', 'approved')->get();
+        foreach ($sellers as $seller) {
+            \App\Models\Notification::create([
+                'seller_id' => $seller->id,
+                'type' => 'campaign',
+                'message' => 'New ' . ucfirst($request->type) . ' "' . $request->title . '" created for category: ' . $categoryName . '. Please list your products with offers to participate!',
+                'link' => 'https://vshop.zelofx.com/seller/products',
+                'channel' => 'in_app',
+                'is_read' => 0
             ]);
         }
+
+        // IMAGE UPLOAD
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $img) {
+                $filename = \Illuminate\Support\Str::random(40) . '.' . $img->getClientOriginalExtension();
+                $path = uploadToR2($img, 'ads/images', $filename);
+
+                AdvertisementMedia::create([
+                    'advertisement_id' => $ad->id,
+                    'media_type' => 'image',
+                    'file_path' => $path
+                ]);
+            }
+        }
+
+        // VIDEO UPLOAD
+        if ($request->hasFile('videos')) {
+            foreach ($request->file('videos') as $vid) {
+                $filename = \Illuminate\Support\Str::random(40) . '.' . $vid->getClientOriginalExtension();
+                $path = uploadToR2($vid, 'ads/videos', $filename);
+
+                AdvertisementMedia::create([
+                    'advertisement_id' => $ad->id,
+                    'media_type' => 'video',
+                    'file_path' => $path
+                ]);
+            }
+        }
+
+        return redirect()->route('admin.ads.index')->with('success', 'Advertisement Created Successfully');
     }
 
     /**
