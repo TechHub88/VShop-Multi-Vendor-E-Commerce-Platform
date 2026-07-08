@@ -100,7 +100,7 @@
     @include('vshop.seller.partials.draft-status', ['product' => $product])
 @endif
 
-<form method="POST" action="{{ route('seller.products.download.save',$product->id) }}">
+<form method="POST" action="{{ route('seller.products.download.save',$product->id) }}" style="position:relative;">
 @csrf
 
 <div id="downloadWrapper">
@@ -186,9 +186,12 @@ $downloads = old('title')
 </div>
 
 
-<!-- ADD MORE -->
-<button type="button" class="btn btn-secondary w-100 mt-3" onclick="addDownload()">
-+ Add More
+<!-- ADD MORE (corner plus icon) -->
+<button type="button" class="btn btn-outline-primary rounded-circle shadow-sm mt-3" 
+    onclick="addDownload()" 
+    style="width:38px; height:38px; padding:0; display:flex; align-items:center; justify-content:center; position:absolute; top:12px; right:12px; z-index:2; font-size:18px;" 
+    title="Add More">
+    <i class="fa-solid fa-plus"></i>
 </button>
 
 
