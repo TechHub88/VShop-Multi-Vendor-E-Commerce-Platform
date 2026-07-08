@@ -164,9 +164,7 @@ $unreadAdminCount = AdminNotification::where('is_read', false)->count();
                                    class="form-control ps-5 search-input-pro" 
                                    placeholder="Search products, orders, sellers, customers..." 
                                    autocomplete="off" />
-                            <div class="position-absolute end-0 me-3 shortcut-kbd-wrapper" style="z-index: 10;">
-                                <kbd class="shortcut-kbd">Ctrl K</kbd>
-                            </div>
+
                         </div>
                         <div id="searchSuggestions" class="search-suggestions-dropdown shadow-lg rounded-3 border-0 mt-2" style="display: none; overflow:hidden;">
                             <div class="suggestions-list"></div>
