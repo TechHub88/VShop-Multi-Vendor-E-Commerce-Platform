@@ -915,8 +915,14 @@ function initiatePickup(id){
     $.post('/seller/orders/return/initiate-pickup',{
         id: id,
         _token: $('meta[name="csrf-token"]').attr('content')
-    }, function(){
-        loadData($('.payment-tab.active').data('type'));
+    }, function(res){
+        if(res.status) {
+            loadData($('.payment-tab.active').data('type'));
+        } else {
+            alert(res.msg || 'Error initiating pickup');
+        }
+    }).fail(function(err) {
+        alert('Server error: ' + err.statusText);
     });
 }
 
@@ -925,8 +931,14 @@ function cancelPickupAndRefund(id){
         $.post('/seller/orders/return/cancel-pickup-refund',{
             id: id,
             _token: $('meta[name="csrf-token"]').attr('content')
-        }, function(){
-            loadData($('.payment-tab.active').data('type'));
+        }, function(res){
+            if(res.status) {
+                loadData($('.payment-tab.active').data('type'));
+            } else {
+                alert(res.msg || 'Error cancelling pickup');
+            }
+        }).fail(function(err) {
+            alert('Server error: ' + err.statusText);
         });
     }
 }
@@ -934,10 +946,16 @@ function cancelPickupAndRefund(id){
 function approveReturn(id, refundMode){
     $.post('/seller/orders/return/approve',{
         id: id,
-        refund_mode: refundMode,
+        refund_mode: refundMode || 'wallet',
         _token: $('meta[name="csrf-token"]').attr('content')
-    }, function(){
-        loadData($('.payment-tab.active').data('type'));
+    }, function(res){
+        if(res.status) {
+            loadData($('.payment-tab.active').data('type'));
+        } else {
+            alert(res.msg || 'Error approving return');
+        }
+    }).fail(function(err) {
+        alert('Server error: ' + err.statusText);
     });
 }
 
