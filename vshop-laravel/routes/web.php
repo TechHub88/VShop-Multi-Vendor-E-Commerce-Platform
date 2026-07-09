@@ -2528,6 +2528,9 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         Route::prefix('recommendations')->group(function () {
             Route::get('/', [AdminMarketplaceController::class, 'recommendationsIndex'])->name('admin.marketplace.recommendations.index');
             Route::post('/store', [AdminMarketplaceController::class, 'recommendationStore'])->name('admin.marketplace.recommendations.store');
+            Route::get('/search-products', [AdminMarketplaceController::class, 'searchProducts'])->name('admin.marketplace.recommendations.searchProducts');
+            Route::get('/{id}/get', [AdminMarketplaceController::class, 'getRecommendations'])->name('admin.marketplace.recommendations.get');
+            Route::post('/{id}/save', [AdminMarketplaceController::class, 'saveRecommendations'])->name('admin.marketplace.recommendations.save');
             Route::get('/{id}/edit', [AdminMarketplaceController::class, 'recommendationEdit'])->name('admin.marketplace.recommendations.edit');
             Route::put('/{id}', [AdminMarketplaceController::class, 'recommendationUpdate'])->name('admin.marketplace.recommendations.update');
             Route::delete('/{id}', [AdminMarketplaceController::class, 'recommendationDestroy'])->name('admin.marketplace.recommendations.destroy');

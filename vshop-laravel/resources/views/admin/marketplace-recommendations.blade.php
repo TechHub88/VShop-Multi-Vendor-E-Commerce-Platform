@@ -342,7 +342,7 @@
             <div class="section-title">
                 1. Product Rules <span>(What to recommend with which product)</span>
             </div>
-            <button class="btn-add"><i class="ri-add-line"></i> Add Rule</button>
+            
         </div>
         
         <div class="d-flex align-items-end mb-3">
@@ -387,8 +387,8 @@
             </div>
 
             <div class="action-icons">
-                <i class="ri-edit-2-line" onclick="editRule({{ $item['rule_id'] }})"></i>
-                <i class="ri-delete-bin-line" style="color:#ef4444;" onclick="deleteRule({{ $item['rule_id'] }})"></i>
+                <i class="ri-edit-2-line" onclick="editRule({{ $item['product']->id }})"></i>
+                <i class="ri-delete-bin-line" style="color:#ef4444;" onclick="deleteRule({{ $item['product']->id }})"></i>
             </div>
         </div>
         @empty
@@ -402,7 +402,7 @@
             <div class="section-title">
                 2. Location Based Rules <span>(Show recommendations by location)</span>
             </div>
-            <button class="btn-add"><i class="ri-add-line"></i> Add Rule</button>
+            
         </div>
 
         @forelse($locationRules as $locRule)
@@ -493,7 +493,7 @@
             <div class="section-title">
                 4. AI Recommendation Rules <span>(Behavior based recommendations)</span>
             </div>
-            <button class="btn-add"><i class="ri-add-line"></i> Add Rule</button>
+            
         </div>
 
         <div class="table-responsive">
@@ -594,5 +594,400 @@
             });
         });
     });
+</script>
+
+<!-- Recommendations Modal -->
+<div class="modal fade" id="recommendationsModal" tabindex="-1" aria-labelledby="recommendationsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header text-white" style="background: linear-gradient(180deg, #2c7fc3 0%, #233d79 100%); border-top-left-radius: 16px; border-top-right-radius: 16px;">
+                <h5 class="modal-title fw-bold d-flex align-items-center text-white" id="recommendationsModalLabel">
+                    <i class="fa fa-star me-2 text-warning"></i> Configure Product Recommendations
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-light-subtle p-4" style="background-color: #f8fafc;">
+                
+                <!-- Source Product Info -->
+                <div class="card p-3 mb-4 border-0 shadow-sm bg-white" style="border-radius: 12px; border: 1px solid #e2e8f0 !important;">
+                    <div class="d-flex align-items-center gap-3">
+                        <img id="source_product_img" src="" class="rounded" style="width: 80px; height: 80px; object-fit: cover; border: 1px solid #cbd5e1;">
+                        <div>
+                            <h5 id="source_product_name" class="fw-bold mb-1 text-slate-800" style="color: #0f172a;"></h5>
+                            <div class="text-muted small mb-1">
+                                <span>SKU: <strong id="source_product_sku"></strong></span> | 
+                                <span class="badge bg-success border border-success ms-1" style="font-size: 10px;">Active</span>
+                            </div>
+                            <div id="source_product_price" class="text-primary fw-semibold fs-5" style="color: #004392 !important;"></div>
+                        </div>
+                    </div>
+                </div>
+<script>
+/* Recommendations Modal Custom CSS Styles */
+.selected-product-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    padding: 8px 12px;
+    position: relative;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    min-width: 160px;
+    max-width: 220px;
+}
+.selected-product-chip img {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #f1f5f9;
+}
+.selected-product-chip-info {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.3;
+}
+.selected-product-chip-info .name {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+.selected-product-chip-info .price {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 600;
+}
+.selected-product-chip .remove-chip-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+.selected-product-chip .remove-chip-btn:hover {
+    color: #ef4444;
+}
+
+.suggestion-card {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    height: 100%;
+}
+.suggestion-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+.suggestion-card img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid #f1f5f9;
+}
+.suggestion-card .name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    margin-bottom: 2px;
+}
+.suggestion-card .price {
+    font-size: 10px;
+    color: #64748b;
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+}
+.suggestion-card .btn-add-suggestion {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 12px;
+    border-radius: 6px;
+    border-width: 1px;
+    transition: all 0.15s ease;
+}
+
+.autocomplete-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    z-index: 1050;
+    margin-top: 4px;
+}
+.autocomplete-suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s ease;
+}
+.autocomplete-suggestion-item:last-child {
+    border-bottom: none;
+}
+.autocomplete-suggestion-item:hover {
+    background: #f8fafc;
+}
+.autocomplete-suggestion-item img {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.recommendation-section {
+    border: 1px solid #cbd5e1 !important;
+    background-color: #ffffff;
+    transition: border-color 0.2s ease;
+}
+.recommendation-section:hover {
+    border-color: #004392 !important;
+}
+</style>
+
+<script>
+$(document).ready(function() {
+    let currentProductId = null;
+    let currentRecommendations = {
+        related: [],
+        upsell: [],
+        cross_sell: [],
+        bought_together: []
+    };
+    let popularProductsList = [];
+    let autocompleteResultsCache = {};
+
+    function resetModal() {
+        currentRecommendations = {
+            related: [],
+            upsell: [],
+            cross_sell: [],
+            bought_together: []
+        };
+        autocompleteResultsCache = {};
+        $('.autocomplete-input').val('');
+        $('.autocomplete-suggestions').addClass('d-none').empty();
+        $('.selected-items-container').empty();
+        $('.suggestions-container').empty();
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function renderSelectedItems(cat) {
+        const container = $(`#selected_${cat}`);
+        container.empty();
+        
+        const items = currentRecommendations[cat];
+        if (items.length === 0) {
+            container.html('<span class="text-muted small italic">No products selected</span>');
+            return;
+        }
+        
+        items.forEach(item => {
+            const chip = `
+                <div class="selected-product-chip" data-id="${item.id}">
+                    <img src="${item.thumbnail_url}">
+                    <div class="selected-product-chip-info">
+                        <span class="name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
+                        <span class="price">₹${parseFloat(item.price || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <button type="button" class="remove-chip-btn" data-category="${cat}" data-id="${item.id}">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            `;
+            container.append(chip);
+        });
+    }
+
+    function renderSuggestions(cat) {
+        const container = $(`#suggestions_${cat}`);
+        container.empty();
+        
+        const selectedIds = currentRecommendations[cat].map(item => parseInt(item.id));
+        const availableSuggestions = popularProductsList.filter(item => !selectedIds.includes(parseInt(item.id))).slice(0, 4);
+        
+        if (availableSuggestions.length === 0) {
+            container.html('<div class="col-12"><span class="text-muted small">No suggestions available</span></div>');
+            return;
+        }
+        
+        availableSuggestions.forEach(item => {
+            const card = `
+                <div class="col-3 col-md-3">
+                    <div class="suggestion-card">
+                        <img src="${item.thumbnail_url}">
+                        <span class="name" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</span>
+                        <span class="price">₹${parseFloat(item.price || 0).toLocaleString('en-IN')}</span>
+                        <button type="button" class="btn btn-sm btn-outline-primary btn-add-suggestion w-100" data-category="${cat}" data-id="${item.id}">
+                            Add
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.append(card);
+        });
+    }
+
+    function addProductToCategory(cat, item) {
+        const selectedIds = currentRecommendations[cat].map(p => parseInt(p.id));
+        if (!selectedIds.includes(parseInt(item.id))) {
+            currentRecommendations[cat].push(item);
+            renderSelectedItems(cat);
+            renderSuggestions(cat);
+        }
+    }
+
+    function removeProductFromCategory(cat, id) {
+        currentRecommendations[cat] = currentRecommendations[cat].filter(p => parseInt(p.id) !== parseInt(id));
+        renderSelectedItems(cat);
+        renderSuggestions(cat);
+    }
+
+    function loadDefaultSuggestions() {
+        $.ajax({
+            url: '/admin/marketplace/recommendations/search-products',
+            method: 'GET',
+            data: { exclude_id: currentProductId },
+            success: function(products) {
+                popularProductsList = products;
+                const categories = ['related', 'upsell', 'cross_sell', 'bought_together'];
+                categories.forEach(cat => {
+                    renderSuggestions(cat);
+                });
+            }
+        });
+    }
+
+    // Click Recommendations action button
+    $(document).on('click', '.open-recommendations-btn', function() {
+        currentProductId = $(this).data('product-id');
+        $('#rec_product_id').val(currentProductId);
+        
+        resetModal();
+        
+        Swal.fire({
+            title: 'Loading...',
+            text: 'Fetching product details',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        $.ajax({
+            url: `/admin/marketplace/recommendations/${currentProductId}/get`,
+            method: 'GET',
+            success: function(response) {
+                Swal.close();
+                $('#source_product_name').text(response.product.name);
+                $('#source_product_sku').text(response.product.sku || 'N/A');
+                $('#source_product_price').text('₹ ' + parseFloat(response.product.price || 0).toLocaleString('en-IN', {minimumFractionDigits: 2}));
+                $('#source_product_img').attr('src', response.product.thumbnail_url);
+                
+                const recs = response.recommendations;
+                for (const cat in recs) {
+                    currentRecommendations[cat] = recs[cat];
+                    renderSelectedItems(cat);
+                }
+                
+                loadDefaultSuggestions();
+                
+                $('#recommendationsModal').modal('show');
+            },
+            error: function(xhr) {
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to load product recommendations.'
+                });
+            }
+        });
+    });
+// Admin Panel editRule override
+window.editRule = function(productId) {
+    currentProductId = productId;
+    
+    // Reset modal
+    $('#recommendationsForm')[0].reset();
+    for (let cat in currentRecommendations) {
+        currentRecommendations[cat] = [];
+        renderSelectedItems(cat);
+    }
+    $('.autocomplete-suggestions').addClass('d-none').empty();
+    $('.autocomplete-input').val('');
+    
+    Swal.fire({
+        title: 'Loading...',
+        text: 'Fetching product recommendations',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    $.ajax({
+        url: `/admin/marketplace/recommendations/${currentProductId}/get`,
+        method: 'GET',
+        success: function(response) {
+            Swal.close();
+            $('#source_product_name').text(response.product.name);
+            $('#source_product_sku').text(response.product.sku || 'N/A');
+            $('#source_product_price').text('₹ ' + parseFloat(response.product.price || 0).toLocaleString('en-IN', {minimumFractionDigits: 2}));
+            $('#source_product_img').attr('src', response.product.thumbnail_url);
+            
+            const recs = response.recommendations;
+            for (const cat in recs) {
+                currentRecommendations[cat] = recs[cat];
+                renderSelectedItems(cat);
+            }
+            
+            loadDefaultSuggestions();
+            $('#recommendationsModal').modal('show');
+        },
+        error: function(xhr) {
+            Swal.close();
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to load product recommendations.'
+            });
+        }
+    });
+};
 </script>
 @endsection

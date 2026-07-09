@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers\admin;
-
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\MarketplaceCategory;
@@ -21,6 +20,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log; 
 use App\Models\RecommendationRule;
+
 class AdminMarketplaceController extends Controller
 {
    
@@ -1293,10 +1293,115 @@ public function recommendationUpdate(Request $request, $id)
     return response()->json(['success' => true, 'message' => 'Rule updated successfully.']);
 }
 
+public function searchProducts(Request $request)
+{
+    $q = $request->q;
+    $excludeId = $request->exclude_id;
+    
+    $query = Product::where('status', 'active');
+    
+    if ($excludeId) {
+        $query->where('id', '!=', $excludeId);
+    }
+
+    if ($q) {
+        $query->where(function($sub) use ($q) {
+            $sub->where('name', 'LIKE', "%{$q}%")
+                ->orWhere('sku', 'LIKE', "%{$q}%");
+        });
+    }
+
+    $products = $query->limit(20)->get(['id', 'name', 'price', 'thumbnail', 'sku']);
+
+    foreach ($products as $product) {
+        $product->thumbnail_url = $product->thumbnail ? asset($product->thumbnail) : asset('images/no-image.png');
+    }
+
+    return response()->json($products);
+}
+
+public function getRecommendations($id)
+{
+    $product = Product::findOrFail($id);
+
+    $rules = RecommendationRule::where('type', 'product')
+        ->where('source', $product->id)
+        ->get();
+
+    $categories = [
+        'related' => [],
+        'upsell' => [],
+        'cross_sell' => [],
+        'bought_together' => []
+    ];
+
+    foreach ($rules as $rule) {
+        $cat = $rule->source_type;
+        if (array_key_exists($cat, $categories)) {
+            $targetIds = is_array($rule->targets) ? $rule->targets : json_decode($rule->targets, true);
+            if (!empty($targetIds)) {
+                $targetProducts = Product::whereIn('id', $targetIds)
+                    ->get(['id', 'name', 'price', 'thumbnail', 'sku']);
+                foreach ($targetProducts as $tp) {
+                    $tp->thumbnail_url = $tp->thumbnail ? asset($tp->thumbnail) : asset('images/no-image.png');
+                }
+                $categories[$cat] = $targetProducts;
+            }
+        }
+    }
+
+    return response()->json([
+        'product' => [
+            'id' => $product->id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'price' => $product->price,
+            'thumbnail_url' => $product->thumbnail ? asset($product->thumbnail) : asset('images/no-image.png'),
+        ],
+        'recommendations' => $categories
+    ]);
+}
+
+public function saveRecommendations(Request $request, $id)
+{
+    $product = Product::findOrFail($id);
+    
+    $categories = ['related', 'upsell', 'cross_sell', 'bought_together'];
+
+    foreach ($categories as $cat) {
+        $targetIds = $request->input($cat, []);
+
+        if (empty($targetIds)) {
+            RecommendationRule::where('type', 'product')
+                ->where('source', $product->id)
+                ->where('source_type', $cat)
+                ->delete();
+        } else {
+            RecommendationRule::updateOrCreate(
+                [
+                    'type' => 'product',
+                    'source' => $product->id,
+                    'source_type' => $cat
+                ],
+                [
+                    'targets' => $targetIds,
+                    'is_active' => true,
+                    'priority' => 0
+                ]
+            );
+        }
+    }
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Recommendations saved successfully.'
+    ]);
+}
+
 public function recommendationDestroy($id)
 {
-    RecommendationRule::findOrFail($id)->delete();
-    return response()->json(['success' => true, 'message' => 'Rule deleted.']);
+    RecommendationRule::where('source', $id)->delete();
+    return response()->json(['success' => true, 'message' => 'Rules deleted.']);
 }
 
 public function recommendationToggleStatus($id)
