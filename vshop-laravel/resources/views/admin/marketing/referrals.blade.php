@@ -937,6 +937,14 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
         });
     });
 
+    // Check URL for tab param
+    const urlParams = new URLSearchParams(window.location.search);
+    const tabParam = urlParams.get('tab');
+    if (tabParam) {
+        const tabBtn = document.querySelector(`.ref-tab-btn[data-tab="${tabParam}"]`);
+        if (tabBtn) tabBtn.click();
+    }
+
     window.sellersList = [];
     window.loadSellers = async function() {
         if (window.sellersList.length === 0) {
