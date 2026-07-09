@@ -217,6 +217,9 @@ Thumbnail Image
 name="thumbnail"
 class="form-control"
 id="thumbInput">
+<small class="text-muted d-block mt-1">
+    Max size: 2MB. Only JPG / PNG allowed.
+</small>
 <small id="thumbError" class="text-danger d-block"></small>
 <div id="thumbPreview" class="mt-3">
 
@@ -252,8 +255,8 @@ id="imageInput"
 multiple
 class="form-control">
 
-<small class="text-muted">
-Max 4 media (images + videos combined)
+<small class="text-muted d-block mt-1">
+Max 4 media (images + videos combined). Max size: 2MB per image. Only JPG / PNG allowed.
 </small>
 
 <small id="mediaError"
@@ -394,6 +397,8 @@ Save & Continue →
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 <script>
@@ -449,11 +454,73 @@ function validateMediaSection(){
 | THUMB CHANGE
 ========================================================= */
 
-$('#thumbInput').on('change', function(){
+========================================================= */
+
+let nsfwModel = null;
+
+// Preload the NSFWJS model
+async function loadNSFWModel() {
+    try {
+        if (!nsfwModel) {
+            nsfwModel = await nsfwjs.load('/models/mobilenet_v2/');
+            console.log("NSFW model loaded successfully.");
+        }
+    } catch (e) {
+        console.error("Failed to load NSFW model:", e);
+    }
+}
+
+$(document).ready(function() {
+    loadNSFWModel();
+});
+
+function checkImageSafety(file) {
+    return new Promise((resolve) => {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let img = new Image();
+            img.onload = async function() {
+                try {
+                    let predictions = await nsfwModel.classify(img);
+                    let isUnsafe = false;
+                    predictions.forEach(p => {
+                        let category = p.className.toLowerCase();
+                        let prob = p.probability;
+                        if ((category === 'porn' || category === 'hentai') && prob > 0.15) {
+                            isUnsafe = true;
+                        }
+                        if (category === 'sexy' && prob > 0.30) {
+                            isUnsafe = true;
+                        }
+                    });
+                    if (isUnsafe) {
+                        resolve(false);
+                    } else {
+                        resolve(true);
+                    }
+                } catch (err) {
+                    resolve(true);
+                }
+            };
+            img.onerror = function() { resolve(true); };
+            img.src = e.target.result;
+        };
+        reader.onerror = function() { resolve(true); };
+        reader.readAsDataURL(file);
+    });
+}
+
+$('#thumbInput').on('change', async function(){
 
     let file = this.files[0];
 
     if(!file) return;
+
+    if(file.size > 2 * 1024 * 1024){
+        $('#thumbError').text('File size exceeds 2MB limit').show();
+        this.value='';
+        return;
+    }
 
     if(
         ![
@@ -462,10 +529,28 @@ $('#thumbInput').on('change', function(){
             'image/jpg'
         ].includes(file.type)
     ){
-        $('#mediaError').text('Only JPG / PNG allowed').show();
+        $('#thumbError').text('Only JPG / PNG allowed').show();
         this.value='';
         return;
     }
+
+    let statusEl = $('<div id="thumbScanStatus" class="text-warning small mt-1 font-weight-bold"><i class="fa fa-spinner fa-spin me-1"></i> Scanning image pixels for safety check... Please wait.</div>');
+    $(this).after(statusEl);
+    $('#thumbError').hide();
+
+    if (!nsfwModel) await loadNSFWModel();
+
+    if (nsfwModel) {
+        let isSafe = await checkImageSafety(file);
+        if (!isSafe) {
+            statusEl.remove();
+            $('#thumbError').text("The uploaded thumbnail contains inappropriate (NSFW) content and has been removed.").show();
+            this.value='';
+            return;
+        }
+    }
+    
+    statusEl.remove();
 
     let reader = new FileReader();
 
@@ -502,7 +587,7 @@ $(document).on('click','.remove-thumb',function(){
 | GALLERY ADD (🔥 FIXED)
 ========================================================= */
 
-$('#imageInput').on('change', function(){
+$('#imageInput').on('change', async function(){
 
     let files = Array.from(this.files);
 
@@ -511,26 +596,41 @@ $('#imageInput').on('change', function(){
 
     /* ✅ VIDEO REMOVED FROM COUNT */
     if(existingCount + currentNew + files.length > 4){
-
-        $('#mediaError')
-        .text("Maximum 4 images allowed")
-        .show();
-
+        $('#mediaError').text("Maximum 4 images allowed").show();
         this.value='';
         return;
     }
 
-    files.forEach(file => {
+    let statusEl = $('<div id="galleryScanStatus" class="text-warning small mt-1 font-weight-bold"><i class="fa fa-spinner fa-spin me-1"></i> Scanning image pixels for safety check... Please wait.</div>');
+    $(this).after(statusEl);
+    $('#mediaError').hide();
 
-        if(
-            ![
-                'image/jpeg',
-                'image/png',
-                'image/jpg'
-            ].includes(file.type)
-        ){
-            $('#mediaError').text('Only image files allowed').show();
+    if (!nsfwModel) await loadNSFWModel();
+
+    for (let file of files) {
+
+        if(file.size > 2 * 1024 * 1024){
+            statusEl.remove();
+            $('#mediaError').text('One of the files exceeds 2MB limit').show();
+            this.value='';
             return;
+        }
+
+        if(!['image/jpeg','image/png','image/jpg'].includes(file.type)){
+            statusEl.remove();
+            $('#mediaError').text('Only JPG / PNG image files allowed').show();
+            this.value='';
+            return;
+        }
+
+        if (nsfwModel) {
+            let isSafe = await checkImageSafety(file);
+            if (!isSafe) {
+                statusEl.remove();
+                $('#mediaError').text("One of the uploaded gallery images contains inappropriate (NSFW) content and has been removed.").show();
+                this.value='';
+                return;
+            }
         }
 
         selectedFiles.push(file);
@@ -554,7 +654,9 @@ $('#imageInput').on('change', function(){
 
         reader.readAsDataURL(file);
 
-    });
+    }
+    
+    statusEl.remove();
 
     this.value='';
 
