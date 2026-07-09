@@ -102,16 +102,18 @@
                 <div class="row">
                     <div class="col-md-6 form-group-modern">
                         <label> Title</label>
-                        <input type="text" name="title" class="form-control form-control-modern" placeholder="Enter an engaging title" required>
+                        <input type="text" name="title" class="form-control form-control-modern" placeholder="Enter an engaging title" required value="{{ old('title') }}">
+                        @error('title') <span class="text-danger d-block mt-1" style="font-size:12px;">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="col-md-6 form-group-modern">
                         <label>Target Audience</label>
                         <select name="target_type" id="target_type" class="form-control form-control-modern">
-                            <option value="product">Vshop (Products)</option>
-                            <option value="service">Vtravel (Services)</option>
-                            <option value="both">Both</option>
+                            <option value="product" {{ old('target_type') == 'product' ? 'selected' : '' }}>Vshop (Products)</option>
+                            <option value="service" {{ old('target_type') == 'service' ? 'selected' : '' }}>Vtravel (Services)</option>
+                            <option value="both" {{ old('target_type') == 'both' ? 'selected' : '' }}>Both</option>
                         </select>
+                        @error('target_type') <span class="text-danger d-block mt-1" style="font-size:12px;">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="col-md-6 form-group-modern product-box">
@@ -122,9 +124,10 @@
                                 $uniqueCategories = $categories->unique('name');
                             @endphp
                             @foreach($uniqueCategories as $c)
-                                <option value="{{ $c->id }}" data-name="{{ $c->name }}">{{ $c->name }}</option>
+                                <option value="{{ $c->id }}" data-name="{{ $c->name }}" {{ old('category_id') == $c->id ? 'selected' : '' }}>{{ $c->name }}</option>
                             @endforeach
                         </select>
+                        @error('category_id') <span class="text-danger d-block mt-1" style="font-size:12px;">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="col-md-6 form-group-modern product-box">
@@ -132,9 +135,10 @@
                         <select name="product_id" id="productSelect" class="form-control form-control-modern">
                             <option value="">Select Target Product</option>
                             @foreach($products as $p)
-                                <option value="{{ $p->id }}" data-category-name="{{ $p->category ? $p->category->name : '' }}">{{ $p->name }} ({{ ucfirst($p->type ?? 'product') }})</option>
+                                <option value="{{ $p->id }}" data-category-name="{{ $p->category ? $p->category->name : '' }}" {{ old('product_id') == $p->id ? 'selected' : '' }}>{{ $p->name }} ({{ ucfirst($p->type ?? 'product') }})</option>
                             @endforeach
                         </select>
+                        @error('product_id') <span class="text-danger d-block mt-1" style="font-size:12px;">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
@@ -147,11 +151,12 @@
                     <div class="col-md-6 form-group-modern">
                         <label>Advertisement Type</label>
                         <select name="type" class="form-control form-control-modern">
-                            <option value="banner">Banner</option>
-                            <option value="video">Video</option>
-                            <option value="campaign">Campaign</option>
-                            <option value="featured">Featured</option>
+                            <option value="banner" {{ old('type') == 'banner' ? 'selected' : '' }}>Banner</option>
+                            <option value="video" {{ old('type') == 'video' ? 'selected' : '' }}>Video</option>
+                            <option value="campaign" {{ old('type') == 'campaign' ? 'selected' : '' }}>Campaign</option>
+                            <option value="featured" {{ old('type') == 'featured' ? 'selected' : '' }}>Featured</option>
                         </select>
+                        @error('type') <span class="text-danger d-block mt-1" style="font-size:12px;">{{ $message }}</span> @enderror
                         <div id="type_instruction" class="instruction-badge">
                             <i class="fas fa-crop-alt me-1"></i> <span>Size as per Banner standard</span>
                         </div>
@@ -160,6 +165,11 @@
                     <div class="col-md-6 form-group-modern">
                         <label>Images</label>
                         <input type="file" name="images[]" multiple class="form-control form-control-modern">
+                        @if($errors->has('images') || $errors->has('images.*'))
+                            <div class="text-danger mt-1" style="font-size:12px;">
+                                {{ $errors->first('images') ?: $errors->first('images.0') ?: $errors->first('images.*') }}
+                            </div>
+                        @endif
                         <small class="text-muted d-block mt-2" style="font-size: 11px; line-height: 1.4;">
                             <i class="fas fa-info-circle text-primary me-1"></i> <strong>Formats:</strong> JPG, PNG, WEBP. Max 2MB per image.<br>
                             - <strong>Banner:</strong> 1200 x 380 px<br>
@@ -171,6 +181,11 @@
                     <div class="col-md-6 form-group-modern">
                         <label>Videos</label>
                         <input type="file" name="videos[]" multiple class="form-control form-control-modern">
+                        @if($errors->has('videos') || $errors->has('videos.*'))
+                            <div class="text-danger mt-1" style="font-size:12px;">
+                                {{ $errors->first('videos') ?: $errors->first('videos.0') ?: $errors->first('videos.*') }}
+                            </div>
+                        @endif
                         <small class="text-muted d-block mt-2" style="font-size: 11px; line-height: 1.4;">
                             <i class="fas fa-info-circle text-primary me-1"></i> <strong>Formats:</strong> MP4 (H.264), WEBM. Max 50MB.<br>
                             - <strong>Dimensions:</strong> Vertical 9:16 (1080 x 1920 px or 720 x 1280 px)<br>
@@ -187,17 +202,20 @@
                 <div class="row">
                     <div class="col-md-6 form-group-modern">
                         <label>Start Date</label>
-                        <input type="datetime-local" name="start_date" class="form-control form-control-modern">
+                        <input type="datetime-local" name="start_date" class="form-control form-control-modern" value="{{ old('start_date') }}">
+                        @error('start_date') <span class="text-danger d-block mt-1" style="font-size:12px;">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="col-md-6 form-group-modern">
                         <label>End Date</label>
-                        <input type="datetime-local" name="end_date" class="form-control form-control-modern">
+                        <input type="datetime-local" name="end_date" class="form-control form-control-modern" value="{{ old('end_date') }}">
+                        @error('end_date') <span class="text-danger d-block mt-1" style="font-size:12px;">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="col-md-12 form-group-modern">
                         <label>Description (Optional)</label>
-                        <textarea name="description" class="form-control form-control-modern" rows="3" placeholder="Additional details about this campaign..."></textarea>
+                        <textarea name="description" class="form-control form-control-modern" rows="3" placeholder="Additional details about this campaign...">{{ old('description') }}</textarea>
+                        @error('description') <span class="text-danger d-block mt-1" style="font-size:12px;">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
