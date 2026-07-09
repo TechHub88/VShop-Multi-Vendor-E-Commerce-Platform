@@ -330,14 +330,14 @@
     </div>
 
     <div class="custom-tabs">
-        <div class="custom-tab active">Product Rules</div>
-        <div class="custom-tab">Location Rules</div>
-        <div class="custom-tab">Sponsored Recommendations</div>
-        <div class="custom-tab">AI Recommendation Rules</div>
+        <div class="custom-tab active" data-target="#tab-product">Product Rules</div>
+        <div class="custom-tab" data-target="#tab-location">Location Rules</div>
+        <div class="custom-tab" data-target="#tab-sponsored">Sponsored Recommendations</div>
+        <div class="custom-tab" data-target="#tab-ai">AI Recommendation Rules</div>
     </div>
 
     <!-- 1. Product Rules -->
-    <div class="section-card">
+    <div class="section-card tab-section" id="tab-product">
         <div class="section-header">
             <div class="section-title">
                 1. Product Rules <span>(What to recommend with which product)</span>
@@ -354,8 +354,8 @@
         <div class="rule-row">
             <div class="product-box">
                 <div class="product-img">
-                    @if($item['product']->image)
-                        <img src="{{ asset($item['product']->image) }}" alt="{{ $item['product']->name }}">
+                    @if($item['product']->thumbnail)
+                        <img src="{{ asset($item['product']->thumbnail) }}" alt="{{ $item['product']->name }}">
                     @else
                         <i class="ri-smartphone-line" style="font-size: 40px; color: #4b5563;"></i>
                     @endif
@@ -371,8 +371,8 @@
                 @forelse($item['recommended_products'] as $rec)
                 <div class="product-box">
                     <div class="product-img">
-                        @if($rec->image)
-                            <img src="{{ asset($rec->image) }}" alt="{{ $rec->name }}">
+                        @if($rec->thumbnail)
+                            <img src="{{ asset($rec->thumbnail) }}" alt="{{ $rec->name }}">
                         @else
                             <i class="ri-plug-line" style="font-size: 32px; color: #9ca3af;"></i>
                         @endif
@@ -397,7 +397,7 @@
     </div>
 
     <!-- 2. Location Based Rules -->
-    <div class="section-card">
+    <div class="section-card tab-section d-none" id="tab-location">
         <div class="section-header">
             <div class="section-title">
                 2. Location Based Rules <span>(Show recommendations by location)</span>
@@ -418,8 +418,8 @@
                 @forelse($locRule['recommended_products'] as $rec)
                 <div class="product-box" style="width: auto; max-width: 120px;">
                     <div class="location-img">
-                        @if($rec->image)
-                            <img src="{{ asset($rec->image) }}" alt="{{ $rec->name }}">
+                        @if($rec->thumbnail)
+                            <img src="{{ asset($rec->thumbnail) }}" alt="{{ $rec->name }}">
                         @else
                             <img src="https://images.unsplash.com/photo-1571536802807-30451e3955d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Placeholder">
                         @endif
@@ -442,7 +442,7 @@
     </div>
 
     <!-- 3. Sponsored Recommendations -->
-    <div class="section-card">
+    <div class="section-card tab-section d-none" id="tab-sponsored">
         <div class="section-header">
             <div class="section-title">
                 3. Sponsored Recommendations <span>(Paid priority placement)</span>
@@ -488,7 +488,7 @@
     </div>
 
     <!-- 4. AI Recommendation Rules -->
-    <div class="section-card">
+    <div class="section-card tab-section d-none" id="tab-ai">
         <div class="section-header">
             <div class="section-title">
                 4. AI Recommendation Rules <span>(Behavior based recommendations)</span>
@@ -574,5 +574,25 @@
         Note: Changes may take up to 30 minutes to reflect on the buyer panel.
     </div>
 </div>
-@endsection
 
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabs = document.querySelectorAll('.custom-tab');
+        const sections = document.querySelectorAll('.tab-section');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                sections.forEach(s => s.classList.add('d-none'));
+
+                const target = document.querySelector(tab.getAttribute('data-target'));
+                if (target) {
+                    target.classList.remove('d-none');
+                }
+            });
+        });
+    });
+</script>
+@endsection
