@@ -1060,11 +1060,18 @@ public function promotionAnalytics(Request $request)
             ? (($campaign->total_revenue - ($campaign->boost_amount ?? 0)) / ($campaign->boost_amount ?? 1)) * 100 
             : 0;
             
-        // Simulate impressions and conversions based on orders since we don't have views table
-        $enquiriesForCampaign = max(1, $campaign->total_orders * rand(2, 5));
-        $campaign->impressions = $enquiriesForCampaign * rand(80, 150) + rand(1000, 5000);
-        $campaign->total_enquiries = $enquiriesForCampaign;
-        $campaign->boost_conversion_rate = ($campaign->total_enquiries / $campaign->impressions) * 100;
+        // Real impressions and conversions
+        $product = DB::table('products')->where('id', $campaign->id)->first();
+        $campaign->impressions = $product ? ($product->views ?? 0) : 0;
+        
+        $campaign->total_enquiries = DB::table('enquiries')
+            ->where('product_id', $campaign->id)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->count();
+            
+        $campaign->boost_conversion_rate = $campaign->impressions > 0 
+            ? ($campaign->total_enquiries / $campaign->impressions) * 100 
+            : 0;
     }
     
     // Most Boosted Categories
@@ -1131,9 +1138,11 @@ public function promotionAnalytics(Request $request)
         ->whereBetween('created_at', [$startDate, $endDate])
         ->count();
         
-    $boostStats['enquiries'] = $enquiries > 0 ? $enquiries : rand(120, 500); // Simulated if 0
-    $boostStats['impressions'] = $boostStats['enquiries'] * rand(85, 150) + rand(10000, 50000);
-    $boostStats['ctr'] = ($boostStats['enquiries'] / $boostStats['impressions']) * 100;
+    $boostStats['enquiries'] = $enquiries;
+    $boostStats['impressions'] = (int) DB::table('products')->where('is_boosted', 1)->sum('views');
+    $boostStats['ctr'] = $boostStats['impressions'] > 0 
+        ? ($boostStats['enquiries'] / $boostStats['impressions']) * 100 
+        : 0;
     
     $boostStats['overall_roi'] = ($boostStats['total_boost_spend'] ?? 0) > 0 
         ? (($boostStats['total_boost_revenue'] - ($boostStats['total_boost_spend'] ?? 0)) / ($boostStats['total_boost_spend'] ?? 1)) * 100 
@@ -1176,10 +1185,12 @@ public function campaignROI(Request $request)
         )
         ->groupBy('products.id', 'products.name', 'products.boost_amount', 'sellers.name', 'marketplace_categories.name')
         ->get()
-        ->map(function($campaign) {
-            // Simulate enquiries for the campaign since they are currently just counting orders
-            $enquiriesForCampaign = max(1, $campaign->total_orders * rand(2, 5));
-            $campaign->total_enquiries = $enquiriesForCampaign;
+        ->map(function($campaign) use ($startDate, $endDate) {
+            // Real enquiries for the campaign
+            $campaign->total_enquiries = DB::table('enquiries')
+                ->where('product_id', $campaign->id)
+                ->whereBetween('created_at', [$startDate, $endDate])
+                ->count();
             
             $campaign->cpa = $campaign->total_enquiries > 0 
                 ? ($campaign->boost_amount ?? 0) / $campaign->total_enquiries 
@@ -1315,27 +1326,34 @@ public function leadAnalytics(Request $request)
         ->values();
         
     // Calculate Summary Totals
-    $totalEnquiries = DB::table('order_items')
+    $totalEnquiries = DB::table('enquiries')
         ->whereBetween('created_at', [$startDate, $endDate])
         ->count();
-    $totalClicks = $totalEnquiries * rand(12, 18); // Simulated since no click tracking exists
+    $totalClicks = (int) DB::table('products')->sum('views'); // Real total views/clicks
     $totalConversions = DB::table('orders')
         ->whereBetween('created_at', [$startDate, $endDate])
         ->count();
     $avgConversionRate = $totalEnquiries > 0 ? ($totalConversions / $totalEnquiries) * 100 : 0;
     $leadValue = DB::table('order_items')->whereBetween('created_at', [$startDate, $endDate])->avg('total') ?? 0;
     
-    // Simulated Graph Data (Since actual daily tracking tables might be missing)
+    // Real Graph Data
     $graphDates = collect();
     $graphClicks = collect();
     $graphEnquiries = collect();
     
     for ($i = 6; $i >= 0; $i--) {
-        $date = Carbon::now()->subDays($i)->format('M d');
+        $dayStart = Carbon::now()->subDays($i)->startOfDay();
+        $dayEnd = Carbon::now()->subDays($i)->endOfDay();
+        $date = $dayStart->format('M d');
+        
         $graphDates->push($date);
-        $dayEnquiries = max(10, rand(20, 80));
+        
+        $dayEnquiries = DB::table('enquiries')
+            ->whereBetween('created_at', [$dayStart, $dayEnd])
+            ->count();
         $graphEnquiries->push($dayEnquiries);
-        $graphClicks->push($dayEnquiries * rand(10, 20));
+        
+        $graphClicks->push(0); // Daily clicks history not tracked in DB
     }
     
     return view('admin.analytics.lead-analytics', compact(
