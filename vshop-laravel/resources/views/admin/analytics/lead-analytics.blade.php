@@ -111,8 +111,10 @@
             <div class="card">
                 <div class="card-body">
                     <h4 class="header-title mb-2 fs-6"> Lead Distribution</h4>
-                    <div class="d-flex justify-content-center">
-                        <canvas id="leadDistributionPieChart" style="max-width: 200px; height: auto;"></canvas>
+                    <div class="d-flex justify-content-center align-items-center" style="height: 260px;">
+                        <div style="position: relative; height: 220px; width: 220px;">
+                            <canvas id="leadDistributionPieChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -318,7 +320,7 @@
                     labels: ['Clicked Only', 'Enquired', 'Converted', 'Lost'],
                     datasets: [{ data: [8500, 1850, 600, 1250], backgroundColor: ['#17a2b8', '#ffc107', '#28a745', '#dc3545'], borderWidth: 0, hoverOffset: 8 }]
                 },
-                options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 8 } }, tooltip: { callbacks: { label: function(ctx) { const total = 8500+1850+600+1250; const pct = ((ctx.raw/total)*100).toFixed(1); return `${ctx.label}: ${ctx.raw.toLocaleString()} (${pct}%)`; } } } } }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 8 } }, tooltip: { callbacks: { label: function(ctx) { const total = 8500+1850+600+1250; const pct = ((ctx.raw/total)*100).toFixed(1); return `${ctx.label}: ${ctx.raw.toLocaleString()} (${pct}%)`; } } } } }
             });
         }
         
