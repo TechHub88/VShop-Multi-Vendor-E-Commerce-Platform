@@ -447,7 +447,7 @@
             <div class="section-title">
                 3. Sponsored Recommendations <span>(Paid priority placement)</span>
             </div>
-            <a href="{{ route('admin.referrals.index') }}?tab=campaigns" class="btn-add" style="text-decoration:none;"><i class="ri-add-line"></i> Add Campaign</a>
+            <a href="{{ url('/admin/referral-system') }}?tab=campaigns" class="btn-add" style="text-decoration:none;"><i class="ri-add-line"></i> Add Campaign</a>
         </div>
 
         <div class="table-responsive">
