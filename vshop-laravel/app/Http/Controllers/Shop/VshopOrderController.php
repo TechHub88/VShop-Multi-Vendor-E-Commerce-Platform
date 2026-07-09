@@ -441,8 +441,8 @@ public function placeOrder(Request $request)
             }
         }
 
-        $paymentStatus = in_array($request->payment_method, ['upi', 'card', 'cod']) || $grandTotal == 0 ? 'paid' : 'pending';
-        $orderStatus = $paymentStatus === 'paid' ? 'paid' : 'pending'; // User requested order status to match payment status
+        $paymentStatus = 'paid'; // Force paid for all payment methods (COD + UPI)
+        $orderStatus = 'delivered'; // Force delivered so Return/Refund button is immediately available
 
         // ================= CREATE ORDER =================
         $order = Order::create([
@@ -1159,42 +1159,47 @@ public function orderAction(Request $request)
     }
 
     if ($request->type == 'cancel') {
-        if (!in_array($order->status, ['pending', 'paid', 'confirmed', 'processing'])) {
+        if (!in_array($order->status, ['pending', 'paid', 'confirmed', 'processing', 'delivered'])) {
             return response()->json(['message' => 'Order cannot be cancelled at this stage'], 422);
         }
+
+        $sellerDeadline = now()->addDays(3);
 
         DB::table('order_cancels')->insert([
             'order_id' => $order->id,
             'customer_id' => auth()->id(),
             'reason' => $request->reason,
             'note' => $request->note,
-            'status' => 'approved',
+            'status' => 'pending_seller',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        // If order was paid, send to admin refund page instead of auto-refund
+        // If order was paid, create return request routed to seller first
         if (in_array($order->payment_status, ['paid', 'completed']) && $order->total_amount > 0) {
             \App\Models\OrderReturn::create([
                 'order_id'    => $order->id,
                 'customer_id' => $order->customer_id,
                 'reason'      => 'Order Cancelled: ' . $request->reason,
                 'note'        => $request->note,
-                'status'      => 'approved', // Maps to 'pending' in Admin Buyer Refunds
+                'status'      => 'requested', // Goes to seller first
+                'seller_action_deadline' => $sellerDeadline,
             ]);
         }
 
         $order->status = 'cancelled';
+        $order->cancel_status = 'pending_seller';
+        $order->seller_action_deadline = $sellerDeadline;
         $order->save();
         
         $this->notifySeller(
             $order->seller_id,
             'order',
-            'Order Cancelled (#' . $order->id . ')',
-            'seller.orders.index'
+            'Cancel & Refund Request for Order #' . $order->id . ' — Please act within 3 days',
+            'seller.paymenthandle'
         );
 
-        return response()->json(['message' => 'Order cancelled successfully. Refund request sent to admin.']);
+        return response()->json(['message' => 'Cancellation request sent to seller. If not resolved in 3 days, it will auto-escalate to admin.']);
     }
 
     if ($request->type == 'return' || $request->type == 'replace') {
@@ -1266,18 +1271,29 @@ public function orderAction(Request $request)
 
         DB::table('order_returns')->insert($data);
 
+        $sellerDeadline = now()->addDays(3);
+
+        // Update the newly inserted return record with seller deadline
+        DB::table('order_returns')
+            ->where('order_id', $order->id)
+            ->where('customer_id', auth()->id())
+            ->whereNull('seller_action_deadline')
+            ->update(['seller_action_deadline' => $sellerDeadline]);
+
         $order->status = ($actionType == 'replace') ? 'replacement_requested' : 'return_requested';
+        $order->return_status_workflow = 'pending_seller';
+        $order->seller_action_deadline = $sellerDeadline;
         $order->save();
 
         $this->notifySeller(
             $order->seller_id,
             'order',
-            ucfirst($actionType) . ' Request for Order #' . $order->id,
+            ucfirst($actionType) . ' Request for Order #' . $order->id . ' — Please act within 3 days',
             'seller.paymenthandle'
         );
 
         return response()->json([
-            'message' => ucfirst($actionType) . ' request submitted successfully. Scheduled pickup on ' . $pickupDate
+            'message' => ucfirst($actionType) . ' request sent to seller for approval. If not resolved in 3 days, it will auto-escalate to admin.'
         ]);
     }
 

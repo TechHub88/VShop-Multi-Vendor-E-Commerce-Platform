@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 
 Schedule::command('vshop:refund-sla-check')->daily();
+Schedule::command('orders:auto-refund-expired')->hourly();

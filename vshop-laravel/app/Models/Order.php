@@ -93,7 +93,13 @@ class Order extends Model
         'fraud_reason',
         'refund_amount',
         'refund_reason',
-        'refunded_at','discount_amount'
+        'refunded_at','discount_amount',
+        
+        // ================= ESCALATION WORKFLOW =================
+        'cancel_status',
+        'return_status_workflow',
+        'escalated_to_admin_at',
+        'seller_action_deadline',
         
     ];
 

@@ -33,6 +33,10 @@ class OrderReturn extends Model
         'pickup_time',
         'return_type',
         'otp','attachment',
+        'escalated_to_admin_at',
+        'seller_action_deadline',
+        'pickup_initiated_at',
+        'admin_refund_status',
     ];
 
     /**

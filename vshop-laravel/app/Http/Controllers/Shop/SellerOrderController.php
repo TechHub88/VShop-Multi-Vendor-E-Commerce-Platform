@@ -721,6 +721,7 @@ public function approveReturn(Request $request)
         if ($orderReturn) {
             $orderReturn->status = 'approved';
             $orderReturn->refund_mode = $request->refund_mode ?? 'wallet';
+            $orderReturn->admin_refund_status = 'pending'; // Now goes to admin for refund
             $orderReturn->save();
             $order = $orderReturn->order;
         } else {
@@ -733,12 +734,14 @@ public function approveReturn(Request $request)
                         'customer_id' => $order->customer_id,
                         'reason' => 'Return requested',
                         'status' => 'approved',
-                        'refund_mode' => $request->refund_mode ?? 'wallet'
+                        'refund_mode' => $request->refund_mode ?? 'wallet',
+                        'admin_refund_status' => 'pending',
                     ]
                 );
                 if ($orderReturn->status !== 'approved') {
                     $orderReturn->status = 'approved';
                     $orderReturn->refund_mode = $request->refund_mode ?? 'wallet';
+                    $orderReturn->admin_refund_status = 'pending';
                     $orderReturn->save();
                 }
             }
@@ -750,13 +753,14 @@ public function approveReturn(Request $request)
 
         $order->refund_status = 'processing';
         $order->status = 'return_approved';
+        $order->return_status_workflow = 'approved_by_seller';
         $order->save();
 
         NotificationService::notify(
             $order->customer_id,
             'customer',
             'order',
-            "Return request for order #{$order->id} has been approved.",
+            "Return request for order #{$order->id} has been approved by seller. Refund is being processed.",
             route('vshop.order.details', $order->id)
         );
 
@@ -826,6 +830,44 @@ public function rejectReturn(Request $request)
             'status'=>false,
             'msg'=>$e->getMessage()
         ]);
+    }
+}
+
+// ================= INITIATE PICKUP (Seller Step 1) =================
+public function initiatePickup(Request $request)
+{
+    try {
+        if(empty($request->id)){
+            return response()->json(['status'=>false,'msg'=>'ID missing']);
+        }
+
+        $orderReturn = \App\Models\OrderReturn::find($request->id);
+        if (!$orderReturn) {
+            return response()->json(['status'=>false,'msg'=>'Return request not found']);
+        }
+
+        $orderReturn->pickup_initiated_at = now();
+        $orderReturn->status = 'pickup_initiated';
+        $orderReturn->save();
+
+        $order = $orderReturn->order;
+        if ($order) {
+            $order->return_status_workflow = 'pickup_initiated';
+            $order->save();
+        }
+
+        NotificationService::notify(
+            $orderReturn->customer_id,
+            'customer',
+            'order',
+            "Pickup initiated for return order #{$orderReturn->order_id}. Seller will verify and approve.",
+            route('vshop.order.details', $orderReturn->order_id)
+        );
+
+        return response()->json(['status'=>true, 'msg'=>'Pickup initiated successfully']);
+
+    } catch (\Exception $e) {
+        return response()->json(['status'=>false, 'msg'=>$e->getMessage()]);
     }
 }
 

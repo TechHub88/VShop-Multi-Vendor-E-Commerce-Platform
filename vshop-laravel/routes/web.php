@@ -602,6 +602,7 @@ Route::get('/order/getproducts', [SellerOrderController::class,'getProducts']);
 Route::post('/orders/return/approve', [SellerOrderController::class, 'approveReturn']);
 Route::post('/orders/return/reject', [SellerOrderController::class, 'rejectReturn']);
 Route::post('/orders/return/verify', [SellerOrderController::class, 'verifyReturn']);
+Route::post('/orders/return/initiate-pickup', [SellerOrderController::class, 'initiatePickup']);
         
         Route::get('/orders/verify-return/{id}', [SellerOrderController::class, 'verifyReturn'])
     ->name('orders.verify-return');

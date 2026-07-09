@@ -595,6 +595,7 @@ if (data.returnRequests && data.returnRequests.length > 0) {
     data.returnRequests.forEach(rr=>{
         let statusBadge = '';
         if(rr.status === 'requested') statusBadge = '<span class="badge bg-warning">Requested</span>';
+        else if(rr.status === 'pickup_initiated') statusBadge = '<span class="badge bg-primary">Pickup Initiated</span>';
         else if(rr.status === 'approved') statusBadge = '<span class="badge bg-info">Approved</span>';
         else if(rr.status === 'rejected') statusBadge = '<span class="badge bg-danger">Rejected</span>';
         else if(rr.status === 'refunded') statusBadge = '<span class="badge bg-success">Refunded</span>';
@@ -602,9 +603,23 @@ if (data.returnRequests && data.returnRequests.length > 0) {
         let actionButtons = '';
         if(rr.status === 'requested') {
             actionButtons = `
-                <button class="btn btn-primary btn-sm px-2 py-1" onclick="openActionModal(${rr.id}, ${rr.order_id}, 'requested')">
-                    <i class="fa-solid fa-gears"></i> Process
-                </button>
+                <div class="d-flex flex-column gap-1">
+                    <span class="small fw-bold">Pickup Initiated?</span>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-success btn-sm py-0 px-2" onclick="initiatePickup(${rr.id})">Yes</button>
+                        <button class="btn btn-danger btn-sm py-0 px-2" onclick="openActionModal(${rr.id}, ${rr.order_id}, 'requested')">No</button>
+                    </div>
+                </div>
+            `;
+        } else if(rr.status === 'pickup_initiated') {
+            actionButtons = `
+                <div class="d-flex flex-column gap-1">
+                    <span class="small fw-bold">Pickup Success?</span>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-success btn-sm py-0 px-2" onclick="approveReturn(${rr.id})">Yes</button>
+                        <button class="btn btn-danger btn-sm py-0 px-2" onclick="openActionModal(${rr.id}, ${rr.order_id}, 'requested')">No</button>
+                    </div>
+                </div>
             `;
         } else if(rr.status === 'approved') {
             actionButtons = `
@@ -896,6 +911,15 @@ loadData($('.payment-tab.active').data('type'));
 
 
 // ================= APPROVE / REJECT =================
+function initiatePickup(id){
+    $.post('/seller/orders/return/initiate-pickup',{
+        id: id,
+        _token: $('meta[name="csrf-token"]').attr('content')
+    }, function(){
+        loadData($('.payment-tab.active').data('type'));
+    });
+}
+
 function approveReturn(id, refundMode){
     $.post('/seller/orders/return/approve',{
         id: id,
