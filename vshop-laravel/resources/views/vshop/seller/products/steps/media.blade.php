@@ -494,12 +494,12 @@ function checkImageSafety(file) {
                         }
                     });
                     if (isUnsafe) {
-                        resolve(false);
+                        resolve({safe: false, reason: "Inappropriate content (" + reason + ") detected."});
                     } else {
-                        resolve(true);
+                        resolve({safe: true, reason: ""});
                     }
                 } catch (err) {
-                    resolve(true);
+                    resolve({safe: true, reason: ""});
                 }
             };
             img.onerror = function() { resolve(true); };
@@ -541,10 +541,10 @@ $('#thumbInput').on('change', async function(){
     if (!nsfwModel) await loadNSFWModel();
 
     if (nsfwModel) {
-        let isSafe = await checkImageSafety(file);
-        if (!isSafe) {
+        let safetyResult = await checkImageSafety(file);
+        if (!safetyResult.safe) {
             statusEl.remove();
-            $('#thumbError').text("The uploaded thumbnail contains inappropriate (NSFW) content and has been removed.").show();
+            $('#thumbError').text("The uploaded thumbnail was removed automatically because: " + safetyResult.reason).show();
             this.value='';
             return;
         }
@@ -624,10 +624,10 @@ $('#imageInput').on('change', async function(){
         }
 
         if (nsfwModel) {
-            let isSafe = await checkImageSafety(file);
-            if (!isSafe) {
+            let safetyResult = await checkImageSafety(file);
+            if (!safetyResult.safe) {
                 statusEl.remove();
-                $('#mediaError').text("One of the uploaded gallery images contains inappropriate (NSFW) content and has been removed.").show();
+                $('#mediaError').text("One of the uploaded gallery images was automatically removed because: " + safetyResult.reason).show();
                 this.value='';
                 return;
             }

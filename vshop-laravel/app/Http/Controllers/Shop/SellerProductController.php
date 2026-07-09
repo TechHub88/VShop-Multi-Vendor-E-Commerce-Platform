@@ -1211,7 +1211,7 @@ public function saveMedia(Request $request, Product $product)
     |--------------------------------------------------------------------------
     |
     */
-    $oldImages = json_decode($product->images, true) ?? [];
+    $oldImages = is_array($product->images) ? $product->images : (json_decode($product->images, true) ?? []);
 
     $images = [];
     $videos = [];
