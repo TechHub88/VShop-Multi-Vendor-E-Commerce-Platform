@@ -103,7 +103,7 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h6 class="text-muted mb-3">CPA Trend</h6>
+                    <h6 class="text-muted mb-3">CPA per Campaign</h6>
                     <canvas id="cpaTrendChart" height="180"></canvas>
                 </div>
             </div>
@@ -119,7 +119,7 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h6 class="text-muted mb-3">ROI Trend</h6>
+                    <h6 class="text-muted mb-3">ROI per Campaign</h6>
                     <canvas id="roiTrendChart" height="180"></canvas>
                 </div>
             </div>
@@ -166,75 +166,42 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-    // Dummy Data for Campaign Table
-    const campaigns = [
-        { name: 'Summer Boost', spend: 41000, leads: 3400, conversions: 650, cpa: 13.04, roi: 320 },
-        { name: 'Home Care Offer', spend: 36000, leads: 3120, conversions: 520, cpa: 12.16, roi: 290 },
-        { name: 'Mansion Special', spend: 32000, leads: 2450, conversions: 410, cpa: 12.06, roi: 250 },
-        { name: 'Salon Fest', spend: 28000, leads: 2150, conversions: 340, cpa: 11.02, roi: 230 },
-        { name: 'First Contact Drive', spend: 27000, leads: 1860, conversions: 260, cpa: 11.33, roi: 210 },
-        { name: 'Electro Expo', spend: 25000, leads: 1980, conversions: 310, cpa: 12.63, roi: 240 },
-        { name: 'Wellness Week', spend: 21000, leads: 1670, conversions: 290, cpa: 11.38, roi: 260 }
-    ];
+    // Convert dynamic PHP data to JavaScript
+    const campaignNames = {!! json_encode($campaigns->pluck('name')) !!};
+    const cpaData = {!! json_encode($campaigns->pluck('cpa')) !!};
+    const spendData = {!! json_encode($campaigns->pluck('boost_amount')) !!};
+    const leadsData = {!! json_encode($campaigns->pluck('total_enquiries')) !!};
+    const roiData = {!! json_encode($campaigns->pluck('roi')) !!};
 
-    // Populate table
-    const tbody = document.getElementById('campaignTableBody');
-    campaigns.forEach(c => {
-        const row = `<tr>
-            <td class="fw-semibold">${c.name}</td>
-            <td>₹${c.spend.toLocaleString()}</td>
-            <td>${c.leads.toLocaleString()}</td>
-            <td>${c.conversions.toLocaleString()}</td>
-            <td>₹${c.cpa.toFixed(2)}</td>
-            <td class="${c.roi >= 0 ? 'text-success' : 'text-danger'} fw-bold">${c.roi}%</td>
-        </tr>`;
-        tbody.insertAdjacentHTML('beforeend', row);
-    });
-
-    // Dummy chart data (dates from May 1 to May 31)
-    const dates = [];
-    for (let i = 1; i <= 31; i++) dates.push(`May ${i}`);
-
-    // CPA Trend data (fluctuating between ₹10-₹15)
-    const cpaData = dates.map(() => (Math.random() * 5 + 10).toFixed(2));
-    const cpaNumeric = cpaData.map(v => parseFloat(v));
-
-    // Spend vs Leads: Spend (₹) and Leads count
-    const spendData = dates.map(() => Math.floor(Math.random() * 50000) + 20000);
-    const leadsData = dates.map(() => Math.floor(Math.random() * 2000) + 800);
-
-    // ROI Trend data (percentage)
-    const roiData = dates.map(() => Math.floor(Math.random() * 300) + 100);
-
-    // Render CPA Trend Chart
+    // Render CPA Chart (Bar Chart)
     new Chart(document.getElementById('cpaTrendChart'), {
-        type: 'line',
-        data: { labels: dates, datasets: [{ label: 'CPA (₹)', data: cpaNumeric, borderColor: '#dc3545', tension: 0.3, fill: false }] },
+        type: 'bar',
+        data: { labels: campaignNames, datasets: [{ label: 'CPA (₹)', data: cpaData, backgroundColor: 'rgba(220, 53, 69, 0.7)', borderColor: '#dc3545', borderWidth: 1 }] },
         options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } } }
     });
 
-    // Render Spend vs Leads Chart (dual axis)
+    // Render Spend vs Leads Chart (Dual Axis: Bar & Line)
     new Chart(document.getElementById('spendLeadsChart'), {
-        type: 'line',
+        type: 'bar',
         data: {
-            labels: dates,
+            labels: campaignNames,
             datasets: [
-                { label: 'Spend (₹)', data: spendData, borderColor: '#0d6efd', tension: 0.3, fill: false, yAxisID: 'y' },
-                { label: 'Leads', data: leadsData, borderColor: '#6c757d', tension: 0.3, fill: false, yAxisID: 'y1' }
+                { label: 'Spend (₹)', data: spendData, backgroundColor: 'rgba(13, 110, 253, 0.7)', borderColor: '#0d6efd', borderWidth: 1, yAxisID: 'y' },
+                { label: 'Leads', data: leadsData, type: 'line', borderColor: '#6c757d', backgroundColor: '#6c757d', tension: 0.3, fill: false, yAxisID: 'y1' }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
             plugins: { legend: { position: 'top' } },
-            scales: { y: { title: { display: true, text: 'Spend (₹)' } }, y1: { position: 'right', title: { text: 'Leads' }, grid: { drawOnChartArea: false } } }
+            scales: { y: { title: { display: true, text: 'Spend (₹)' } }, y1: { position: 'right', title: { display: true, text: 'Leads' }, grid: { drawOnChartArea: false } } }
         }
     });
 
-    // Render ROI Trend Chart
+    // Render ROI Chart (Bar Chart)
     new Chart(document.getElementById('roiTrendChart'), {
-        type: 'line',
-        data: { labels: dates, datasets: [{ label: 'ROI (%)', data: roiData, borderColor: '#198754', tension: 0.3, fill: false }] },
+        type: 'bar',
+        data: { labels: campaignNames, datasets: [{ label: 'ROI (%)', data: roiData, backgroundColor: 'rgba(25, 135, 84, 0.7)', borderColor: '#198754', borderWidth: 1 }] },
         options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
     });
 
