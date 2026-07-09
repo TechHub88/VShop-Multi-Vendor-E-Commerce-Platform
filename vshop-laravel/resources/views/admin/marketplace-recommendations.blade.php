@@ -857,7 +857,7 @@
 </style>
 @endsection
 
-@section('script')
+@section('script-bottom')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const tabs = document.querySelectorAll('.custom-tab');
@@ -878,7 +878,7 @@
         });
     });
 </script>
-<script>
+<script type="module">
 $(document).ready(function() {
     let currentProductId = null;
     let currentRecommendations = {
