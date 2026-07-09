@@ -1291,34 +1291,73 @@ public function recommendationUpdate(Request $request, $id)
     ]);
 
     return response()->json(['success' => true, 'message' => 'Rule updated successfully.']);
-}
+}    public function searchProducts(Request $request)
+    {
+        $q = $request->q;
+        $excludeId = $request->exclude_id;
+        
+        $query = Product::where('status', 'active');
+        
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
 
-public function searchProducts(Request $request)
-{
-    $q = $request->q;
-    $excludeId = $request->exclude_id;
-    
-    $query = Product::where('status', 'active');
-    
-    if ($excludeId) {
-        $query->where('id', '!=', $excludeId);
+        if ($q) {
+            $query->where(function($sub) use ($q) {
+                $sub->where('name', 'LIKE', "%{$q}%")
+                    ->orWhere('sku', 'LIKE', "%{$q}%")
+                    ->orWhere('meta_keywords', 'LIKE', "%{$q}%")
+                    ->orWhere('seo_tags', 'LIKE', "%{$q}%");
+            });
+        } else if ($excludeId) {
+            // When opening popup (no $q), use the source product's keywords for smart suggestions
+            $sourceProduct = Product::find($excludeId);
+            if ($sourceProduct) {
+                $query->where(function($sub) use ($sourceProduct) {
+                    $hasKeywords = false;
+                    
+                    if (!empty($sourceProduct->meta_keywords)) {
+                        $keywords = explode(',', $sourceProduct->meta_keywords);
+                        foreach($keywords as $kwd) {
+                            $k = trim($kwd);
+                            if (!empty($k)) {
+                                $hasKeywords = true;
+                                $sub->orWhere('meta_keywords', 'LIKE', "%{$k}%")
+                                    ->orWhere('seo_tags', 'LIKE', "%{$k}%")
+                                    ->orWhere('name', 'LIKE', "%{$k}%");
+                            }
+                        }
+                    }
+                    
+                    if (!empty($sourceProduct->seo_tags)) {
+                        $tags = explode(',', $sourceProduct->seo_tags);
+                        foreach($tags as $t) {
+                            $tag = trim($t);
+                            if (!empty($tag)) {
+                                $hasKeywords = true;
+                                $sub->orWhere('meta_keywords', 'LIKE', "%{$tag}%")
+                                    ->orWhere('seo_tags', 'LIKE', "%{$tag}%")
+                                    ->orWhere('name', 'LIKE', "%{$tag}%");
+                            }
+                        }
+                    }
+                    
+                    // Fallback to same category if no keywords
+                    if (!$hasKeywords && !empty($sourceProduct->category_id)) {
+                        $sub->orWhere('category_id', $sourceProduct->category_id);
+                    }
+                });
+            }
+        }
+
+        $products = $query->limit(20)->get(['id', 'name', 'price', 'thumbnail', 'sku']);
+
+        foreach ($products as $product) {
+            $product->thumbnail_url = asset($product->thumbnail);
+        }
+
+        return response()->json($products);
     }
-
-    if ($q) {
-        $query->where(function($sub) use ($q) {
-            $sub->where('name', 'LIKE', "%{$q}%")
-                ->orWhere('sku', 'LIKE', "%{$q}%");
-        });
-    }
-
-    $products = $query->limit(20)->get(['id', 'name', 'price', 'thumbnail', 'sku']);
-
-    foreach ($products as $product) {
-        $product->thumbnail_url = $product->thumbnail ? asset($product->thumbnail) : asset('images/no-image.png');
-    }
-
-    return response()->json($products);
-}
 
 public function getRecommendations($id)
 {

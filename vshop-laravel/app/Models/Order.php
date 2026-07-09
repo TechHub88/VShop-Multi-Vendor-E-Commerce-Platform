@@ -16,7 +16,7 @@ class Order extends Model
         'payment_method',
         'payment_status',
         'payment_attempts',
-        'payment_type', // full / partial
+        'payment_type', 
 
         'sub_total',
         'gst_amount',
@@ -27,12 +27,12 @@ class Order extends Model
 
         'status',
 
-        // ================= CHECKOUT =================
+      
         'delivery_address_id',
         'billing_address_id',
         'order_date',
 
-        // ================= TAX =================
+       
         'cgst',
         'sgst',
         'igst',

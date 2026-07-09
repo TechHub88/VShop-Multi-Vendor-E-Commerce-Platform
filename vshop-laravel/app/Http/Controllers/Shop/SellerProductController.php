@@ -38,7 +38,6 @@ class SellerProductController extends Controller
     }
 
 
-
 public function getBoostProducts()
 {
     try {
