@@ -1203,93 +1203,93 @@ $(document).ready(function() {
             }
         });
     });
-}); // End of document.ready
-// Admin Panel editRule override
-window.editRule = function(productId) {
-    currentProductId = productId;
-    
-    // Reset modal
-    $('#recommendationsForm')[0].reset();
-    for (let cat in currentRecommendations) {
-        currentRecommendations[cat] = [];
-        renderSelectedItems(cat);
-    }
-    $('.autocomplete-suggestions').addClass('d-none').empty();
-    $('.autocomplete-input').val('');
-    
-    Swal.fire({
-        title: 'Loading...',
-        text: 'Fetching product recommendations',
-        allowOutsideClick: false,
-        didOpen: () => {
-            Swal.showLoading();
+    // Admin Panel editRule override
+    window.editRule = function(productId) {
+        currentProductId = productId;
+        
+        // Reset modal
+        $('#recommendationsForm')[0].reset();
+        for (let cat in currentRecommendations) {
+            currentRecommendations[cat] = [];
+            renderSelectedItems(cat);
         }
-    });
-
-    $.ajax({
-        url: `/admin/marketplace/recommendations/${currentProductId}/get`,
-        method: 'GET',
-        success: function(response) {
-            Swal.close();
-            $('#source_product_name').text(response.product.name);
-            $('#source_product_sku').text(response.product.sku || 'N/A');
-            $('#source_product_price').text('₹ ' + parseFloat(response.product.price || 0).toLocaleString('en-IN', {minimumFractionDigits: 2}));
-            $('#source_product_img').attr('src', response.product.thumbnail_url);
-            
-            const recs = response.recommendations;
-            for (const cat in recs) {
-                currentRecommendations[cat] = recs[cat];
-                renderSelectedItems(cat);
+        $('.autocomplete-suggestions').addClass('d-none').empty();
+        $('.autocomplete-input').val('');
+        
+        Swal.fire({
+            title: 'Loading...',
+            text: 'Fetching product recommendations',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
             }
-            
-            loadDefaultSuggestions();
-            $('#recommendationsModal').modal('show');
-        },
-        error: function(xhr) {
-            Swal.close();
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Failed to load product recommendations.'
-            });
-        }
-    });
-};
+        });
 
-window.deleteRule = function(productId) {
-    Swal.fire({
-        title: 'Are you sure?',
-        text: "This will remove all recommendations for this product.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#9ca3af',
-        confirmButtonText: 'Yes, delete it!'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            $.ajax({
-                url: `/admin/marketplace/recommendations/${productId}`,
-                method: 'DELETE',
-                data: {
-                    _token: '{{ csrf_token() }}'
-                },
-                success: function(response) {
-                    if(response.success) {
-                        Swal.fire(
-                            'Deleted!',
-                            'Recommendations have been deleted.',
-                            'success'
-                        ).then(() => location.reload());
-                    } else {
-                        Swal.fire('Error!', response.message || 'Failed to delete', 'error');
-                    }
-                },
-                error: function() {
-                    Swal.fire('Error!', 'Something went wrong', 'error');
+        $.ajax({
+            url: `/admin/marketplace/recommendations/${currentProductId}/get`,
+            method: 'GET',
+            success: function(response) {
+                Swal.close();
+                $('#source_product_name').text(response.product.name);
+                $('#source_product_sku').text(response.product.sku || 'N/A');
+                $('#source_product_price').text('₹ ' + parseFloat(response.product.price || 0).toLocaleString('en-IN', {minimumFractionDigits: 2}));
+                $('#source_product_img').attr('src', response.product.thumbnail_url);
+                
+                const recs = response.recommendations;
+                for (const cat in recs) {
+                    currentRecommendations[cat] = recs[cat];
+                    renderSelectedItems(cat);
                 }
-            });
-        }
-    });
-};
+                
+                loadDefaultSuggestions();
+                $('#recommendationsModal').modal('show');
+            },
+            error: function(xhr) {
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to load product recommendations.'
+                });
+            }
+        });
+    };
+
+    window.deleteRule = function(productId) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This will remove all recommendations for this product.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#9ca3af',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/admin/marketplace/recommendations/${productId}`,
+                    method: 'DELETE',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if(response.success) {
+                            Swal.fire(
+                                'Deleted!',
+                                'Recommendations have been deleted.',
+                                'success'
+                            ).then(() => location.reload());
+                        } else {
+                            Swal.fire('Error!', response.message || 'Failed to delete', 'error');
+                        }
+                    },
+                    error: function() {
+                        Swal.fire('Error!', 'Something went wrong', 'error');
+                    }
+                });
+            }
+        });
+    };
+}); // End of document.ready
 </script>
 @endsection
