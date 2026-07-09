@@ -1,0 +1,1 @@
+﻿<?php $cols = DB::select("DESCRIBE wallet_transactions"); foreach($cols as $col) { if($col->Field == "user_type" || $col->Field == "transaction_type") { echo $col->Field . ": " . $col->Type . "\n"; } } ?>
