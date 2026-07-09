@@ -698,7 +698,7 @@
                     <table class="table table-hover mb-0">
                         <thead>
                             <tr>
-                                <th>Target</th>
+                                <th>Product</th>
                                 <th>Per Day</th>
                                 <th>Days</th>
                                 <th>Total Spend</th>
@@ -718,8 +718,19 @@
                                 @endphp
                                 <tr>
                                     <td>
-                                        <div class="fw-bold text-dark">{{ $product->name ?? 'All Products' }}</div>
-                                        <div class="fs-12 text-muted">{{ $seller->name ?? 'Global' }} &bull; {{ $category->name ?? 'Any Category' }}</div>
+                                        <div class="d-flex align-items-center gap-3">
+                                            @if($product && $product->thumbnail)
+                                                <img src="{{ asset($product->thumbnail) }}" alt="{{ $product->name }}" class="rounded" style="width: 48px; height: 48px; object-fit: cover;">
+                                            @else
+                                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                                    <i class="bx bx-image text-muted fs-4"></i>
+                                                </div>
+                                            @endif
+                                            <div>
+                                                <div class="fw-bold text-dark">{{ $product->name ?? 'All Products' }}</div>
+                                                <div class="fs-12 text-muted">{{ $seller->name ?? 'Global' }} &bull; {{ $category->name ?? 'Any Category' }}</div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td class="fw-semibold text-success"><span class="money" data-amount="{{ $boost['per_day'] ?? 0 }}">₹{{ number_format($boost['per_day'] ?? 0, 2) }}</span></td>
                                     <td>{{ $boost['days'] ?? 1 }}</td>
@@ -1445,6 +1456,16 @@
             btn.classList.add('active');
             document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
         });
+    });
+
+    // Check URL for tab parameter
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        if (tabParam) {
+            const tabBtn = document.querySelector(`.master-tab-btn[data-tab="${tabParam}-revenue"]`) || document.querySelector(`.master-tab-btn[data-tab="${tabParam}"]`);
+            if (tabBtn) tabBtn.click();
+        }
     });
 
     // ========== DYNAMIC FORM OPTIONS ==========

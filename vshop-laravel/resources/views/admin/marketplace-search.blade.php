@@ -213,9 +213,8 @@
                 <p class="text-muted mb-0">Manage product visibility, boost rankings, and control search placements</p>
             </div>
             <div class="col-md-4 text-end">
-                <button class="btn btn-primary-custom" data-bs-toggle="modal" data-bs-target="#addBoostModal">
-                    <i class="bi bi-plus-lg me-2"></i>Add Boosted Product
-                </button>
+                <a href="{{ route('admin.settings.master_control') }}?tab=boost" class="btn btn-primary-custom">
+                    <i class="bi bi-plus-lg me-2"></i>Add Boost
             </div>
         </div>
     </div>
