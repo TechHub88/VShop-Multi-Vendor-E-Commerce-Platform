@@ -1272,17 +1272,30 @@
                 $('#lbl_last_updated').text(enq.formatted_updated);
 
                 // Product Details Info
-                $('#lbl_prod_name').text(enq.product_service || 'N/A');
-                let derivedPrice = ((enq.id * 233) % 4500) + 999;
-                $('#lbl_prod_price').text('₹ ' + derivedPrice.toLocaleString('en-IN'));
+                if (res.product) {
+                    $('#lbl_prod_name').text(res.product.name || 'N/A');
+                    $('#lbl_prod_price').text(res.product.price || 'N/A');
+                    $('#lbl_prod_category').text(res.product.category || 'N/A');
+                    $('#lbl_prod_brand').text(res.product.brand || 'N/A');
+                    $('#lbl_prod_sku').text(res.product.sku || 'N/A');
+                    
+                    if (res.product.image_url) {
+                        $('#lbl_product_image_container').html('<img src="' + res.product.image_url + '" class="img-fluid rounded" style="max-height: 100%; max-width: 100%; object-fit: contain;">');
+                    } else {
+                        $('#lbl_product_image_container').html('<i class="bx bx-package text-secondary" style="font-size: 48px;" id="lbl_product_image_placeholder"></i>');
+                    }
+                } else {
+                    $('#lbl_prod_name').text(enq.product_service || 'N/A');
+                    let derivedPrice = ((enq.id * 233) % 4500) + 999;
+                    $('#lbl_prod_price').text('₹ ' + derivedPrice.toLocaleString('en-IN'));
+                    $('#lbl_prod_category').text(enq.category || 'N/A');
+                    let brand = enq.product_service ? enq.product_service.trim().split(/\s+/)[0] : 'V-Shop Select';
+                    $('#lbl_prod_brand').text(brand);
+                    let skuCode = 'VS-' + String(enq.id).padStart(5, '0') + '-' + (enq.category ? enq.category.substring(0,3).toUpperCase() : 'PROD');
+                    $('#lbl_prod_sku').text(skuCode);
+                    $('#lbl_product_image_container').html('<i class="bx bx-package text-secondary" style="font-size: 48px;" id="lbl_product_image_placeholder"></i>');
+                }
                 $('#lbl_prod_qty').text(enq.quantity || 1);
-                $('#lbl_prod_category').text(enq.category || 'N/A');
-                
-                let brand = enq.product_service ? enq.product_service.trim().split(/\s+/)[0] : 'V-Shop Select';
-                $('#lbl_prod_brand').text(brand);
-                
-                let skuCode = 'VS-' + String(enq.id).padStart(5, '0') + '-' + (enq.category ? enq.category.substring(0,3).toUpperCase() : 'PROD');
-                $('#lbl_prod_sku').text(skuCode);
 
                 // Customer Message / Requirement
                 $('#lbl_customer_message').text(enq.message || 'I want to know more about this product. Please share more details.');
