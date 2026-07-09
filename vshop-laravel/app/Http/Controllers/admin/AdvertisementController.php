@@ -39,6 +39,25 @@ class AdvertisementController extends Controller
      */
     public function store(Request $request)
     {
+        // Detailed upload error check for videos
+        if (isset($_FILES['videos']['error'])) {
+            $errors = is_array($_FILES['videos']['error']) ? $_FILES['videos']['error'] : [$_FILES['videos']['error']];
+            foreach ($errors as $index => $error) {
+                if ($error !== UPLOAD_ERR_OK && $error !== UPLOAD_ERR_NO_FILE) {
+                    $messages = [
+                        UPLOAD_ERR_INI_SIZE   => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
+                        UPLOAD_ERR_FORM_SIZE  => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.',
+                        UPLOAD_ERR_PARTIAL    => 'The uploaded file was only partially uploaded.',
+                        UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
+                        UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                        UPLOAD_ERR_EXTENSION  => 'A PHP extension stopped the file upload.',
+                    ];
+                    $msg = $messages[$error] ?? 'Unknown upload error.';
+                    return back()->withInput()->withErrors(['videos.'.$index => 'Server upload failed (Code '.$error.'): ' . $msg]);
+                }
+            }
+        }
+
         // VALIDATION 🔥
         $request->validate([
             'title' => 'required|string|max:255',
@@ -139,6 +158,25 @@ class AdvertisementController extends Controller
      */
     public function update(Request $request, $id)
     {
+        // Detailed upload error check for videos
+        if (isset($_FILES['videos']['error'])) {
+            $errors = is_array($_FILES['videos']['error']) ? $_FILES['videos']['error'] : [$_FILES['videos']['error']];
+            foreach ($errors as $index => $error) {
+                if ($error !== UPLOAD_ERR_OK && $error !== UPLOAD_ERR_NO_FILE) {
+                    $messages = [
+                        UPLOAD_ERR_INI_SIZE   => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
+                        UPLOAD_ERR_FORM_SIZE  => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.',
+                        UPLOAD_ERR_PARTIAL    => 'The uploaded file was only partially uploaded.',
+                        UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
+                        UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                        UPLOAD_ERR_EXTENSION  => 'A PHP extension stopped the file upload.',
+                    ];
+                    $msg = $messages[$error] ?? 'Unknown upload error.';
+                    return back()->withInput()->withErrors(['videos.'.$index => 'Server upload failed (Code '.$error.'): ' . $msg]);
+                }
+            }
+        }
+
         $ad = Advertisement::findOrFail($id);
 
         // VALIDATION
