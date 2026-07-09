@@ -1035,8 +1035,8 @@ public function getOrderDetails(Request $request)
     $commissionRules = DB::table('commission_management')->get();
     $sellerId = $order->seller_id;
     $appType = 'vshop';
-    $platformComm = 30; // default fallback
-    $sellerComm = 60;
+    $platformComm = 70; // default fallback
+    $sellerComm = 20;
     $referrerComm = 10;
 
     // Priority 1: Exact seller + app match

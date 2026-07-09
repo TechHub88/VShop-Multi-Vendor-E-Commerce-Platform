@@ -655,9 +655,9 @@ $this->notifySeller(
 
             /* ================= DYNAMIC COMMISSION CALCULATION ================= */
 
-            $sellerComm = 60;
+            $sellerComm = 20;
             $referrerComm = 10;
-            $platformComm = 30;
+            $platformComm = 70;
 
             $appType = 'vshop';
 

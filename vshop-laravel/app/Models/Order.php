@@ -169,9 +169,9 @@ class Order extends Model
     public function getCommissionSplitAttribute()
     {
         // Default fallbacks
-        $sellerComm = 60;
+        $sellerComm = 20;
         $referrerComm = 10;
-        $platformComm = 30;
+        $platformComm = 70;
 
         $sellerId = $this->seller_id;
         

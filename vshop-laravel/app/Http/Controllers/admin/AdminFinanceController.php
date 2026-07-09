@@ -121,9 +121,9 @@ class AdminFinanceController extends Controller
                 'sell_type' => 'direct',
                 'total_sales' => 0.00,
                 'commission_type' => 'percentage',
-                'seller_commission' => 60,
+                'seller_commission' => 20,
                 'referrer_commission' => 10,
-                'platform_commission' => 30,
+                'platform_commission' => 70,
                 'referral_id' => null
             ]
         ];
@@ -1489,9 +1489,9 @@ public function saveAppPricing(Request $request)
         }
         
         return response()->json([
-            'seller_rate' => 60,
+            'seller_rate' => 20,
             'referrer_rate' => 10,
-            'platform_rate' => 30,
+            'platform_rate' => 70,
             'total_sales' => $totalSales,
         ]);
     }
@@ -1511,9 +1511,9 @@ public function saveAppPricing(Request $request)
                     'sell_type' => $comm['sell_type'] ?? 'direct',
                     'total_sales' => $comm['total_sales'] ?? 0,
                     'commission_type' => $comm['commission_type'] ?? 'percentage',
-                    'seller_commission' => $comm['seller_commission'] ?? 60,
+                    'seller_commission' => $comm['seller_commission'] ?? 20,
                     'referrer_commission' => $comm['referrer_commission'] ?? 10,
-                    'platform_commission' => $comm['platform_commission'] ?? 30,
+                    'platform_commission' => $comm['platform_commission'] ?? 70,
                     'referral_id' => !empty($comm['referral_id']) ? $comm['referral_id'] : null,
                     'created_at' => now(),
                     'updated_at' => now(),

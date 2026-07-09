@@ -607,7 +607,7 @@
             <!-- Add Boost Form -->
             <div class="section-card">
                 <div class="section-header">
-                    <h2 class="section-title"><i class='bx bx-plus-circle'></i> Add New Boost Rule / Campaign</h2>
+                    <h2 class="section-title"><i class='bx bx-plus-circle'></i> Add New Boost</h2>
                 </div>
                 <div class="section-body">
                     @if ($errors->any())
