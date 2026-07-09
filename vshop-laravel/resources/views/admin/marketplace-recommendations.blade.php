@@ -386,9 +386,9 @@
                 @endforelse
             </div>
 
-            <div class="action-icons">
-                <i class="ri-edit-2-line" onclick="editRule({{ $item['product']->id }})"></i>
-                <i class="ri-delete-bin-line" style="color:#ef4444;" onclick="deleteRule({{ $item['product']->id }})"></i>
+            <div class="action-buttons ms-auto d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editRule({{ $item['product']->id }})">Edit Rule</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteRule({{ $item['product']->id }})">Delete Rule</button>
             </div>
         </div>
         @empty
@@ -622,7 +622,112 @@
                         </div>
                     </div>
                 </div>
-<script>
+
+                <p class="text-muted small mb-4">
+                    Add related products/services that will be shown to buyers on product pages, cart, checkout, etc.
+                </p>
+
+                <!-- Form sections for 4 types of recommendations -->
+                <form id="recommendationsForm">
+                    @csrf
+                    <input type="hidden" id="rec_product_id" name="product_id">
+
+                    <!-- Section 1: Related Products -->
+                    <div class="recommendation-section mb-4 p-3 bg-white rounded-4 shadow-sm border border-slate-100" style="border-radius: 14px;">
+                        <h6 class="fw-bold text-dark d-flex align-items-center mb-3">
+                            <span class="badge bg-primary me-2" style="background: linear-gradient(180deg, #2c7fc3 0%, #233d79 100%) !important;">1</span> Related Products <span class="text-muted fw-normal ms-1" style="font-size: 12px;">(Complementary items)</span>
+                        </h6>
+                        <div class="position-relative mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control autocomplete-input" data-category="related" placeholder="Search products..." style="border-top-left-radius: 10px; border-bottom-left-radius: 10px;">
+                                <button class="btn btn-primary add-selected-btn" data-category="related" type="button" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px; background: linear-gradient(180deg, #2c7fc3 0%, #233d79 100%) !important;">Add Selected</button>
+                            </div>
+                            <div class="autocomplete-suggestions shadow-sm rounded-3 border bg-white d-none" style="max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+
+                        <!-- Selected items list -->
+                        <div class="selected-items-container d-flex flex-wrap gap-2 mb-3" id="selected_related"></div>
+
+                        <!-- Popular Suggestions -->
+                        <div class="suggestions-section">
+                            <span class="text-muted small fw-semibold d-block mb-2">Popular Suggestions</span>
+                            <div class="suggestions-container row g-2" id="suggestions_related"></div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Upsell Products -->
+                    <div class="recommendation-section mb-4 p-3 bg-white rounded-4 shadow-sm border border-slate-100" style="border-radius: 14px;">
+                        <h6 class="fw-bold text-dark d-flex align-items-center mb-3">
+                            <span class="badge bg-primary me-2" style="background: linear-gradient(180deg, #2c7fc3 0%, #233d79 100%) !important;">2</span> Upsell Products <span class="text-muted fw-normal ms-1" style="font-size: 12px;">(High value upgrade options)</span>
+                        </h6>
+                        <div class="position-relative mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control autocomplete-input" data-category="upsell" placeholder="Search products..." style="border-top-left-radius: 10px; border-bottom-left-radius: 10px;">
+                                <button class="btn btn-primary add-selected-btn" data-category="upsell" type="button" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px; background: linear-gradient(180deg, #2c7fc3 0%, #233d79 100%) !important;">Add Selected</button>
+                            </div>
+                            <div class="autocomplete-suggestions shadow-sm rounded-3 border bg-white d-none" style="max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+
+                        <div class="selected-items-container d-flex flex-wrap gap-2 mb-3" id="selected_upsell"></div>
+
+                        <div class="suggestions-section">
+                            <span class="text-muted small fw-semibold d-block mb-2">Popular Suggestions</span>
+                            <div class="suggestions-container row g-2" id="suggestions_upsell"></div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Cross-Sell Products -->
+                    <div class="recommendation-section mb-4 p-3 bg-white rounded-4 shadow-sm border border-slate-100" style="border-radius: 14px;">
+                        <h6 class="fw-bold text-dark d-flex align-items-center mb-3">
+                            <span class="badge bg-primary me-2" style="background: linear-gradient(180deg, #2c7fc3 0%, #233d79 100%) !important;">3</span> Cross-Sell Products <span class="text-muted fw-normal ms-1" style="font-size: 12px;">(Other useful items)</span>
+                        </h6>
+                        <div class="position-relative mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control autocomplete-input" data-category="cross_sell" placeholder="Search products..." style="border-top-left-radius: 10px; border-bottom-left-radius: 10px;">
+                                <button class="btn btn-primary add-selected-btn" data-category="cross_sell" type="button" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px; background: linear-gradient(180deg, #2c7fc3 0%, #233d79 100%) !important;">Add Selected</button>
+                            </div>
+                            <div class="autocomplete-suggestions shadow-sm rounded-3 border bg-white d-none" style="max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+
+                        <div class="selected-items-container d-flex flex-wrap gap-2 mb-3" id="selected_cross_sell"></div>
+
+                        <div class="suggestions-section">
+                            <span class="text-muted small fw-semibold d-block mb-2">Popular Suggestions</span>
+                            <div class="suggestions-container row g-2" id="suggestions_cross_sell"></div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Frequently Bought Together -->
+                    <div class="recommendation-section mb-4 p-3 bg-white rounded-4 shadow-sm border border-slate-100" style="border-radius: 14px;">
+                        <h6 class="fw-bold text-dark d-flex align-items-center mb-3">
+                            <span class="badge bg-primary me-2" style="background: linear-gradient(180deg, #2c7fc3 0%, #233d79 100%) !important;">4</span> Frequently Bought Together <span class="text-muted fw-normal ms-1" style="font-size: 12px;">(Bundles)</span>
+                        </h6>
+                        <div class="position-relative mb-3">
+                            <div class="input-group">
+                                <input type="text" class="form-control autocomplete-input" data-category="bought_together" placeholder="Search products..." style="border-top-left-radius: 10px; border-bottom-left-radius: 10px;">
+                                <button class="btn btn-primary add-selected-btn" data-category="bought_together" type="button" style="border-top-right-radius: 10px; border-bottom-right-radius: 10px; background: linear-gradient(180deg, #2c7fc3 0%, #233d79 100%) !important;">Add Selected</button>
+                            </div>
+                            <div class="autocomplete-suggestions shadow-sm rounded-3 border bg-white d-none" style="max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+
+                        <div class="selected-items-container d-flex flex-wrap gap-2 mb-3" id="selected_bought_together"></div>
+
+                        <div class="suggestions-section">
+                            <span class="text-muted small fw-semibold d-block mb-2">Popular Suggestions</span>
+                            <div class="suggestions-container row g-2" id="suggestions_bought_together"></div>
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+            <div class="modal-footer bg-light border-0" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal" style="border-radius: 8px;">Close</button>
+                <button type="button" class="btn btn-success px-4" id="saveRecommendationsBtn" style="border-radius: 8px; background: linear-gradient(180deg, #10b981 0%, #059669 100%) !important; border: 0 !important; color: white !important;">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
 /* Recommendations Modal Custom CSS Styles */
 .selected-product-chip {
     display: flex;
@@ -938,6 +1043,167 @@ $(document).ready(function() {
             }
         });
     });
+
+    // Autocomplete Input Search
+    $(document).on('input', '.autocomplete-input', function() {
+        const input = $(this);
+        const cat = input.data('category');
+        const query = input.val().trim();
+        const suggestionsBox = input.closest('.position-relative').find('.autocomplete-suggestions');
+        
+        if (query.length < 2) {
+            suggestionsBox.addClass('d-none').empty();
+            return;
+        }
+        
+        $.ajax({
+            url: '/admin/marketplace/recommendations/search-products',
+            method: 'GET',
+            data: { q: query, exclude_id: currentProductId },
+            success: function(products) {
+                suggestionsBox.empty();
+                if (products.length === 0) {
+                    suggestionsBox.html('<div class="p-2 text-muted small text-center">No products found</div>').removeClass('d-none');
+                    return;
+                }
+                
+                const selectedIds = currentRecommendations[cat].map(item => parseInt(item.id));
+                const filteredProducts = products.filter(p => !selectedIds.includes(parseInt(p.id)));
+                
+                if (filteredProducts.length === 0) {
+                    suggestionsBox.html('<div class="p-2 text-muted small text-center">All matching products already added</div>').removeClass('d-none');
+                    return;
+                }
+                
+                filteredProducts.forEach(item => {
+                    autocompleteResultsCache[item.id] = item;
+                    const row = `
+                        <div class="autocomplete-suggestion-item" data-category="${cat}" data-id="${item.id}">
+                            <img src="${item.thumbnail_url}">
+                            <div style="flex: 1; min-width: 0;">
+                                <div class="fw-semibold text-slate-800 text-truncate" style="font-size: 12px; color: #1e293b;">${escapeHtml(item.name)}</div>
+                                <div class="text-muted" style="font-size: 10px;">SKU: ${item.sku || 'N/A'} | ₹${parseFloat(item.price || 0).toLocaleString('en-IN')}</div>
+                            </div>
+                        </div>
+                    `;
+                    suggestionsBox.append(row);
+                });
+                suggestionsBox.removeClass('d-none');
+            }
+        });
+    });
+
+    // Close suggestions box when clicking outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.position-relative').length) {
+            $('.autocomplete-suggestions').addClass('d-none').empty();
+        }
+    });
+
+    // Click suggestion item in autocomplete box
+    $(document).on('click', '.autocomplete-suggestion-item', function() {
+        const cat = $(this).data('category');
+        const id = parseInt($(this).data('id'));
+        const item = autocompleteResultsCache[id];
+        
+        if (item) {
+            addProductToCategory(cat, item);
+        }
+        
+        const relativeDiv = $(this).closest('.position-relative');
+        relativeDiv.find('.autocomplete-input').val('');
+        relativeDiv.find('.autocomplete-suggestions').addClass('d-none').empty();
+    });
+
+    // Click Popular Suggestion "Add"
+    $(document).on('click', '.btn-add-suggestion', function() {
+        const cat = $(this).data('category');
+        const id = parseInt($(this).data('id'));
+        const item = popularProductsList.find(p => parseInt(p.id) === id);
+        if (item) {
+            addProductToCategory(cat, item);
+        }
+    });
+
+    // Remove selected product chip
+    $(document).on('click', '.remove-chip-btn', function() {
+        const cat = $(this).data('category');
+        const id = $(this).data('id');
+        removeProductFromCategory(cat, id);
+    });
+
+    // Add Selected Button
+    $(document).on('click', '.add-selected-btn', function() {
+        const cat = $(this).data('category');
+        const relativeDiv = $(this).closest('.position-relative');
+        const firstItem = relativeDiv.find('.autocomplete-suggestion-item').first();
+        if (firstItem.length) {
+            firstItem.click();
+        } else {
+            Swal.fire({
+                icon: 'info',
+                title: 'No Selection',
+                text: 'Please type to search and select a product from suggestions.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    });
+
+    // Save recommendations for admin
+    $(document).on('click', '#saveRecommendationsBtn', function() {
+        let postData = {
+            _token: '{{ csrf_token() }}',
+            related: currentRecommendations.related.map(p => p.id),
+            upsell: currentRecommendations.upsell.map(p => p.id),
+            cross_sell: currentRecommendations.cross_sell.map(p => p.id),
+            bought_together: currentRecommendations.bought_together.map(p => p.id)
+        };
+        
+        Swal.fire({
+            title: 'Saving...',
+            text: 'Updating product recommendations',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        $.ajax({
+            url: `/admin/marketplace/recommendations/${currentProductId}/save`,
+            method: 'POST',
+            data: postData,
+            success: function(response) {
+                Swal.close();
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Saved!',
+                        text: 'Product recommendations updated successfully.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: response.message || 'Failed to save recommendations.'
+                    });
+                }
+            },
+            error: function(xhr) {
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'An error occurred while saving.'
+                });
+            }
+        });
+    });
+}); // End of document.ready
 // Admin Panel editRule override
 window.editRule = function(productId) {
     currentProductId = productId;
@@ -985,6 +1251,42 @@ window.editRule = function(productId) {
                 icon: 'error',
                 title: 'Error',
                 text: 'Failed to load product recommendations.'
+            });
+        }
+    });
+};
+
+window.deleteRule = function(productId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "This will remove all recommendations for this product.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#9ca3af',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: `/admin/marketplace/recommendations/${productId}`,
+                method: 'DELETE',
+                data: {
+                    _token: '{{ csrf_token() }}'
+                },
+                success: function(response) {
+                    if(response.success) {
+                        Swal.fire(
+                            'Deleted!',
+                            'Recommendations have been deleted.',
+                            'success'
+                        ).then(() => location.reload());
+                    } else {
+                        Swal.fire('Error!', response.message || 'Failed to delete', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error!', 'Something went wrong', 'error');
+                }
             });
         }
     });
