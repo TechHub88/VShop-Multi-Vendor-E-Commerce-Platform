@@ -666,14 +666,8 @@ public function searchDiscovery(Request $request)
             ->latest()
             ->get();
 
-        // Get all boosted products (combine all)
-        $boostedProducts = Product::where(function($query) {
-                $query->where('is_featured', true)
-                      ->orWhere('is_sponsored', '1')
-                      ->orWhere('is_pinned', '1')
-                      ->orWhere('is_boosted', 1);
-            })
-            ->with('seller')
+        // Get all boosted products from BoostedListing
+        $boostedProducts = \App\Models\BoostedListing::with(['product', 'seller', 'category'])
             ->latest()
             ->get();
 

@@ -280,12 +280,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($boostedProducts as $index => $product)
-                        <tr id="row-{{ $product->id }}">
+                        @foreach($boostedProducts as $index => $boost)
+                        <tr id="row-{{ $boost->id }}">
                             <td>{{ $index + 1 }}</td>
                             <td>
-                                @if($product->thumbnail)
-                                    <img src="{{ asset($product->thumbnail) }}" class="product-image" alt="{{ $product->name }}">
+                                @if($boost->product && $boost->product->thumbnail)
+                                    <img src="{{ asset($boost->product->thumbnail) }}" class="product-image" alt="{{ $boost->product->name }}">
                                 @else
                                     <div class="product-image d-flex align-items-center justify-content-center bg-light">
                                         <i class="bi bi-image text-muted"></i>
@@ -293,38 +293,25 @@
                                 @endif
                             </td>
                             <td>
-                                <div class="fw-semibold">{{ $product->name }}</div>
-                                <small class="text-muted">SKU: {{ $product->sku ?? 'N/A' }}</small>
+                                <div class="fw-semibold">{{ $boost->product ? $boost->product->name : 'All Products (Rule)' }}</div>
+                                <small class="text-muted">{{ $boost->category ? $boost->category->name : 'All Categories' }}</small>
                             </td>
                             <td>
-                                <div>{{ $product->seller->name ?? 'Admin' }}</div>
-                                <small class="text-muted">ID: {{ $product->seller->id ?? 'N/A' }}</small>
+                                <div>{{ $boost->seller ? $boost->seller->name : 'Global' }}</div>
+                                <small class="text-muted">ID: {{ $boost->seller ? $boost->seller->id : 'N/A' }}</small>
                             </td>
-                            <td class="fw-bold">${{ number_format($product->price, 2) }}</td>
+                            <td class="fw-bold">₹{{ number_format($boost->per_day, 2) }}/day</td>
                             <td>
-                                <div class="d-flex flex-wrap gap-1">
-                                    @if($product->is_pinned)
-                                        <span class="badge-boost badge-pinned"><i class="bi bi-pin-fill"></i> Pinned</span>
-                                    @endif
-                                    @if($product->is_featured)
-                                        <span class="badge-boost badge-featured"><i class="bi bi-star-fill"></i> Featured</span>
-                                    @endif
-                                    @if($product->is_sponsored)
-                                        <span class="badge-boost badge-sponsored"><i class="bi bi-megaphone-fill"></i> Sponsored</span>
-                                    @endif
-                                    @if($product->is_boosted)
-                                        <span class="badge-boost badge-boosted"><i class="bi bi-rocket-takeoff-fill"></i> Boosted</span>
-                                    @endif
-                                </div>
+                                <span class="badge-boost badge-boosted"><i class="bi bi-rocket-takeoff-fill"></i> Boosted</span>
                             </td>
                             <td>
                                 <label class="switch">
-                                    <input type="checkbox" class="toggle-status" data-id="{{ $product->id }}" @if($product->status == 'active') checked @endif>
+                                    <input type="checkbox" class="toggle-status" data-id="{{ $boost->id }}" @if($boost->status == 'active') checked @endif disabled>
                                     <span class="slider"></span>
                                 </label>
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-danger" onclick="removeBoost({{ $product->id }})">
+                                <button class="btn btn-sm btn-danger" disabled>
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </td>
