@@ -46,7 +46,7 @@ class AdvertisementController extends Controller
             'target_type' => 'required',
             'product_id' => 'nullable|exists:products,id',
             'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'videos.*' => 'nullable|mimes:mp4,mov,avi|max:15360',
+            'videos.*' => 'nullable|mimes:mp4,mov,avi,webm|max:15360',
         ]);
 
         $catName = null;
@@ -148,7 +148,7 @@ class AdvertisementController extends Controller
             'target_type' => 'required',
             'product_id' => 'nullable|exists:products,id',
             'images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            'videos.*' => 'nullable|mimes:mp4,mov,avi|max:15360',
+            'videos.*' => 'nullable|mimes:mp4,mov,avi,webm|max:15360',
         ]);
 
         $catName = null;
