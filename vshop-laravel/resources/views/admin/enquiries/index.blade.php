@@ -482,6 +482,8 @@
                 </div>
                 @endif
             </div>
+        </div>
+
         <!-- Tab 3: Conversion Tracking -->
         <div class="tab-pane fade" id="conversion-tracking" role="tabpanel" aria-labelledby="conversion-tracking-tab">
             <div class="row g-3 mt-3 mb-4">
