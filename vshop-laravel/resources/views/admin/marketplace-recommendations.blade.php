@@ -575,26 +575,7 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const tabs = document.querySelectorAll('.custom-tab');
-        const sections = document.querySelectorAll('.tab-section');
 
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-
-                sections.forEach(s => s.classList.add('d-none'));
-
-                const target = document.querySelector(tab.getAttribute('data-target'));
-                if (target) {
-                    target.classList.remove('d-none');
-                }
-            });
-        });
-    });
-</script>
 
 <!-- Recommendations Modal -->
 <div class="modal fade" id="recommendationsModal" tabindex="-1" aria-labelledby="recommendationsModalLabel" aria-hidden="true">
@@ -874,7 +855,29 @@
     border-color: #004392 !important;
 }
 </style>
+@endsection
 
+@section('script')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabs = document.querySelectorAll('.custom-tab');
+        const sections = document.querySelectorAll('.tab-section');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                sections.forEach(s => s.classList.add('d-none'));
+
+                const target = document.querySelector(tab.getAttribute('data-target'));
+                if (target) {
+                    target.classList.remove('d-none');
+                }
+            });
+        });
+    });
+</script>
 <script>
 $(document).ready(function() {
     let currentProductId = null;
