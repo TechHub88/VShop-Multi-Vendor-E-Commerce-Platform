@@ -792,27 +792,25 @@ class WalletController extends Controller
                 'status' => 'completed'
             ]);
             
-            // ROI Tracking: Reversing Seller Commission
-            $sellerWallet = \App\Models\Wallet::firstOrCreate(
-                ['user_type' => 'seller', 'seller_id' => $sellerId],
+            // ROI Tracking: Deduct from Admin/Platform Wallet instead of Seller
+            $platformWallet = \App\Models\Wallet::firstOrCreate(
+                ['user_type' => 'platform', 'seller_id' => null, 'customer_id' => null],
                 ['balance' => 0]
             );
             
-            // Deduct proportional amount from seller
-            $amountToDeductFromSeller = $isPartial ? ($refundAmount * (1 - ($platformComm/100))) : ($order->total_amount - $platformCut);
-            $sellerWallet->balance -= $amountToDeductFromSeller;
-            $sellerWallet->save();
+            $platformWallet->balance -= $refundAmount;
+            $platformWallet->save();
             
             \App\Models\WalletTransaction::create([
-                'wallet_id' => $sellerWallet->id,
-                'seller_id' => $sellerId,
+                'wallet_id' => $platformWallet->id,
+                'seller_id' => null,
                 'customer_id' => null,
-                'user_type' => 'seller',
-                'transaction_type' => 'refund_reversal',
+                'user_type' => 'platform',
+                'transaction_type' => 'refund_deduction',
                 'credit' => 0,
-                'debit' => $amountToDeductFromSeller,
-                'balance_after' => $sellerWallet->balance,
-                'description' => "Commission & amount reversal for refunded order #{$orderReturn->order_id}",
+                'debit' => $refundAmount,
+                'balance_after' => $platformWallet->balance,
+                'description' => "Refund deduction for order #{$orderReturn->order_id}",
                 'reference_id' => 'REV_' . $orderReturn->id . '_' . time(),
                 'status' => 'completed'
             ]);

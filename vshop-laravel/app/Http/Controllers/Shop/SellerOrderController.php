@@ -764,6 +764,22 @@ public function approveReturn(Request $request)
             route('vshop.order.details', $order->id)
         );
 
+        NotificationService::notify(
+            $order->seller_id,
+            'seller',
+            'alert',
+            "You have approved return/refund for order #{$order->id}.",
+            route('seller.paymenthandle')
+        );
+
+        NotificationService::notify(
+            'all',
+            'admin',
+            'alert',
+            "Return approved for order #{$order->id} by Seller. Pending Admin Refund.",
+            url('/admin/wallet')
+        );
+
         return response()->json(['status'=>true]);
 
     } catch (\Exception $e) {
@@ -864,9 +880,93 @@ public function initiatePickup(Request $request)
             route('vshop.order.details', $orderReturn->order_id)
         );
 
+        NotificationService::notify(
+            $order->seller_id,
+            'seller',
+            'alert',
+            "You have initiated pickup for return order #{$order->id}.",
+            route('seller.paymenthandle')
+        );
+
+        NotificationService::notify(
+            'all',
+            'admin',
+            'alert',
+            "Pickup initiated for return order #{$order->id} by Seller.",
+            url('/admin/wallet') // Assuming admin wallet or orders page
+        );
+
         return response()->json(['status'=>true, 'msg'=>'Pickup initiated successfully']);
 
     } catch (\Exception $e) {
+        return response()->json(['status'=>false, 'msg'=>$e->getMessage()]);
+    }
+}
+
+public function cancelPickupAndRefund(Request $request)
+{
+    try {
+        if(empty($request->id)){
+            return response()->json(['status'=>false,'msg'=>'ID missing']);
+        }
+
+        $returnReq = \App\Models\OrderReturn::find($request->id);
+        if (!$returnReq) {
+            return response()->json(['status'=>false,'msg'=>'Return request not found']);
+        }
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+
+        $order = $returnReq->order;
+        $customer = \App\Models\Customer::find($returnReq->customer_id);
+        $refundAmount = $order->total_amount;
+
+        $returnReq->status = 'refunded';
+        $returnReq->admin_refund_status = 'completed';
+        $returnReq->note = trim($returnReq->note . " [Auto-refunded: Seller canceled pickup]");
+        $returnReq->save();
+
+        $order->status = ($returnReq->return_type == 'cancel' || str_contains(strtolower($returnReq->reason), 'cancel')) 
+            ? 'cancelled' 
+            : 'returned';
+        $order->refund_status = 'completed';
+        $order->return_status_workflow = 'refund_completed';
+        $order->save();
+
+        // Refund Customer
+        $customer->wallet_balance = ($customer->wallet_balance ?? 0) + $refundAmount;
+        $customer->save();
+        $wallet = \App\Models\Wallet::firstOrCreate(['user_type' => 'customer', 'customer_id' => $customer->id], ['balance' => 0]);
+        $wallet->balance += $refundAmount;
+        $wallet->save();
+        \App\Models\WalletTransaction::create([
+            'wallet_id' => $wallet->id, 'seller_id' => null, 'customer_id' => $customer->id,
+            'user_type' => 'customer', 'transaction_type' => 'refund', 'credit' => $refundAmount, 'debit' => 0,
+            'balance_after' => $customer->wallet_balance, 'description' => "Refund for Order #{$order->id} (Seller canceled pickup)",
+            'reference_id' => 'REF_' . $returnReq->id . '_' . time(), 'status' => 'completed'
+        ]);
+
+        // Deduct Seller
+        $sellerId = $order->seller_id;
+        $sellerWallet = \App\Models\Wallet::firstOrCreate(['user_type' => 'seller', 'seller_id' => $sellerId], ['balance' => 0]);
+        $sellerWallet->balance -= $refundAmount;
+        $sellerWallet->save();
+        \App\Models\WalletTransaction::create([
+            'wallet_id' => $sellerWallet->id, 'seller_id' => $sellerId, 'customer_id' => null,
+            'user_type' => 'seller', 'transaction_type' => 'refund_deduction', 'credit' => 0, 'debit' => $refundAmount,
+            'balance_after' => $sellerWallet->balance, 'description' => "Refund Deduction for Order #{$order->id} (Canceled pickup)",
+            'reference_id' => 'REFDED_' . $returnReq->id . '_' . time(), 'status' => 'completed'
+        ]);
+
+        // Notifications
+        \App\Services\NotificationService::notify($customer->id, 'customer', 'wallet', "₹{$refundAmount} has been refunded to your wallet for Order #{$order->id} (Seller canceled pickup).", route('vshop.order.details', $order->id));
+        \App\Services\NotificationService::notify($sellerId, 'seller', 'alert', "You canceled pickup for Order #{$order->id}. Amount ₹{$refundAmount} was refunded to customer.", route('seller.paymenthandle'));
+        \App\Services\NotificationService::notify('all', 'admin', 'alert', "Seller canceled pickup for Order #{$order->id}. Auto-refund processed.", url('/admin/wallet'));
+
+        \Illuminate\Support\Facades\DB::commit();
+        return response()->json(['status'=>true, 'msg'=>'Pickup canceled and buyer refunded successfully']);
+    } catch (\Exception $e) {
+        \Illuminate\Support\Facades\DB::rollBack();
         return response()->json(['status'=>false, 'msg'=>$e->getMessage()]);
     }
 }

@@ -595,6 +595,7 @@ Route::prefix('products')->group(function(){
     // Return request
 Route::post('/orders/return-request', [SellerOrderController::class, 'returnRequest'])
     ->name('orders.return');
+Route::post('/orders/return/cancel-pickup-refund', [SellerOrderController::class, 'cancelPickupAndRefund']);
     
     Route::get('/order/getsubcategories', [SellerOrderController::class,'getSubcategories']);
 Route::get('/order/getproducts', [SellerOrderController::class,'getProducts']);

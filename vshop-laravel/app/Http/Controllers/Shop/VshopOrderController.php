@@ -1232,7 +1232,7 @@ public function orderAction(Request $request)
 
         $data = [
             'order_id' => $order->id,
-            'customer_id' => auth()->id(),
+            'customer_id' => $order->customer_id,
             'reason' => $request->reason,
             'note' => $fullNote,
             'status' => 'requested',
@@ -1276,7 +1276,7 @@ public function orderAction(Request $request)
         // Update the newly inserted return record with seller deadline
         DB::table('order_returns')
             ->where('order_id', $order->id)
-            ->where('customer_id', auth()->id())
+            ->where('customer_id', $order->customer_id)
             ->whereNull('seller_action_deadline')
             ->update(['seller_action_deadline' => $sellerDeadline]);
 

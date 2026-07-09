@@ -607,7 +607,7 @@ if (data.returnRequests && data.returnRequests.length > 0) {
                     <span class="small fw-bold">Pickup Initiated?</span>
                     <div class="d-flex gap-1">
                         <button class="btn btn-success btn-sm py-0 px-2" onclick="initiatePickup(${rr.id})">Yes</button>
-                        <button class="btn btn-danger btn-sm py-0 px-2" onclick="openActionModal(${rr.id}, ${rr.order_id}, 'requested')">No</button>
+                        <button class="btn btn-danger btn-sm py-0 px-2" onclick="cancelPickupAndRefund(${rr.id})">No</button>
                     </div>
                 </div>
             `;
@@ -918,6 +918,17 @@ function initiatePickup(id){
     }, function(){
         loadData($('.payment-tab.active').data('type'));
     });
+}
+
+function cancelPickupAndRefund(id){
+    if(confirm('Are you sure you want to cancel the pickup and immediately refund the buyer from your wallet?')){
+        $.post('/seller/orders/return/cancel-pickup-refund',{
+            id: id,
+            _token: $('meta[name="csrf-token"]').attr('content')
+        }, function(){
+            loadData($('.payment-tab.active').data('type'));
+        });
+    }
 }
 
 function approveReturn(id, refundMode){
