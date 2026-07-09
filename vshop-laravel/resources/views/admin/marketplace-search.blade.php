@@ -215,6 +215,7 @@
             <div class="col-md-4 text-end">
                 <a href="{{ route('admin.settings.master_control') }}?tab=boost" class="btn btn-primary-custom">
                     <i class="bi bi-plus-lg me-2"></i>Add Boost
+                </a>
             </div>
         </div>
     </div>
