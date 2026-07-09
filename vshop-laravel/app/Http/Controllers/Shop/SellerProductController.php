@@ -1349,8 +1349,9 @@ public function saveMedia(Request $request, Product $product)
     */
     $oldMedia = ['images' => $product->images, 'videos' => $product->videos, 'thumbnail' => $product->thumbnail];
 
-    $product->images = json_encode($images);
-    $product->videos = json_encode($videos);
+    // Images and videos are cast to array in the Product model, so assign them directly
+    $product->images = $images;
+    $product->videos = $videos;
 
     $product->save();
 
