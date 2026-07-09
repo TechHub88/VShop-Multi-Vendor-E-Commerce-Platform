@@ -602,15 +602,24 @@ if (data.returnRequests && data.returnRequests.length > 0) {
 
         let actionButtons = '';
         if(rr.status === 'requested') {
-            actionButtons = `
-                <div class="d-flex flex-column gap-1">
-                    <span class="small fw-bold">Pickup Initiated?</span>
-                    <div class="d-flex gap-1">
-                        <button class="btn btn-success btn-sm py-0 px-2" onclick="initiatePickup(${rr.id})">Yes</button>
-                        <button class="btn btn-danger btn-sm py-0 px-2" onclick="cancelPickupAndRefund(${rr.id})">No</button>
+            if(rr.has_course) {
+                actionButtons = `
+                    <div class="d-flex flex-column gap-1">
+                        <span class="small fw-bold">Approve Cancellation?</span>
+                        <button class="btn btn-success btn-sm py-1 px-3" onclick="approveReturn(${rr.id})">Approve</button>
                     </div>
-                </div>
-            `;
+                `;
+            } else {
+                actionButtons = `
+                    <div class="d-flex flex-column gap-1">
+                        <span class="small fw-bold">Pickup Initiated?</span>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-success btn-sm py-0 px-2" onclick="initiatePickup(${rr.id})">Yes</button>
+                            <button class="btn btn-danger btn-sm py-0 px-2" onclick="cancelPickupAndRefund(${rr.id})">No</button>
+                        </div>
+                    </div>
+                `;
+            }
         } else if(rr.status === 'pickup_initiated') {
             actionButtons = `
                 <div class="d-flex flex-column gap-1">
@@ -633,6 +642,17 @@ if (data.returnRequests && data.returnRequests.length > 0) {
         if (rr.attachment) {
             attachmentHtml = `<br><a href="/public/${rr.attachment}" target="_blank" class="text-primary small"><i class="fa-solid fa-paperclip"></i> View Image</a>`;
         }
+        
+        let cancelledDatesHtml = '';
+        if(rr.cancelled_dates) {
+            try {
+                let dates = JSON.parse(rr.cancelled_dates);
+                if(dates && dates.length > 0) {
+                    let formattedDates = dates.map(d => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }));
+                    cancelledDatesHtml = `<div class="small mt-1 text-danger"><b>Cancelled Dates:</b> ${formattedDates.join(', ')}</div>`;
+                }
+            } catch(e) {}
+        }
 
         wf += `
         <tr>
@@ -643,6 +663,7 @@ if (data.returnRequests && data.returnRequests.length > 0) {
             <td>
                 <div><b>Reason:</b> ${rr.reason}</div>
                 ${rr.note ? `<div class="small text-muted"><b>Note:</b> ${rr.note}</div>` : ''}
+                ${cancelledDatesHtml}
                 ${attachmentHtml}
             </td>
             <td>${formatDate(rr.created_at)}</td>

@@ -698,7 +698,7 @@ document.addEventListener('DOMContentLoaded', function() {
     $('#withdrawalTabs button').click(function() { loadWithdrawals($(this).data('status')); });
 
     function loadRefunds(page = 1) { $('#refundsTableBody').html('<tr><td colspan="9" class="text-center"><div class="spinner-border"></div></td></tr>'); $.ajax({ url: '{{ route("admin.wallet.refunds") }}', method: 'GET', data: { page: page }, success: res => res.success && renderRefunds(res.data) }); }
-    function renderRefunds(data) { let html = ''; if (data.data && data.data.length) { data.data.forEach(r => { let actionButtons = `<div class="d-flex gap-1">`; if (r.status === 'pending') { actionButtons += `<button class="btn btn-sm btn-success approve-refund" data-id="${r.id}">Issue Refund</button><button class="btn btn-sm btn-danger decline-refund" data-id="${r.id}">Decline</button>`; } actionButtons += `<button class="btn btn-sm btn-info view-refund-detail" data-order-id="${r.order_id}" data-refund-id="${r.id}"><i class="mdi mdi-eye me-1"></i>View Order</button></div>`; html += `<tr>
+    function renderRefunds(data) { let html = ''; if (data.data && data.data.length) { data.data.forEach(r => { let actionButtons = `<div class="d-flex gap-1">`; if (r.status === 'pending') { actionButtons += `<button class="btn btn-sm btn-success approve-refund" data-id="${r.id}" data-amount="${r.amount}">Issue Refund</button><button class="btn btn-sm btn-danger decline-refund" data-id="${r.id}">Decline</button>`; } actionButtons += `<button class="btn btn-sm btn-info view-refund-detail" data-order-id="${r.order_id}" data-refund-id="${r.id}"><i class="mdi mdi-eye me-1"></i>View Order</button></div>`; html += `<tr>
             <td><input type="checkbox" class="refund-checkbox" data-id="${r.id}"></td>
             <td><code class="order-id-clickable" data-order-id="${r.order_id}" data-refund-id="${r.id}" style="cursor:pointer; color:#4e73df; text-decoration:underline;">${r.order_id}</code></td>
             <td><code>${r.buyer_id}</code></td>
@@ -800,10 +800,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <label class="form-label small">Partial Amount (₹)</label>
                     <input type="number" id="partialAmountInput" class="form-control form-control-sm" placeholder="Enter amount">
                 </div>
-                <div class="form-check mt-3 border-top pt-2">
-                    <input class="form-check-input" type="checkbox" id="isFakeLead" value="1">
-                    <label class="form-check-label small" for="isFakeLead">Reverse Lead Fee (Fake Lead)</label>
-                </div>
             </div>
         `;
 
@@ -828,7 +824,6 @@ document.addEventListener('DOMContentLoaded', function() {
             preConfirm: () => {
                 const isPartial = document.getElementById('partialRefund').checked;
                 const partialAmt = document.getElementById('partialAmountInput').value;
-                const isFakeLead = document.getElementById('isFakeLead').checked;
                 
                 if (isPartial && (!partialAmt || partialAmt <= 0 || partialAmt > parseFloat(amount))) {
                     Swal.showValidationMessage('Please enter a valid partial amount');
@@ -837,8 +832,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 return {
                     is_partial: isPartial,
-                    partial_amount: partialAmt,
-                    is_fake_lead: isFakeLead
+                    partial_amount: partialAmt
                 };
             }
         }).then(result => {
@@ -846,8 +840,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let data = {
                     _token: '{{ csrf_token() }}',
                     is_partial: result.value.is_partial,
-                    partial_amount: result.value.partial_amount,
-                    is_fake_lead: result.value.is_fake_lead
+                    partial_amount: result.value.partial_amount
                 };
                 
                 $.ajax({ 

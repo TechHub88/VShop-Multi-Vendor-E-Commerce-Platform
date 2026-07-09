@@ -25,7 +25,7 @@ class WalletController extends Controller
     public function index()
     {
         // Get dashboard statistics
-        $totalBalance = Wallet::sum('balance');
+        $totalBalance = Wallet::where('user_type', 'platform')->sum('balance');
         $sellerBalance = Wallet::where('user_type', 'seller')->sum('balance');
         $buyerBalance = Wallet::where('user_type', 'customer')->sum('balance');
         $frozenAmount = Wallet::sum('frozen_balance');
@@ -528,7 +528,7 @@ class WalletController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'total_balance' => Wallet::sum('balance'),
+                'total_balance' => Wallet::where('user_type', 'platform')->sum('balance'),
                 'seller_balance' => Wallet::where('user_type', 'seller')->sum('balance'),
                 'buyer_balance' => Wallet::where('user_type', 'customer')->sum('balance'),
                 'frozen_amount' => Wallet::sum('frozen_balance'),

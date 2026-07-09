@@ -12,6 +12,7 @@ class OrderCancel extends Model
         'reason',
         'note',
         'status',
+        'cancelled_dates',
     ];
 
     public function order() { return $this->belongsTo(Order::class); }

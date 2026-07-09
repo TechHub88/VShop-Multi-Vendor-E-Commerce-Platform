@@ -1164,12 +1164,18 @@ public function orderAction(Request $request)
         }
 
         $sellerDeadline = now()->addDays(3);
+        
+        $cancelledDates = null;
+        if ($request->has('cancelled_dates') && is_array($request->cancelled_dates)) {
+            $cancelledDates = json_encode($request->cancelled_dates);
+        }
 
         DB::table('order_cancels')->insert([
             'order_id' => $order->id,
             'customer_id' => auth()->id(),
             'reason' => $request->reason,
             'note' => $request->note,
+            'cancelled_dates' => $cancelledDates,
             'status' => 'pending_seller',
             'created_at' => now(),
             'updated_at' => now(),
@@ -1182,6 +1188,7 @@ public function orderAction(Request $request)
                 'customer_id' => $order->customer_id,
                 'reason'      => 'Order Cancelled: ' . $request->reason,
                 'note'        => $request->note,
+                'cancelled_dates' => $cancelledDates,
                 'status'      => 'requested', // Goes to seller first
                 'seller_action_deadline' => $sellerDeadline,
             ]);

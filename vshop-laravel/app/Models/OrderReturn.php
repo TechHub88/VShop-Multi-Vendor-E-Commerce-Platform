@@ -37,6 +37,7 @@ class OrderReturn extends Model
         'seller_action_deadline',
         'pickup_initiated_at',
         'admin_refund_status',
+        'cancelled_dates',
     ];
 
     /**

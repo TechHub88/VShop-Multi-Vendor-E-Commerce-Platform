@@ -1182,12 +1182,25 @@ public function payment(Request $request)
     $returnRequests = \App\Models\OrderReturn::whereHas('order', function($q) use ($sellerId) {
             $q->where('seller_id', $sellerId);
         })
-        ->with(['order', 'customer'])
+        ->with(['order.items.product', 'customer'])
         ->latest()
         ->get()
         ->map(function($rr) {
             $rr->customer_name = optional($rr->customer)->name ?? 'N/A';
             $rr->order_total = optional($rr->order)->total_amount ?? 0;
+            
+            // Check if order has course
+            $hasCourse = false;
+            if ($rr->order && $rr->order->items) {
+                foreach ($rr->order->items as $item) {
+                    if (isset($item->product) && $item->product->type == 'vshop-professional') {
+                        $hasCourse = true;
+                        break;
+                    }
+                }
+            }
+            $rr->has_course = $hasCourse;
+            
             return $rr;
         });
 
