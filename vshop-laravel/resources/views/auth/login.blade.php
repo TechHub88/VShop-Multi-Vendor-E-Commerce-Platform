@@ -45,7 +45,12 @@
             
                                         <div class="form-group mb-3">
                                             <label for="password" class="form-label">Password</label>
-                                            <input type="password" name="password" id="password" class="form-control" value="admin123" required>
+                                            <div class="position-relative">
+                                                <input type="password" name="password" id="password" class="form-control" value="admin123" required>
+                                                <span class="position-absolute end-0 top-50 translate-middle-y me-3 cursor-pointer" id="togglePassword" style="cursor: pointer; z-index: 10;">
+                                                    <i class="mdi mdi-eye"></i>
+                                                </span>
+                                            </div>
                                         </div>
             
                                         <div class="form-group mb-3">
@@ -125,21 +130,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Show password toggle (optional)
-    const showPasswordToggle = document.createElement('span');
-    showPasswordToggle.innerHTML = '<i class="mdi mdi-eye"></i>';
-    showPasswordToggle.className = 'position-absolute end-0 top-50 translate-middle-y me-3 cursor-pointer';
-    showPasswordToggle.style.cursor = 'pointer';
-    showPasswordToggle.style.zIndex = '10';
-    
-    const passwordGroup = passwordField.parentElement;
-    passwordGroup.style.position = 'relative';
-    passwordGroup.appendChild(showPasswordToggle);
-    
-    showPasswordToggle.addEventListener('click', function() {
-        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordField.setAttribute('type', type);
-        this.innerHTML = type === 'password' ? '<i class="mdi mdi-eye"></i>' : '<i class="mdi mdi-eye-off"></i>';
-    });
+    const showPasswordToggle = document.getElementById('togglePassword');
+    if (showPasswordToggle) {
+        showPasswordToggle.addEventListener('click', function() {
+            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordField.setAttribute('type', type);
+            this.innerHTML = type === 'password' ? '<i class="mdi mdi-eye"></i>' : '<i class="mdi mdi-eye-off"></i>';
+        });
+    }
 });
 </script>
 
