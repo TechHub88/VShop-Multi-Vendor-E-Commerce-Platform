@@ -454,8 +454,6 @@ function validateMediaSection(){
 | THUMB CHANGE
 ========================================================= */
 
-========================================================= */
-
 let nsfwModel = null;
 
 // Preload the NSFWJS model
