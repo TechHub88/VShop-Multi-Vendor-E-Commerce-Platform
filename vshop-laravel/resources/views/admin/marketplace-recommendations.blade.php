@@ -1035,7 +1035,9 @@ $(document).ready(function() {
                 
                 loadDefaultSuggestions();
                 
-                $('#recommendationsModal').modal('show');
+                var modalEl = document.getElementById('recommendationsModal');
+                var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
             },
             error: function(xhr) {
                 Swal.close();
@@ -1246,7 +1248,9 @@ $(document).ready(function() {
                 }
                 
                 loadDefaultSuggestions();
-                $('#recommendationsModal').modal('show');
+                var modalEl = document.getElementById('recommendationsModal');
+                var modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
             },
             error: function(xhr) {
                 Swal.close();
