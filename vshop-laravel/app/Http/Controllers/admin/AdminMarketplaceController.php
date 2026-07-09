@@ -1296,7 +1296,7 @@ public function recommendationUpdate(Request $request, $id)
         $q = $request->q;
         $excludeId = $request->exclude_id;
         
-        $query = Product::where('status', 'active');
+        $query = Product::whereIn('status', ['approved', 'verified']);
         
         if ($excludeId) {
             $query->where('id', '!=', $excludeId);
