@@ -19,22 +19,16 @@
 
                 <div class="d-flex align-items-center gap-2">
 
-                    <div class="date-box">
-                        <i class="ri-calendar-line"></i>
-                        {{ request('start_date', now()->subMonth()->format('d M Y')) }}
-                        -
-                        {{ request('end_date', now()->format('d M Y')) }}
-                    </div>
-
-                    <button class="btn btn-light border btn-sm">
-                        <i class="ri-filter-line"></i>
-                        Filter
-                    </button>
-
-                    <button class="btn btn-light border btn-sm">
-                        <i class="ri-download-line"></i>
-                        Export
-                    </button>
+                    <form method="GET" action="{{ url()->current() }}" class="d-flex align-items-center gap-2">
+                        <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date', now()->subMonth()->format('Y-m-d')) }}">
+                        <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date', now()->format('Y-m-d')) }}">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="ri-filter-line"></i> Filter
+                        </button>
+                        <a href="{{ url()->current() }}" class="btn btn-light border btn-sm">
+                            Clear
+                        </a>
+                    </form>
 
                 </div>
 
@@ -166,21 +160,21 @@
                             <li>
                                 <span>✔ Impressions</span>
                                 <strong class="text-success">
-                                    +{{ $boostStats['imp_growth'] ?? 18 }}%
+                                    +{{ number_format($boostStats['imp_growth'] ?? 0, 1) }}%
                                 </strong>
                             </li>
 
                             <li>
                                 <span>✔ Reach</span>
                                 <strong class="text-success">
-                                    +{{ $boostStats['reach_growth'] ?? 25 }}%
+                                    +{{ number_format($boostStats['reach_growth'] ?? 0, 1) }}%
                                 </strong>
                             </li>
 
                             <li>
                                 <span>✔ Enquiries</span>
                                 <strong class="text-success">
-                                    +{{ $boostStats['enq_growth'] ?? 12 }}%
+                                    +{{ number_format($boostStats['enq_growth'] ?? 0, 1) }}%
                                 </strong>
                             </li>
 
@@ -351,43 +345,79 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+    // Load dynamic data from PHP
+    const campaigns = {!! json_encode($topCampaigns->pluck('name')) !!};
+    const campaignImpressions = {!! json_encode($topCampaigns->pluck('impressions')) !!};
+    const campaignSpend = {!! json_encode($topCampaigns->pluck('boost_amount')) !!};
+    const campaignEnquiries = {!! json_encode($topCampaigns->pluck('total_enquiries')) !!};
 
-new Chart(document.getElementById('campaignChart'),{
-    type:'bar',
-    data:{
-        labels:['Summer','Home Care','Women Wear','Salon','Pest'],
-        datasets:[{
-            data:[80,72,68,55,42]
-        }]
-    }
-});
+    const categories = {!! json_encode($boostedCategories->pluck('category')) !!};
+    const categorySpend = {!! json_encode($boostedCategories->pluck('total_boost_spend')) !!};
 
-new Chart(document.getElementById('spendVsEnquiryChart'),{
-    type:'line',
-    data:{
-        labels:['Jan','Feb','Mar','Apr','May','Jun'],
-        datasets:[
-            {
-                label:'Spend',
-                data:[20,35,30,50,45,60]
-            },
-            {
-                label:'Enquiries',
-                data:[15,30,22,45,40,55]
-            }
-        ]
-    }
-});
+    // Campaign Performance Chart (Impressions)
+    new Chart(document.getElementById('campaignChart'),{
+        type:'bar',
+        data:{
+            labels: campaigns,
+            datasets:[{
+                label: 'Impressions',
+                data: campaignImpressions,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } } }
+    });
 
-new Chart(document.getElementById('categoryChart'),{
-    type:'doughnut',
-    data:{
-        labels:['Home','Beauty','Appliance','Fashion'],
-        datasets:[{
-            data:[35,25,20,20]
-        }]
-    }
-});
+    // Spend vs Enquiry Chart
+    new Chart(document.getElementById('spendVsEnquiryChart'),{
+        type:'bar',
+        data:{
+            labels: campaigns,
+            datasets:[
+                {
+                    label:'Spend (₹)',
+                    data: campaignSpend,
+                    backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                    borderColor: '#0d6efd',
+                    borderWidth: 1,
+                    yAxisID: 'y'
+                },
+                {
+                    label:'Enquiries',
+                    data: campaignEnquiries,
+                    type: 'line',
+                    borderColor: '#dc3545',
+                    backgroundColor: '#dc3545',
+                    tension: 0.3,
+                    fill: false,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: { legend: { position: 'top' } },
+            scales: { y: { title: { display: true, text: 'Spend (₹)' } }, y1: { position: 'right', title: { display: true, text: 'Enquiries' }, grid: { drawOnChartArea: false } } }
+        }
+    });
+
+    // Category Chart
+    new Chart(document.getElementById('categoryChart'),{
+        type:'doughnut',
+        data:{
+            labels: categories,
+            datasets:[{
+                data: categorySpend,
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'
+                ]
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'right' } } }
+    });
 
 </script>
 @endsection
