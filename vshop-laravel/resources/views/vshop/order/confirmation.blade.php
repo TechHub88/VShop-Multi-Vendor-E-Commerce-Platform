@@ -43,7 +43,35 @@
 
                             @foreach($order->items as $item)
                                 <div class="summary-row">
-                                    <span>{{ $item->product->name ?? 'Product' }} × {{ $item->quantity }}</span>
+                                    <span>
+                                        {{ $item->product->name ?? 'Product' }} × {{ $item->quantity }}
+                                        
+                                        @if(!empty($item->main_product_attributes))
+                                            @php
+                                                $attrs = json_decode($item->main_product_attributes, true) ?? [];
+                                            @endphp
+                                            @if(count($attrs) > 0)
+                                                <div style="font-size: 12px; color: #555; margin-top: 5px;">
+                                                    @foreach($attrs as $key => $attr)
+                                                        @if($key !== 'size' && $key !== 'color')
+                                                            @if($key === 'Booking Slots')
+                                                                <div style="margin-top: 4px;">
+                                                                    <strong><i class="fa fa-calendar-alt text-primary me-1"></i> Booking Slots :</strong>
+                                                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                                                        @foreach(explode(', ', $attr['name'] ?? '') as $slot)
+                                                                            <span class="badge bg-light text-dark border p-1" style="font-size: 10px; font-weight: 500;">{{ $slot }}</span>
+                                                                        @endforeach
+                                                                    </div>
+                                                                </div>
+                                                            @else
+                                                                <div><strong>{{ ucfirst($key) }} :</strong> {{ $attr['name'] ?? '' }}</div>
+                                                            @endif
+                                                        @endif
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        @endif
+                                    </span>
                                     <span>₹ {{ number_format($item->total, 2) }}</span>
                                 </div>
                             @endforeach

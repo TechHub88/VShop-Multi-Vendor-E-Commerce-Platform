@@ -1012,18 +1012,18 @@ public function saveBasic(Request $request, Product $product = null)
 
         $data['brand_name'] = $request->brand_name;
         $data['manufactured_by'] = $request->manufactured_by;
-        $data['manufacturing_date'] = $request->manufacturing_date;
+        $data['manufacturing_date'] = !empty($request->manufacturing_date) ? $request->manufacturing_date : null;
         $data['country_origin'] = $request->country_origin;
         $data['generic_name'] = $request->generic_name;
         $data['asin'] = $request->asin;
         $data['ingredients'] = $request->ingredients;
-        $data['expiry_date'] = $request->expiry_date;
+        $data['expiry_date'] = !empty($request->expiry_date) ? $request->expiry_date : null;
         $data['storage_instruction'] = $request->storage_instruction;
 
         // Save Course Specific fields (if they exist)
-        if ($request->has('start_date')) $data['start_date'] = $request->start_date;
-        if ($request->has('end_date')) $data['end_date'] = $request->end_date;
-        if ($request->has('time_slot')) $data['start_time'] = $request->time_slot;
+        if ($request->has('start_date')) $data['start_date'] = !empty($request->start_date) ? $request->start_date : null;
+        if ($request->has('end_date')) $data['end_date'] = !empty($request->end_date) ? $request->end_date : null;
+        if ($request->has('time_slot')) $data['start_time'] = !empty($request->time_slot) ? $request->time_slot : null;
         if ($request->has('meeting_link_basic')) $data['meeting_link'] = $request->meeting_link_basic;
 
         if ($request->inventory_type === 'own') {

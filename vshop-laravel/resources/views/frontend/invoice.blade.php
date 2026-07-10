@@ -183,12 +183,26 @@
                     @if($item->product->category)
                         <br><small>Category: {{ $item->product->category->name }}</small>
                     @endif
-                    @if($mainColor || $mainSize || $mainFabric || isset($mainProductAttributes['Booking Slots']))
+                    @if($mainColor || $mainSize || $mainFabric || count($mainProductAttributes) > 0)
                         <br><small>
                             @if($mainColor) Color: {{ $mainColor }} @endif
                             @if($mainSize) | Size: {{ $mainSize }} @endif
                             @if($mainFabric) | Fabric: {{ $mainFabric }} @endif
-                            @if(isset($mainProductAttributes['Booking Slots'])) | Booking Slots: {{ $mainProductAttributes['Booking Slots']['name'] ?? '' }} @endif
+                            
+                            @foreach($mainProductAttributes as $key => $attr)
+                                @if(!in_array(strtolower($key), ['colour', 'color', 'size', 'febric', 'fabric', 'booking slots']))
+                                    <br><strong>{{ ucfirst($key) }}:</strong> {{ $attr['name'] ?? '' }}
+                                @endif
+                            @endforeach
+
+                            @if(isset($mainProductAttributes['Booking Slots']))
+                                <br><strong style="color:#000;">Booking Slots:</strong> 
+                                <div style="margin-top: 2px;">
+                                    @foreach(explode(', ', $mainProductAttributes['Booking Slots']['name'] ?? '') as $slot)
+                                        <span style="display:inline-block; padding: 2px 6px; border: 1px solid #ccc; background:#f0f0f0; border-radius:3px; margin: 2px 2px 2px 0; font-size:10px;">{{ $slot }}</span>
+                                    @endforeach
+                                </div>
+                            @endif
                         </small>
                     @endif
                     @if($item->combo_id && $comboProduct)

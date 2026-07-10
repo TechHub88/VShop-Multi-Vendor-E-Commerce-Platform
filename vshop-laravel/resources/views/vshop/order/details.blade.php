@@ -431,10 +431,23 @@
                                         <div class="mt-2">
                                             @foreach($attrs as $key => $attr)
                                                 @if($key !== 'size' && $key !== 'color')
-                                                <span style="display:block;font-size:13px;color:#555;">
-                                                    <strong>{{ ucfirst($key) }} :</strong>
-                                                    {{ $attr['name'] ?? '' }}
-                                                </span>
+                                                    @if($key === 'Booking Slots')
+                                                    <span style="display:block;font-size:13px;color:#555;">
+                                                        <strong><i class="fa fa-calendar-alt text-primary me-1"></i> Booking Slots :</strong>
+                                                        <div class="d-flex flex-wrap gap-1 mt-1">
+                                                            @foreach(explode(', ', $attr['name'] ?? '') as $slot)
+                                                                <span class="badge bg-light text-dark border p-1" style="font-size: 11px; font-weight: 500;">
+                                                                    {{ $slot }}
+                                                                </span>
+                                                            @endforeach
+                                                        </div>
+                                                    </span>
+                                                    @else
+                                                    <span style="display:block;font-size:13px;color:#555;">
+                                                        <strong>{{ ucfirst($key) }} :</strong>
+                                                        {{ $attr['name'] ?? '' }}
+                                                    </span>
+                                                    @endif
                                                 @endif
                                             @endforeach
                                         </div>

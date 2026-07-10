@@ -645,15 +645,12 @@
                                                         $availableDatesJson = json_encode(array_values($availableDates));
                                                     @endphp
                                                     <div class="professional-slots-sec mb-4">
-                                                        <h6 class="fw-bold mb-2 text-dark"><i class="fa fa-calendar-alt text-primary me-2"></i>Select Date & Time Slot(s)</h6>
                                                         
-                                                        <div class="d-flex align-items-start gap-4">
-                                                            <!-- Select Date Button -->
-                                                            <div class="date-picker-wrapper position-relative">
-                                                                <button type="button" class="btn btn-outline-primary" id="btnSelectDate">
-                                                                    <i class="fa fa-calendar me-2"></i> Select Date
-                                                                </button>
-                                                                <input type="text" id="slotCalendarPicker" style="visibility: hidden; width:0; height:0; position:absolute; bottom:0;">
+                                                        <div class="d-flex align-items-start gap-4 flex-column">
+                                                            <!-- Professional Select Date Input -->
+                                                            <div class="date-picker-wrapper position-relative" style="width: 100%; max-width: 250px;">
+                                                                <input type="text" id="slotCalendarPicker" class="form-control form-control-sm border-primary text-primary fw-bold" placeholder="Select Date & Time Slot" style="cursor: pointer; font-size: 13px; background-color: #f4f8ff; padding-right: 30px;" readonly>
+                                                                <i class="fa fa-calendar-alt text-primary position-absolute" style="right: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; pointer-events: none;"></i>
                                                             </div>
 
                                                             <!-- Dynamic Slots Container -->
@@ -1360,7 +1357,7 @@
                                         'Provider Name' => $product->provider_name,
                                         'Max Participants' => $product->max_participants,
                                         'Booking Required' => isset($product->booking_required) ? ($product->booking_required ? 'Yes' : 'No') : null,
-                                        'Meeting Link' => $product->meeting_link,
+                                    
                                         'Materials Included' => $product->materials_included,
                                         'Itinerary' => $product->itinerary,
                                         'Accommodation' => $product->accommodation,
@@ -1373,29 +1370,7 @@
                                     ]);
                                 @endphp
 
-                                @if(!empty($generalDetails))
-                                    <div class="product-details-heading mt-4 mb-3">
-                                        <h4 class="text-primary font-weight-bold">Additional Information</h4>
-                                    </div>
-                                    <div class="product-info-table table-responsive mb-4">
-                                        <table class="table table-bordered table-striped custom-info-table">
-                                            <tbody>
-                                                @foreach($generalDetails as $label => $value)
-                                                    <tr>
-                                                        <td class="info-label" style="width: 30%; font-weight: 600;">{{ $label }}</td>
-                                                        <td class="info-value">
-                                                            @if($label === 'Meeting Link')
-                                                                <a href="{{ $value }}" target="_blank" class="text-primary">{{ $value }}</a>
-                                                            @else
-                                                                {!! $value !!}
-                                                            @endif
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                @endif
+                               
 
                                 @if(!empty($product->features))
                                 <div class="product-details-bottom-box mt-4">
@@ -1592,6 +1567,7 @@
         // Initialize Flatpickr
         const fp = flatpickr("#slotCalendarPicker", {
             inline: false,
+            position: 'auto center',
             enable: availableDates,
             onDayCreate: function(dObj, dStr, fp, dayElem) {
                 // Add green dot if it's an available date
@@ -1603,10 +1579,6 @@
             onChange: function(selectedDates, dateStr, instance) {
                 renderSlotsForDate(dateStr);
             }
-        });
-
-        $('#btnSelectDate').on('click', function() {
-            fp.open();
         });
 
         function renderSlotsForDate(dateStr) {

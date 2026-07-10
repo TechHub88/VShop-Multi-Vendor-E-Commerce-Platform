@@ -310,7 +310,7 @@ action="{{ $product->id
     <div class="row">
         <div class="col-md-12">
             <label class="form-label fw-bold">
-                Inventory Type <span class="text-danger">*</span>
+                Inventory Type 
             </label>
             <select name="inventory_type"
                     id="inventoryType"
@@ -335,14 +335,14 @@ action="{{ $product->id
     <div id="ownInventoryBox" class="mt-3" style="display:none;">
         <div class="row g-3">
             <div class="col-md-4">
-                <label class="form-label">SKU <span class="text-danger">*</span></label>
+                <label class="form-label">SKU</label>
                 <input type="text" name="sku" value="{{ old('sku', $product->sku ?? '') }}" class="form-control @error('sku') is-invalid @enderror">
                 @error('sku')
                     <small class="text-danger validation-error d-block">{{ $message }}</small>
                 @enderror
             </div>
             <div class="col-md-4">
-                <label class="form-label">Inventory <span class="text-danger">*</span></label>
+                <label class="form-label">Inventory</label>
                 <input type="number" name="inventory" value="{{ old('inventory', $product->inventory ?? '') }}" class="form-control @error('inventory') is-invalid @enderror">
                 @error('inventory')
                     <small class="text-danger validation-error d-block">{{ $message }}</small>
@@ -365,14 +365,14 @@ action="{{ $product->id
     <div id="dropshippingBox" class="mt-3" style="display:none;">
         <div class="row g-3">
             <div class="col-md-4">
-                <label class="form-label">Supplier Name <span class="text-danger">*</span></label>
+                <label class="form-label">Supplier Name</label>
                 <input type="text" name="supplier_name" value="{{ old('supplier_name', $product->supplier_name ?? '') }}" class="form-control @error('supplier_name') is-invalid @enderror">
                 @error('supplier_name')
                     <small class="text-danger validation-error d-block">{{ $message }}</small>
                 @enderror
             </div>
             <div class="col-md-4">
-                <label class="form-label">Supplier Product ID <span class="text-danger">*</span></label>
+                <label class="form-label">Supplier Product ID</label>
                 <input type="text" name="supplier_product_id" value="{{ old('supplier_product_id', $product->supplier_product_id ?? '') }}" class="form-control @error('supplier_product_id') is-invalid @enderror">
                 @error('supplier_product_id')
                     <small class="text-danger validation-error d-block">{{ $message }}</small>

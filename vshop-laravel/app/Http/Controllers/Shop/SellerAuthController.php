@@ -434,7 +434,10 @@ public function dashboard(Request $request)
                       ->orWhere('user_mobile','like','%'.$search.'%');
             });
         })
-        ->where('status','active')
+        ->where(function($q) {
+            $q->whereIn('status', ['New', 'Follow-up'])
+              ->orWhereNull('status');
+        })
         ->count();
 
     /*
