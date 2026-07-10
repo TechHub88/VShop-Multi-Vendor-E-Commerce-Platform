@@ -323,7 +323,7 @@ Product Based Details
 
 {{-- SKU --}}
 <div class="col-md-12 mb-3">
-<label class="form-label required">SKU</label>
+<label class="form-label">SKU</label>
 <input type="text" name="sku"
 class="form-control @error('sku') is-invalid @enderror"
 value="{{ old('sku',$product->sku) }}">
@@ -380,7 +380,7 @@ value="{{ old('batch_number',$product->batch_number ?? '') }}">
 
 {{-- STOCK --}}
 <div class="col-md-6 mb-3">
-<label class="form-label required">Stock Quantity</label>
+<label class="form-label">Stock Quantity</label>
 <input type="number" name="stock_qty" id="stock_qty"
 class="form-control @error('stock_qty') is-invalid @enderror"
 value="{{ old('stock_qty',$product->inventory ?? '') }}">

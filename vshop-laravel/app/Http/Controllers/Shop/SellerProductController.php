@@ -649,14 +649,14 @@ public function misDashboard(Request $request)
         MOST ENQUIRED LISTINGS (TOP 5)
     ========================================= */
     $rawEnquiries = DB::table('enquiries')
-        ->select('enquiries.product_service', DB::raw('COUNT(*) as total_enquiries'), 'products.thumbnail', 'products.images')
+        ->select('enquiries.product_id', DB::raw('COUNT(*) as total_enquiries'), 'products.thumbnail', 'products.images', 'products.name as product_service')
         ->join('products', function($join) use ($sellerId, $currentQueryTypes) {
-            $join->on('products.name', '=', 'enquiries.product_service')
+            $join->on('products.id', '=', 'enquiries.product_id')
                  ->where('products.created_by_id', '=', $sellerId)
                  ->whereIn('products.type', $currentQueryTypes);
          })
         ->where('enquiries.seller_id', $sellerId)
-        ->groupBy('enquiries.product_service', 'products.thumbnail', 'products.images')
+        ->groupBy('enquiries.product_id', 'products.thumbnail', 'products.images', 'products.name')
         ->orderByDesc('total_enquiries')
         ->limit(5)
         ->get();
@@ -1430,12 +1430,12 @@ public function saveSpecifications(Request $request, Product $product)
     // ================= PRODUCT =================
     if (in_array($product->type, ['product', 'vshop-product'])) {
         $rules = [
-            'sku'           => 'required|string|max:100',
+            'sku'           => 'nullable|string|max:100',
             'item_code'     => 'required|string|max:100',
             'quantity'      => 'required|string|max:100',
             'batch_number'  => 'required|string|max:100',
-            'stock_qty'     => 'required|integer|min:0',
-            'delivery_time' => 'required|string|max:100',
+            'stock_qty'     => 'nullable|integer|min:0',
+            'delivery_time' => 'nullable|string|max:100',
             // Optional: add validation for delivery_hour if needed
             'delivery_hour' => 'nullable|regex:/^\d{1,2}:\d{2}$/',
         ];

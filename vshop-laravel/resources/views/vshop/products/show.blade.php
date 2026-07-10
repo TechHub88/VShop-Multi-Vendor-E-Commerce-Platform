@@ -646,16 +646,15 @@
                                                     @endphp
                                                     <div class="professional-slots-sec mb-4">
                                                         
-                                                        <div class="d-flex align-items-start gap-4 flex-column">
+                                                        <div class="d-flex align-items-start gap-3 flex-wrap">
                                                             <!-- Professional Select Date Input -->
-                                                            <div class="date-picker-wrapper position-relative" style="width: 100%; max-width: 250px;">
-                                                                <input type="text" id="slotCalendarPicker" class="form-control form-control-sm border-primary text-primary fw-bold" placeholder="Select Date & Time Slot" style="cursor: pointer; font-size: 13px; background-color: #f4f8ff; padding-right: 30px;" readonly>
+                                                            <div class="date-picker-wrapper position-relative" style="width: 100%; max-width: 200px;">
+                                                                <input type="text" id="slotCalendarPicker" class="form-control form-control-sm border-primary text-primary fw-bold" placeholder="Select Date" style="cursor: pointer; font-size: 12px; background-color: #f4f8ff; padding-right: 30px;" readonly>
                                                                 <i class="fa fa-calendar-alt text-primary position-absolute" style="right: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; pointer-events: none;"></i>
                                                             </div>
 
                                                             <!-- Dynamic Slots Container -->
-                                                            <div id="dynamicSlotsContainer" class="flex-grow-1" style="display:none;">
-                                                                <h6 class="fw-bold text-dark mb-2 border-bottom pb-2" id="selectedDateHeading"></h6>
+                                                            <div id="dynamicSlotsContainer" class="flex-grow-1" style="display:none; min-width:250px;">
                                                                 <div class="d-flex flex-wrap gap-2" id="slotsForSelectedDate">
                                                                     <!-- Slots will be rendered here by JS -->
                                                                 </div>
@@ -663,9 +662,8 @@
                                                         </div>
 
                                                         <!-- Selected Slots List -->
-                                                        <div id="selectedSlotsWrapper" class="mt-4" style="display:none;">
-                                                            <h6 class="fw-bold text-success mb-2"><i class="fa fa-check-circle me-1"></i>Selected time & slot:</h6>
-                                                            <div id="selectedSlotsList" class="d-flex flex-column gap-2 border rounded p-3 bg-light">
+                                                        <div id="selectedSlotsWrapper" class="mt-3" style="display:none;">
+                                                            <div id="selectedSlotsList" class="d-flex flex-wrap gap-2 align-items-center">
                                                                 <!-- Selected items rendered here -->
                                                             </div>
                                                         </div>
@@ -679,18 +677,13 @@
                                                         }
                                                         .slot-card { transition: all 0.2s ease-in-out; }
                                                         .slot-checkbox-label:hover .slot-card { border-color: #0d6efd; }
-                                                        /* Flatpickr Green Dot styling */
-                                                        .flatpickr-day.has-slots::after {
-                                                            content: '';
-                                                            position: absolute;
-                                                            bottom: 3px;
-                                                            left: 50%;
-                                                            transform: translateX(-50%);
-                                                            width: 6px;
-                                                            height: 6px;
-                                                            background-color: #28a745;
-                                                            border-radius: 50%;
-                                                        }
+                                                        
+                                                        /* Flatpickr custom small professional style */
+                                                        .flatpickr-calendar { font-size: 12px; width: 280px !important; }
+                                                        .flatpickr-day { max-width: 35px; height: 35px; line-height: 35px; }
+                                                        .flatpickr-day.has-slots { font-weight: bold; color: #0d6efd; background-color: #e8f0fe; border-radius: 50%; }
+                                                        .flatpickr-day.has-slots:hover { background-color: #0d6efd; color: #fff; }
+                                                        .flatpickr-day.has-slots.selected { background-color: #0d6efd; color: #fff; border-color: #0d6efd; }
                                                     </style>
                                                 @endif
                                             @else
@@ -1567,10 +1560,9 @@
         // Initialize Flatpickr
         const fp = flatpickr("#slotCalendarPicker", {
             inline: false,
-            position: 'auto center',
-            enable: availableDates,
+            position: 'above center',
             onDayCreate: function(dObj, dStr, fp, dayElem) {
-                // Add green dot if it's an available date
+                // Highlight available dates in blue
                 const dateStr = fp.formatDate(dayElem.dateObj, "Y-m-d");
                 if (availableDates.includes(dateStr)) {
                     dayElem.classList.add('has-slots');
@@ -1583,14 +1575,13 @@
 
         function renderSlotsForDate(dateStr) {
             $('#dynamicSlotsContainer').show();
-            $('#selectedDateHeading').text(flatpickr.formatDate(new Date(dateStr), "l, d M Y"));
             
             const container = $('#slotsForSelectedDate');
             container.empty();
 
             const slots = slotsByDate[dateStr] || [];
             if (slots.length === 0) {
-                container.html('<p class="text-muted small">No slots available on this date.</p>');
+                container.html('<p class="text-muted small w-100 m-0">No slots available on this date.</p>');
                 return;
             }
 
@@ -1599,9 +1590,8 @@
                 const html = `
                     <label class="slot-checkbox-label m-0" style="cursor: pointer;">
                         <input type="checkbox" name="selected_slots[]" value="${slot.originalIndex}" class="d-none slot-checkbox-input" data-date="${slot.date}" data-time="${slot.start} - ${slot.end}" ${isChecked}>
-                        <div class="slot-card p-2 border rounded text-center bg-white transition" style="min-width: 100px;">
-                            <div class="small fw-bold text-dark">${slot.start} - ${slot.end}</div>
-                            <div class="badge bg-light text-dark border mt-1" style="font-size:10px;">${slot.duration || 'N/A'}</div>
+                        <div class="slot-card p-1 px-2 border rounded text-center bg-white transition" style="min-width: 80px;">
+                            <div class="small fw-bold text-dark" style="font-size:11px;">${slot.start} - ${slot.end}</div>
                         </div>
                     </label>
                 `;
@@ -1634,22 +1624,22 @@
             }
             
             wrapper.show();
+            
+            // Add title badge
+            list.append('<span class="fw-bold text-success" style="font-size:12px;"><i class="fa fa-check-circle me-1"></i>Selected:</span>');
+            
             // Sort keys so they appear in order
             const sortedIndexes = Array.from(selectedSlotsData.keys()).sort((a, b) => a - b);
             
             sortedIndexes.forEach(idx => {
                 const s = selectedSlotsData.get(idx);
-                const niceDate = flatpickr.formatDate(new Date(s.date), "d M Y");
+                const niceDate = flatpickr.formatDate(new Date(s.date), "d M");
                 list.append(`
-                    <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1 last-border-0">
-                        <div class="small">
-                            <span class="fw-bold text-dark me-2">${niceDate}</span> 
-                            <span class="text-muted">${s.time}</span>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2 remove-selected-slot" data-index="${idx}">
-                            <i class="fa fa-times"></i>
-                        </button>
-                    </div>
+                    <span class="badge bg-white text-dark border border-primary d-inline-flex align-items-center px-2 py-1" style="font-size:11px; border-radius: 20px;">
+                        <span class="fw-bold text-primary me-1">${niceDate}</span> 
+                        <span class="text-muted me-2">${s.time}</span>
+                        <i class="fa fa-times text-danger remove-selected-slot bg-light rounded-circle d-flex align-items-center justify-content-center" data-index="${idx}" style="cursor:pointer; font-size:9px; width:16px; height:16px;"></i>
+                    </span>
                 `);
             });
         }
