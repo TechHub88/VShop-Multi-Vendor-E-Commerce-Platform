@@ -91,18 +91,20 @@ $attributes = is_string($item->main_product_attributes)
 @foreach($attributes as $key => $attr)
 
 @if($key === 'Booking Slots')
-<span style="display:block;font-size:14px;color:#555;margin-top:5px;">
-<strong><i class="fa fa-calendar-alt text-primary me-1"></i> Booking Slots:</strong>
-<div class="d-flex flex-wrap gap-1 mt-1">
+<div style="margin-top:6px;">
+<div class="d-flex flex-wrap gap-1 align-items-center">
+    <span style="font-size:12px; color:#555; font-weight:600;">
+        <i class="fa fa-calendar-alt text-primary me-1" style="font-size:11px;"></i>Booking:
+    </span>
     @foreach(explode(', ', $attr['name'] ?? '') as $slot)
-        <span class="badge bg-light text-dark border p-1" style="font-size: 11px; font-weight: 500;">
-            {{ $slot }}
+        <span class="d-inline-flex align-items-center px-2 py-1" style="font-size: 11px; font-weight: 500; background: #e8f0fe; color: #1a56db; border-radius: 20px; border: 1px solid #c3d4f7;">
+            <i class="fa fa-clock me-1" style="font-size:9px;"></i>{{ trim($slot) }}
         </span>
     @endforeach
 </div>
-</span>
+</div>
 @else
-<span style="display:block;font-size:14px;color:#555;">
+<span style="display:block;font-size:13px;color:#555;">
 <strong>{{ ucfirst($key) }} :</strong>
 {{ $attr['name'] ?? '' }}
 </span>

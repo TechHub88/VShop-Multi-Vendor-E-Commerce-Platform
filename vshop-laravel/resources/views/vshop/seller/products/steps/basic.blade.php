@@ -574,11 +574,18 @@ action="{{ $product->id
     </div>
     <div class="col-md-6 course-fields">
         <label class="form-label fw-bold">Start Date</label>
-        <input type="date" name="start_date" id="start_date" value="{{ old('start_date', isset($product->start_date) && !empty($product->start_date) && $product->start_date !== '0000-00-00' ? \Carbon\Carbon::parse($product->start_date)->format('Y-m-d') : '') }}" class="form-control">
+        <input type="date" name="start_date" id="start_date" value="{{ old('start_date', isset($product->start_date) && !empty($product->start_date) && $product->start_date !== '0000-00-00' ? \Carbon\Carbon::parse($product->start_date)->format('Y-m-d') : '') }}" class="form-control" onchange="calculateCourseDuration()">
     </div>
     <div class="col-md-6 course-fields">
         <label class="form-label fw-bold">End Date</label>
-        <input type="date" name="end_date" id="end_date" value="{{ old('end_date', isset($product->end_date) && !empty($product->end_date) && $product->end_date !== '0000-00-00' ? \Carbon\Carbon::parse($product->end_date)->format('Y-m-d') : '') }}" class="form-control">
+        <input type="date" name="end_date" id="end_date" value="{{ old('end_date', isset($product->end_date) && !empty($product->end_date) && $product->end_date !== '0000-00-00' ? \Carbon\Carbon::parse($product->end_date)->format('Y-m-d') : '') }}" class="form-control" onchange="calculateCourseDuration()">
+    </div>
+    <div class="col-md-12 course-fields" id="courseDurationDisplay" style="display:none;">
+        <div class="alert alert-info py-2 px-3 d-flex align-items-center gap-2 mb-0" style="font-size: 13px; border-radius: 6px; background: linear-gradient(135deg, #e8f0fe, #f0e6ff); border: 1px solid #c3d4f7;">
+            <i class="fa fa-clock text-primary"></i>
+            <span class="fw-bold text-dark">Course Duration:</span>
+            <span id="courseDurationText" class="text-primary fw-bold"></span>
+        </div>
     </div>
     <div class="col-md-6 course-fields">
         <label class="form-label fw-bold">Time Slot</label>
@@ -1768,6 +1775,48 @@ function renderProfSlots() {
     // Update hidden input
     $('#professionalSlotsInput').val(JSON.stringify(profSlots));
 }
+
+// ========== Course Duration Auto-Calculator ==========
+function calculateCourseDuration() {
+    var start = document.getElementById('start_date')?.value;
+    var end = document.getElementById('end_date')?.value;
+    var display = document.getElementById('courseDurationDisplay');
+    var text = document.getElementById('courseDurationText');
+    
+    if (!start || !end || !display || !text) return;
+    
+    var startDate = new Date(start);
+    var endDate = new Date(end);
+    
+    if (endDate <= startDate) {
+        display.style.display = 'none';
+        return;
+    }
+    
+    var diffTime = endDate - startDate;
+    var totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    var durationStr = '';
+    
+    if (totalDays >= 30) {
+        var months = Math.floor(totalDays / 30);
+        var remainDays = totalDays % 30;
+        durationStr = months + (months > 1 ? ' Months' : ' Month');
+        if (remainDays > 0) durationStr += ' ' + remainDays + ' Days';
+    } else if (totalDays >= 7) {
+        var weeks = Math.floor(totalDays / 7);
+        var remainDays = totalDays % 7;
+        durationStr = weeks + (weeks > 1 ? ' Weeks' : ' Week');
+        if (remainDays > 0) durationStr += ' ' + remainDays + ' Days';
+    } else {
+        durationStr = totalDays + (totalDays > 1 ? ' Days' : ' Day');
+    }
+    
+    text.textContent = durationStr;
+    display.style.display = 'block';
+}
+
+// Run on page load
+$(document).ready(function() { calculateCourseDuration(); });
 </script>
 @endpush
 <style>

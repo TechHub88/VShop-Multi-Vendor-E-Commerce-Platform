@@ -461,6 +461,43 @@
     <div class="product-heading-left">
         <h3>{{ $product->name }}</h3>
         
+        {{-- Instructor/Provider badge (Udemy-style) for courses/services --}}
+        @if(in_array($product->type, ['professional', 'vshop-professional', 'vtravel-professional', 'service', 'vshop-service', 'vtravel-service']) && !empty($product->provider_name))
+        <div class="d-flex align-items-center gap-2 mb-1" style="margin-top: 2px;">
+            <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 12px; font-weight: 500; border-radius: 4px;">
+                <i class="fa fa-user-tie text-primary me-1" style="font-size: 11px;"></i> {{ $product->provider_name }}
+            </span>
+        </div>
+        @endif
+
+        {{-- Course duration badge from start_date & end_date --}}
+        @if(!empty($product->start_date) && !empty($product->end_date) && $product->start_date !== '0000-00-00' && $product->end_date !== '0000-00-00')
+        @php
+            $courseStart = \Carbon\Carbon::parse($product->start_date);
+            $courseEnd = \Carbon\Carbon::parse($product->end_date);
+            $totalDays = $courseStart->diffInDays($courseEnd);
+            if ($totalDays >= 30) {
+                $months = floor($totalDays / 30);
+                $remainDays = $totalDays % 30;
+                $courseDuration = $months . ' Month' . ($months > 1 ? 's' : '');
+                if ($remainDays > 0) $courseDuration .= ' ' . $remainDays . ' Days';
+            } elseif ($totalDays >= 7) {
+                $weeks = floor($totalDays / 7);
+                $remainDays = $totalDays % 7;
+                $courseDuration = $weeks . ' Week' . ($weeks > 1 ? 's' : '');
+                if ($remainDays > 0) $courseDuration .= ' ' . $remainDays . ' Days';
+            } else {
+                $courseDuration = $totalDays . ' Day' . ($totalDays > 1 ? 's' : '');
+            }
+        @endphp
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="badge text-white px-2 py-1" style="font-size: 11px; font-weight: 600; border-radius: 4px; background: linear-gradient(135deg, #667eea, #764ba2);">
+                <i class="fa fa-clock me-1" style="font-size: 10px;"></i> {{ $courseDuration }}
+            </span>
+            <span class="text-muted" style="font-size: 11px;">{{ $courseStart->format('d M Y') }} - {{ $courseEnd->format('d M Y') }}</span>
+        </div>
+        @endif
+        
         {{-- Show store info only if product belongs to a seller --}}
         @if($product->seller && $product->seller->id)
         <p class="store-name">
@@ -1560,7 +1597,8 @@
         // Initialize Flatpickr
         const fp = flatpickr("#slotCalendarPicker", {
             inline: false,
-            position: 'above center',
+            position: 'above',
+            positionElement: document.querySelector('.date-picker-wrapper'),
             onDayCreate: function(dObj, dStr, fp, dayElem) {
                 // Highlight available dates in blue
                 const dateStr = fp.formatDate(dayElem.dateObj, "Y-m-d");
