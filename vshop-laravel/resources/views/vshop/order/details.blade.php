@@ -112,12 +112,41 @@
             <i class="fa-regular fa-file-pdf me-1"></i> Invoice
         </button>
 
+        {{-- ===== CALCULATE IF ORDER HAS RETURNABLE ITEMS ===== --}}
+        @php
+            $hasReturnableItems = false;
+            foreach($order->items as $oItem) {
+                $prod = $oItem->product;
+                if ($prod) {
+                    $isProfOrService = in_array($prod->type, ['professional', 'vshop-professional', 'vtravel-professional', 'service', 'vshop-service', 'vtravel-service']);
+                    $isCourse = false;
+                    if ($prod->type === 'items') {
+                        $catName = strtolower($prod->category->name ?? '');
+                        $subCatName = strtolower($prod->subcategory->name ?? '');
+                        if (str_contains($catName, 'course') || str_contains($subCatName, 'course')) {
+                            $isCourse = true;
+                        }
+                    }
+                    if (!$isProfOrService && !$isCourse) {
+                        $hasReturnableItems = true;
+                    }
+                }
+            }
+        @endphp
+
         {{-- ===== CANCEL ORDER BUTTON ===== --}}
         @php
             $statusLower = strtolower($order->status);
             $canCancel = in_array($statusLower, ['pending', 'processing', 'approved', 'paid', 'confirmed']);
             $isOutForDelivery = in_array($statusLower, ['out for delivery', 'out_for_delivery', 'shipped', 'dispatched']);
             $isDelivered = in_array($statusLower, ['delivered', 'completed']);
+            
+            // If the order has NO returnable items (i.e. only courses or professional services), 
+            // the user requested to always show Cancel button and no return/refund.
+            if (!$hasReturnableItems && $statusLower !== 'cancelled') {
+                $canCancel = true;
+                $isOutForDelivery = false;
+            }
         @endphp
 
         @if($canCancel)
@@ -132,9 +161,11 @@
 
          {{-- ================= RETURN / RATE ORDER (Global Buttons) ================= --}}
          @if(in_array($order->status, ['delivered', 'shipped']))
+             @if($hasReturnableItems)
              <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#returnOrderModal">
                  <i class="fa-solid fa-arrow-rotate-left me-1"></i> Return
              </button>
+             @endif
              <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#rateOrderModal">
                  <i class="fa-solid fa-star me-1"></i> Rate
              </button>
@@ -391,6 +422,24 @@
                                                 <input type="text" readonly value="{{ str_pad($item->quantity, 2, '0', STR_PAD_LEFT) }}">
                                             </div>
                                         </div>
+
+                                        @if(!empty($item->main_product_attributes))
+                                        @php
+                                            $attrs = json_decode($item->main_product_attributes, true) ?? [];
+                                        @endphp
+                                        @if(count($attrs) > 0)
+                                        <div class="mt-2">
+                                            @foreach($attrs as $key => $attr)
+                                                @if($key !== 'size' && $key !== 'color')
+                                                <span style="display:block;font-size:13px;color:#555;">
+                                                    <strong>{{ ucfirst($key) }} :</strong>
+                                                    {{ $attr['name'] ?? '' }}
+                                                </span>
+                                                @endif
+                                            @endforeach
+                                        </div>
+                                        @endif
+                                        @endif
 
                                         {{-- Delivery Address --}}
                                         <div class="product-dtl-sec mt-3">

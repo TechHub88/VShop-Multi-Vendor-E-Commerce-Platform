@@ -1630,4 +1630,30 @@ public function updateAddressSession(Request $request)
             'message' => 'Reward points removed successfully!'
         ]);
     }
+
+    /**
+     * Proxy route to validate meeting link
+     */
+    public function meetingProxy($itemId)
+    {
+        $item = OrderItem::with('product')->findOrFail($itemId);
+        $product = $item->product;
+
+        if (!$product || empty($product->meeting_link)) {
+            return abort(404, 'Meeting link not found.');
+        }
+
+        // If it's a course (items with course category) or professional type, check end date
+        if (!empty($product->end_date)) {
+            $endDate = \Carbon\Carbon::parse($product->end_date);
+            if (now()->startOfDay()->gt($endDate->endOfDay())) {
+                return response()->view('errors.invalid_meeting', [
+                    'message' => 'This meeting link has expired as the course/session end date has passed.'
+                ], 403);
+            }
+        }
+
+        // Redirect to the actual meeting link
+        return redirect()->away($product->meeting_link);
+    }
 }

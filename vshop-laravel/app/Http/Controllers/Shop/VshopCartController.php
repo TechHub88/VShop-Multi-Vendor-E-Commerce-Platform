@@ -172,6 +172,14 @@ use Illuminate\Http\Request;
             ];
         }
 
+        if ($request->has('variant_name') && !empty($request->variant_name)) {
+            $attributes['Duration / Combo'] = [
+                'id'    => null,
+                'name'  => $request->variant_name,
+                'value' => null
+            ];
+        }
+
         /*
         |--------------------------------------------------------------------------
         | GUEST CART (SESSION)
@@ -182,7 +190,8 @@ use Illuminate\Http\Request;
 
             $cart = Session::get('cart',[]);
 
-            $cartKey = $request->product_id.'_'.$request->color_id.'_'.$request->size_id;
+            $comboKeyStr = $request->combination_key ?? 'default';
+            $cartKey = $request->product_id.'_'.$request->color_id.'_'.$request->size_id.'_'.$comboKeyStr;
 
             if(isset($cart[$cartKey])){
 
@@ -199,6 +208,7 @@ use Illuminate\Http\Request;
                     'size_id'  => $request->size_id,
 
                     'main_product_attributes' => json_encode($attributes),
+                    'combination_key' => $request->combination_key,
 
                     'main_product_quantity' => $request->quantity,
                     'main_product_price' => $request->price
@@ -232,11 +242,14 @@ use Illuminate\Http\Request;
         */
 
         $customer = Auth::guard('customer')->user();
+        
+        $comboKeyStrDB = $request->combination_key ?? null;
 
         $cartItem = CartItem::where('customer_id',$customer->id)
             ->where('product_id',$request->product_id)
             ->where('color_id',$request->color_id)
             ->where('size_id',$request->size_id)
+            ->where('combination_key', $comboKeyStrDB)
             ->first();
 
         if($cartItem){

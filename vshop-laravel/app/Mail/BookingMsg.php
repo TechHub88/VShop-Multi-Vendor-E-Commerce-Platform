@@ -61,6 +61,8 @@ class BookingMsg
             $meetingLink     = $product->meeting_link ?? '';
             $startTime       = $product->start_time ?? '';
             $endTime         = $product->end_time ?? '';
+            $startDate       = $product->start_date ?? '';
+            $endDate         = $product->end_date ?? '';
 
             // Build service info rows
             $serviceRows = '';
@@ -74,6 +76,19 @@ class BookingMsg
             if ($languages)       $serviceData['Languages']        = $languages;
             if ($maxBooking)      $serviceData['Max Booking']      = $maxBooking;
             if ($serviceValidity) $serviceData['Validity']         = $serviceValidity;
+            if ($startDate)       $serviceData['Start Date']       = date('d M Y', strtotime($startDate));
+            if ($endDate)         $serviceData['End Date']         = date('d M Y', strtotime($endDate));
+            
+            // Handle dynamically stored attributes like Duration / Combo
+            if (isset($attrs['Duration / Combo'])) {
+                $serviceData['Duration'] = $attrs['Duration / Combo']['name'] ?? '';
+            }
+            if (isset($attrs['Selected Dates'])) {
+                $serviceData['Selected Dates'] = $attrs['Selected Dates']['name'] ?? '';
+            }
+            if (isset($attrs['Selected Slots'])) {
+                $serviceData['Selected Slots'] = $attrs['Selected Slots']['name'] ?? '';
+            }
 
             if (!empty($serviceData)) {
                 $serviceRows .= '<table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0;">';
@@ -96,18 +111,19 @@ class BookingMsg
                 }
             }
 
-            // Meeting link section
+            // Meeting link section with proxy URL
             $meetingHtml = '';
             if (!empty($meetingLink)) {
+                $proxyLink = route('vshop.meeting.proxy', ['itemId' => $item->id ?? 0]);
                 $meetingHtml = '
                 <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin:10px 0;">
                     <tr>
                         <td style="padding:12px 16px;">
                             <p style="margin:0 0 6px;font-size:13px;color:#166534;font-weight:700;">🎥 Meeting / Session Link</p>
-                            <a href="' . htmlspecialchars($meetingLink) . '" style="display:inline-block;background:#0d6efd;color:#ffffff;padding:8px 20px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;" target="_blank">
+                            <a href="' . htmlspecialchars($proxyLink) . '" style="display:inline-block;background:#0d6efd;color:#ffffff;padding:8px 20px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;" target="_blank">
                                 Join Session
                             </a>
-                            <p style="margin:8px 0 0;font-size:11px;color:#6b7280;word-break:break-all;">' . htmlspecialchars($meetingLink) . '</p>
+                            <p style="margin:8px 0 0;font-size:11px;color:#6b7280;word-break:break-all;">' . htmlspecialchars($proxyLink) . '</p>
                             <p style="margin:4px 0 0;font-size:11px;color:#dc2626;font-weight:600;">⏰ Please join at your booked slot time</p>
                         </td>
                     </tr>

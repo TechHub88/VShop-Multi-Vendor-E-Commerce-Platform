@@ -568,9 +568,25 @@ action="{{ $product->id
         <label class="form-label fw-bold">Ingredients</label>
         <input type="text" name="ingredients" id="ingredients" value="{{ old('ingredients', $product->ingredients ?? '') }}" class="form-control">
     </div>
-    <div class="col-md-6">
-        <label class="form-label fw-bold">Expiry Days</label>
-        <input type="number" name="expiry_days" value="{{ old('expiry_days', $product->expiry_days ?? '') }}" class="form-control">
+    <div class="col-md-6" id="expiryDateWrapper">
+        <label class="form-label fw-bold">Expiry Date</label>
+        <input type="date" name="expiry_date" id="expiry_date" value="{{ old('expiry_date', isset($product->expiry_date) && !empty($product->expiry_date) && $product->expiry_date !== '0000-00-00' ? \Carbon\Carbon::parse($product->expiry_date)->format('Y-m-d') : '') }}" class="form-control">
+    </div>
+    <div class="col-md-6 course-fields">
+        <label class="form-label fw-bold">Start Date</label>
+        <input type="date" name="start_date" id="start_date" value="{{ old('start_date', isset($product->start_date) && !empty($product->start_date) && $product->start_date !== '0000-00-00' ? \Carbon\Carbon::parse($product->start_date)->format('Y-m-d') : '') }}" class="form-control">
+    </div>
+    <div class="col-md-6 course-fields">
+        <label class="form-label fw-bold">End Date</label>
+        <input type="date" name="end_date" id="end_date" value="{{ old('end_date', isset($product->end_date) && !empty($product->end_date) && $product->end_date !== '0000-00-00' ? \Carbon\Carbon::parse($product->end_date)->format('Y-m-d') : '') }}" class="form-control">
+    </div>
+    <div class="col-md-6 course-fields">
+        <label class="form-label fw-bold">Time Slot</label>
+        <input type="time" name="time_slot" id="time_slot" value="{{ old('time_slot', $product->start_time ?? '') }}" class="form-control">
+    </div>
+    <div class="col-md-6 course-fields">
+        <label class="form-label fw-bold">Meeting Link</label>
+        <input type="text" name="meeting_link_basic" id="meeting_link_basic" value="{{ old('meeting_link_basic', $product->meeting_link ?? '') }}" class="form-control" placeholder="https://zoom.us/j/123456789">
     </div>
     <div class="col-12">
         <label class="form-label fw-bold">Storage Instruction</label>
@@ -608,8 +624,8 @@ action="{{ $product->id
         <div class="slot-picker-card">
             <div class="row g-2 align-items-end">
                 <div class="col-md-4">
-                    <label class="form-label small text-muted mb-1">Date</label>
-                    <input type="date" id="slotDate" class="form-control">
+                    <label class="form-label small text-muted mb-1">Date(s)</label>
+                    <input type="text" id="slotDate" class="form-control" placeholder="Select Date(s)">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-muted mb-1">Start Time</label>
@@ -1317,7 +1333,31 @@ $('#categoryDropdown').on('change', function() {
     loadSubcategories($(this).val());
 });
 
-// ================= REMOVE VALIDATION ERRORS =================
+    // Handle Course Name Logic
+    function handleCourseLogic() {
+        let nameVal = $('[name="name"]').val().toLowerCase();
+        let isCourse = nameVal.includes('course') || nameVal.includes('cources');
+        let typeVal = $('input[name="type"]:checked').val();
+        let isItem = typeVal === 'product' || typeVal === 'vshop-product';
+
+        if (isItem) {
+            $('.course-fields').show();
+            if (isCourse) {
+                $('#expiryDateWrapper').hide();
+            } else {
+                $('#expiryDateWrapper').show();
+            }
+        } else {
+            $('.course-fields').hide();
+            $('#expiryDateWrapper').show();
+        }
+    }
+
+    $('[name="name"]').on('input change', handleCourseLogic);
+    $('input[name="type"]').on('change', handleCourseLogic);
+    handleCourseLogic(); // Run on load
+
+    // ================= REMOVE VALIDATION ERRORS =================
 function removeValidationErrors() {
     $('.is-invalid').removeClass('is-invalid');
     $('.validation-error').remove();
@@ -1644,6 +1684,9 @@ function generateAIContent(btn) {
     });
 }
 </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
 @push('scripts')
 <script>
 // ================= PROFESSIONAL SLOTS SYSTEM =================
@@ -1658,14 +1701,20 @@ $(document).ready(function() {
         }
     } catch(e) { profSlots = []; }
     renderProfSlots();
+
+    // Initialize Flatpickr for multiple dates
+    flatpickr("#slotDate", {
+        mode: "multiple",
+        dateFormat: "Y-m-d"
+    });
 });
 
 function addProfSlot() {
-    var date = $('#slotDate').val();
+    var dateVal = $('#slotDate').val();
     var start = $('#slotStartTime').val();
     var end = $('#slotEndTime').val();
 
-    if (!date) { alert('Please select a date'); return; }
+    if (!dateVal) { alert('Please select at least one date'); return; }
     if (!start) { alert('Please select start time'); return; }
     if (!end) { alert('Please select end time'); return; }
     if (start >= end) { alert('End time must be after start time'); return; }
@@ -1678,11 +1727,15 @@ function addProfSlot() {
     var mins = Math.floor((diffMs % 3600000) / 60000);
     var duration = (hrs > 0 ? hrs + 'h ' : '') + (mins > 0 ? mins + 'm' : '');
 
-    profSlots.push({ date: date, start: start, end: end, duration: duration.trim() });
+    var dates = dateVal.split(', ');
+    dates.forEach(function(date) {
+        profSlots.push({ date: date, start: start, end: end, duration: duration.trim() });
+    });
+    
     renderProfSlots();
 
     // Clear inputs for next entry
-    $('#slotDate').val('');
+    document.querySelector('#slotDate')._flatpickr.clear();
     $('#slotStartTime').val('');
     $('#slotEndTime').val('');
 }

@@ -525,7 +525,7 @@
 <table class="table table-bordered" id="variantTable">
 <thead class="table-light">
 <tr>
-<th>Price <span class="required-star">*</span></th><th>MRP</th><th>Discount %</th><th>Stock</th><th>Shipping</th><th>Action</th>
+<th>Variant Name (e.g. 1 Month)</th><th>Price <span class="required-star">*</span></th><th>MRP</th><th>Discount %</th><th>Stock</th><th>Shipping</th><th>Action</th>
 </tr>
 </thead>
 <tbody>
@@ -535,6 +535,7 @@
 @if($variants->count() > 0)
     @foreach($variants as $vIndex => $variant)
     <tr class="variant-row">
+        <td><input type="text" name="combinations[{{ $vIndex }}][variant_name]" class="form-control" value="{{ $variant->variant_name ?? '' }}" placeholder="Duration/Name"></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][price]" class="form-control price-input required-price" value="{{ $variant->price }}"><span class="field-error price-error"></span></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][regular_price]" class="form-control regular-price-input" value="{{ $variant->regular_price }}"></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][discount]" class="form-control discount-display" value="{{ $variant->discount_value }}"></td>
@@ -545,6 +546,7 @@
     @endforeach
 @else
     <tr class="variant-row">
+        <td><input type="text" name="combinations[0][variant_name]" class="form-control" value="{{ old('combinations.0.variant_name', '') }}" placeholder="Duration/Name"></td>
         <td><input type="number" name="combinations[0][price]" class="form-control price-input required-price" value="{{ old('combinations.0.price', $product->price ?? '') }}"><span class="field-error price-error"></span></td>
         <td><input type="number" name="combinations[0][regular_price]" class="form-control regular-price-input" value="{{ old('combinations.0.regular_price', $product->regular_price ?? '') }}"></td>
         <td><input type="number" name="combinations[0][discount]" class="form-control discount-display" value="{{ old('combinations.0.discount', '') }}"></td>

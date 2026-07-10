@@ -168,6 +168,8 @@ class Product extends Model
         'size',
         'quantity',
         'expiry_date',
+        'start_date',
+        'end_date',
         'batch_number',
         'dimensions',
         'delivery_time',

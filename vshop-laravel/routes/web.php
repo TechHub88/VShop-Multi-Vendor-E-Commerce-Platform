@@ -1387,6 +1387,10 @@ Route::middleware('auth:customer')->prefix('vshop')->name('vshop.')->group(funct
         
     Route::post('/order-action', [VshopOrderController::class, 'orderAction'])->name('order.action');
     Route::get('/orders/{id}/invoice', [VshopOrderController::class, 'downloadInvoice'])->name('order.invoice');
+    
+    // Proxy route for meeting link
+    Route::get('/meeting/{itemId}', [VshopOrderController::class, 'meetingProxy'])->name('meeting.proxy');
+    
     Route::post('/update-address-session', [VshopAddressController::class, 'updateAddressSession'])
     ->name('update.address.session');
 

@@ -606,26 +606,74 @@
                                             <!--    <label class="color-box"><input type="radio" name="radio2"><span class="color-circle chocolate-box"></span></label>-->
                                             <!--    <p>( Barbarian Red )</p>-->
                                             <!--</div>-->
+                                            @php
+                                                $courseCombinations = collect($combinations ?? [])->filter(function($c) { return !empty($c->variant_name); })->values();
+                                            @endphp
+                                            @if($courseCombinations->count() > 0)
+                                            <div class="mb-4">
+                                                <h6 class="fw-bold mb-2 text-dark"><i class="fa fa-clock text-primary me-2"></i>Select Duration</h6>
+                                                <div class="d-flex flex-wrap gap-2" id="durationSelectionContainer">
+                                                    @foreach($courseCombinations as $index => $c)
+                                                    <label class="duration-radio-label m-0" style="cursor: pointer;">
+                                                        <input type="radio" name="selected_duration" value="{{ $c->combination_key }}" class="d-none duration-radio-input" data-price="{{ $c->price }}" data-regular="{{ $c->regular_price }}" data-variant-name="{{ $c->variant_name }}" {{ $index === 0 ? 'checked' : '' }}>
+                                                        <div class="duration-card p-2 border rounded text-center bg-white transition">
+                                                            <div class="small fw-bold text-dark">{{ $c->variant_name }}</div>
+                                                            <div class="badge bg-light text-dark border mt-1">₹{{ $c->price }}</div>
+                                                        </div>
+                                                    </label>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                            <style>
+                                                .duration-radio-input:checked + .duration-card {
+                                                    border-color: #0d6efd !important;
+                                                    background-color: #e8f0fe !important;
+                                                    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+                                                }
+                                                .duration-card { transition: all 0.2s ease-in-out; min-width: 80px;}
+                                                .duration-radio-label:hover .duration-card { border-color: #0d6efd; }
+                                            </style>
+                                            @endif
                                              @if(in_array($product->type, ['professional', 'vshop-professional', 'vtravel-professional', 'service', 'vshop-service', 'vtravel-service']))
                                                 @php
                                                     $slots = json_decode($product->professional_slots, true);
                                                 @endphp
                                                 @if(!empty($slots) && is_array($slots))
+                                                    @php
+                                                        $availableDates = array_unique(array_column($slots, 'date'));
+                                                        $slotsJson = json_encode($slots);
+                                                        $availableDatesJson = json_encode(array_values($availableDates));
+                                                    @endphp
                                                     <div class="professional-slots-sec mb-4">
                                                         <h6 class="fw-bold mb-2 text-dark"><i class="fa fa-calendar-alt text-primary me-2"></i>Select Date & Time Slot(s)</h6>
-                                                        <div class="d-flex flex-wrap gap-2" id="slotSelectionContainer">
-                                                            @foreach($slots as $index => $slot)
-                                                                <label class="slot-checkbox-label" style="cursor: pointer;">
-                                                                    <input type="checkbox" name="selected_slots[]" value="{{ $index }}" class="d-none slot-checkbox-input" data-date="{{ $slot['date'] }}" data-time="{{ $slot['start'] }} - {{ $slot['end'] }}">
-                                                                    <div class="slot-card p-2 border rounded text-center bg-white transition" style="min-width: 120px;">
-                                                                        <div class="small fw-bold text-dark">{{ \Carbon\Carbon::parse($slot['date'])->format('d M, Y') }}</div>
-                                                                        <div class="small text-muted">{{ $slot['start'] }} - {{ $slot['end'] }}</div>
-                                                                        <div class="badge bg-light text-dark border mt-1">{{ $slot['duration'] }}</div>
-                                                                    </div>
-                                                                </label>
-                                                            @endforeach
+                                                        
+                                                        <div class="d-flex align-items-start gap-4">
+                                                            <!-- Select Date Button -->
+                                                            <div class="date-picker-wrapper position-relative">
+                                                                <button type="button" class="btn btn-outline-primary" id="btnSelectDate">
+                                                                    <i class="fa fa-calendar me-2"></i> Select Date
+                                                                </button>
+                                                                <input type="text" id="slotCalendarPicker" style="visibility: hidden; width:0; height:0; position:absolute; bottom:0;">
+                                                            </div>
+
+                                                            <!-- Dynamic Slots Container -->
+                                                            <div id="dynamicSlotsContainer" class="flex-grow-1" style="display:none;">
+                                                                <h6 class="fw-bold text-dark mb-2 border-bottom pb-2" id="selectedDateHeading"></h6>
+                                                                <div class="d-flex flex-wrap gap-2" id="slotsForSelectedDate">
+                                                                    <!-- Slots will be rendered here by JS -->
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Selected Slots List -->
+                                                        <div id="selectedSlotsWrapper" class="mt-4" style="display:none;">
+                                                            <h6 class="fw-bold text-success mb-2"><i class="fa fa-check-circle me-1"></i>Selected time & slot:</h6>
+                                                            <div id="selectedSlotsList" class="d-flex flex-column gap-2 border rounded p-3 bg-light">
+                                                                <!-- Selected items rendered here -->
+                                                            </div>
                                                         </div>
                                                     </div>
+
                                                     <style>
                                                         .slot-checkbox-input:checked + .slot-card {
                                                             border-color: #0d6efd !important;
@@ -634,6 +682,18 @@
                                                         }
                                                         .slot-card { transition: all 0.2s ease-in-out; }
                                                         .slot-checkbox-label:hover .slot-card { border-color: #0d6efd; }
+                                                        /* Flatpickr Green Dot styling */
+                                                        .flatpickr-day.has-slots::after {
+                                                            content: '';
+                                                            position: absolute;
+                                                            bottom: 3px;
+                                                            left: 50%;
+                                                            transform: translateX(-50%);
+                                                            width: 6px;
+                                                            height: 6px;
+                                                            background-color: #28a745;
+                                                            border-radius: 50%;
+                                                        }
                                                     </style>
                                                 @endif
                                             @else
@@ -689,7 +749,7 @@
                                                  @elseif($isOutOfStock)
                                                      <p class="out-of-stock text-danger"><i class="fa-regular fa-times-circle"></i> Out of Stock (No stock available)</p>
                                                  @elseif($product->low_stock_threshold !== null && $product->stock_qty <= $product->low_stock_threshold)
-                                                     <p class="in-stock text-warning" style="color: #ff9900 !important; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock! Only <span id="availableStock">{{ $product->stock_qty }}</span> left</p>
+                                                     <p class="in-stock text-warning" style="color: #ff9900 !important; font-weight: bold;"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock! Only a few left<span id="availableStock" class="d-none">{{ $product->stock_qty }}</span></p>
                                                  @else
                                                      <p class="in-stock text-success"><i class="fa-regular fa-check-circle"></i> In Stock <span id="availableStock" class="d-none">{{ $product->stock_qty }}</span></p>
                                                  @endif
@@ -1028,7 +1088,6 @@
                                             'Max Participants' => $product->max_participants,
                                             'Booking Required' => isset($product->booking_required) ? ($product->booking_required ? 'Yes' : 'No') : null,
                                             'Service Validity' => $product->service_validity,
-                                            'Meeting Link' => $product->meeting_link,
                                             'Materials Included' => $product->materials_included,
                                             'Languages Spoken' => $product->languages,
                                             'Max Booking Per Slot' => $product->max_booking,
@@ -1512,6 +1571,129 @@
 </div>
 
 @push('scripts')
+<!-- Flatpickr for Slot Selection -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+@if(isset($slotsJson) && isset($availableDatesJson))
+    const productSlots = {!! $slotsJson !!};
+    const availableDates = {!! $availableDatesJson !!};
+    const selectedSlotsData = new Map(); // Keep track of checked slots: index -> slot object
+
+    $(document).ready(function() {
+        // Group slots by date
+        const slotsByDate = {};
+        productSlots.forEach((s, idx) => {
+            if (!slotsByDate[s.date]) slotsByDate[s.date] = [];
+            slotsByDate[s.date].push({ ...s, originalIndex: idx });
+        });
+
+        // Initialize Flatpickr
+        const fp = flatpickr("#slotCalendarPicker", {
+            inline: false,
+            enable: availableDates,
+            onDayCreate: function(dObj, dStr, fp, dayElem) {
+                // Add green dot if it's an available date
+                const dateStr = fp.formatDate(dayElem.dateObj, "Y-m-d");
+                if (availableDates.includes(dateStr)) {
+                    dayElem.classList.add('has-slots');
+                }
+            },
+            onChange: function(selectedDates, dateStr, instance) {
+                renderSlotsForDate(dateStr);
+            }
+        });
+
+        $('#btnSelectDate').on('click', function() {
+            fp.open();
+        });
+
+        function renderSlotsForDate(dateStr) {
+            $('#dynamicSlotsContainer').show();
+            $('#selectedDateHeading').text(flatpickr.formatDate(new Date(dateStr), "l, d M Y"));
+            
+            const container = $('#slotsForSelectedDate');
+            container.empty();
+
+            const slots = slotsByDate[dateStr] || [];
+            if (slots.length === 0) {
+                container.html('<p class="text-muted small">No slots available on this date.</p>');
+                return;
+            }
+
+            slots.forEach(slot => {
+                const isChecked = selectedSlotsData.has(slot.originalIndex) ? 'checked' : '';
+                const html = `
+                    <label class="slot-checkbox-label m-0" style="cursor: pointer;">
+                        <input type="checkbox" name="selected_slots[]" value="${slot.originalIndex}" class="d-none slot-checkbox-input" data-date="${slot.date}" data-time="${slot.start} - ${slot.end}" ${isChecked}>
+                        <div class="slot-card p-2 border rounded text-center bg-white transition" style="min-width: 100px;">
+                            <div class="small fw-bold text-dark">${slot.start} - ${slot.end}</div>
+                            <div class="badge bg-light text-dark border mt-1" style="font-size:10px;">${slot.duration || 'N/A'}</div>
+                        </div>
+                    </label>
+                `;
+                container.append(html);
+            });
+        }
+
+        // Handle checkbox changes via event delegation
+        $(document).on('change', '.slot-checkbox-input', function() {
+            const index = parseInt($(this).val());
+            const date = $(this).data('date');
+            const time = $(this).data('time');
+            
+            if ($(this).is(':checked')) {
+                selectedSlotsData.set(index, { date, time });
+            } else {
+                selectedSlotsData.delete(index);
+            }
+            updateSelectedSlotsUI();
+        });
+
+        function updateSelectedSlotsUI() {
+            const wrapper = $('#selectedSlotsWrapper');
+            const list = $('#selectedSlotsList');
+            list.empty();
+
+            if (selectedSlotsData.size === 0) {
+                wrapper.hide();
+                return;
+            }
+            
+            wrapper.show();
+            // Sort keys so they appear in order
+            const sortedIndexes = Array.from(selectedSlotsData.keys()).sort((a, b) => a - b);
+            
+            sortedIndexes.forEach(idx => {
+                const s = selectedSlotsData.get(idx);
+                const niceDate = flatpickr.formatDate(new Date(s.date), "d M Y");
+                list.append(`
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1 last-border-0">
+                        <div class="small">
+                            <span class="fw-bold text-dark me-2">${niceDate}</span> 
+                            <span class="text-muted">${s.time}</span>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2 remove-selected-slot" data-index="${idx}">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                `);
+            });
+        }
+
+        // Remove slot from selected list
+        $(document).on('click', '.remove-selected-slot', function() {
+            const index = parseInt($(this).data('index'));
+            selectedSlotsData.delete(index);
+            // Uncheck the checkbox if it's currently visible
+            $(`.slot-checkbox-input[value="${index}"]`).prop('checked', false);
+            updateSelectedSlotsUI();
+        });
+    });
+@endif
+</script>
+
 <script>
 // ========== SHARE MODAL (unchanged) ==========
 let shareUrl = '';
@@ -2141,13 +2323,13 @@ $(document).on('click','.copy',function(){
 
     if (incrementBtn) {
         incrementBtn.addEventListener('click', function () {
-            let maxStock = 999;
+            let maxStock = 1000;
 
             if (productConfig.isPhysicalProduct) {
                 if (productConfig.currentSize && productConfig.currentColor) {
                     const sizeTermId = productConfig.currentSize.termId;
                     const colorTermId = productConfig.currentColor.termId;
-
+                    
                     const sizeCombinations = new Set();
                     const colorCombinations = new Set();
 
@@ -2161,7 +2343,7 @@ $(document).on('click','.copy',function(){
                     });
 
                     const validCombinationKeys = [...sizeCombinations].filter(key => colorCombinations.has(key));
-
+                    
                     if (validCombinationKeys.length > 0) {
                         const combinationKey = validCombinationKeys[0];
                         const combinationRecord = productConfig.combinations.find(c => c.combination_key === combinationKey);
@@ -2180,9 +2362,31 @@ $(document).on('click','.copy',function(){
                 productConfig.quantity++;
                 qtyInput.value = productConfig.quantity;
                 updateTotalPrice();
-            } else {
+            } else if (productConfig.isPhysicalProduct) {
                 showToast(`Only ${maxStock} items available`, "error");
             }
+        });
+    }
+
+    // Handle Duration change for Course products
+    const durationRadios = document.querySelectorAll('.duration-radio-input');
+    if (durationRadios.length > 0) {
+        // Trigger initial state
+        const checkedRadio = document.querySelector('.duration-radio-input:checked');
+        if(checkedRadio) {
+            const price = parseFloat(checkedRadio.dataset.price);
+            const regular = parseFloat(checkedRadio.dataset.regular) || price;
+            updatePriceUI(price, regular);
+            updateTotalPrice();
+        }
+
+        durationRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                const price = parseFloat(this.dataset.price);
+                const regular = parseFloat(this.dataset.regular) || price;
+                updatePriceUI(price, regular);
+                updateTotalPrice();
+            });
         });
     }
 
@@ -2440,6 +2644,13 @@ $(document).on('click','.copy',function(){
                 if (validCombinationKeys.length > 0) {
                     payload.combination_key = validCombinationKeys[0];
                 }
+            }
+
+            // Also check for selected course duration
+            const selectedDuration = document.querySelector('.duration-radio-input:checked');
+            if (selectedDuration) {
+                payload.combination_key = selectedDuration.value;
+                payload.variant_name = selectedDuration.dataset.variantName;
             }
 
             // For seller products, add seller_id if available
