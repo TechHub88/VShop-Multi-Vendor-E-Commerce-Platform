@@ -94,15 +94,38 @@
                 <button class="btn btn-primary dropdown-toggle" type="button" id="bulkActionsDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #0d6efd; border: none;">
                     <i class="fa-solid fa-layer-group"></i> Bulk Actions (<span id="bulkSelectedCount">0</span>)
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bulkActionsDropdownBtn">
-                    <li><a class="dropdown-item" href="#" id="bulkApproveItem"><i class="fa-solid fa-check-circle text-success me-2"></i> Bulk Approve</a></li>
-                    <li><a class="dropdown-item" href="#" id="bulkRejectItem"><i class="fa-solid fa-times-circle text-danger me-2"></i> Bulk Reject</a></li>
+                <ul class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="bulkActionsDropdownBtn" style="min-width: 250px;">
+                    <li class="px-2 py-1">
+                        <label class="form-label small fw-bold text-muted mb-2 text-uppercase d-block" style="font-size: 11px;">Approve / Reject</label>
+                        <div class="d-flex justify-content-between align-items-center bg-light border rounded p-2">
+                            <span class="text-success fw-bold small me-2 cursor-pointer" onclick="document.getElementById('bulkApproveItem').click()" style="cursor:pointer;"><i class="fa-solid fa-check-circle me-1"></i> Approve</span>
+                            <div class="form-check form-switch m-0 p-0" title="Click text to action">
+                                <input class="form-check-input m-0" type="checkbox" role="switch" disabled checked style="width: 2.5em; height: 1.25em; opacity:0.3;">
+                            </div>
+                            <span class="text-danger fw-bold small ms-2 cursor-pointer" onclick="document.getElementById('bulkRejectItem').click()" style="cursor:pointer;">Reject <i class="fa-solid fa-times-circle ms-1"></i></span>
+                        </div>
+                    </li>
+                    <li class="px-2 py-1 mt-2">
+                        <label class="form-label small fw-bold text-muted mb-2 text-uppercase d-block" style="font-size: 11px;">Enable / Disable</label>
+                        <div class="d-flex justify-content-between align-items-center bg-light border rounded p-2">
+                            <span class="text-primary fw-bold small me-2 cursor-pointer" onclick="document.getElementById('bulkEnableItem').click()" style="cursor:pointer;"><i class="fa-solid fa-play-circle me-1"></i> Enable</span>
+                            <div class="form-check form-switch m-0 p-0" title="Click text to action">
+                                <input class="form-check-input m-0" type="checkbox" role="switch" disabled checked style="width: 2.5em; height: 1.25em; opacity:0.3;">
+                            </div>
+                            <span class="text-warning fw-bold small ms-2 cursor-pointer" onclick="document.getElementById('bulkDisableItem').click()" style="cursor:pointer;">Disable <i class="fa-solid fa-ban ms-1"></i></span>
+                        </div>
+                    </li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#" id="bulkEnableItem"><i class="fa-solid fa-play-circle text-primary me-2"></i> Bulk Enable</a></li>
-                    <li><a class="dropdown-item" href="#" id="bulkDisableItem"><i class="fa-solid fa-ban text-warning me-2"></i> Bulk Disable</a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="#" id="bulkCategoryItem"><i class="fa-solid fa-tags text-info me-2"></i> Change Category</a></li>
+                    <li><a class="dropdown-item fw-medium" href="#" id="bulkCategoryItem"><i class="fa-solid fa-tags text-info me-2"></i> Change Category</a></li>
                 </ul>
+
+                <!-- Hidden Original Buttons to keep JS intact -->
+                <div class="d-none">
+                    <button id="bulkApproveItem"></button>
+                    <button id="bulkRejectItem"></button>
+                    <button id="bulkEnableItem"></button>
+                    <button id="bulkDisableItem"></button>
+                </div>
             </div>
         </div>
     </div>
