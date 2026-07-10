@@ -251,7 +251,10 @@
 <div id="supportChatWidget" class="support-chat-widget">
     <div class="chat-widget-header" id="chatWidgetHeader">
         <h6><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; margin-right: 4px;"> Chat with Ashmita </h6>
-        <button class="close-widget" id="closeSupportChat">&times;</button>
+        <div class="d-flex align-items-center">
+            <button id="clearAdminChatBtn" class="btn btn-sm text-danger p-0 px-2 me-2" style="font-size: 11px; font-weight:600; background:rgba(255,255,255,0.2); border:none; border-radius:10px;" title="Clear Chat History"><i class="bi bi-eraser-fill"></i> Clear</button>
+            <button class="close-widget" id="closeSupportChat">&times;</button>
+        </div>
     </div>
     <div class="chat-layout">
         <!-- Chat Area (Full width) -->
@@ -273,6 +276,7 @@
     </div>
 </div>
 
+<script src="{{ asset('js/socket.io.min.js') }}"></script>
 <script>
     // DOM elements
     const chatWidget = document.getElementById('supportChatWidget');
@@ -281,6 +285,11 @@
     const messagesArea = document.getElementById('chatMessagesArea');
     const messageInput = document.getElementById('chatMessageText');
     const sendBtn = document.getElementById('sendChatMessageBtn');
+    const clearChatBtn = document.getElementById('clearAdminChatBtn');
+
+    let adminSocket = null;
+    let currentAdminId = {{ Auth::id() ?? 0 }};
+    let adminConversationId = null;
 
     // Draggable functionality
     const header = document.getElementById('chatWidgetHeader');
@@ -308,41 +317,131 @@
         document.body.style.userSelect = '';
     });
 
-    // Send a message
-    function sendMessage() {
-        const message = messageInput.value.trim();
-        if (!message) return;
-        
-        // Add sent message to UI
-        const sentHtml = `
-            <div class="chat-message sent">
-                ${escapeHtml(message)}
-                <small>Just now</small>
-            </div>
-        `;
-        messagesArea.insertAdjacentHTML('beforeend', sentHtml);
-        messageInput.value = '';
-        messagesArea.scrollTop = messagesArea.scrollHeight;
-        
-        // Simulate response
-        setTimeout(() => {
-            const receivedHtml = `
-                <div class="chat-message received">
-                    I am currently a demo UI. Your message was: "${escapeHtml(message)}"
-                    <small>Just now</small>
-                </div>
-            `;
-            messagesArea.insertAdjacentHTML('beforeend', receivedHtml);
-            messagesArea.scrollTop = messagesArea.scrollHeight;
-        }, 1000);
-    }
-
-    // Helper to escape HTML
     function escapeHtml(text) {
         if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    function appendAdminMsg(msg) {
+        const isSent = (msg.sender_id == currentAdminId || msg.sender_type === 'admin') && msg.sender_type !== 'bot';
+        
+        // Handle REDIRECT command from BOT
+        if (!isSent && msg.message.includes('[REDIRECT:')) {
+            const redirectMatch = msg.message.match(/\[REDIRECT:(.*?)\]/);
+            if (redirectMatch && redirectMatch[1]) {
+                const targetUrl = redirectMatch[1];
+                msg.message = msg.message.replace(redirectMatch[0], `<br><br><i style="color:#004392; font-weight:bold;">Redirecting to ${targetUrl}...</i>`);
+                setTimeout(() => {
+                    window.location.href = targetUrl;
+                }, 1500);
+            }
+        }
+
+        if (isSent) {
+            const sentHtml = `
+                <div class="chat-message sent" id="msg-${msg.id}">
+                    ${escapeHtml(msg.message)}
+                </div>
+            `;
+            messagesArea.insertAdjacentHTML('beforeend', sentHtml);
+        } else {
+            const receivedHtml = `
+                <div class="chat-message received" id="msg-${msg.id}" style="line-height:1.5;">
+                    ${msg.message.replace(/\n/g, '<br>')}
+                </div>
+            `;
+            messagesArea.insertAdjacentHTML('beforeend', receivedHtml);
+        }
+    }
+
+    async function initAdminChat() {
+        if (!adminSocket) {
+            let socketUrl;
+            let socketOptions = {};
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                socketUrl = 'http://' + window.location.hostname + ':3000';
+            } else {
+                socketUrl = 'https://api.vridhee.com';
+                socketOptions = { secure: true, rejectUnauthorized: false };
+            }
+            adminSocket = io(socketUrl, socketOptions);
+            await new Promise((resolve) => {
+                if (adminSocket.connected) resolve();
+                else adminSocket.on('connect', resolve);
+            });
+            const socketId = adminSocket.id;
+
+            // Load history
+            try {
+                const res = await fetch('{{ route('chat.ashmita.history') }}?socket_id=' + socketId, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                
+                if (res.status === 401 || res.redirected) {
+                    messagesArea.innerHTML = '<div class="chat-message received">Session expired. Please log in again.</div>';
+                    return;
+                }
+
+                const data = await res.json();
+                if (data.success) {
+                    adminConversationId = data.conversation_id;
+                    messagesArea.innerHTML = '';
+                    
+                    if (data.messages && data.messages.length > 0) {
+                        data.messages.forEach(msg => appendAdminMsg(msg));
+                    } else {
+                        messagesArea.innerHTML = '<div class="chat-message received">Hi this is Ashmita! I am connected to the Admin database. How can I help you today?</div>';
+                    }
+                    messagesArea.scrollTop = messagesArea.scrollHeight;
+
+                    // Join room and listen for messages
+                    adminSocket.emit('join', 'conversation_' + adminConversationId);
+                    adminSocket.on('message', (msg) => {
+                        if (document.getElementById('msg-' + msg.id)) return;
+                        appendAdminMsg(msg);
+                        messagesArea.scrollTop = messagesArea.scrollHeight;
+                    });
+                }
+            } catch (err) {
+                console.error('Chat history error:', err);
+                messagesArea.innerHTML = '<div class="chat-message received text-danger">Failed to connect to Ashmita.</div>';
+            }
+        }
+    }
+
+    // Send a message
+    async function sendMessage() {
+        const msg = messageInput.value.trim();
+        if (!msg) return;
+        messageInput.value = '';
+        
+        try {
+            const socketId = adminSocket ? adminSocket.id : null;
+            const response = await fetch('{{ route('chat.ashmita.message') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ message: msg, socket_id: socketId })
+            });
+            
+            const data = await response.json();
+            if(data.success) {
+                if (data.buyer_message && !document.getElementById('msg-' + data.buyer_message.id)) {
+                    appendAdminMsg(data.buyer_message);
+                    messagesArea.scrollTop = messagesArea.scrollHeight;
+                }
+                if (data.bot_message && !document.getElementById('msg-' + data.bot_message.id)) {
+                    appendAdminMsg(data.bot_message);
+                    messagesArea.scrollTop = messagesArea.scrollHeight;
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     // Open/Close widget
@@ -355,11 +454,29 @@
             chatWidget.style.left = 'auto';
             chatWidget.style.top = 'auto';
         }
+        initAdminChat();
     });
     
     closeBtn.addEventListener('click', () => {
         chatWidget.classList.remove('active');
     });
+
+    if (clearChatBtn) {
+        clearChatBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to clear your chat history?')) {
+                try {
+                    const socketId = adminSocket ? adminSocket.id : null;
+                    await fetch('{{ route('chat.ashmita.clear') }}?socket_id=' + socketId, {
+                        method: 'DELETE',
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                    });
+                    messagesArea.innerHTML = '<div class="chat-message received">Conversation cleared. Ask me anything!</div>';
+                } catch (err) {
+                    console.error(err);
+                }
+            }
+        });
+    }
 
     // Send on button click
     sendBtn.addEventListener('click', sendMessage);

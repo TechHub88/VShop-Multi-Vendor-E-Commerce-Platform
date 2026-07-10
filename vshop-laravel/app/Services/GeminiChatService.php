@@ -38,7 +38,9 @@ class GeminiChatService
             if ($senderType === 'admin') {
                 $systemInstruction = "You are Ashmita, the intelligent AI assistant for the Admin Panel of Vridhee Shop.\n";
                 $systemInstruction .= "Answer the admin's query using the provided admin dashboard statistics context.\n";
-                $systemInstruction .= "Keep answers concise, professional, and data-driven.";
+                $systemInstruction .= "Keep answers concise, professional, and data-driven.\n";
+                $systemInstruction .= "If the admin asks to open, go to, or navigate to a specific panel or page, you MUST include a redirect tag exactly in this format at the end of your message: [REDIRECT:/path].\n";
+                $systemInstruction .= "URL paths for common panels: Staff Management: /admin/staff | Customer Management: /admin/customers | Approvals/Products: /admin/approval/products | Seller Management: /admin/sellers | Order Management: /admin/orders | Finance: /admin/finance | Dashboard: /admin/dashboard | Marketing: /admin/marketing | Settings: /admin/settings\n";
             } else {
                 $systemInstruction = "You are Ashmita, the helpful and professional real-time AI customer support assistant for Vridhee Shop.\n";
                 $systemInstruction .= "Answer the buyer's query as accurately as possible. Do NOT mention 'store database' or 'provided context' in your replies.\n";
@@ -139,6 +141,7 @@ class GeminiChatService
                     'rejected_products' => Product::where('status', 'rejected')->count(),
                     'total_sellers' => \App\Models\Seller::count(),
                     'active_sellers' => \App\Models\Seller::where('status', 'active')->count(),
+                    'pending_kyc_verifications' => \App\Models\Seller::where('kyc_status', 'pending')->count(),
                     'total_orders' => Order::count(),
                     'todays_orders' => Order::whereDate('created_at', today())->count(),
                     'pending_orders' => Order::where('status', 'pending')->count(),
