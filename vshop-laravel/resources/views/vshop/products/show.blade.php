@@ -611,13 +611,25 @@
 
                                             <div class="price-sec" id="priceSection">
                                                 <ul>
-                                                    <li class="price-row">
+                                                    <li class="price-row" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                                                         <p class="new-rupess">₹ <span class="current-price" id="currentPrice">{{ number_format($price,2) }}</span></p>
                                                         @if($regular > $price)
                                                         <p class="old-rupess" id="oldPrice">₹ <span id="regularPrice">{{ number_format($regular,2) }}</span></p>
                                                         @endif
                                                         @if($discount > 0)
                                                         <p class="off-box" id="discountPercentage" style="display:none;">{{ $discount }}% Off</p>
+                                                        @endif
+                                                        @if(in_array($product->type, ['professional', 'vshop-professional', 'vtravel-professional', 'service', 'vshop-service', 'vtravel-service']))
+                                                            @php $slotsCheck = json_decode($product->professional_slots, true); @endphp
+                                                            @if(!empty($slotsCheck) && is_array($slotsCheck))
+                                                            <div class="date-picker-wrapper position-relative" style="display: inline-flex; align-items: center;">
+                                                                <input type="text" id="slotCalendarPicker" class="slot-date-btn" placeholder="📅 Select Date" style="
+                                                                    cursor: pointer; font-size: 12px; font-weight: 600; color: #0d6efd; background: linear-gradient(135deg, #e8f0fe 0%, #f0f4ff 100%);
+                                                                    border: 1.5px solid #0d6efd; border-radius: 20px; padding: 5px 14px 5px 10px; width: auto; min-width: 130px; max-width: 160px;
+                                                                    outline: none; box-shadow: 0 1px 4px rgba(13,110,253,0.10); transition: all 0.2s ease;
+                                                                " readonly>
+                                                            </div>
+                                                            @endif
                                                         @endif
                                                     </li>
                                                     @if($saveAmount > 0)
@@ -681,25 +693,16 @@
                                                         $slotsJson = json_encode($slots);
                                                         $availableDatesJson = json_encode(array_values($availableDates));
                                                     @endphp
-                                                    <div class="professional-slots-sec mb-4">
-                                                        
-                                                        <div class="d-flex align-items-start gap-3 flex-wrap">
-                                                            <!-- Professional Select Date Input -->
-                                                            <div class="date-picker-wrapper position-relative" style="width: 100%; max-width: 200px;">
-                                                                <input type="text" id="slotCalendarPicker" class="form-control form-control-sm border-primary text-primary fw-bold" placeholder="Select Date" style="cursor: pointer; font-size: 12px; background-color: #f4f8ff; padding-right: 30px;" readonly>
-                                                                <i class="fa fa-calendar-alt text-primary position-absolute" style="right: 10px; top: 50%; transform: translateY(-50%); font-size: 13px; pointer-events: none;"></i>
-                                                            </div>
-
-                                                            <!-- Dynamic Slots Container -->
-                                                            <div id="dynamicSlotsContainer" class="flex-grow-1" style="display:none; min-width:250px;">
-                                                                <div class="d-flex flex-wrap gap-2" id="slotsForSelectedDate">
-                                                                    <!-- Slots will be rendered here by JS -->
-                                                                </div>
+                                                    <div class="professional-slots-sec mb-3">
+                                                        <!-- Time Slots Row (appears after date is selected) -->
+                                                        <div id="dynamicSlotsContainer" style="display:none;">
+                                                            <div class="d-flex flex-wrap gap-2" id="slotsForSelectedDate">
+                                                                <!-- Slots will be rendered here by JS -->
                                                             </div>
                                                         </div>
 
                                                         <!-- Selected Slots List -->
-                                                        <div id="selectedSlotsWrapper" class="mt-3" style="display:none;">
+                                                        <div id="selectedSlotsWrapper" class="mt-2" style="display:none;">
                                                             <div id="selectedSlotsList" class="d-flex flex-wrap gap-2 align-items-center">
                                                                 <!-- Selected items rendered here -->
                                                             </div>
@@ -707,6 +710,21 @@
                                                     </div>
 
                                                     <style>
+                                                        .slot-date-btn:hover {
+                                                            background: linear-gradient(135deg, #0d6efd 0%, #2684ff 100%) !important;
+                                                            color: #fff !important;
+                                                            border-color: #0d6efd !important;
+                                                            box-shadow: 0 2px 8px rgba(13,110,253,0.25) !important;
+                                                            transform: translateY(-1px);
+                                                        }
+                                                        .slot-date-btn:focus {
+                                                            border-color: #0d6efd !important;
+                                                            box-shadow: 0 0 0 3px rgba(13,110,253,0.18) !important;
+                                                        }
+                                                        .slot-date-btn.active {
+                                                            background: linear-gradient(135deg, #0d6efd 0%, #2684ff 100%) !important;
+                                                            color: #fff !important;
+                                                        }
                                                         .slot-checkbox-input:checked + .slot-card {
                                                             border-color: #0d6efd !important;
                                                             background-color: #e8f0fe !important;
