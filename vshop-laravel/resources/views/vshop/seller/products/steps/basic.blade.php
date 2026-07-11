@@ -638,20 +638,24 @@ action="{{ $product->id
         <label class="form-label fw-bold">Available Date & Time Slots</label>
         <div class="slot-picker-card">
             <div class="row g-2 align-items-end">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label small text-muted mb-1">Date(s)</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0"><i class="fa fa-calendar text-muted"></i></span>
                         <input type="text" id="slotDate" class="form-control border-start-0" placeholder="Select Date(s)">
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small text-muted mb-1">Start Time</label>
                     <input type="time" id="slotStartTime" class="form-control">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small text-muted mb-1">End Time</label>
                     <input type="time" id="slotEndTime" class="form-control">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted mb-1">Slot Duration (mins)</label>
+                    <input type="number" id="slotDuration" class="form-control" value="60" min="15">
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-primary w-100" onclick="addProfSlot()" style="height:38px;">
@@ -1122,6 +1126,7 @@ function toggleAllSections() {
     if(type === 'professional' || type === 'vshop-professional' || type === 'vtravel-professional') {
         $('#productSection').show();
         $('#professionalSection').show();
+        $('#expiryDateWrapper').hide();
     }
     if(type === 'tour' || type === 'vtravel-tour') {
         $('#tourGuidanceSection').show();
@@ -1716,23 +1721,33 @@ function addProfSlot() {
     var dateVal = $('#slotDate').val();
     var start = $('#slotStartTime').val();
     var end = $('#slotEndTime').val();
+    var durationMins = parseInt($('#slotDuration').val()) || 60;
 
     if (!dateVal) { alert('Please select at least one date'); return; }
     if (!start) { alert('Please select start time'); return; }
     if (!end) { alert('Please select end time'); return; }
     if (start >= end) { alert('End time must be after start time'); return; }
-
-    // Calculate duration
-    var s = new Date('1970-01-01T' + start + ':00');
-    var e = new Date('1970-01-01T' + end + ':00');
-    var diffMs = e - s;
-    var hrs = Math.floor(diffMs / 3600000);
-    var mins = Math.floor((diffMs % 3600000) / 60000);
-    var duration = (hrs > 0 ? hrs + 'h ' : '') + (mins > 0 ? mins + 'm' : '');
+    if (durationMins <= 0) { alert('Duration must be greater than 0'); return; }
 
     var dates = dateVal.split(', ');
     dates.forEach(function(date) {
-        profSlots.push({ date: date, start: start, end: end, duration: duration.trim() });
+        var currentS = new Date('1970-01-01T' + start + ':00');
+        var maxE = new Date('1970-01-01T' + end + ':00');
+        
+        while (currentS < maxE) {
+            var currentE = new Date(currentS.getTime() + durationMins * 60000);
+            if (currentE > maxE) break; // Drop any leftover time that doesn't fit a full slot
+            
+            var sTime = currentS.toTimeString().substring(0, 5);
+            var eTime = currentE.toTimeString().substring(0, 5);
+            
+            var hrs = Math.floor(durationMins / 60);
+            var mins = durationMins % 60;
+            var durStr = (hrs > 0 ? hrs + 'h ' : '') + (mins > 0 ? mins + 'm' : '');
+            
+            profSlots.push({ date: date, start: sTime, end: eTime, duration: durStr.trim() });
+            currentS = currentE;
+        }
     });
     
     renderProfSlots();
