@@ -972,10 +972,8 @@ public function saveBasic(Request $request, Product $product = null)
     $data['product_code'] = $product->product_code ?? $request->product_code ?? 'PRD' . rand(10000, 99999);
     
     // ================= AUTO APPROVAL LOGIC =================
-    // Words are base64 encoded so they aren't explicitly written in the source code
-    // Contains common inappropriate, vulgar, and scam-related keywords
-    $encodedKeywords = 'cG9ybixzZXgsbnVkZSxuYWtlZCxlc2NvcnQsbWFzc2FnZSxob29rZXIscHJvc3RpdHV0ZSxmdWNrLHNoaXQsYml0Y2gsYXNzaG9sZSxkaWNrLGNvY2sscHVzc3ksdmFnaW5hLHBlbmlzLHNsdXQsd2hvcmUsY3VudCxmcmF1ZCxzY2Ft';
-    $suspiciousKeywords = explode(',', base64_decode($encodedKeywords));
+    // Fetch all banned keywords from the database
+    $suspiciousKeywords = \App\Models\BannedKeyword::pluck('keyword')->toArray();
 
     $isSuspicious = false;
     $lowerName = strtolower($data['name']);
