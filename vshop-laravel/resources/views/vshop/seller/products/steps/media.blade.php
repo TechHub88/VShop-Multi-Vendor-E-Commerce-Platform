@@ -397,13 +397,13 @@ Save & Continue →
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 <script>
 
 let selectedFiles = [];
+let isScanning = false;
 
 
 /* =========================================================
@@ -544,6 +544,9 @@ $('#thumbInput').on('change', async function(){
     $(this).after(statusEl);
     $('#thumbError').hide();
 
+    isScanning = true;
+    $('button[type="submit"]').prop('disabled', true);
+
     if (!nsfwModel) await loadNSFWModel();
 
     if (nsfwModel) {
@@ -552,11 +555,15 @@ $('#thumbInput').on('change', async function(){
             statusEl.remove();
             $('#thumbError').text("The uploaded thumbnail was removed automatically because: " + safetyResult.reason).show();
             this.value='';
+            isScanning = false;
+            $('button[type="submit"]').prop('disabled', false);
             return;
         }
     }
     
     statusEl.remove();
+    isScanning = false;
+    $('button[type="submit"]').prop('disabled', false);
 
     let reader = new FileReader();
 
@@ -611,6 +618,9 @@ $('#imageInput').on('change', async function(){
     $(this).after(statusEl);
     $('#mediaError').hide();
 
+    isScanning = true;
+    $('button[type="submit"]').prop('disabled', true);
+
     if (!nsfwModel) await loadNSFWModel();
 
     for (let file of files) {
@@ -619,6 +629,8 @@ $('#imageInput').on('change', async function(){
             statusEl.remove();
             $('#mediaError').text('One of the files exceeds 2MB limit').show();
             this.value='';
+            isScanning = false;
+            $('button[type="submit"]').prop('disabled', false);
             return;
         }
 
@@ -626,16 +638,16 @@ $('#imageInput').on('change', async function(){
             statusEl.remove();
             $('#mediaError').text('Only JPG / PNG image files allowed').show();
             this.value='';
+            isScanning = false;
+            $('button[type="submit"]').prop('disabled', false);
             return;
         }
 
         if (nsfwModel) {
             let safetyResult = await checkImageSafety(file);
             if (!safetyResult.safe) {
-                statusEl.remove();
                 $('#mediaError').text("One of the uploaded gallery images was automatically removed because: " + safetyResult.reason).show();
-                this.value='';
-                return;
+                continue;
             }
         }
 
@@ -663,6 +675,8 @@ $('#imageInput').on('change', async function(){
     }
     
     statusEl.remove();
+    isScanning = false;
+    $('button[type="submit"]').prop('disabled', false);
 
     this.value='';
 
@@ -777,6 +791,11 @@ $(document).on('blur','.video-input',function(){
 $('#mediaForm').submit(function(e){
 
     e.preventDefault();
+    
+    if(isScanning) {
+        alert("Please wait while image safety scan is in progress...");
+        return false;
+    }
 
     if(!validateMediaSection()){
         return;

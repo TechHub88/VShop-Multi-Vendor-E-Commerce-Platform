@@ -135,7 +135,7 @@
                           action="{{ !empty($banner)
                           ? route('seller.marketplace.banner.update',$banner->id)
                           : route('seller.marketplace.banner.store') }}"
-                          enctype="multipart/form-data">
+                          enctype="multipart/form-data" id="bannerForm">
 
                         @csrf
 
@@ -401,7 +401,6 @@
 
 </style>
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -409,6 +408,15 @@
 
 let selectedFiles = [];
 let nsfwModel = null;
+let isScanning = false;
+
+$('#bannerForm').submit(function(e){
+    if(isScanning) {
+        e.preventDefault();
+        alert("Please wait while image safety scan is in progress...");
+        return false;
+    }
+});
 
 // Preload the NSFWJS model
 async function loadNSFWModel() {
@@ -489,6 +497,9 @@ document.getElementById('bannerInput').addEventListener('change', async function
     let statusEl = $('<div id="nsfwScanStatus" class="text-warning small mt-1 font-weight-bold"><i class="fa fa-spinner fa-spin me-1"></i> Scanning image pixels for safety check... Please wait.</div>');
     $('#bannerInput').after(statusEl);
 
+    isScanning = true;
+    $('button[type="submit"]').prop('disabled', true);
+
     // Make sure model is loaded
     if (!nsfwModel) {
         await loadNSFWModel();
@@ -514,6 +525,8 @@ document.getElementById('bannerInput').addEventListener('change', async function
     }
 
     statusEl.remove();
+    isScanning = false;
+    $('button[type="submit"]').prop('disabled', false);
 
     if(error){
         alert(error);
