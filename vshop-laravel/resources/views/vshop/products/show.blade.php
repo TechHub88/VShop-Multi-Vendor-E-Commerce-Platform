@@ -386,6 +386,16 @@
             flex-shrink: 0;
         }
     }
+
+    /* SPA Smooth Load Animation */
+    .dashboardPagesContentonner {
+        animation: fadeInSPA 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        opacity: 0;
+    }
+    @keyframes fadeInSPA {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 </style>
 @endpush
 
@@ -623,10 +633,10 @@
                                                             @php $slotsCheck = json_decode($product->professional_slots, true); @endphp
                                                             @if(!empty($slotsCheck) && is_array($slotsCheck))
                                                             <div class="date-picker-wrapper position-relative" style="display: inline-flex; align-items: center;">
-                                                                <input type="text" id="slotCalendarPicker" class="slot-date-btn" placeholder="📅 Select Date" style="
-                                                                    cursor: pointer; font-size: 11px; font-weight: 600; color: #fff; background: #0d6efd;
-                                                                    border: none; border-radius: 4px; padding: 4px 10px; width: auto; min-width: 105px; max-width: 120px;
-                                                                    outline: none; box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: all 0.2s ease; line-height: 1.4;
+                                                                <input type="text" id="slotCalendarPicker" class="slot-date-btn" placeholder="Select Date" style="
+                                                                    cursor: pointer; font-size: 13px; font-weight: 600; color: #fff; background: #004392;
+                                                                    border: none; border-radius: 6px; padding: 0 12px; height: 36px; width: auto;
+                                                                    outline: none; transition: 0.3s;
                                                                 " readonly>
                                                             </div>
                                                             @endif
@@ -711,15 +721,14 @@
 
                                                     <style>
                                                         .slot-date-btn:hover {
-                                                            background: #0b5ed7 !important;
-                                                            box-shadow: 0 2px 6px rgba(13,110,253,0.30) !important;
+                                                            background: #002e66 !important;
                                                         }
                                                         .slot-date-btn:focus {
-                                                            background: #0b5ed7 !important;
-                                                            box-shadow: 0 0 0 2px rgba(13,110,253,0.25) !important;
+                                                            background: #002e66 !important;
+                                                            box-shadow: 0 0 0 2px rgba(0, 67, 146, 0.25) !important;
                                                         }
                                                         .slot-date-btn.active {
-                                                            background: #0a58ca !important;
+                                                            background: #001f44 !important;
                                                         }
                                                         .slot-date-btn::placeholder {
                                                             color: #fff !important;
