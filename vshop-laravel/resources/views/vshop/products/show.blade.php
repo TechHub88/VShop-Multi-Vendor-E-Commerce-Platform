@@ -624,9 +624,9 @@
                                                             @if(!empty($slotsCheck) && is_array($slotsCheck))
                                                             <div class="date-picker-wrapper position-relative" style="display: inline-flex; align-items: center;">
                                                                 <input type="text" id="slotCalendarPicker" class="slot-date-btn" placeholder="📅 Select Date" style="
-                                                                    cursor: pointer; font-size: 12px; font-weight: 600; color: #0d6efd; background: linear-gradient(135deg, #e8f0fe 0%, #f0f4ff 100%);
-                                                                    border: 1.5px solid #0d6efd; border-radius: 20px; padding: 5px 14px 5px 10px; width: auto; min-width: 130px; max-width: 160px;
-                                                                    outline: none; box-shadow: 0 1px 4px rgba(13,110,253,0.10); transition: all 0.2s ease;
+                                                                    cursor: pointer; font-size: 11px; font-weight: 600; color: #fff; background: #0d6efd;
+                                                                    border: none; border-radius: 4px; padding: 4px 10px; width: auto; min-width: 105px; max-width: 120px;
+                                                                    outline: none; box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: all 0.2s ease; line-height: 1.4;
                                                                 " readonly>
                                                             </div>
                                                             @endif
@@ -711,19 +711,19 @@
 
                                                     <style>
                                                         .slot-date-btn:hover {
-                                                            background: linear-gradient(135deg, #0d6efd 0%, #2684ff 100%) !important;
-                                                            color: #fff !important;
-                                                            border-color: #0d6efd !important;
-                                                            box-shadow: 0 2px 8px rgba(13,110,253,0.25) !important;
-                                                            transform: translateY(-1px);
+                                                            background: #0b5ed7 !important;
+                                                            box-shadow: 0 2px 6px rgba(13,110,253,0.30) !important;
                                                         }
                                                         .slot-date-btn:focus {
-                                                            border-color: #0d6efd !important;
-                                                            box-shadow: 0 0 0 3px rgba(13,110,253,0.18) !important;
+                                                            background: #0b5ed7 !important;
+                                                            box-shadow: 0 0 0 2px rgba(13,110,253,0.25) !important;
                                                         }
                                                         .slot-date-btn.active {
-                                                            background: linear-gradient(135deg, #0d6efd 0%, #2684ff 100%) !important;
+                                                            background: #0a58ca !important;
+                                                        }
+                                                        .slot-date-btn::placeholder {
                                                             color: #fff !important;
+                                                            opacity: 1;
                                                         }
                                                         .slot-checkbox-input:checked + .slot-card {
                                                             border-color: #0d6efd !important;
@@ -733,8 +733,12 @@
                                                         .slot-card { transition: all 0.2s ease-in-out; }
                                                         .slot-checkbox-label:hover .slot-card { border-color: #0d6efd; }
                                                         
-                                                        /* Flatpickr custom small professional style */
-                                                        .flatpickr-calendar { font-size: 12px; width: 280px !important; }
+                                                        /* Flatpickr - position beside button, not on top */
+                                                        .date-picker-wrapper .flatpickr-calendar {
+                                                            font-size: 12px;
+                                                            width: 280px !important;
+                                                            margin-top: 4px;
+                                                        }
                                                         .flatpickr-day { max-width: 35px; height: 35px; line-height: 35px; }
                                                         .flatpickr-day.has-slots { font-weight: bold; color: #0d6efd; background-color: #e8f0fe; border-radius: 50%; }
                                                         .flatpickr-day.has-slots:hover { background-color: #0d6efd; color: #fff; }
@@ -1615,8 +1619,7 @@
         // Initialize Flatpickr
         const fp = flatpickr("#slotCalendarPicker", {
             inline: false,
-            position: 'above',
-            positionElement: document.querySelector('.date-picker-wrapper'),
+            position: 'below',
             onDayCreate: function(dObj, dStr, fp, dayElem) {
                 // Highlight available dates in blue
                 const dateStr = fp.formatDate(dayElem.dateObj, "Y-m-d");

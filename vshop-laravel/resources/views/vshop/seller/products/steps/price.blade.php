@@ -519,13 +519,17 @@
 <form method="POST" id="pricingForm" action="{{ $product->id ? route('seller.products.price.update', $product->id) : route('seller.products.price.save') }}">
 @csrf
 
-@if(in_array($product->type, ['product', 'vshop-product']))
-{{-- PRODUCT VARIANTS --}}
+@php
+    $subcatName = $product->subcategory ? strtolower($product->subcategory->name) : '';
+    $isCourseProduct = str_contains($subcatName, 'course');
+@endphp
+@if(in_array($product->type, ['product', 'vshop-product']) && $isCourseProduct)
+{{-- COURSE DURATION VARIANTS --}}
 <h6 class="mb-3">Product Pricing <span class="required-star">*</span></h6>
 <table class="table table-bordered" id="variantTable">
 <thead class="table-light">
 <tr>
-<th>Variant Name (e.g. 1 Month)</th><th>Price <span class="required-star">*</span></th><th>MRP</th><th>Discount %</th><th>Stock</th><th>Shipping</th><th>Action</th>
+<th>Course Duration</th><th>Price <span class="required-star">*</span></th><th>MRP</th><th>Discount %</th><th>Stock</th><th>Shipping</th><th>Action</th>
 </tr>
 </thead>
 <tbody>
@@ -535,7 +539,7 @@
 @if($variants->count() > 0)
     @foreach($variants as $vIndex => $variant)
     <tr class="variant-row">
-        <td><input type="text" name="combinations[{{ $vIndex }}][variant_name]" class="form-control" value="{{ $variant->variant_name ?? '' }}" placeholder="Duration/Name"></td>
+        <td><input type="text" name="combinations[{{ $vIndex }}][variant_name]" class="form-control" value="{{ $variant->variant_name ?? '' }}" placeholder="e.g. 4month"></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][price]" class="form-control price-input required-price" value="{{ $variant->price }}"><span class="field-error price-error"></span></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][regular_price]" class="form-control regular-price-input" value="{{ $variant->regular_price }}"></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][discount]" class="form-control discount-display" value="{{ $variant->discount_value }}"></td>
@@ -546,7 +550,7 @@
     @endforeach
 @else
     <tr class="variant-row">
-        <td><input type="text" name="combinations[0][variant_name]" class="form-control" value="{{ old('combinations.0.variant_name', '') }}" placeholder="Duration/Name"></td>
+        <td><input type="text" name="combinations[0][variant_name]" class="form-control" value="{{ old('combinations.0.variant_name', '') }}" placeholder="e.g. 4month"></td>
         <td><input type="number" name="combinations[0][price]" class="form-control price-input required-price" value="{{ old('combinations.0.price', $product->price ?? '') }}"><span class="field-error price-error"></span></td>
         <td><input type="number" name="combinations[0][regular_price]" class="form-control regular-price-input" value="{{ old('combinations.0.regular_price', $product->regular_price ?? '') }}"></td>
         <td><input type="number" name="combinations[0][discount]" class="form-control discount-display" value="{{ old('combinations.0.discount', '') }}"></td>
@@ -813,10 +817,18 @@
                                 <div class="spinner-border text-primary spinner-border-sm" role="status" style="width: 1rem; height: 1rem;"></div>
                                 <span style="font-size: 11px; font-weight:600; color: #0b4da1;">v-Ai analyzing...</span>
                             </div>
-                            <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Recommended Daily Budget:</span><strong id="aiBudget">₹{{ old('daily_budget', $product->daily_budget ?? 700) }}</strong></div>
-                            <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Expected Reach:</span><strong id="aiReach">12,000 - 18,000</strong></div>
-                            <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Estimated Enquiries:</span><strong id="aiEnquiries">120 - 180</strong></div>
-                            <div class="d-flex justify-content-between align-items-center"><span style="font-size: 11px;">Recommended Cities:</span><strong id="aiCities">Kolkata, Delhi</strong></div>
+                            <!-- Default instruction message (shown when no AI data) -->
+                            <div id="aiInstructionMsg" class="text-center py-3">
+                                <i class="bi bi-info-circle text-muted" style="font-size: 22px;"></i>
+                                <p class="text-muted mb-0 mt-2" style="font-size: 11px; font-weight: 500;">Select Country, State & City in Target Audience section, then click <strong>v-Ai</strong> button to get AI recommendations.</p>
+                            </div>
+                            <!-- AI data (hidden by default, shown after AI call) -->
+                            <div id="aiDataContent" style="display: none;">
+                                <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Recommended Daily Budget:</span><strong id="aiBudget">--</strong></div>
+                                <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Expected Reach:</span><strong id="aiReach">--</strong></div>
+                                <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Estimated Enquiries:</span><strong id="aiEnquiries">--</strong></div>
+                                <div class="d-flex justify-content-between align-items-center"><span style="font-size: 11px;">Recommended Cities:</span><strong id="aiCities">--</strong></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1586,6 +1598,16 @@ $(document).ready(function(){
     let currentAiRecommendedCities = [];
 
     openAiBtn.on('click', function() {
+        // Check if country/state/city is selected
+        let targetCountryVal = $('#targetCountry').val();
+        let targetStateVal = $('#targetState').val();
+        let hasCities = $('.city-checkbox:checked').length > 0;
+
+        if (!targetCountryVal || targetCountryVal === '') {
+            Swal.fire('Location Required', 'Please select Country, State & City in Target Audience section before generating AI recommendations.', 'warning');
+            return;
+        }
+
         // Show SweetAlert loading box
         Swal.fire({
             title: 'Generating AI Recommendation...',
@@ -1622,6 +1644,10 @@ $(document).ready(function(){
                 if (res.success && res.recommendation) {
                     let rec = res.recommendation;
                     currentAiRecommendedCities = rec.recommended_cities_info || [];
+
+                    // Show AI data content, hide instruction
+                    $('#aiInstructionMsg').hide();
+                    $('#aiDataContent').show();
                     
                     // Populate modal inputs
                     $('#modalBudget').val(rec.budget);

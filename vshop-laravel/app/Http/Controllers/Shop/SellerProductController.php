@@ -2106,7 +2106,7 @@ The JSON must follow this structure exactly:
             'HTTP-Referer' => url('/'),
             'X-Title' => 'VShop Admin',
         ])->post('https://openrouter.ai/api/v1/chat/completions', [
-            'model' => 'meta-llama/llama-3-8b-instruct',
+            'model' => 'openrouter/auto',
             'messages' => [
                 ['role' => 'user', 'content' => $prompt]
             ],
