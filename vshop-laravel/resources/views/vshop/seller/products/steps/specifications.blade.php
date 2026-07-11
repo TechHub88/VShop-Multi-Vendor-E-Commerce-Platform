@@ -625,7 +625,6 @@ class="form-control @error('materials_included') is-invalid @enderror">{{ old('m
         'itinerary' => 'Itinerary',
         'accommodation' => 'Accommodation',
         'included_excluded' => 'Inclusion / Exclusion',
-        'refund_policy' => 'Refund Policy',
         'luggage' => 'Luggage',
         'free_days' => 'Free Days',
         'benefits' => 'Benefits',
@@ -683,19 +682,6 @@ class="form-control editor">{!! old('included_excluded',$product->included_exclu
 name="luggage"
 class="form-control"
 value="{{ old('luggage',$product->luggage) }}">
-</div>
-
-<div class="mb-4 @error('refund_policy') border border-danger rounded p-2 @enderror">
-
-<label class="form-label required">{{ $labels['refund_policy'] }}</label>
-
-<textarea name="refund_policy"
-class="form-control editor">{{ old('refund_policy',$product->refund_policy) }}</textarea>
-
-@error('refund_policy')
-<div class="validation-error">{{ $message }}</div>
-@enderror
-
 </div>
 
 {{-- FREE DAYS --}}

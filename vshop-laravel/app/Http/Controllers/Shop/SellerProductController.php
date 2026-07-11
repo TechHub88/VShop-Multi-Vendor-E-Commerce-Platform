@@ -941,6 +941,7 @@ public function saveBasic(Request $request, Product $product = null)
         'short_summary' => 'required|string|min:1|max:100',
         'description' => 'required|string|min:1|max:300',
         'inventory_type' => 'nullable|in:own,dropshipping',
+        'refund_policy' => 'nullable|string',
     ]);
 
     // ================= DUPLICATE LISTING RESTRICTION =================
@@ -972,6 +973,7 @@ public function saveBasic(Request $request, Product $product = null)
     $data['status'] = 'pending';
     $data['tour_service_type'] = $request->tour_service_type;
     $data['listing_type'] = $request->listing_type;
+    $data['refund_policy'] = $request->refund_policy;
 
     // =====================================================
     // ✅ PROFESSIONAL
@@ -983,7 +985,6 @@ public function saveBasic(Request $request, Product $product = null)
             'session_mode' => 'required',
             'languages' => 'required',
             'max_booking' => 'required|integer|min:1',
-            'cancel_policy_prof' => 'required',
             'professional_slots' => 'required',
         ]);
 
@@ -992,7 +993,6 @@ public function saveBasic(Request $request, Product $product = null)
         $data['languages'] = $request->languages;
         $data['max_booking'] = $request->max_booking;
         $data['portfolio'] = $request->portfolio;
-        $data['cancel_policy_prof'] = $request->cancel_policy_prof;
         $data['professional_slots'] = $request->professional_slots;
 
         // Extract first slot's times for backward compatibility
@@ -1117,7 +1117,6 @@ public function saveBasic(Request $request, Product $product = null)
             'processing_time'     => 'required',
             'documents'           => 'required',
             'validity'            => 'required',
-            'cancel_policy_other' => 'required',
             'service_languages'   => 'required|string', // Language Support Validation
         ]);
 
@@ -1126,7 +1125,6 @@ public function saveBasic(Request $request, Product $product = null)
         $data['documents']           = $request->documents;
         $data['validity']            = $request->validity;
         $data['gov_fee']             = $request->gov_fee;
-        $data['cancel_policy_other'] = $request->cancel_policy_other;
         $data['service_languages']   = $request->service_languages; // Save languages (comma-separated)
     }
 
@@ -1460,7 +1458,6 @@ public function saveSpecifications(Request $request, Product $product)
     if (in_array($product->type, ['service', 'vshop-service', 'vtravel-service', 'tour', 'vtravel-tour'])) {
         $rules = array_merge($rules, [
             'itinerary'        => 'required|string|min:10',
-            'refund_policy'    => 'required|string|min:10',
             'accommodation'    => 'nullable|string',
             'inclusion'        => 'nullable|string',
             'included_excluded'=> 'nullable|string',

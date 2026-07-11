@@ -532,6 +532,14 @@ action="{{ $product->id
                placeholder="Enter organizer / provider name">
     </div>
 
+    <div class="col-md-12 mt-3">
+        <label class="form-label fw-bold">Cancellation / Refund Policy</label>
+        <textarea name="refund_policy" class="form-control required-common @error('refund_policy') is-invalid @enderror" rows="3">{{ old('refund_policy', $product->refund_policy ?? $product->cancel_policy_tour ?? $product->cancel_policy_prof ?? $product->cancel_policy_other ?? '') }}</textarea>
+        @error('refund_policy')
+            <small class="text-danger validation-error d-block">{{ $message }}</small>
+        @enderror
+        <small class="text-muted">Clearly state your cancellation and refund terms for all products/services.</small>
+    </div>
 </div>
 
 
@@ -632,7 +640,10 @@ action="{{ $product->id
             <div class="row g-2 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label small text-muted mb-1">Date(s)</label>
-                    <input type="text" id="slotDate" class="form-control" placeholder="Select Date(s)">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fa fa-calendar text-muted"></i></span>
+                        <input type="text" id="slotDate" class="form-control border-start-0" placeholder="Select Date(s)">
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-muted mb-1">Start Time</label>
@@ -673,10 +684,7 @@ action="{{ $product->id
         <label class="form-label fw-bold">Portfolio</label>
         <textarea name="portfolio" class="form-control">{{ old('portfolio', $product->portfolio ?? '') }}</textarea>
     </div>
-    <div class="col-md-12">
-        <label class="form-label fw-bold">Cancellation Policy<span class="text-danger">*</span></label>
-        <textarea name="cancel_policy_prof" class="form-control required-prof">{{ old('cancel_policy_prof', $product->cancel_policy_prof ?? '') }}</textarea>
-    </div>
+
 </div>
 </div>
 
@@ -950,13 +958,7 @@ action="{{ $product->id
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
             </div>
-            <div class="col-md-12">
-                <label class="form-label fw-bold">Cancellation Policy <span class="text-danger">*</span></label>
-                <textarea name="cancel_policy_tour" class="form-control required-tour @error('cancel_policy_tour') is-invalid @enderror">{{ old('cancel_policy_tour',$product->cancel_policy_tour ?? '') }}</textarea>
-                @error('cancel_policy_tour')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
+
         </div>
     </div>
 </div>
@@ -998,13 +1000,7 @@ action="{{ $product->id
         <label class="form-label fw-bold">Gov Fees / Extra Charges</label>
         <input type="number" name="gov_fee" class="form-control" value="{{ old('gov_fee',$product->gov_fee ?? '') }}">
     </div>
-    <div class="col-md-12">
-        <label class="form-label fw-bold">Cancellation Policy <span class="text-danger">*</span></label>
-        <textarea name="cancel_policy_other" class="form-control required-other @error('cancel_policy_other') is-invalid @enderror">{{ old('cancel_policy_other',$product->cancel_policy_other ?? '') }}</textarea>
-        @error('cancel_policy_other')
-            <div class="invalid-feedback">{{ $message }}</div>
-        @enderror
-    </div>
+
 </div>
 </div>
 
