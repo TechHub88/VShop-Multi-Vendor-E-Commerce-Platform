@@ -360,6 +360,13 @@
                                         <div class="product-heading">
                                             <div class="product-heading-left">
                                                 <h3>{{ $item->product_name ?? $item->product->name ?? 'Product' }}</h3>
+                                                @if(!empty($item->product->provider_name))
+                                                <div class="d-flex align-items-center gap-2 mt-1 mb-2">
+                                                    <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 11px; font-weight: 500; border-radius: 4px;">
+                                                        <i class="fa fa-user-tie text-primary me-1"></i> {{ $item->product->provider_name }}
+                                                    </span>
+                                                </div>
+                                                @endif
                                             </div>
                                         </div>
 
@@ -452,6 +459,16 @@
                                             @endforeach
                                         </div>
                                         @endif
+                                        @endif
+
+                                        {{-- Cancellation / Refund Policy --}}
+                                        @if(!empty($item->product) && (!empty($item->product->refund_policy) || !empty($item->product->cancel_policy_tour) || !empty($item->product->cancel_policy_prof) || !empty($item->product->cancel_policy_other)))
+                                        <div class="mt-2 p-2 bg-light border rounded" style="font-size: 12px; color: #555;">
+                                            <strong><i class="fa fa-shield-alt text-primary me-1"></i> Cancellation & Refund Policy:</strong>
+                                            <div class="mt-1 policy-text-sm">
+                                                {!! $item->product->refund_policy ?? $item->product->cancel_policy_tour ?? $item->product->cancel_policy_prof ?? $item->product->cancel_policy_other !!}
+                                            </div>
+                                        </div>
                                         @endif
 
                                         {{-- Delivery Address --}}

@@ -542,7 +542,7 @@ class="form-control @error('session_type') is-invalid @enderror">
 
 {{-- PROVIDER --}}
 <div class="col-md-6 mb-3">
-<label class="form-label required">Instructor / Provider Name</label>
+<label class="form-label">Instructor / Provider Name</label>
 <input type="text" name="provider_name"
 class="form-control @error('provider_name') is-invalid @enderror"
 value="{{ old('provider_name',$product->provider_name ?? '') }}">

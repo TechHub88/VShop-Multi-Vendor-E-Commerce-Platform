@@ -1542,11 +1542,15 @@
                                 @else
                                     <h4 class="mb-3 text-dark">Delivery & Returns Policy</h4>
                                     <div class="policy-content p-3 border rounded bg-light">
-                                        <h6 class="fw-bold text-dark mb-2">Shipping & Delivery Policy</h6>
-                                        <p class="text-secondary mb-3">Standard delivery times are between 3 to 5 business days depending on your delivery address and location. Shipping charges will be calculated at checkout. You will receive a tracking number once your package has shipped.</p>
-                                        
-                                        <h6 class="fw-bold text-dark mb-2">Returns & Replacement Policy</h6>
-                                        <p class="text-secondary mb-0">We support a 7-day return and replacement policy for items that are damaged, defective, or different from what was ordered. Returned products must be unused, in their original packaging, and with tags attached. Please contact support or request a refund through your customer dashboard.</p>
+                                        @if(!empty($product->refund_policy))
+                                            <p class="text-secondary mb-0">{!! $product->refund_policy !!}</p>
+                                        @else
+                                            <h6 class="fw-bold text-dark mb-2">Shipping & Delivery Policy</h6>
+                                            <p class="text-secondary mb-3">Standard delivery times are between 3 to 5 business days depending on your delivery address and location. Shipping charges will be calculated at checkout. You will receive a tracking number once your package has shipped.</p>
+                                            
+                                            <h6 class="fw-bold text-dark mb-2">Returns & Replacement Policy</h6>
+                                            <p class="text-secondary mb-0">We support a 7-day return and replacement policy for items that are damaged, defective, or different from what was ordered. Returned products must be unused, in their original packaging, and with tags attached. Please contact support or request a refund through your customer dashboard.</p>
+                                        @endif
                                     </div>
                                 @endif
                             </div>

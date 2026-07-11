@@ -163,6 +163,23 @@
 
 <td>
 <strong>{{ $item->product->name ?? '-' }}</strong>
+
+@if(!empty($item->product->provider_name))
+<div class="mt-1">
+    <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 11px;">
+        <i class="fa fa-user-tie text-primary me-1"></i> {{ $item->product->provider_name }}
+    </span>
+</div>
+@endif
+
+@if(!empty($item->product) && (!empty($item->product->refund_policy) || !empty($item->product->cancel_policy_tour) || !empty($item->product->cancel_policy_prof) || !empty($item->product->cancel_policy_other)))
+<div class="mt-2 p-1 bg-light border rounded" style="font-size: 11px; color: #555;">
+    <strong><i class="fa fa-shield-alt text-primary me-1"></i> Cancellation Policy:</strong>
+    <div class="mt-1 policy-text-sm">
+        {!! $item->product->refund_policy ?? $item->product->cancel_policy_tour ?? $item->product->cancel_policy_prof ?? $item->product->cancel_policy_other !!}
+    </div>
+</div>
+@endif
 </td>
 
 <td>{{ $item->quantity }}</td>

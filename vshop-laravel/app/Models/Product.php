@@ -501,17 +501,7 @@ class Product extends Model
             return false;
         }
 
-        $categoryName = strtolower($this->category->name ?? '');
-        $genericName = strtolower($this->generic_name ?? '');
-        $productName = strtolower($this->name ?? '');
-
-        $nonReturnableKeywords = ['wellness', 'medicine', 'mask', 'personal care', 'hygiene', 'food', 'snack', 'grocery', 'innerwear', 'lingerie', 'underwear', 'supplement'];
-        foreach ($nonReturnableKeywords as $keyword) {
-            if (str_contains($categoryName, $keyword) || str_contains($genericName, $keyword) || str_contains($productName, $keyword)) {
-                return false;
-            }
-        }
-
+        // Only rely on the seller's refund policy, no hardcoded category rules.
         return true;
     }
 

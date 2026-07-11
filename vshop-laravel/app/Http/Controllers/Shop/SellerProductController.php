@@ -1448,7 +1448,7 @@ public function saveSpecifications(Request $request, Product $product)
             'session_type'     => 'required|string|max:50',
             'start_time'       => 'required',
             'end_time'         => 'required|after:start_time',
-            'provider_name'    => 'required|string|max:255',
+            'provider_name'    => 'nullable|string|max:255',
             'max_participants' => 'required|integer|min:1',
             'booking_required' => 'required|string|max:10',
             'service_validity' => 'required|date',
