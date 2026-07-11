@@ -276,7 +276,6 @@
     </div>
 </div>
 
-<script src="{{ asset('js/socket.io.min.js') }}"></script>
 <script>
     // DOM elements
     const chatWidget = document.getElementById('supportChatWidget');
@@ -286,10 +285,6 @@
     const messageInput = document.getElementById('chatMessageText');
     const sendBtn = document.getElementById('sendChatMessageBtn');
     const clearChatBtn = document.getElementById('clearAdminChatBtn');
-
-    let adminSocket = null;
-    let currentAdminId = {{ Auth::id() ?? 0 }};
-    let adminConversationId = null;
 
     // Draggable functionality
     const header = document.getElementById('chatWidgetHeader');
@@ -324,90 +319,28 @@
         return div.innerHTML;
     }
 
-    function appendAdminMsg(msg) {
-        const isSent = (msg.sender_id == currentAdminId || msg.sender_type === 'admin') && msg.sender_type !== 'bot';
-        
-        // Handle REDIRECT command from BOT
-        if (!isSent && msg.message.includes('[REDIRECT:')) {
-            const redirectMatch = msg.message.match(/\[REDIRECT:(.*?)\]/);
-            if (redirectMatch && redirectMatch[1]) {
-                const targetUrl = redirectMatch[1];
-                msg.message = msg.message.replace(redirectMatch[0], `<br><br><i style="color:#004392; font-weight:bold;">Redirecting to ${targetUrl}...</i>`);
-                setTimeout(() => {
-                    window.location.href = targetUrl;
-                }, 1500);
-            }
-        }
-
+    function appendAdminMsg(msgText, isSent = false) {
         if (isSent) {
             const sentHtml = `
-                <div class="chat-message sent" id="msg-${msg.id}">
-                    ${escapeHtml(msg.message)}
+                <div class="chat-message sent">
+                    ${escapeHtml(msgText)}
                 </div>
             `;
             messagesArea.insertAdjacentHTML('beforeend', sentHtml);
         } else {
             const receivedHtml = `
-                <div class="chat-message received" id="msg-${msg.id}" style="line-height:1.5;">
-                    ${msg.message.replace(/\n/g, '<br>')}
+                <div class="chat-message received" style="line-height:1.5;">
+                    ${msgText.replace(/\n/g, '<br>')}
                 </div>
             `;
             messagesArea.insertAdjacentHTML('beforeend', receivedHtml);
         }
+        messagesArea.scrollTop = messagesArea.scrollHeight;
     }
 
     async function initAdminChat() {
-        if (!adminSocket) {
-            let socketUrl;
-            let socketOptions = {};
-            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                socketUrl = 'http://' + window.location.hostname + ':3000';
-            } else {
-                socketUrl = 'https://api.vridhee.com';
-                socketOptions = { secure: true, rejectUnauthorized: false };
-            }
-            adminSocket = io(socketUrl, socketOptions);
-            await new Promise((resolve) => {
-                if (adminSocket.connected) resolve();
-                else adminSocket.on('connect', resolve);
-            });
-            const socketId = adminSocket.id;
-
-            // Load history
-            try {
-                const res = await fetch('{{ route('chat.ashmita.history') }}?socket_id=' + socketId, {
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                
-                if (res.status === 401 || res.redirected) {
-                    messagesArea.innerHTML = '<div class="chat-message received">Session expired. Please log in again.</div>';
-                    return;
-                }
-
-                const data = await res.json();
-                if (data.success) {
-                    adminConversationId = data.conversation_id;
-                    messagesArea.innerHTML = '';
-                    
-                    if (data.messages && data.messages.length > 0) {
-                        data.messages.forEach(msg => appendAdminMsg(msg));
-                    } else {
-                        messagesArea.innerHTML = '<div class="chat-message received">Hi this is Ashmita! I am connected to the Admin database. How can I help you today?</div>';
-                    }
-                    messagesArea.scrollTop = messagesArea.scrollHeight;
-
-                    // Join room and listen for messages
-                    adminSocket.emit('join', 'conversation_' + adminConversationId);
-                    adminSocket.on('message', (msg) => {
-                        if (document.getElementById('msg-' + msg.id)) return;
-                        appendAdminMsg(msg);
-                        messagesArea.scrollTop = messagesArea.scrollHeight;
-                    });
-                }
-            } catch (err) {
-                console.error('Chat history error:', err);
-                messagesArea.innerHTML = '<div class="chat-message received text-danger">Failed to connect to Ashmita.</div>';
-            }
+        if (messagesArea.children.length <= 1) { // 1 because of the default greeting
+            messagesArea.innerHTML = '<div class="chat-message received">Hi! I\'m Ashmita, your Admin AI Assistant. Ask me anything about the data on this page!</div>';
         }
     }
 
@@ -417,30 +350,31 @@
         if (!msg) return;
         messageInput.value = '';
         
+        appendAdminMsg(msg, true);
+
+        // Extract context
+        let pageContext = document.body.innerText || '';
+        if (pageContext.length > 4500) pageContext = pageContext.substring(0, 4500);
+        
         try {
-            const socketId = adminSocket ? adminSocket.id : null;
-            const response = await fetch('{{ route('chat.ashmita.message') }}', {
+            const response = await fetch('{{ route('admin.ai-chat') }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
-                body: JSON.stringify({ message: msg, socket_id: socketId })
+                body: JSON.stringify({ message: msg, context: pageContext })
             });
             
             const data = await response.json();
-            if(data.success) {
-                if (data.buyer_message && !document.getElementById('msg-' + data.buyer_message.id)) {
-                    appendAdminMsg(data.buyer_message);
-                    messagesArea.scrollTop = messagesArea.scrollHeight;
-                }
-                if (data.bot_message && !document.getElementById('msg-' + data.bot_message.id)) {
-                    appendAdminMsg(data.bot_message);
-                    messagesArea.scrollTop = messagesArea.scrollHeight;
-                }
+            if(data.status === 'success') {
+                appendAdminMsg(data.reply, false);
+            } else {
+                appendAdminMsg('Error: ' + (data.message || 'Could not connect.'), false);
             }
         } catch (err) {
             console.error(err);
+            appendAdminMsg('An error occurred.', false);
         }
     }
 
@@ -462,18 +396,9 @@
     });
 
     if (clearChatBtn) {
-        clearChatBtn.addEventListener('click', async () => {
+        clearChatBtn.addEventListener('click', () => {
             if (confirm('Are you sure you want to clear your chat history?')) {
-                try {
-                    const socketId = adminSocket ? adminSocket.id : null;
-                    await fetch('{{ route('chat.ashmita.clear') }}?socket_id=' + socketId, {
-                        method: 'DELETE',
-                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                    });
-                    messagesArea.innerHTML = '<div class="chat-message received">Conversation cleared. Ask me anything!</div>';
-                } catch (err) {
-                    console.error(err);
-                }
+                messagesArea.innerHTML = '<div class="chat-message received">Conversation cleared. Ask me anything!</div>';
             }
         });
     }
@@ -488,5 +413,4 @@
             sendMessage();
         }
     });
-</script>
-<!-- end Footer -->
+</script><!-- end Footer -->
