@@ -555,7 +555,7 @@
         <td><input type="number" name="combinations[{{ $vIndex }}][regular_price]" class="form-control regular-price-input" value="{{ $variant->regular_price }}"></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][discount]" class="form-control discount-display" value="{{ $variant->discount_value }}"></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][stock]" class="form-control" value="{{ $variant->product_stock }}"></td>
-        <td><input type="number" name="combinations[{{ $vIndex }}][shipping]" class="form-control" value="{{ $variant->shipping_amount }}"></td>
+        <td><input type="number" name="combinations[{{ $vIndex }}][shipping]" class="form-control shipping-input" value="{{ $variant->shipping_amount }}"></td>
         @if($isCourseProduct)
         <td>@if($loop->first)<button type="button" class="btn btn-success addRow">+</button>@else<button type="button" class="btn btn-danger removeRow">-</button>@endif</td>
         @endif
@@ -572,7 +572,7 @@
         <td><input type="number" name="combinations[0][regular_price]" class="form-control regular-price-input" value="{{ old('combinations.0.regular_price', $product->regular_price ?? '') }}"></td>
         <td><input type="number" name="combinations[0][discount]" class="form-control discount-display" value="{{ old('combinations.0.discount', '') }}"></td>
         <td><input type="number" name="combinations[0][stock]" class="form-control" value="{{ old('combinations.0.stock', $product->stock ?? '') }}"></td>
-        <td><input type="number" name="combinations[0][shipping]" class="form-control" value="{{ old('combinations.0.shipping', $product->shipping ?? '') }}"></td>
+        <td><input type="number" name="combinations[0][shipping]" class="form-control shipping-input" value="{{ old('combinations.0.shipping', $product->shipping ?? '') }}"></td>
         @if($isCourseProduct)
         <td><button type="button" class="btn btn-success addRow">+</button></td>
         @endif
@@ -1401,6 +1401,7 @@ $(document).ready(function(){
     $(document).on('input', '.service-price-input', function() { calculateNetTotal(); });
     $(document).on('input change', '#discountValue, #discountType', function() { calculateNetTotal(); });
     $(document).on('input', '.tax-percentage', function() { calculateNetTotal(); });
+    $(document).on('input', '.shipping-input', function() { calculateNetTotal(); });
 
     function getBasePrice() {
         if($('.price-input').length > 0 && $('.price-input').first().val()) {
@@ -1413,6 +1414,13 @@ $(document).ready(function(){
         let child = parseFloat($('#childPrice').val()) || 0;
         let group = parseFloat($('#groupPrice').val()) || 0;
         return adult + child + group;
+    }
+    
+    function getShipping() {
+        if($('.shipping-input').length > 0 && $('.shipping-input').first().val()) {
+            return parseFloat($('.shipping-input').first().val()) || 0;
+        }
+        return 0;
     }
 
     function calculateDiscount(price) {
@@ -1441,7 +1449,8 @@ $(document).ready(function(){
         let discountAmount = calculateDiscount(basePrice);
         let priceAfterDiscount = basePrice - discountAmount;
         let taxAmount = calculateTax(priceAfterDiscount);
-        let netTotal = priceAfterDiscount + taxAmount;
+        let shippingAmount = getShipping();
+        let netTotal = priceAfterDiscount + taxAmount + shippingAmount;
         
         if ($('#boostStatus').is(':checked')) {
             let boostTotal = parseFloat($('#totalBudget').val()) || 0;
