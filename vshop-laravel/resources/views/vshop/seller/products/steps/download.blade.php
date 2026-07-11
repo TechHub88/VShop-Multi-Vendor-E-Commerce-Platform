@@ -96,9 +96,6 @@
     </div>
 
 </div>
-@if(isset($product))
-    @include('vshop.seller.partials.draft-status', ['product' => $product])
-@endif
 
 <form method="POST" action="{{ route('seller.products.download.save',$product->id) }}" style="position:relative;">
 @csrf
@@ -143,7 +140,7 @@ $downloads = old('title')
 
     <!-- TITLE -->
     <div class="mb-2">
-        <label>Title *</label>
+        <label>Title</label>
 
         <input type="text" 
         name="title[]" 
@@ -159,7 +156,7 @@ $downloads = old('title')
 
         <!-- DATE -->
         <div class="col-md-4">
-            <label>Date *</label>
+            <label>Date</label>
 
             <input type="date" 
             name="date[]" 
@@ -173,7 +170,7 @@ $downloads = old('title')
 
         <!-- URL -->
         <div class="col-md-8">
-            <label>Download URL *</label>
+            <label>Download URL</label>
 
             <input type="text" 
             name="url[]" 

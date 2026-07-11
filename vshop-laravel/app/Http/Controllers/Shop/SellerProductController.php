@@ -2308,21 +2308,17 @@ public function saveDownload(Request $request, $id)
 
     // ✅ VALIDATION
     $request->validate([
+        'title' => 'nullable|array',
+        'title.*' => 'nullable|string|max:255',
 
-        'title' => 'required|array|min:1',
-        'title.*' => 'required|string|max:255',
+        'date' => 'nullable|array',
+        'date.*' => 'nullable|date',
 
-        'date' => 'required|array|min:1',
-        'date.*' => 'required|date',
-
-        'url' => 'required|array|min:1',
-        'url.*' => 'required|url',
+        'url' => 'nullable|array',
+        'url.*' => 'nullable|url',
 
     ],[
-        'title.*.required' => 'Title is required',
-        'date.*.required' => 'Date is required',
         'date.*.date' => 'Invalid date',
-        'url.*.required' => 'URL is required',
         'url.*.url' => 'Enter valid URL',
     ]);
 
@@ -2330,13 +2326,16 @@ public function saveDownload(Request $request, $id)
     // ✅ SAVE DATA
     $downloads = [];
 
-    foreach ($request->title as $i => $title) {
-
-        $downloads[] = [
-            'title' => $title,
-            'date'  => $request->date[$i],
-            'url'   => $request->url[$i],
-        ];
+    if ($request->has('title')) {
+        foreach ($request->title as $i => $title) {
+            if (!empty($title) || !empty($request->url[$i])) {
+                $downloads[] = [
+                    'title' => $title,
+                    'date'  => $request->date[$i] ?? null,
+                    'url'   => $request->url[$i] ?? null,
+                ];
+            }
+        }
     }
 
     // ✅ NO JSON ENCODE (MODEL CAST HANDLE)
@@ -2377,17 +2376,12 @@ public function saveSample(Request $request, $id)
     */
 
     $request->validate([
-        'language.*' => 'required|string|max:255',
-        'ide.*'      => 'required|string|max:255',
-        'type.*'     => 'required|string|max:255',
-        'os.*'       => 'required|string|max:255',
-        'url.*'      => 'required|url',
+        'language.*' => 'nullable|string|max:255',
+        'ide.*'      => 'nullable|string|max:255',
+        'type.*'     => 'nullable|string|max:255',
+        'os.*'       => 'nullable|string|max:255',
+        'url.*'      => 'nullable|url',
     ],[
-        'language.*.required' => 'Language is required',
-        'ide.*.required'      => 'IDE is required',
-        'type.*.required'     => 'Type is required',
-        'os.*.required'       => 'Operating System is required',
-        'url.*.required'      => 'Download URL is required',
         'url.*.url'           => 'Enter valid URL',
     ]);
 

@@ -40,15 +40,15 @@
     <div class="status-flow">
 
         @php $paymentStat = strtolower($order->payment_status ?? 'pending'); @endphp
-        <span class="step {{ in_array($order->status, ['processing','completed']) || in_array($paymentStat, ['paid', 'success']) ? 'active' : '' }}">
+        <span class="step {{ in_array($order->status, ['processing','out for delivery','delivered','completed']) || in_array($paymentStat, ['paid', 'success']) ? 'active' : '' }}">
             Payment
         </span>
 
-        <span class="step {{ in_array($order->status, ['out for delivery','completed']) ? 'active' : '' }}">
+        <span class="step {{ in_array($order->status, ['out for delivery','delivered','completed']) ? 'active' : '' }}">
             Dispatch
         </span>
 
-        <span class="step {{ $order->status == 'out for delivery' ? 'active' : '' }}">
+        <span class="step {{ in_array($order->status, ['delivered','completed']) ? 'active' : '' }}">
             Delivery
         </span>
 

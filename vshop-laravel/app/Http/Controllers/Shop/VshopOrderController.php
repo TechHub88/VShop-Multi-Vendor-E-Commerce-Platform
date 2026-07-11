@@ -441,8 +441,10 @@ public function placeOrder(Request $request)
             }
         }
 
-        $paymentStatus = 'paid'; // Force paid for all payment methods (COD + UPI)
-        $orderStatus = 'delivered'; // Force delivered so Return/Refund button is immediately available
+        // NOTE: For now, setting payment_status to 'paid' and status to 'delivered' for both COD and UPI.
+        // This logic will be changed later when the shipping gateway is added.
+        $paymentStatus = 'paid';
+        $orderStatus = 'delivered';
 
         // ================= CREATE ORDER =================
         $order = Order::create([

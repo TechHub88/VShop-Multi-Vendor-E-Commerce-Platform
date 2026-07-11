@@ -128,7 +128,7 @@
 
 <label class="fw-semibold mb-1 d-block">
 Language / Technology
-<span class="text-danger">*</span>
+
 </label>
 
 <input type="text"
@@ -151,7 +151,7 @@ class="form-control @error('language') is-invalid @enderror">
 
 <label class="fw-semibold mb-1 d-block">
 IDE / Compiler
-<span class="text-danger">*</span>
+
 </label>
 
 <input type="text"
@@ -174,7 +174,7 @@ class="form-control @error('ide') is-invalid @enderror">
 
 <label class="fw-semibold mb-1 d-block">
 Type
-<span class="text-danger">*</span>
+
 </label>
 
 <input type="text"
@@ -197,7 +197,7 @@ class="form-control @error('type') is-invalid @enderror">
 
 <label class="fw-semibold mb-1 d-block">
 Operating System
-<span class="text-danger">*</span>
+
 </label>
 
 <input type="text"
@@ -220,7 +220,7 @@ class="form-control @error('os') is-invalid @enderror">
 
 <label class="fw-semibold mb-1 d-block">
 Download URL
-<span class="text-danger">*</span>
+
 </label>
 
 <input type="text"
