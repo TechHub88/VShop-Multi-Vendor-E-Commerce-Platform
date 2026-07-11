@@ -521,15 +521,22 @@
 
 @php
     $subcatName = $product->subcategory ? strtolower($product->subcategory->name) : '';
-    $isCourseProduct = str_contains($subcatName, 'course');
+    $prodName = $product->name ? strtolower($product->name) : '';
+    $isCourseProduct = str_contains($subcatName, 'course') || str_contains($prodName, 'course');
 @endphp
-@if(in_array($product->type, ['product', 'vshop-product']) && $isCourseProduct)
-{{-- COURSE DURATION VARIANTS --}}
+@if(in_array($product->type, ['product', 'vshop-product']))
+{{-- PRODUCT PRICING --}}
 <h6 class="mb-3">Product Pricing <span class="required-star">*</span></h6>
 <table class="table table-bordered" id="variantTable">
 <thead class="table-light">
 <tr>
-<th>Course Duration</th><th>Price <span class="required-star">*</span></th><th>MRP</th><th>Discount %</th><th>Stock</th><th>Shipping</th><th>Action</th>
+@if($isCourseProduct)
+<th>Course Duration</th>
+@endif
+<th>Price <span class="required-star">*</span></th><th>MRP</th><th>Discount %</th><th>Stock</th><th>Shipping</th>
+@if($isCourseProduct)
+<th>Action</th>
+@endif
 </tr>
 </thead>
 <tbody>
@@ -539,24 +546,36 @@
 @if($variants->count() > 0)
     @foreach($variants as $vIndex => $variant)
     <tr class="variant-row">
+        @if($isCourseProduct)
         <td><input type="text" name="combinations[{{ $vIndex }}][variant_name]" class="form-control" value="{{ $variant->variant_name ?? '' }}" placeholder="e.g. 4month"></td>
+        @else
+        <input type="hidden" name="combinations[{{ $vIndex }}][variant_name]" value="{{ $variant->variant_name ?? 'Default' }}">
+        @endif
         <td><input type="number" name="combinations[{{ $vIndex }}][price]" class="form-control price-input required-price" value="{{ $variant->price }}"><span class="field-error price-error"></span></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][regular_price]" class="form-control regular-price-input" value="{{ $variant->regular_price }}"></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][discount]" class="form-control discount-display" value="{{ $variant->discount_value }}"></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][stock]" class="form-control" value="{{ $variant->product_stock }}"></td>
         <td><input type="number" name="combinations[{{ $vIndex }}][shipping]" class="form-control" value="{{ $variant->shipping_amount }}"></td>
+        @if($isCourseProduct)
         <td>@if($loop->first)<button type="button" class="btn btn-success addRow">+</button>@else<button type="button" class="btn btn-danger removeRow">-</button>@endif</td>
+        @endif
     </tr>
     @endforeach
 @else
     <tr class="variant-row">
+        @if($isCourseProduct)
         <td><input type="text" name="combinations[0][variant_name]" class="form-control" value="{{ old('combinations.0.variant_name', '') }}" placeholder="e.g. 4month"></td>
+        @else
+        <input type="hidden" name="combinations[0][variant_name]" value="Default">
+        @endif
         <td><input type="number" name="combinations[0][price]" class="form-control price-input required-price" value="{{ old('combinations.0.price', $product->price ?? '') }}"><span class="field-error price-error"></span></td>
         <td><input type="number" name="combinations[0][regular_price]" class="form-control regular-price-input" value="{{ old('combinations.0.regular_price', $product->regular_price ?? '') }}"></td>
         <td><input type="number" name="combinations[0][discount]" class="form-control discount-display" value="{{ old('combinations.0.discount', '') }}"></td>
         <td><input type="number" name="combinations[0][stock]" class="form-control" value="{{ old('combinations.0.stock', $product->stock ?? '') }}"></td>
         <td><input type="number" name="combinations[0][shipping]" class="form-control" value="{{ old('combinations.0.shipping', $product->shipping ?? '') }}"></td>
+        @if($isCourseProduct)
         <td><button type="button" class="btn btn-success addRow">+</button></td>
+        @endif
     </tr>
 @endif
 </tbody>

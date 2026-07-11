@@ -633,10 +633,10 @@
                                                             @php $slotsCheck = json_decode($product->professional_slots, true); @endphp
                                                             @if(!empty($slotsCheck) && is_array($slotsCheck))
                                                             <div class="date-picker-wrapper position-relative" style="display: inline-flex; align-items: center;">
-                                                                <input type="text" id="slotCalendarPicker" class="slot-date-btn" placeholder="Select Date" style="
-                                                                    cursor: pointer; font-size: 13px; font-weight: 600; color: #fff; background: #004392;
-                                                                    border: none; border-radius: 6px; padding: 0 12px; height: 36px; width: auto;
-                                                                    outline: none; transition: 0.3s;
+                                                                <input type="text" id="slotCalendarPicker" class="slot-date-btn text-center" placeholder="Select Date" style="
+                                                                    cursor: pointer; font-size: 11px; font-weight: bold; color: #212529; background: #fff;
+                                                                    border: 1px solid #dee2e6; border-radius: 4px; padding: 4px 8px; width: 100px;
+                                                                    outline: none; transition: 0.2s;
                                                                 " readonly>
                                                             </div>
                                                             @endif
@@ -721,17 +721,16 @@
 
                                                     <style>
                                                         .slot-date-btn:hover {
-                                                            background: #002e66 !important;
+                                                            border-color: #0d6efd !important;
+                                                            background-color: #f8f9fa !important;
                                                         }
-                                                        .slot-date-btn:focus {
-                                                            background: #002e66 !important;
-                                                            box-shadow: 0 0 0 2px rgba(0, 67, 146, 0.25) !important;
-                                                        }
-                                                        .slot-date-btn.active {
-                                                            background: #001f44 !important;
+                                                        .slot-date-btn:focus, .slot-date-btn.active {
+                                                            border-color: #0d6efd !important;
+                                                            background-color: #e8f0fe !important;
+                                                            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
                                                         }
                                                         .slot-date-btn::placeholder {
-                                                            color: #fff !important;
+                                                            color: #212529 !important;
                                                             opacity: 1;
                                                         }
                                                         .slot-checkbox-input:checked + .slot-card {

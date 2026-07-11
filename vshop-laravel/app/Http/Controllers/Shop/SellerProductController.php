@@ -2073,6 +2073,8 @@ public function getAiRecommendation(Request $request, Product $product)
         $locationInfo = "Target State: " . $state;
     }
 
+    $sampleCities = !empty($cities) ? json_encode($cities) : '["Kolkata", "Delhi", "Mumbai"]';
+    
     $prompt = "You are a professional digital marketing budget estimator. Calculate the expected daily reach range, and expected daily enquiries range for the following product advertising boost campaign:
 Product Name: {$product->name}
 Category: {$categoryName}
@@ -2081,7 +2083,10 @@ Proposed Daily Budget: INR {$dailyBudget}
 Marketing Goal: {$goal}
 Target Location: {$locationInfo}
 
-Based on these details, validate the proposed daily budget (suggest an adjusted budget value if the proposed budget is too low or too high for this target location, or return the proposed budget if it is appropriate), calculate the estimated daily reach range (number of people reached), estimated daily enquiries range (number of leads/enquiries generated), and 3 recommended target cities in India that are best suited for this product under this budget (prefer to include some or all of the selected Target Location cities/states if specified, or suggest others that fit the product profile).
+Based on these details, validate the proposed daily budget (suggest an adjusted budget value if the proposed budget is too low or too high for this target location, or return the proposed budget if it is appropriate), calculate the estimated daily reach range (number of people reached), and estimated daily enquiries range (number of leads/enquiries generated).
+
+For recommended_cities: You MUST ONLY return the exact cities specified in 'Target Location'. DO NOT suggest or add any new cities. If no specific cities were provided, you may suggest up to 3 suitable cities.
+
 Keep in mind:
 - Higher priced products should have lower estimated reach but high-quality enquiries.
 - Lower priced products should have higher estimated reach and higher number of enquiries.
@@ -2094,7 +2099,7 @@ The JSON must follow this structure exactly:
   \"reach_max\": 7500,
   \"enquiries_min\": 10,
   \"enquiries_max\": 25,
-  \"recommended_cities\": [\"Kolkata\", \"Delhi\", \"Mumbai\"]
+  \"recommended_cities\": {$sampleCities}
 }";
 
     $apiKey = env('OPENROUTER_API_KEY', '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');
