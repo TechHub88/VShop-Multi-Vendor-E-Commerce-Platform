@@ -756,7 +756,11 @@
                                             @else
                                                 <div class="product-dtl-sec">
                                                     <p>Expected Delivery : <span class="blackColor" id="deliveryDate"></span> /
-                                                        <a href="{{ route('vshop.address.create') }}" class="change-pincode">Change Pincode</a>
+                                                        @auth('customer')
+                                                            <a href="{{ route('vshop.address.create') }}" class="change-pincode">Change Pincode</a>
+                                                        @else
+                                                            <a href="{{ route('vshoplogin') }}" class="change-pincode">Change Pincode</a>
+                                                        @endauth
                                                     </p>
                                                 </div>
                                             @endif
