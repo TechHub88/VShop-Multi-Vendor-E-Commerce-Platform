@@ -1738,8 +1738,19 @@ function addProfSlot() {
             var currentE = new Date(currentS.getTime() + durationMins * 60000);
             if (currentE > maxE) break; // Drop any leftover time that doesn't fit a full slot
             
-            var sTime = currentS.toTimeString().substring(0, 5);
-            var eTime = currentE.toTimeString().substring(0, 5);
+            // Format to AM/PM
+            function formatToAMPM(dateObj) {
+                let h = dateObj.getHours();
+                let m = dateObj.getMinutes();
+                let ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12;
+                h = h ? h : 12; // '0' becomes '12'
+                m = m < 10 ? '0' + m : m;
+                return h + ':' + m + ' ' + ampm;
+            }
+            
+            var sTime = formatToAMPM(currentS);
+            var eTime = formatToAMPM(currentE);
             
             var hrs = Math.floor(durationMins / 60);
             var mins = durationMins % 60;
