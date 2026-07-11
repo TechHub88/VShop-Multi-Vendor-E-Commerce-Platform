@@ -120,14 +120,18 @@ $downloads = old('title')
             'date' => old('date')[$i] ?? '',
             'url' => old('url')[$i] ?? ''
         ];
-    })
+    })->toArray()
     : (is_array($product->download_data) 
         ? $product->download_data 
-        : json_decode($product->download_data,true));
+        : (json_decode($product->download_data,true) ?? []));
+
+if (empty($downloads)) {
+    $downloads = [
+        ['title' => '', 'date' => '', 'url' => '']
+    ];
+}
 @endphp
 
-
-@if(!empty($downloads))
 
 @foreach($downloads as $i => $d)
 
@@ -187,8 +191,6 @@ $downloads = old('title')
 </div>
 
 @endforeach
-
-@endif
 
 </div>
 
