@@ -544,42 +544,62 @@
 
 
 
-                                    <!-- BUY NOW BUTTON Section -->
-                                    @if (Auth::guard('customer')->check())
-                                        <!-- Logged in → go to cart directly, no modal -->
-                                        <button type="button" id="buyNowBtn"
-                                            class="w-100 me-2 btn btn-primary buy-now-btn"
-                                            data-target-url="{{ route('frontend.cart') }}">
-                                            Buy Now
-                                        </button>
-                                    @else
-                                        <!-- Not logged in → redirect to employee login with current page URL -->
-                                        <a href="{{ route('frontend.employeelogin') }}?return_to={{ url()->current() }}"
-                                            id="buyNowBtnLink"
-                                            data-target-url="{{ route('frontend.employeelogin') }}?return_to={{ url()->current() }}"
-                                            class="w-100 me-2 btn btn-primary buy-now-btn text-center text-decoration-none">
-                                            Buy Now
-                                        </a>
-                                    @endif
+                                    @php
+                                        $isServiceExpired = false;
+                                        if (in_array($product->type, ['professional', 'vshop-professional', 'vtravel-professional', 'service', 'vshop-service', 'vtravel-service', 'information_advisory', 'vtravel-information_advisory'])) {
+                                            if (!empty($product->service_validity) && $product->service_validity !== '0000-00-00') {
+                                                $validityDate = \Carbon\Carbon::parse($product->service_validity)->endOfDay();
+                                                if (now()->greaterThan($validityDate)) {
+                                                    $isServiceExpired = true;
+                                                }
+                                            }
+                                        }
+                                    @endphp
 
-                                    <!-- ADD TO CART BUTTON Section -->
-                                    @if (Auth::guard('customer')->check())
-                                        <!-- Logged in → Normal Add to Cart -->
-                                        <button type="submit" id="addToCartBtn"
-                                            class="w-100 me-2 btn btn-primary add-tocart-btn">Add to Cart</button>
+                                    @if($isServiceExpired)
+                                        <div class="w-100">
+                                            <button type="button" class="w-100 btn btn-secondary" disabled style="cursor: not-allowed; opacity: 0.8;">
+                                                <i class="fa fa-exclamation-triangle me-1"></i> Service Temporarily Unavailable
+                                            </button>
+                                        </div>
                                     @else
-                                        <!-- Not logged in → redirect to login with current page URL -->
-                                        <a href="{{ route('frontend.employeelogin') }}?return_to={{ urlencode(url()->current()) }}"
-                                            id="addToCartBtnLink"
-                                            class="w-100 me-2 btn btn-primary add-tocart-btn text-center text-decoration-none">
-                                            Add to Cart
-                                        </a>
+                                        <!-- BUY NOW BUTTON Section -->
+                                        @if (Auth::guard('customer')->check())
+                                            <!-- Logged in → go to cart directly, no modal -->
+                                            <button type="button" id="buyNowBtn"
+                                                class="w-100 me-2 btn btn-primary buy-now-btn"
+                                                data-target-url="{{ route('frontend.cart') }}">
+                                                Buy Now
+                                            </button>
+                                        @else
+                                            <!-- Not logged in → redirect to employee login with current page URL -->
+                                            <a href="{{ route('frontend.employeelogin') }}?return_to={{ url()->current() }}"
+                                                id="buyNowBtnLink"
+                                                data-target-url="{{ route('frontend.employeelogin') }}?return_to={{ url()->current() }}"
+                                                class="w-100 me-2 btn btn-primary buy-now-btn text-center text-decoration-none">
+                                                Buy Now
+                                            </a>
+                                        @endif
+
+                                        <!-- ADD TO CART BUTTON Section -->
+                                        @if (Auth::guard('customer')->check())
+                                            <!-- Logged in → Normal Add to Cart -->
+                                            <button type="submit" id="addToCartBtn"
+                                                class="w-100 me-2 btn btn-primary add-tocart-btn">Add to Cart</button>
+                                        @else
+                                            <!-- Not logged in → redirect to login with current page URL -->
+                                            <a href="{{ route('frontend.employeelogin') }}?return_to={{ urlencode(url()->current()) }}"
+                                                id="addToCartBtnLink"
+                                                class="w-100 me-2 btn btn-primary add-tocart-btn text-center text-decoration-none">
+                                                Add to Cart
+                                            </a>
+                                        @endif
+                                        
+                                        <a href="#"                            
+                                                class="w-100 btn btn-primary add-tocart-btn text-center text-decoration-none enquiry-now-btn">
+                                                Enquiry Now
+                                            </a>
                                     @endif
-									
-									<a href="#"                            
-                                            class="w-100 btn btn-primary add-tocart-btn text-center text-decoration-none enquiry-now-btn">
-                                            Enquiry Now
-                                        </a>
 
 
 
