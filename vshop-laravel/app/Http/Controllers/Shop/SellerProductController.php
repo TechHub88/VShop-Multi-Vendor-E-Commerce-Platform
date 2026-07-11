@@ -972,12 +972,10 @@ public function saveBasic(Request $request, Product $product = null)
     $data['product_code'] = $product->product_code ?? $request->product_code ?? 'PRD' . rand(10000, 99999);
     
     // ================= AUTO APPROVAL LOGIC =================
-    // List of suspicious/vulgar keywords to check against product name
-    $suspiciousKeywords = [
-        'porn', 'sex', 'nude', 'naked', 'escort', 'massage', 'hooker', 
-        'prostitute', 'fuck', 'shit', 'bitch', 'asshole', 'dick', 'cock', 
-        'pussy', 'vagina', 'penis', 'slut', 'whore', 'cunt', 'fraud', 'scam'
-    ];
+    // Words are base64 encoded so they aren't explicitly written in the source code
+    // Contains common inappropriate, vulgar, and scam-related keywords
+    $encodedKeywords = 'cG9ybixzZXgsbnVkZSxuYWtlZCxlc2NvcnQsbWFzc2FnZSxob29rZXIscHJvc3RpdHV0ZSxmdWNrLHNoaXQsYml0Y2gsYXNzaG9sZSxkaWNrLGNvY2sscHVzc3ksdmFnaW5hLHBlbmlzLHNsdXQsd2hvcmUsY3VudCxmcmF1ZCxzY2Ft';
+    $suspiciousKeywords = explode(',', base64_decode($encodedKeywords));
 
     $isSuspicious = false;
     $lowerName = strtolower($data['name']);
