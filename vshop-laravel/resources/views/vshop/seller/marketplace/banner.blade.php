@@ -512,7 +512,7 @@ document.getElementById('bannerInput').addEventListener('change', async function
             if (nsfwModel) {
                 let isSafe = await checkImageSafety(file);
                 if (!isSafe) {
-                    error = "The uploaded image contains inappropriate (NSFW) content and has been removed.";
+                    error = "The uploaded image does not meet our safety and content guidelines and has been automatically removed.";
                 } else {
                     validFiles.push(file);
                 }

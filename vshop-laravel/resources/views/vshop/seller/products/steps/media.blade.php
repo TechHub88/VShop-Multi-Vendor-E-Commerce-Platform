@@ -497,9 +497,8 @@ function checkImageSafety(file) {
                             reasonText = category;
                         }
                     });
-                    
                     if (isUnsafe) {
-                        resolve({safe: false, reason: "Inappropriate content (" + reasonText + ") detected."});
+                        resolve({safe: false, reason: "it does not meet our safety and content guidelines."});
                     } else {
                         resolve({safe: true, reason: ""});
                     }
