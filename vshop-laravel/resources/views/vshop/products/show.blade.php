@@ -632,11 +632,11 @@
                                                         @if(in_array($product->type, ['professional', 'vshop-professional', 'vtravel-professional', 'service', 'vshop-service', 'vtravel-service']))
                                                             @php $slotsCheck = json_decode($product->professional_slots, true); @endphp
                                                             @if(!empty($slotsCheck) && is_array($slotsCheck))
-                                                            <div class="date-picker-wrapper position-relative" style="display: inline-flex; align-items: center;">
+                                                            <div class="date-picker-wrapper position-relative" style="display: inline-flex; align-items: center; background: #f8f9fa; border-radius: 6px; padding: 6px 12px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s;">
+                                                                <i class="fa-regular fa-calendar-alt text-primary" style="font-size: 13px; margin-right: 6px;"></i>
                                                                 <input type="text" id="slotCalendarPicker" class="slot-date-btn text-center" placeholder="Select Date" style="
-                                                                    cursor: pointer; font-size: 11px; font-weight: bold; color: #212529; background: #fff;
-                                                                    border: 1px solid #dee2e6; border-radius: 4px; padding: 4px 8px; width: 100px;
-                                                                    outline: none; transition: 0.2s;
+                                                                    cursor: pointer; font-size: 12px; font-weight: 600; color: #333; background: transparent;
+                                                                    border: none; padding: 0; width: 75px; outline: none; box-shadow: none;
                                                                 " readonly>
                                                             </div>
                                                             @endif
@@ -720,14 +720,14 @@
                                                     </div>
 
                                                     <style>
-                                                        .slot-date-btn:hover {
-                                                            border-color: #0d6efd !important;
-                                                            background-color: #f8f9fa !important;
-                                                        }
-                                                        .slot-date-btn:focus, .slot-date-btn.active {
-                                                            border-color: #0d6efd !important;
+                                                        .date-picker-wrapper:hover {
                                                             background-color: #e8f0fe !important;
-                                                            box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25) !important;
+                                                            border-color: #0d6efd !important;
+                                                        }
+                                                        .slot-date-btn:hover, .slot-date-btn:focus, .slot-date-btn.active {
+                                                            background-color: transparent !important;
+                                                            border-color: transparent !important;
+                                                            box-shadow: none !important;
                                                         }
                                                         .slot-date-btn::placeholder {
                                                             color: #212529 !important;
