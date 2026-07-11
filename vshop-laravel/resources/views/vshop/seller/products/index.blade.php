@@ -602,10 +602,11 @@ src="{{ $product->thumbnail ? asset($product->thumbnail) : asset('images/no-imag
         if ($combo) {
             $freeProduct = \App\Models\Product::find($combo->free_product_id);
             if ($freeProduct) {
+                $imgSrc = $freeProduct->thumbnail ? asset($freeProduct->thumbnail) : asset('images/no-image.png');
                 $comboHtml = '
                 <div class="d-inline-flex align-items-center mt-1 border rounded p-1 shadow-sm bg-white" style="border-color: #e5e7eb !important;">
                     <div class="d-flex align-items-center me-2 p-1 bg-light rounded border" style="border-color: #f3f4f6 !important;">
-                        <img src="' . $freeProduct->thumbnail_url . '" alt="Free item" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px;">
+                        <img src="' . $imgSrc . '" alt="Free item" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px;">
                     </div>
                     <div class="d-flex flex-column justify-content-center pe-2">
                         <span class="text-success fw-bold" style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.3px;"><i class="fa fa-gift me-1"></i>Buy ' . $combo->buy_qty . ' Get ' . $combo->get_qty . ' Free</span>
