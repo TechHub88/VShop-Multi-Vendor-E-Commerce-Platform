@@ -593,15 +593,28 @@ src="{{ $product->thumbnail ? asset($product->thumbnail) : asset('images/no-imag
 @php
     $participation = $product->campaignParticipations->first();
     $campaignText = '';
+    $comboHtml = '';
+
     if ($participation->campaign_type === 'percentage_20') {
         $campaignText = '20% Offer';
     } elseif ($participation->campaign_type === 'combo') {
         $combo = json_decode($participation->combo_details);
         if ($combo) {
-            $freeProdName = \App\Models\Product::find($combo->free_product_id)?->name ?? 'Product';
-            // Limit name length for badge
-            $freeProdName = Str::limit($freeProdName, 15);
-            $campaignText = "Buy {$combo->buy_qty} Get {$combo->get_qty} Free ({$freeProdName})";
+            $freeProduct = \App\Models\Product::find($combo->free_product_id);
+            if ($freeProduct) {
+                $comboHtml = '
+                <div class="d-inline-flex align-items-center mt-1 border rounded p-1 shadow-sm bg-white" style="border-color: #e5e7eb !important;">
+                    <div class="d-flex align-items-center me-2 p-1 bg-light rounded border" style="border-color: #f3f4f6 !important;">
+                        <img src="' . $freeProduct->thumbnail_url . '" alt="Free item" style="width: 28px; height: 28px; object-fit: cover; border-radius: 4px;">
+                    </div>
+                    <div class="d-flex flex-column justify-content-center pe-2">
+                        <span class="text-success fw-bold" style="font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.3px;"><i class="fa fa-gift me-1"></i>Buy ' . $combo->buy_qty . ' Get ' . $combo->get_qty . ' Free</span>
+                        <span class="text-muted text-truncate" style="font-size: 10px; max-width: 130px;" title="' . htmlspecialchars($freeProduct->name) . '">' . htmlspecialchars($freeProduct->name) . '</span>
+                    </div>
+                </div>';
+            } else {
+                $campaignText = 'Combo Offer';
+            }
         } else {
             $campaignText = 'Combo Offer';
         }
@@ -609,9 +622,14 @@ src="{{ $product->thumbnail ? asset($product->thumbnail) : asset('images/no-imag
         $campaignText = ucfirst(str_replace('_', ' ', $participation->campaign_type));
     }
 @endphp
-<span class="badge ms-1" style="background: linear-gradient(135deg, #ff416c, #ff4b2b) !important;">
-    <i class="fa fa-gift me-1"></i> {{ $campaignText }}
-</span>
+
+@if($comboHtml)
+    {!! $comboHtml !!}
+@else
+    <span class="badge ms-1" style="background: linear-gradient(135deg, #10b981, #059669) !important;">
+        <i class="fa fa-star me-1"></i> {{ $campaignText }}
+    </span>
+@endif
 @endif
 
 </div>
