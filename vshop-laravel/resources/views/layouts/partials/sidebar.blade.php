@@ -504,12 +504,14 @@ class="tp-link {{ request()->routeIs('admin.approval.categories') ? 'active' : '
 @endif
 
 
+<!--
 <li>
     <a href="{{ route('admin.settings.system') }}" class="tp-link {{ request()->routeIs('admin.settings.system') ? 'active' : '' }}">
         <span class="nav-icon"><iconify-icon icon="solar:settings-bold-duotone"></iconify-icon></span>
         System Settings
     </a>
 </li>
+-->
 <!-- COMMISSION -->
 <!--<li>-->
 <!--<a href="#sidebarPayments" data-bs-toggle="collapse">-->
