@@ -2797,3 +2797,6 @@ Route::post('/register', [AuthController::class, 'register'])->name('frontend.re
 Route::post('/logout', [AuthController::class, 'logout'])->name('frontend.logout');
 Route::post('/login', [AuthController::class, 'login'])->name('frontend.login.submit');
 Route::post('admin/finance/update-leads-boost-settings', [AdminFinanceController::class, 'updateLeadsBoostSettings'])->name('admin.finance.update-leads-boost-settings');
+
+// Admin Panel AI Assistant Chat
+Route::post('/admin/ai-chat', [\App\Http\Controllers\Admin\AdminChatController::class, 'handleChat'])->name('admin.ai-chat')->middleware('auth:web,admin_staff');

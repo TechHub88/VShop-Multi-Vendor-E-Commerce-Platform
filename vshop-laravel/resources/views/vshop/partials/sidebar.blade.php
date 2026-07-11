@@ -412,7 +412,100 @@ document.addEventListener("DOMContentLoaded", function () {
                         const sendBtn = document.getElementById('liveChatSendBtn');
                         const chatWindow = document.getElementById('liveChatWindow');
                         const chatContainer = document.getElementById('liveChatContainer');
+                        
+                        function escapeHtml(text) {
+                            if (!text) return '';
+                            const div = document.createElement('div');
+                            div.textContent = text;
+                            return div.innerHTML;
+                        }
 
+                        // --- ADMIN PANEL AI MODE ---
+                        if (window.location.pathname.startsWith('/admin')) {
+                            chatContainer.innerHTML = `
+                                <div style="display: flex; gap: 10px; align-items: flex-end;">
+                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #004392; color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,67,146,0.3); overflow: hidden;">
+                                        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width:100%; height:100%; object-fit:cover;">
+                                    </div>
+                                    <div style="background: white; padding: 12px 15px; border-radius: 14px; border-bottom-left-radius: 4px; max-width: 80%; font-size: 14px; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f1f1;">
+                                        Hi! I'm Ashmita, your Admin AI Assistant. Ask me anything about the data on this page!
+                                    </div>
+                                </div>
+                            `;
+
+                            const appendMsgAI = (text, isUser = false) => {
+                                if (isUser) {
+                                    chatContainer.innerHTML += `
+                                        <div style="display: flex; gap: 10px; align-items: flex-end; align-self: flex-end; flex-direction: row-reverse;">
+                                            <div style="background: #004392; color: white; padding: 12px 15px; border-radius: 14px; border-bottom-right-radius: 4px; max-width: 80%; font-size: 14px; text-align: left; box-shadow: 0 2px 8px rgba(0,67,146,0.2);">
+                                                ${escapeHtml(text)}
+                                            </div>
+                                        </div>
+                                    `;
+                                } else {
+                                    chatContainer.innerHTML += `
+                                        <div style="display: flex; gap: 10px; align-items: flex-end;">
+                                            <div style="width: 32px; height: 32px; border-radius: 50%; background: #004392; color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,67,146,0.3); overflow: hidden;">
+                                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_bFKmpUN1M-jPxmVF5h-DSr1Vta2W3nOnOQ&s" style="width:100%; height:100%; object-fit:cover;">
+                                            </div>
+                                            <div style="background: white; padding: 12px 15px; border-radius: 14px; border-bottom-left-radius: 4px; max-width: 80%; font-size: 14px; color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #f1f1f1;">
+                                                ${escapeHtml(text)}
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                                chatWindow.scrollTop = chatWindow.scrollHeight;
+                            };
+
+                            const sendMessage = async () => {
+                                const msg = input.value.trim();
+                                if (msg) {
+                                    input.value = '';
+                                    appendMsgAI(msg, true);
+                                    
+                                    // Extract context
+                                    let pageContext = document.body.innerText || '';
+                                    if (pageContext.length > 4500) pageContext = pageContext.substring(0, 4500);
+
+                                    try {
+                                        const response = await fetch('{{ route('admin.ai-chat') }}', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                            },
+                                            body: JSON.stringify({ message: msg, context: pageContext })
+                                        });
+                                        const data = await response.json();
+                                        if (data.status === 'success') {
+                                            appendMsgAI(data.reply);
+                                        } else {
+                                            appendMsgAI('Error: ' + (data.message || 'Could not connect.'));
+                                        }
+                                    } catch (err) {
+                                        console.error(err);
+                                        appendMsgAI('An error occurred.');
+                                    }
+                                }
+                            };
+
+                            sendBtn.addEventListener('click', sendMessage);
+                            input.addEventListener('keypress', (e) => {
+                                if(e.key === 'Enter') sendMessage();
+                            });
+                            input.focus();
+
+                            const clearChatBtn = document.getElementById('clearChatBtn');
+                            if (clearChatBtn) {
+                                clearChatBtn.addEventListener('click', () => {
+                                    chatContainer.innerHTML = '';
+                                    appendMsgAI('Conversation cleared. Ask me anything!');
+                                });
+                            }
+                            return; // Skip socket.io logic
+                        }
+                        
+                        // --- STANDARD SOCKET.IO MODE ---
                         let socketUrl;
                         let socketOptions = {};
                         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -427,13 +520,6 @@ document.addEventListener("DOMContentLoaded", function () {
                             else sidebarSocket.on('connect', resolve);
                         });
                         const socketId = sidebarSocket.id;
-                        
-                        function escapeHtml(text) {
-                            if (!text) return '';
-                            const div = document.createElement('div');
-                            div.textContent = text;
-                            return div.innerHTML;
-                        }
 
                         function appendMsg(msg) {
                             const isSent = (msg.sender_id == currentUserId || msg.sender_type === 'seller' || msg.sender_type === 'customer') && msg.sender_type !== 'bot';
@@ -583,8 +669,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         });
                         
                         input.focus();
-                    },
-                    willClose: () => {
+                    },willClose: () => {
                         if (sidebarSocket) {
                             sidebarSocket.disconnect();
                         }
