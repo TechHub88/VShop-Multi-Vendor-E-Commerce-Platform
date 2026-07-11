@@ -970,7 +970,34 @@ public function saveBasic(Request $request, Product $product = null)
     $data['subcategory_id'] = $request->subcategory_id;
     $data['organizer_name'] = $request->organizer_name;
     $data['product_code'] = $product->product_code ?? $request->product_code ?? 'PRD' . rand(10000, 99999);
-    $data['status'] = 'pending';
+    
+    // ================= AUTO APPROVAL LOGIC =================
+    // List of suspicious/vulgar keywords to check against product name
+    $suspiciousKeywords = [
+        'porn', 'sex', 'nude', 'naked', 'escort', 'massage', 'hooker', 
+        'prostitute', 'fuck', 'shit', 'bitch', 'asshole', 'dick', 'cock', 
+        'pussy', 'vagina', 'penis', 'slut', 'whore', 'cunt', 'fraud', 'scam'
+    ];
+
+    $isSuspicious = false;
+    $lowerName = strtolower($data['name']);
+    
+    foreach ($suspiciousKeywords as $word) {
+        // Use word boundary to avoid false positives (e.g., 'essex' matching 'sex')
+        if (preg_match('/\b' . preg_quote($word, '/') . '\b/i', $lowerName)) {
+            $isSuspicious = true;
+            break;
+        }
+    }
+
+    // Category is already validated to exist in marketplace_categories via 'exists:marketplace_categories,id'
+    if (!$isSuspicious) {
+        $data['status'] = 'approved';
+    } else {
+        $data['status'] = 'pending';
+    }
+    // =====================================================
+
     $data['tour_service_type'] = $request->tour_service_type;
     $data['listing_type'] = $request->listing_type;
     $data['refund_policy'] = $request->refund_policy;
