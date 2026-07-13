@@ -488,11 +488,7 @@ function checkImageSafety(file) {
                         let prob = p.probability;
                         
                         // Very strict check for vulgar content
-                        if ((category === 'porn' || category === 'hentai') && prob > 0.10) {
-                            isUnsafe = true;
-                            reasonText = category;
-                        }
-                        if (category === 'sexy' && prob > 0.20) {
+                        if ((category === 'porn' || category === 'hentai' || category === 'sexy') && prob > 0.10) {
                             isUnsafe = true;
                             reasonText = category;
                         }

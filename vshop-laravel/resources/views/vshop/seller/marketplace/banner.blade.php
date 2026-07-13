@@ -453,10 +453,7 @@ function checkImageSafety(file) {
                         let prob = p.probability;
                         
                         // Strict trigger thresholds for Porn, Hentai and Sexy content
-                        if ((category === 'porn' || category === 'hentai') && prob > 0.15) {
-                            isUnsafe = true;
-                        }
-                        if (category === 'sexy' && prob > 0.30) {
+                        if ((category === 'porn' || category === 'hentai' || category === 'sexy') && prob > 0.10) {
                             isUnsafe = true;
                         }
                     });

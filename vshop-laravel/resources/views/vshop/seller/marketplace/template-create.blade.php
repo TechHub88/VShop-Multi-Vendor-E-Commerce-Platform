@@ -211,6 +211,7 @@ box-shadow:0 2px 6px rgba(0,0,0,0.2);
 </style>
 
 {{-- ================= JS ================= --}}
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function(){
 
@@ -223,8 +224,64 @@ const image = document.getElementById('preview_image');
 const previewImg = document.getElementById('previewImg');
 const previewBox = document.getElementById('previewBox');
 const removeBtn = document.getElementById('removeImg');
-
 const imageError = document.getElementById('imageError');
+
+let nsfwModel = null;
+let isScanning = false;
+
+// Preload the NSFWJS model
+async function loadNSFWModel() {
+    try {
+        if (!nsfwModel) {
+            nsfwModel = await nsfwjs.load('/models/mobilenet_v2/');
+            console.log("NSFW model loaded successfully.");
+        }
+    } catch (e) {
+        console.error("Failed to load NSFW model:", e);
+    }
+}
+
+// Helper function to scan image pixels using NSFW.js
+function checkImageSafety(file) {
+    return new Promise((resolve) => {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            let img = new Image();
+            img.onload = async function() {
+                try {
+                    let predictions = await nsfwModel.classify(img);
+                    let isUnsafe = false;
+                    predictions.forEach(p => {
+                        let category = p.className.toLowerCase();
+                        let prob = p.probability;
+                        
+                        // Strict trigger thresholds
+                        if ((category === 'porn' || category === 'hentai' || category === 'sexy') && prob > 0.10) {
+                            isUnsafe = true;
+                        }
+                    });
+
+                    if (isUnsafe) {
+                        resolve(false); // Flagged as Unsafe
+                    } else {
+                        resolve(true); // Flagged as Safe
+                    }
+                } catch (err) {
+                    console.error(err);
+                    resolve(true);
+                }
+            };
+            img.onerror = function() {
+                resolve(true);
+            };
+            img.src = e.target.result;
+        };
+        reader.onerror = function() {
+            resolve(true);
+        };
+        reader.readAsDataURL(file);
+    });
+}
 
 // ================= TEXT VALIDATION =================
 function showError(input){
@@ -244,7 +301,7 @@ clearError(this);
 });
 
 // ================= IMAGE PREVIEW =================
-image.addEventListener('change', function(){
+image.addEventListener('change', async function(){
 
 let file = this.files[0];
 
@@ -261,6 +318,53 @@ previewBox.classList.add('d-none');
 return;
 }
 
+// clear error initially
+imageError.classList.add('d-none');
+image.classList.remove('is-invalid');
+
+// Load model if not loaded
+if (!nsfwModel) {
+    imageError.classList.remove('d-none');
+    imageError.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Scanning image...';
+    imageError.classList.add('text-warning');
+    imageError.classList.remove('text-danger');
+    isScanning = true;
+    $('button[type="submit"]').prop('disabled', true);
+    await loadNSFWModel();
+} else {
+    imageError.classList.remove('d-none');
+    imageError.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Scanning image...';
+    imageError.classList.add('text-warning');
+    imageError.classList.remove('text-danger');
+    isScanning = true;
+    $('button[type="submit"]').prop('disabled', true);
+}
+
+// Scan image
+let isSafe = true;
+if (nsfwModel) {
+    isSafe = await checkImageSafety(file);
+}
+
+isScanning = false;
+$('button[type="submit"]').prop('disabled', false);
+
+if (!isSafe) {
+    this.value = '';
+    imageError.classList.remove('d-none');
+    imageError.innerText = "The uploaded image contains inappropriate (NSFW) content and has been removed.";
+    imageError.classList.add('text-danger');
+    imageError.classList.remove('text-warning');
+    this.classList.add('is-invalid');
+    previewBox.classList.add('d-none');
+    return;
+}
+
+// Reset error text
+imageError.classList.add('d-none');
+imageError.classList.add('text-danger');
+imageError.classList.remove('text-warning');
+
 // preview
 let reader = new FileReader();
 
@@ -270,10 +374,6 @@ previewBox.classList.remove('d-none');
 };
 
 reader.readAsDataURL(file);
-
-// clear error
-imageError.classList.add('d-none');
-image.classList.remove('is-invalid');
 
 });
 
@@ -288,6 +388,12 @@ previewBox.classList.add('d-none');
 
 // ================= FORM VALIDATION =================
 form.addEventListener('submit', function(e){
+
+if (isScanning) {
+    e.preventDefault();
+    alert("Please wait while image safety scan is in progress...");
+    return;
+}
 
 let valid = true;
 
