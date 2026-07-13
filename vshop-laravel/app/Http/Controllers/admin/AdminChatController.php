@@ -29,7 +29,7 @@ class AdminChatController extends Controller
         Keep your answer concise and helpful. Don't mention that you read the page context explicitly, just use the information.
         
         PAGE CONTEXT: 
-        " . strip_tags($context);
+        " . strip_tags((string) $context);
 
         try {
             $response = Http::withHeaders([
@@ -61,7 +61,7 @@ class AdminChatController extends Controller
                     'message' => 'Failed to connect to the AI service.'
                 ], 500);
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error("AdminChatController exception: " . $e->getMessage());
             return response()->json([
                 'status' => 'error',
