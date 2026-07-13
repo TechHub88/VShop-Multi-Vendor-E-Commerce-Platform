@@ -718,7 +718,7 @@ $(document).ready(function() {
         e.preventDefault();
 
         $.ajax({
-            url: "{{ route('coupon.remove') }}",
+            url: "{{ route('vshop.coupon.remove') }}",
             type: "POST",
             success: function(res) {
                 if (res.success) {
