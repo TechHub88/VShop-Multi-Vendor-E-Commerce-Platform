@@ -241,6 +241,8 @@ class MyorderController extends Controller
                     'note'        => $request->note,
                     'status'      => 'approved', // 'approved' maps to 'pending' admin refund in WalletController
                 ]);
+            } else {
+                \App\Models\Order::reverseOrderFunds($order);
             }
 
             // ✅ Log the activity

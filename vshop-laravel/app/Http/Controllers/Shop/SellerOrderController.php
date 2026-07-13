@@ -391,6 +391,10 @@ public function index(Request $request)
         $order->remarks    = $request->remarks;
         $order->privacy    = $request->privacy;
 
+        if (strtolower($finalStatus) === 'cancelled') {
+            Order::reverseOrderFunds($order);
+        }
+
         if (strtolower($finalStatus) === 'delivered' && $order->referrer_id && !$order->referral_paid) {
             $commissionPercent = 3.0;
             $commissionAmount = ($order->total_amount * $commissionPercent) / 100;
@@ -688,6 +692,8 @@ public function cancel($id){
     $order = Order::findOrFail($id);
     $order->status = 'cancelled';
     $order->save();
+
+    Order::reverseOrderFunds($order);
 
     NotificationService::notify(
         $order->customer_id,

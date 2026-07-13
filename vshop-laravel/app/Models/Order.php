@@ -318,19 +318,284 @@ class Order extends Model
             }
 
         });
+    }
 
-        // 🔥 ORDER CREATED
-        static::created(function ($order) {
+    /**
+     * Reverse all payouts and referral commission, and refund the buyer if they have paid.
+     */
+    public static function reverseOrderFunds(Order $order)
+    {
+        if ($order->refund_status === 'completed') {
+            return;
+        }
 
-            ActivityLog::create([
-                'order_id'      => $order->id,
-                'customer_id'   => $order->customer_id,
-                'activity_type' => 'order_placed',
-                'new_status'    => $order->status,
-                'description'   => 'New order placed',
-                'remarks'       => 'Order #' . $order->id . ' created',
+        $order->loadMissing('items.product');
+        
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order) {
+            $totalSellerEarning = 0;
+            $totalReferralEarning = 0;
+            $totalPlatformEarning = 0;
+
+            foreach ($order->items as $item) {
+                $sellerId = $order->seller_id ?? ($item->product->created_by_id ?? null);
+                if (!$sellerId) {
+                    continue;
+                }
+
+                $totalPrice = (float) $item->total;
+                $sellerEarning = (float) $item->seller_earning;
+                $referralAmount = (float) $item->referral_earning;
+                $platformAmount = (float) $item->platform_earning;
+
+                $totalSellerEarning += $sellerEarning;
+                $totalReferralEarning += $referralAmount;
+                $totalPlatformEarning += $platformAmount;
+
+                // --- 1. REVERSE SELLER EARNING ---
+                $sellerWallet = \App\Models\Wallet::firstOrCreate(
+                    ['user_type' => 'seller', 'seller_id' => $sellerId, 'customer_id' => null],
+                    ['balance' => 0]
+                );
+                
+                // Deduct seller payout
+                $sellerWallet->balance -= $sellerEarning;
+                $sellerWallet->save();
+
+                // Log individual seller reversals matching original deductions
+                // Order sale earning reversal (debit)
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $sellerWallet->id,
+                    'seller_id' => $sellerId,
+                    'user_type' => 'seller',
+                    'transaction_type' => 'refund_deduction',
+                    'credit' => 0,
+                    'debit' => $totalPrice,
+                    'balance_after' => $sellerWallet->balance + $platformAmount + $referralAmount,
+                    'description' => "Order sale reversal for cancelled Order #{$order->id}",
+                    'reference_id' => 'ORD-REV-' . $order->id,
+                    'status' => 'completed'
+                ]);
+
+                // Platform fee reversal (credit)
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $sellerWallet->id,
+                    'seller_id' => $sellerId,
+                    'user_type' => 'seller',
+                    'transaction_type' => 'refund_reversal',
+                    'credit' => $platformAmount,
+                    'debit' => 0,
+                    'balance_after' => $sellerWallet->balance + $referralAmount,
+                    'description' => "Platform fee reversal for cancelled Order #{$order->id}",
+                    'reference_id' => 'ORD-REV-' . $order->id,
+                    'status' => 'completed'
+                ]);
+
+                // Referral commission reversal (credit)
+                if ($referralAmount > 0) {
+                    \App\Models\WalletTransaction::create([
+                        'wallet_id' => $sellerWallet->id,
+                        'seller_id' => $sellerId,
+                        'user_type' => 'seller',
+                        'transaction_type' => 'refund_reversal',
+                        'credit' => $referralAmount,
+                        'debit' => 0,
+                        'balance_after' => $sellerWallet->balance,
+                        'description' => "Referral commission reversal for cancelled Order #{$order->id}",
+                        'reference_id' => 'ORD-REV-' . $order->id,
+                        'status' => 'completed'
+                    ]);
+                }
+
+                // Log refund deduction in seller_finances table so seller sees it in their finance panel
+                \Illuminate\Support\Facades\DB::table('seller_finances')->insert([
+                    'seller_id'         => $sellerId,
+                    'order_id'          => $order->id,
+                    'transaction_type'  => 'refund_deduction',
+                    'reference_no'      => 'ORD-' . $order->id,
+                    'credit'            => 0,
+                    'debit'             => $sellerEarning,
+                    'commission_amount' => 0,
+                    'status'            => 'success',
+                    'note'              => 'Refund deduction due to order cancellation',
+                    'created_at'        => now(),
+                    'updated_at'        => now()
+                ]);
+
+                // --- 2. REVERSE REFERRAL COMMISSION ---
+                if ($referralAmount > 0 && $order->referrer_id) {
+                    $referrerCustomer = \App\Models\Customer::find($order->referrer_id);
+                    if ($referrerCustomer) {
+                        $referrerSeller = \App\Models\Seller::where('email', $referrerCustomer->email)
+                            ->orWhere('mobile', $referrerCustomer->phone)
+                            ->first();
+
+                        if ($referrerSeller) {
+                            // Referrer is listed in seller panel -> reverse cash from seller wallet
+                            $referrerWallet = \App\Models\Wallet::where('user_type', 'seller')
+                                ->where('seller_id', $referrerSeller->id)
+                                ->first();
+
+                            if ($referrerWallet) {
+                                $referrerWallet->balance -= $referralAmount;
+                                $referrerWallet->save();
+
+                                \App\Models\WalletTransaction::create([
+                                    'wallet_id' => $referrerWallet->id,
+                                    'seller_id' => $referrerSeller->id,
+                                    'user_type' => 'seller',
+                                    'transaction_type' => 'refund_deduction',
+                                    'credit' => 0,
+                                    'debit' => $referralAmount,
+                                    'balance_after' => $referrerWallet->balance,
+                                    'description' => "Referral commission reversed for cancelled Order #{$order->id}",
+                                    'reference_id' => 'ORD-REV-' . $order->id,
+                                    'status' => 'completed'
+                                ]);
+
+                                \Illuminate\Support\Facades\DB::table('seller_finances')->insert([
+                                    'seller_id'         => $referrerSeller->id,
+                                    'order_id'          => $order->id,
+                                    'transaction_type'  => 'referral_reversal',
+                                    'reference_no'      => 'ORD-' . $order->id,
+                                    'credit'            => 0,
+                                    'debit'             => $referralAmount,
+                                    'commission_amount' => 0,
+                                    'status'            => 'success',
+                                    'note'              => 'Referral commission reversed due to order cancellation',
+                                    'created_at'        => now(),
+                                    'updated_at'        => now()
+                                ]);
+                            }
+                        } else {
+                            // Referrer is normal buyer -> reverse reward points
+                            $referrerCustomer->decrement('reward_points', $referralAmount);
+
+                            \App\Models\Reward::create([
+                                'customer_id' => $referrerCustomer->id,
+                                'type' => 'points',
+                                'points' => (int) -$referralAmount,
+                                'amount' => -$referralAmount,
+                                'description' => "Referral commission points reversed for cancelled Order #{$order->id}",
+                                'status' => 'active',
+                                'expiry_date' => now()->addDays(365)
+                            ]);
+
+                            $referrerCustomerWallet = \App\Models\Wallet::where('user_type', 'customer')
+                                ->where('customer_id', $referrerCustomer->id)
+                                ->first();
+
+                            if ($referrerCustomerWallet) {
+                                \App\Models\WalletTransaction::create([
+                                    'wallet_id' => $referrerCustomerWallet->id,
+                                    'customer_id' => $referrerCustomer->id,
+                                    'user_type' => 'customer',
+                                    'transaction_type' => 'refund_deduction',
+                                    'credit' => 0,
+                                    'debit' => 0,
+                                    'balance_after' => $referrerCustomerWallet->balance,
+                                    'description' => "Referral commission points reversed for cancelled Order #{$order->id}",
+                                    'reference_id' => 'ORD-REV-' . $order->id,
+                                    'status' => 'completed'
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Mark any referral histories for this order as 'reversed'
+            \Illuminate\Support\Facades\DB::table('referral_histories')
+                ->where('order_id', $order->id)
+                ->update(['status' => 'reversed']);
+
+            // --- 3. REFUND BUYER ---
+            if (strtolower($order->payment_status) === 'paid') {
+                $buyer = \App\Models\Customer::find($order->customer_id);
+                if ($buyer) {
+                    $buyer->wallet_balance = ($buyer->wallet_balance ?? 0) + $order->total_amount;
+                    $buyer->save();
+
+                    $buyerWallet = \App\Models\Wallet::firstOrCreate(
+                        ['user_type' => 'customer', 'customer_id' => $order->customer_id, 'seller_id' => null],
+                        ['balance' => 0]
+                    );
+                    $buyerWallet->balance += $order->total_amount;
+                    $buyerWallet->save();
+
+                    \App\Models\WalletTransaction::create([
+                        'wallet_id' => $buyerWallet->id,
+                        'customer_id' => $order->customer_id,
+                        'user_type' => 'customer',
+                        'transaction_type' => 'refund',
+                        'credit' => $order->total_amount,
+                        'debit' => 0,
+                        'balance_after' => $buyer->wallet_balance,
+                        'description' => "Refund for cancelled Order #{$order->id}",
+                        'reference_id' => 'ORD-REF-' . $order->id,
+                        'status' => 'completed'
+                    ]);
+                }
+            }
+
+            // --- 4. UPDATE ADMIN ESCROW/PLATFORM WALLET & LEDGER ---
+            $platformWallet = \App\Models\Wallet::firstOrCreate(
+                ['user_type' => 'platform', 'seller_id' => null, 'customer_id' => null],
+                ['balance' => 0]
+            );
+
+            $orderTotal = (float) $order->total_amount;
+
+            // Refund payout to buyer (debit from platform wallet)
+            if (strtolower($order->payment_status) === 'paid') {
+                $platformWallet->decrement('balance', $orderTotal);
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $platformWallet->id,
+                    'user_type' => 'platform',
+                    'transaction_type' => 'refund',
+                    'credit' => 0,
+                    'debit' => $orderTotal,
+                    'balance_after' => $platformWallet->balance,
+                    'description' => "Refund payout to Customer for cancelled Order #{$order->id}",
+                    'reference_id' => 'ORD-REF-' . $order->id,
+                    'status' => 'completed'
+                ]);
+            }
+
+            // Recovery from seller (credit back to platform wallet)
+            $platformWallet->increment('balance', $totalSellerEarning);
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $platformWallet->id,
+                'user_type' => 'platform',
+                'transaction_type' => 'refund',
+                'credit' => $totalSellerEarning,
+                'debit' => 0,
+                'balance_after' => $platformWallet->balance,
+                'description' => "Recovered Seller payout for cancelled Order #{$order->id}",
+                'reference_id' => 'ORD-REF-' . $order->id,
+                'status' => 'completed'
             ]);
 
+            // Recovery from referral (credit back to platform wallet)
+            if ($totalReferralEarning > 0) {
+                $platformWallet->increment('balance', $totalReferralEarning);
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $platformWallet->id,
+                    'user_type' => 'platform',
+                    'transaction_type' => 'refund',
+                    'credit' => $totalReferralEarning,
+                    'debit' => 0,
+                    'balance_after' => $platformWallet->balance,
+                    'description' => "Recovered Referral commission for cancelled Order #{$order->id}",
+                    'reference_id' => 'ORD-REF-' . $order->id,
+                    'status' => 'completed'
+                ]);
+            }
+
+            $order->refund_status = 'completed';
+            $order->refund_completed_at = now();
+            $order->referral_paid = false;
+            $order->save();
         });
     }
 }
+

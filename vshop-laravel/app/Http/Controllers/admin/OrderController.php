@@ -974,6 +974,10 @@ public function showManageOrder(Request $request, $orderId){
             $order->remarks    = $request->remarks ?? $order->remarks;
             $order->privacy    = $request->privacy ?? $order->privacy;
 
+            if (strtolower($newStatus) === 'cancelled') {
+                Order::reverseOrderFunds($order);
+            }
+
             // ── Referral commission on delivery ──
             if (
                 strtolower($newStatus) === 'delivered' ||

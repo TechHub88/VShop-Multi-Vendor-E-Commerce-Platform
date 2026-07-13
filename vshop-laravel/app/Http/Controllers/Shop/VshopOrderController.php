@@ -218,7 +218,6 @@ public function placeOrder(Request $request)
         $referrerId = $customer->referred_by ?? null;
         if (empty($referrerId) && $request->filled('referral_code')) {
             $referrer = \App\Models\Customer::where('referral_code', $request->referral_code)
-                ->where('id', '!=', $customer->id)
                 ->first();
                 
             if ($referrer) {
@@ -464,82 +463,7 @@ public function placeOrder(Request $request)
             'referrer_id'         => $referrerId,
         ]);
 
-        // Process Buyer-to-Buyer Referral Commission
-        $historyCommPercent = 0;
-        $historyAmount = 0;
-        
-        if ($referrerId) {
-            $hasOrderedBefore = \App\Models\Order::where('customer_id', $customer->id)
-                ->where('seller_id', $sellerId)
-                ->where('id', '!=', $order->id)
-                ->exists();
-
-            if (!$hasOrderedBefore) {
-                $config = DB::table('referral_configurations')
-                    ->where('type', 'buyer_to_buyer')
-                    ->where('reference_id', $sellerId)
-                    ->where('status', 1)
-                    ->first();
-
-                if ($config) {
-                    $commPercent = $config->commission_percentage ?? 0;
-                    if ($commPercent > 0) {
-                        // Determine points from the RewardRedemptionTier set by admin
-                        $tier = \App\Models\RewardRedemptionTier::where('discount_amount', $commPercent)
-                            ->where('status', 'active')
-                            ->first();
-
-                        if ($tier) {
-                            $rewardPoints = $tier->points_required;
-                            $rewardAmount = $rewardPoints; // Assuming 1 point = 1 currency unit for display
-                        } else {
-                            $rewardAmount = ($subTotal * $commPercent) / 100;
-                            $rewardPoints = (int) $rewardAmount;
-                        }
-                        
-                        $historyCommPercent = $commPercent;
-                        
-                        // We also need to factor in the discount the seller gave to the buyer
-                        $configExtra = json_decode($config->description, true);
-                        $refereeDiscountPercent = $configExtra['referee_discount'] ?? 0;
-                        $discountGiven = 0;
-                        if ($refereeDiscountPercent > 0) {
-                            $discountGiven = ($subTotal * $refereeDiscountPercent) / 100;
-                        }
-                        
-                        // Amount deducted from seller: Commission given to referrer + Discount given to buyer
-                        $historyAmount = $rewardAmount + $discountGiven;
-                        
-                        \App\Models\Reward::create([
-                            'customer_id' => $referrerId,
-                            'type' => 'points',
-                            'points' => $rewardPoints,
-                            'amount' => $rewardAmount,
-                            'description' => "Buyer-to-Buyer referral commission for Customer #{$customer->id}'s first purchase from Seller #{$sellerId}",
-                            'status' => 'active',
-                            'expiry_date' => now()->addDays(365)
-                        ]);
-
-                        \App\Models\Referral::where('customer_id', $referrerId)
-                            ->where('referred_customer_id', $customer->id)
-                            ->increment('reward_amount', $rewardPoints);
-                    }
-                }
-            }
-        }
-
-        // Record Referral History immediately so seller sees it
-        if ($referrerId) {
-            \App\Models\ReferralHistory::create([
-                'referrer_id' => $referrerId,
-                'buyer_id' => $customer->id,
-                'seller_id' => $sellerId,
-                'order_id' => $order->id,
-                'amount' => $historyAmount, 
-                'commission_percent' => $historyCommPercent,
-                'status' => 'pending',
-            ]);
-        }
+        // Referral commission is processed dynamically per item inside the cart items loop below.
 
         // Record Wallet Transaction if wallet was used
         if ($useWallet && $walletDeduction > 0) {
@@ -656,64 +580,268 @@ $this->notifySeller(
 
             /* ================= DYNAMIC COMMISSION CALCULATION ================= */
 
-            $sellerComm = 20;
-            $referrerComm = 10;
-            $platformComm = 70;
-
-            $appType = 'vshop';
-
-            $specificRule = $commissionRules->first(function ($rule) use ($sellerId, $appType) {
-                return $rule->seller_id == $sellerId && strtolower($rule->app_type) == $appType;
-            });
-
-            if ($specificRule) {
-                $sellerComm = $specificRule->seller_commission;
-                $referrerComm = $specificRule->referrer_commission;
-                $platformComm = $specificRule->platform_commission;
-            } else {
-                $appRule = $commissionRules->whereNull('seller_id')->first(function ($rule) use ($appType) {
-                    return strtolower($rule->app_type) == $appType;
-                });
-                if ($appRule) {
-                    $sellerComm = $appRule->seller_commission;
-                    $referrerComm = $appRule->referrer_commission;
-                    $platformComm = $appRule->platform_commission;
-                } else {
-                    $generalRule = $commissionRules->whereNull('seller_id')->first();
-                    if ($generalRule) {
-                        $sellerComm = $generalRule->seller_commission;
-                        $referrerComm = $generalRule->referrer_commission;
-                        $platformComm = $generalRule->platform_commission;
-                    }
-                }
-            }
+            $referrerComm = 3.0; // 3% referral commission
+            $platformComm = 1.5; // 1.5% platform commission
 
             $referralUserId = $customer->referred_by ?? null;
             $referralAmount = 0;
+            $isSelfReferral = false;
 
             if ($referralUserId) {
-                $referralAmount = ($totalPrice * $referrerComm) / 100;
+                if ($referralUserId == $customer->id) {
+                    $isSelfReferral = true;
+                } else {
+                    // Check if buyer has used referral on a previous order (referral is only paid on first order)
+                    $hasPreviousPaidReferral = \App\Models\ReferralHistory::where('buyer_id', $customer->id)
+                        ->where('status', '!=', 'reversed')
+                        ->exists();
+
+                    if (!$hasPreviousPaidReferral) {
+                        $referralAmount = ($totalPrice * $referrerComm) / 100;
+                    }
+                }
             }
             
             $platformAmount = ($totalPrice * $platformComm) / 100;
-            
             $commissionAmount = $referralAmount + $platformAmount;
             $sellerEarning = $totalPrice - $commissionAmount;
 
+            // --- REFERRER PAYOUT & LEDGER ---
             if ($referralUserId && $referralAmount > 0) {
+                $referrerCustomer = \App\Models\Customer::find($referralUserId);
+                if ($referrerCustomer) {
+                    // Check if referrer is listed in seller panel
+                    $referrerSeller = \App\Models\Seller::where('email', $referrerCustomer->email)
+                        ->orWhere('mobile', $referrerCustomer->phone)
+                        ->first();
 
+                    if ($referrerSeller) {
+                        // Credit cash to referrer's seller wallet
+                        $referrerWallet = \App\Models\Wallet::firstOrCreate(
+                            ['user_type' => 'seller', 'seller_id' => $referrerSeller->id, 'customer_id' => null],
+                            ['balance' => 0]
+                        );
+                        $referrerWallet->increment('balance', $referralAmount);
+
+                        // Log transaction in wallet_transactions for the referrer seller
+                        \App\Models\WalletTransaction::create([
+                            'wallet_id' => $referrerWallet->id,
+                            'seller_id' => $referrerSeller->id,
+                            'user_type' => 'seller',
+                            'transaction_type' => 'commission',
+                            'credit' => $referralAmount,
+                            'debit' => 0,
+                            'balance_after' => $referrerWallet->balance,
+                            'description' => "Referral commission earning for Order #{$order->id} (Seller partner)",
+                            'reference_id' => 'ORD-' . $order->id,
+                            'status' => 'completed'
+                        ]);
+
+                        // Log to seller_finances table so they see it in their seller panel finance ledger
+                        DB::table('seller_finances')->insert([
+                            'seller_id'         => $referrerSeller->id,
+                            'order_id'          => $order->id,
+                            'transaction_type'  => 'referral',
+                            'reference_no'      => 'ORD-' . $order->id,
+                            'credit'            => $referralAmount,
+                            'debit'             => 0,
+                            'commission_amount' => $referralAmount,
+                            'status'            => 'success',
+                            'note'              => 'Referral earning',
+                            'created_at'        => now(),
+                            'updated_at'        => now()
+                        ]);
+                    } else {
+                        // Credit reward points to customer referrer
+                        $referrerCustomer->increment('reward_points', $referralAmount);
+
+                        // Log to rewards table
+                        \App\Models\Reward::create([
+                            'customer_id' => $referrerCustomer->id,
+                            'type' => 'points',
+                            'points' => (int) $referralAmount,
+                            'amount' => $referralAmount,
+                            'description' => "Referral commission points for Customer #{$customer->id}'s purchase on Order #{$order->id}",
+                            'status' => 'active',
+                            'expiry_date' => now()->addDays(365)
+                        ]);
+
+                        // Create transaction record for customer in wallet_transactions with cash credit 0 since it is reward points
+                        $referrerCustomerWallet = \App\Models\Wallet::firstOrCreate(
+                            ['user_type' => 'customer', 'customer_id' => $referrerCustomer->id, 'seller_id' => null],
+                            ['balance' => 0]
+                        );
+                        \App\Models\WalletTransaction::create([
+                            'wallet_id' => $referrerCustomerWallet->id,
+                            'customer_id' => $referrerCustomer->id,
+                            'user_type' => 'customer',
+                            'transaction_type' => 'commission',
+                            'credit' => 0,
+                            'debit' => 0,
+                            'balance_after' => $referrerCustomerWallet->balance,
+                            'description' => "Referral commission earning (credited as {$referralAmount} reward points) for Order #{$order->id}",
+                            'reference_id' => 'ORD-' . $order->id,
+                            'status' => 'completed'
+                        ]);
+                    }
+
+                    // Record Referral History so seller, buyer, and admin see it
+                    \App\Models\ReferralHistory::create([
+                        'referrer_id' => $referralUserId,
+                        'buyer_id' => $customer->id,
+                        'seller_id' => $sellerId,
+                        'order_id' => $order->id,
+                        'amount' => $referralAmount, 
+                        'commission_percent' => $referrerComm,
+                        'status' => 'paid',
+                    ]);
+                }
+            }
+
+            // --- SELLER WALLET CREDIT & LEDGER ---
+            $sellerWallet = \App\Models\Wallet::firstOrCreate(
+                ['user_type' => 'seller', 'seller_id' => $sellerId, 'customer_id' => null],
+                ['balance' => 0]
+            );
+            $sellerWallet->increment('balance', $sellerEarning);
+
+            // Log individual transactions in wallet_transactions for the seller:
+            // 1. Credit 100% of order sale (1000)
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $sellerWallet->id,
+                'seller_id' => $sellerId,
+                'user_type' => 'seller',
+                'transaction_type' => 'payout',
+                'credit' => $totalPrice,
+                'debit' => 0,
+                'balance_after' => $sellerWallet->balance + $commissionAmount,
+                'description' => "Order sale earning for Order #{$order->id}",
+                'reference_id' => 'ORD-' . $order->id,
+                'status' => 'completed'
+            ]);
+
+            // 2. Debit platform fee (15)
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $sellerWallet->id,
+                'seller_id' => $sellerId,
+                'user_type' => 'seller',
+                'transaction_type' => 'commission_deduction',
+                'credit' => 0,
+                'debit' => $platformAmount,
+                'balance_after' => $sellerWallet->balance + ($referralAmount > 0 ? $referralAmount : 0),
+                'description' => "Platform fee deduction for Order #{$order->id}",
+                'reference_id' => 'ORD-' . $order->id,
+                'status' => 'completed'
+            ]);
+
+            // 3. Debit referral commission (30) (if applicable)
+            if ($referralAmount > 0) {
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $sellerWallet->id,
+                    'seller_id' => $sellerId,
+                    'user_type' => 'seller',
+                    'transaction_type' => 'referral_deduction',
+                    'credit' => 0,
+                    'debit' => $referralAmount,
+                    'balance_after' => $sellerWallet->balance,
+                    'description' => "Referral commission deduction for Order #{$order->id}",
+                    'reference_id' => 'ORD-' . $order->id,
+                    'status' => 'completed'
+                ]);
+            }
+
+            // Log to seller_finances table so seller sees it in their finance panel
+            DB::table('seller_finances')->insert([
+                'seller_id'         => $sellerId,
+                'order_id'          => $order->id,
+                'transaction_type'  => 'earning',
+                'reference_no'      => 'ORD-' . $order->id,
+                'credit'            => $totalPrice,
+                'debit'             => 0,
+                'commission_amount' => 0,
+                'status'            => 'success',
+                'note'              => 'Order sale earning',
+                'created_at'        => now(),
+                'updated_at'        => now()
+            ]);
+
+            DB::table('seller_finances')->insert([
+                'seller_id'         => $sellerId,
+                'order_id'          => $order->id,
+                'transaction_type'  => 'commission_deduction',
+                'reference_no'      => 'ORD-' . $order->id,
+                'credit'            => 0,
+                'debit'             => $platformAmount,
+                'commission_amount' => $platformAmount,
+                'status'            => 'success',
+                'note'              => 'Platform fee deduction',
+                'created_at'        => now(),
+                'updated_at'        => now()
+            ]);
+
+            if ($referralAmount > 0) {
                 DB::table('seller_finances')->insert([
-                    'seller_id'         => $referralUserId,
+                    'seller_id'         => $sellerId,
                     'order_id'          => $order->id,
-                    'transaction_type'  => 'referral',
+                    'transaction_type'  => 'commission_deduction',
                     'reference_no'      => 'ORD-' . $order->id,
-                    'credit'            => $referralAmount,
-                    'debit'             => 0,
+                    'credit'            => 0,
+                    'debit'             => $referralAmount,
                     'commission_amount' => $referralAmount,
                     'status'            => 'success',
-                    'note'              => 'Referral earning',
+                    'note'              => 'Referral commission deduction',
                     'created_at'        => now(),
                     'updated_at'        => now()
+                ]);
+            }
+
+            // --- ADMIN ESCROW WALLET LOAD & PAYOUTS ---
+            $escrowWallet = \App\Models\Wallet::firstOrCreate(
+                ['user_type' => 'platform', 'seller_id' => null, 'customer_id' => null],
+                ['balance' => 0]
+            );
+            
+            // 1. Credit full order amount to escrow
+            $escrowWallet->increment('balance', $totalPrice);
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $escrowWallet->id,
+                'user_type' => 'platform',
+                'transaction_type' => 'payment',
+                'credit' => $totalPrice,
+                'debit' => 0,
+                'balance_after' => $escrowWallet->balance,
+                'description' => "Order payment loaded to escrow for Order #{$order->id}",
+                'reference_id' => 'ORD-' . $order->id,
+                'status' => 'completed'
+            ]);
+
+            // 2. Debit seller payout from escrow
+            $escrowWallet->decrement('balance', $sellerEarning);
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $escrowWallet->id,
+                'user_type' => 'platform',
+                'transaction_type' => 'payout',
+                'credit' => 0,
+                'debit' => $sellerEarning,
+                'balance_after' => $escrowWallet->balance,
+                'description' => "Payout to Seller #{$sellerId} for Order #{$order->id}",
+                'reference_id' => 'ORD-' . $order->id,
+                'status' => 'completed'
+            ]);
+
+            // 3. Debit referral payout from escrow (if active)
+            if ($referralAmount > 0) {
+                $escrowWallet->decrement('balance', $referralAmount);
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $escrowWallet->id,
+                    'user_type' => 'platform',
+                    'transaction_type' => 'commission',
+                    'credit' => 0,
+                    'debit' => $referralAmount,
+                    'balance_after' => $escrowWallet->balance,
+                    'description' => "Referral commission payout for Order #{$order->id}",
+                    'reference_id' => 'ORD-' . $order->id,
+                    'status' => 'completed'
                 ]);
             }
 
@@ -732,32 +860,21 @@ $this->notifySeller(
                 'size_id'                  => $item->size_id ?? null,
                 'main_product_attributes'  => $item->main_product_attributes ?? null,
 
-                'commission_percent' => $platformComm + $referrerComm,
+                'commission_percent' => $platformComm + ($referralAmount > 0 ? $referrerComm : 0),
                 'commission_amount'  => $commissionAmount,
                 'seller_earning'     => $sellerEarning,
                 'referral_earning'   => $referralAmount,
                 'platform_earning'   => $platformAmount
             ]);
             $this->decrementStockAndLog($productId, $qty, $order->id);
-
-
-
-            /* ================= SELLER EARNING ================= */
-
-            DB::table('seller_finances')->insert([
-                'seller_id'         => $sellerId,
-                'order_id'          => $order->id,
-                'transaction_type'  => 'earning',
-                'reference_no'      => 'ORD-' . $order->id,
-                'credit'            => $sellerEarning,
-                'debit'             => 0,
-                'commission_amount' => $commissionAmount,
-                'status'            => 'success',
-                'note'              => 'Order sale earning',
-                'created_at'        => now(),
-                'updated_at'        => now()
-            ]);
         }
+
+        // Update the order's referral payout columns
+        $totalReferralAmount = OrderItem::where('order_id', $order->id)->sum('referral_earning');
+        $order->referral_commission_percent = $totalReferralAmount > 0 ? 3.0 : 0;
+        $order->referral_commission_amount = $totalReferralAmount;
+        $order->referral_paid = $totalReferralAmount > 0 ? 1 : 0;
+        $order->save();
 
         /* ================= CLEAR CART (ONLY IF NOT BUY NOW) ================= */
 
