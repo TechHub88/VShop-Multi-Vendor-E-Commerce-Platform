@@ -172,7 +172,7 @@
                                     <input
                                         type="email"
                                         name="email"
-                                        value="{{ old('email', 'sayaniroy.webmantra@gmail.com') }}"
+                                        value="{{ old('email') }}"
                                         placeholder="Enter your email"
                                         class="@error('email') is-invalid @enderror"
                                         required
@@ -187,7 +187,6 @@
                                     <input
                                         type="password"
                                         name="password"
-                                        value="12341234"
                                         placeholder="Enter your password"
                                         required
                                     >
