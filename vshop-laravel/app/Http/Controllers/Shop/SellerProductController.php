@@ -261,26 +261,19 @@ public function index(Request $request)
     // ================= END SERVICE TYPES FILTER =================
 
     // ================= UPDATED FILTER =================
-    elseif($moduleType == 'product'){
+    elseif(in_array($moduleType, ['product', 'service', 'both'])){
         $query->whereIn('type', [
             'product', 'vshop-product',
-            'professional', 'vshop-professional',
-            'vshop-service', 'vshop-tour', 'vshop-information_advisory'
-        ]);
-    }
-    elseif($moduleType == 'service'){
-        $query->whereIn('type', [
-            'service', 'vtravel-service',
-            'tour', 'vtravel-tour',
-            'vtravel-professional', 'vtravel-information_advisory',
-            'information_advisory'
+            'professional', 'vshop-professional', 'vtravel-professional',
+            'service', 'vshop-service', 'vtravel-service',
+            'tour', 'vshop-tour', 'vtravel-tour',
+            'information_advisory', 'vshop-information_advisory', 'vtravel-information_advisory'
         ]);
     }
     elseif($moduleType == 'course'){
         $query->where('type', 'course');
     }
     else{
-        // For 'both' or any other session combination
         $query->whereIn('type', [
             'product', 'vshop-product',
             'professional', 'vshop-professional', 'vtravel-professional',
@@ -474,34 +467,30 @@ public function misDashboard(Request $request)
     ========================================= */
     $selectedPanels = session('selected_panels', []);
     $allowedTypes = [];
-    if (in_array('product', $selectedPanels)) {
+    if (in_array('product', $selectedPanels) || in_array('travel', $selectedPanels)) {
         $allowedTypes = array_merge($allowedTypes, [
             'product', 'vshop-product',
-            'professional', 'vshop-professional',
-            'vshop-service', 'vshop-tour', 'vshop-information_advisory'
-        ]);
-    }
-    if (in_array('travel', $selectedPanels)) {
-        $allowedTypes = array_merge($allowedTypes, [
-            'service', 'vtravel-service',
-            'tour', 'vtravel-tour',
-            'vtravel-professional', 'vtravel-information_advisory',
-            'information_advisory'
+            'professional', 'vshop-professional', 'vtravel-professional',
+            'service', 'vshop-service', 'vtravel-service',
+            'tour', 'vshop-tour', 'vtravel-tour',
+            'information_advisory', 'vshop-information_advisory', 'vtravel-information_advisory'
         ]);
     }
     if (empty($allowedTypes)) {
-        $allowedTypes = ['product'];
+        $allowedTypes = ['product', 'service'];
     }
 
     /* =========================================
         FILTERS LOGIC
     ========================================= */
     $typeFilters = [];
-    if ($request->has('type') && $request->type === 'product') {
+    if ($request->has('type') && in_array($request->type, ['product', 'service', 'both'])) {
         $typeFilters = [
             'product', 'vshop-product',
-            'professional', 'vshop-professional',
-            'vshop-service', 'vshop-tour', 'vshop-information_advisory'
+            'professional', 'vshop-professional', 'vtravel-professional',
+            'service', 'vshop-service', 'vtravel-service',
+            'tour', 'vshop-tour', 'vtravel-tour',
+            'information_advisory', 'vshop-information_advisory', 'vtravel-information_advisory'
         ];
     } elseif ($request->filled('service_types')) {
         $selectedServiceTypes = explode(',', $request->service_types);
@@ -822,7 +811,13 @@ public function getCategories($type)
 {
     $sellerId = auth()->guard('seller')->id();
 
-    return MarketplaceCategory::where('type', $type)
+    if(in_array($type, ['product', 'service', 'both'])) {
+        $types = ['product', 'professional', 'service', 'tour'];
+    } else {
+        $types = [$type];
+    }
+
+    return MarketplaceCategory::whereIn('type', $types)
         ->where('seller_id', $sellerId)   // ← add this line
         ->orderBy('name')
         ->get(['id', 'name'])
@@ -2715,25 +2710,13 @@ public function bulkindex()
 
     /*
     |--------------------------------------------------------------------------
-    | PRODUCT ONLY
+    | PRODUCT AND SERVICE
     |--------------------------------------------------------------------------
     */
 
-    if($moduleType == 'product'){
+    if(in_array($moduleType, ['product', 'service', 'both'])){
 
-        $products->where('type', 'product');
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SERVICE ONLY
-    |--------------------------------------------------------------------------
-    */
-
-    elseif($moduleType == 'service'){
-
-        $products->where('type', 'service');
+        $products->whereIn('type', ['product', 'service']);
     }
 
 
@@ -2761,11 +2744,8 @@ public function bulkindex()
         ->paginate(20);
 
     $categories = \App\Models\MarketplaceCategory::query();
-    if($moduleType == 'product'){
-        $categories->whereIn('type', ['product','professional']);
-    }
-    elseif($moduleType == 'service'){
-        $categories->whereIn('type', ['service','tour']);
+    if(in_array($moduleType, ['product', 'service', 'both'])){
+        $categories->whereIn('type', ['product','professional','service','tour']);
     }
     elseif($moduleType == 'course'){
         $categories->where('type', 'course');
@@ -2828,14 +2808,9 @@ public function bulkUpdate(Request $request)
     |--------------------------------------------------------------------------
     */
 
-    if($moduleType == 'product'){
+    if(in_array($moduleType, ['product', 'service', 'both'])){
 
-        $products->where('type', 'product');
-    }
-
-    elseif($moduleType == 'service'){
-
-        $products->where('type', 'service');
+        $products->whereIn('type', ['product', 'service']);
     }
 
     elseif($moduleType == 'course'){
@@ -2951,14 +2926,9 @@ public function bulkDelete(Request $request)
     |--------------------------------------------------------------------------
     */
 
-    if($moduleType == 'product'){
+    if(in_array($moduleType, ['product', 'service', 'both'])){
 
-        $products->where('type', 'product');
-    }
-
-    elseif($moduleType == 'service'){
-
-        $products->where('type', 'service');
+        $products->whereIn('type', ['product', 'service']);
     }
 
     elseif($moduleType == 'course'){
