@@ -483,7 +483,8 @@ public function invoice($id)
         ])
         ->findOrFail($id);
 
-    return view('vshop.seller.orders.invoice', compact('order'));
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('vshop.seller.orders.invoice', compact('order', 'seller'));
+    return $pdf->download('Invoice_' . $order->id . '.pdf');
 }
     
     

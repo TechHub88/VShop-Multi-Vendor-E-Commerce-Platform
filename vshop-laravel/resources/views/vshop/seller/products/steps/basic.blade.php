@@ -1277,7 +1277,7 @@ function loadCategories(type, preselect) {
 
     // Determine which category types to load
     // Always load both product and service categories so seller-created categories show up across all types
-    categoryTypes = ['product', 'service'];
+    categoryTypes = ['both'];
 
     // If only one type, call endpoint as before
     if (categoryTypes.length === 1) {

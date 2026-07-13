@@ -640,7 +640,7 @@ if (data.returnRequests && data.returnRequests.length > 0) {
 
         let attachmentHtml = '';
         if (rr.attachment) {
-            attachmentHtml = `<br><a href="/public/${rr.attachment}" target="_blank" class="text-primary small"><i class="fa-solid fa-paperclip"></i> View Image</a>`;
+            attachmentHtml = `<br><a href="/${rr.attachment}" target="_blank" class="text-primary small"><i class="fa-solid fa-paperclip"></i> View Image</a>`;
         }
         
         let cancelledDatesHtml = '';
