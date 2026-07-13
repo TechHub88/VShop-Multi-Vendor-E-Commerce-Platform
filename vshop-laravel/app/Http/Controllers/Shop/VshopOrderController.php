@@ -216,8 +216,9 @@ public function placeOrder(Request $request)
         }
 
         $referrerId = $customer->referred_by ?? null;
-        if (empty($referrerId) && $request->filled('referral_code')) {
-            $referrer = \App\Models\Customer::where('referral_code', $request->referral_code)
+        $referralCode = $request->referral_code ?? session('referral_code') ?? request()->cookie('referral_code');
+        if (empty($referrerId) && !empty($referralCode)) {
+            $referrer = \App\Models\Customer::where('referral_code', $referralCode)
                 ->first();
                 
             if ($referrer) {

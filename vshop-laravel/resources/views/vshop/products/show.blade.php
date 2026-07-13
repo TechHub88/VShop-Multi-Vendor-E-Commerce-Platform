@@ -4,6 +4,19 @@
 
 @push('styles')
 <style>
+    .refer-earn-btn {
+        border: 1px solid #7E22CE !important;
+        color: #7E22CE !important;
+        background-color: #fff !important;
+        transition: all 0.3s ease;
+    }
+    .refer-earn-btn:hover {
+        background-color: #7E22CE !important;
+        color: #fff !important;
+    }
+    .refer-earn-btn:hover i {
+        color: #fff !important;
+    }
     .custom-product-image-wrapper-one {
         width: 80%;
         max-width: 100%;
@@ -813,6 +826,15 @@
                                                      </button>
                                                      <button class="btn-enquiry email-enquiry" data-contact="email" data-product-id="{{ $product->id }}">
                                                          <i class="fas fa-envelope"></i> Email
+                                                     </button>
+                                                     @php
+                                                         $currentUser = auth()->guard('customer')->user();
+                                                         $referralCode = $currentUser ? $currentUser->referral_code : null;
+                                                     @endphp
+                                                     <button class="btn-enquiry refer-earn-btn" id="referEarnBtn" 
+                                                             data-url="{{ url('/p/' . $product->id) }}" 
+                                                             data-ref="{{ $referralCode }}">
+                                                         <i class="fas fa-gift" style="color: #7E22CE;"></i> Refer & Earn
                                                      </button>
                                                  </div>
                                              </div>
@@ -2547,6 +2569,38 @@ $(document).on('click','.copy',function(){
             @endauth
         });
     });
+
+    // ================= REFER & EARN BUTTON =================
+    const referEarnBtn = document.getElementById("referEarnBtn");
+    if (referEarnBtn) {
+        referEarnBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            const refCode = this.getAttribute("data-ref");
+            if (!refCode) {
+                showToast("Please login first to refer this product", "error");
+                setTimeout(function() {
+                    window.location.href = "{{ route('vshoplogin') }}";
+                }, 1500);
+                return;
+            }
+            const baseUrl = this.getAttribute("data-url");
+            const referralLink = baseUrl + "?ref=" + refCode;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(referralLink).then(function() {
+                showToast("Referral link copied to clipboard!", "success");
+            }).catch(function(err) {
+                // Fallback
+                const tempInput = document.createElement("input");
+                tempInput.value = referralLink;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand("copy");
+                document.body.removeChild(tempInput);
+                showToast("Referral link copied to clipboard!", "success");
+            });
+        });
+    }
 
     // ================= LOAD WISHLIST STATUS =================
     @auth('customer')

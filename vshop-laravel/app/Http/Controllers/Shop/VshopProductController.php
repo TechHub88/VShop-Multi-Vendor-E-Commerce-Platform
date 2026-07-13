@@ -493,6 +493,11 @@ $this->notify(
 
 public function show($id)
 {
+    if (request()->has('ref')) {
+        $ref = request()->query('ref');
+        session(['referral_code' => $ref]);
+        cookie()->queue('referral_code', $ref, 60 * 24 * 30);
+    }
 
   
     $product = Product::with([

@@ -1221,6 +1221,15 @@ Route::get('/order/confirmation/{id}', [VtravelOrderController::class, 'confirma
     Route::get('/productmanage/search/autocomplete', [VshopProductController::class, 'autocomplete'])->name('productmanage.autocomplete');
     // Show single product
     Route::get('/productmanage/{id}', [VshopProductController::class, 'show'])->name('productmanage.show');
+
+    Route::get('/p/{id}', function ($id, \Illuminate\Http\Request $request) {
+        if ($request->has('ref')) {
+            $ref = $request->query('ref');
+            session(['referral_code' => $ref]);
+            cookie()->queue('referral_code', $ref, 60 * 24 * 30);
+        }
+        return redirect()->route('productmanage.show', $id);
+    });
     
     // Enquiry store for product page
 
