@@ -690,15 +690,19 @@ $this->notifySeller(
                 }
             }
 
-            // Calculate amounts based on percentage rules
-            $sellerEarning = ($totalPrice * $sellerComm) / 100;
-            $commissionAmount = $totalPrice - $sellerEarning;
-
             $referralUserId = $customer->referred_by ?? null;
             $referralAmount = 0;
 
             if ($referralUserId) {
                 $referralAmount = ($totalPrice * $referrerComm) / 100;
+            }
+            
+            $platformAmount = ($totalPrice * $platformComm) / 100;
+            
+            $commissionAmount = $referralAmount + $platformAmount;
+            $sellerEarning = $totalPrice - $commissionAmount;
+
+            if ($referralUserId && $referralAmount > 0) {
 
                 DB::table('seller_finances')->insert([
                     'seller_id'         => $referralUserId,
@@ -714,8 +718,6 @@ $this->notifySeller(
                     'updated_at'        => now()
                 ]);
             }
-
-            $platformAmount = ($totalPrice * $platformComm) / 100;
 
             /* ================= ORDER ITEM ================= */
 

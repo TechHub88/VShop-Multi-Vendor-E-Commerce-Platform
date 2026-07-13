@@ -25,7 +25,13 @@ class WalletController extends Controller
     public function index()
     {
         // Get dashboard statistics
-        $totalBalance = Wallet::where('user_type', 'platform')->sum('balance');
+        // Admin's "Total Balance" is sum of all placed orders minus refunds.
+        $totalOrdersValue = DB::table('orders')->whereNotIn('status', ['cancelled'])->sum('total_amount');
+        $totalRefunds = DB::table('wallet_transactions')
+            ->where('user_type', 'customer')
+            ->where('transaction_type', 'refund')
+            ->sum('credit');
+        $totalBalance = $totalOrdersValue - $totalRefunds;
         $sellerBalance = Wallet::where('user_type', 'seller')->sum('balance');
         $buyerBalance = Wallet::where('user_type', 'customer')->sum('balance');
         $frozenAmount = Wallet::sum('frozen_balance');
@@ -62,8 +68,8 @@ class WalletController extends Controller
         }
         $buyers = Customer::select('id', 'name')->orderBy('name')->get();
         
-        // Platform wallet balance
-        $platformBalance = Wallet::where('user_type', 'platform')->sum('balance');
+        // Platform wallet balance is the sum of platform earnings from all order items
+        $platformBalance = DB::table('order_items')->sum('platform_earning');
         
         // Refunds data from order_returns table (all buyers' requests)
         $refundsData = DB::table('order_returns')
@@ -528,7 +534,7 @@ class WalletController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'total_balance' => Wallet::where('user_type', 'platform')->sum('balance'),
+                'total_balance' => DB::table('orders')->whereNotIn('status', ['cancelled'])->sum('total_amount') - DB::table('wallet_transactions')->where('user_type', 'customer')->where('transaction_type', 'refund')->sum('credit'),
                 'seller_balance' => Wallet::where('user_type', 'seller')->sum('balance'),
                 'buyer_balance' => Wallet::where('user_type', 'customer')->sum('balance'),
                 'frozen_amount' => Wallet::sum('frozen_balance'),
