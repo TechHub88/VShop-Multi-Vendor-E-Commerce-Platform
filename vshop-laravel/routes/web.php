@@ -2800,3 +2800,15 @@ Route::post('admin/finance/update-leads-boost-settings', [AdminFinanceController
 
 // Admin Panel AI Assistant Chat
 Route::post('/admin/ai-chat', [\App\Http\Controllers\Admin\AdminChatController::class, 'handleChat'])->name('admin.ai-chat')->middleware('auth:web,admin_staff');
+
+Route::get('/proxy/yt-thumbnail', function (\Illuminate\Http\Request ) {
+    $url = $request->query('url');
+    if (!$url) return response()->json(['error' => 'No URL'], 400);
+    try {
+        $content = file_get_contents($url);
+        return response($content, 200)->header('Content-Type', 'image/jpeg')->header('Access-Control-Allow-Origin', '*');
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to fetch'], 500);
+    }
+});
+

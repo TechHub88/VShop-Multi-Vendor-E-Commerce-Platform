@@ -815,36 +815,36 @@ $(document).on('blur','.video-input', async function(){
         // 2. Thumbnail NSFW Check
         if (!nsfwModel) await loadNSFWModel();
         
-        let isUnsafe = false;
-        let nsfwScore = 0;
-        
         await new Promise((resolve, reject) => {
             let img = new Image();
             img.crossOrigin = "anonymous";
             img.onload = async function() {
                 try {
-                    let predictions = await nsfwModel.classify(img);
-                    predictions.forEach(p => {
-                        let category = p.className.toLowerCase();
-                        if (category === 'porn' || category === 'hentai' || category === 'sexy') {
-                            nsfwScore += p.probability;
-                        }
-                    });
-                    if (nsfwScore > 0.04) {
-                        isUnsafe = true;
+                    const predictions = await nsfwModel.classify(img);
+                    const isNSFW = predictions.some(p => 
+                        ['Porn', 'Hentai', 'Sexy'].includes(p.className) && p.probability > 0.6
+                    );
+                    
+                    if (isNSFW) {
+                        $('#videoUrlError').text('Video content appears to violate our safety guidelines.');
+                        $('#youtubeLink').addClass('is-invalid');
+                        $('#addVideoBtn').prop('disabled', true);
+                        reject(new Error('NSFW'));
+                    } else {
+                        resolve();
                     }
-                    resolve();
-                } catch (e) {
-                    resolve();
+                } catch(e) {
+                    console.error("NSFW validation error:", e);
+                    resolve(); // Fallback to allow if error
                 }
             };
-            img.onerror = () => resolve();
-            img.src = `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+            img.onerror = () => {
+                console.warn("Could not load thumbnail for validation");
+                resolve(); // Fallback if proxy fails
+            };
+            // Use proxy to avoid CORS issues
+            img.src = '/proxy/yt-thumbnail?url=' + encodeURIComponent(`https://img.youtube.com/vi/${id}/mqdefault.jpg`);
         });
-        
-        if (isUnsafe) {
-            throw new Error("Visuals do not meet our safety guidelines.");
-        }
         
         statusEl.remove();
         isScanning = false;
