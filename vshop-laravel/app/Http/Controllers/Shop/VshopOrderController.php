@@ -642,7 +642,7 @@ $this->notifySeller(
                         DB::table('seller_finances')->insert([
                             'seller_id'         => $referrerSeller->id,
                             'order_id'          => $order->id,
-                            'transaction_type'  => 'referral',
+                            'transaction_type'  => 'earning',
                             'reference_no'      => 'ORD-' . $order->id,
                             'credit'            => $referralAmount,
                             'debit'             => 0,
@@ -1774,5 +1774,54 @@ public function updateAddressSession(Request $request)
 
         // Redirect to the actual meeting link
         return redirect()->away($product->meeting_link);
+    }
+
+    /**
+     * Apply referral code via AJAX
+     */
+    public function applyReferral(\Illuminate\Http\Request $request)
+    {
+        $request->validate([
+            'referral_code' => 'required|string'
+        ]);
+
+        $code = strtoupper(trim($request->referral_code));
+        $customer = \Illuminate\Support\Facades\Auth::guard('customer')->user();
+
+        if (!$customer) {
+            return response()->json(['success' => false, 'message' => 'Please login first.']);
+        }
+
+        if ($customer->referral_code === $code) {
+            return response()->json(['success' => false, 'message' => 'You cannot refer yourself.']);
+        }
+
+        $referrer = \App\Models\Customer::where('referral_code', $code)->first();
+        if (!$referrer) {
+            return response()->json(['success' => false, 'message' => 'Invalid referral code.']);
+        }
+
+        // Store in session and cookie
+        session(['referral_code' => $code]);
+        cookie()->queue('referral_code', $code, 60 * 24 * 30);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Referral code successfully applied!'
+        ]);
+    }
+
+    /**
+     * Remove referral code via AJAX
+     */
+    public function removeReferral()
+    {
+        session()->forget('referral_code');
+        cookie()->queue(cookie()->forget('referral_code'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Referral code removed.'
+        ]);
     }
 }

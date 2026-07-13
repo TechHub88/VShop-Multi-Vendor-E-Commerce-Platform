@@ -1230,6 +1230,9 @@ Route::get('/order/confirmation/{id}', [VtravelOrderController::class, 'confirma
         }
         return redirect()->route('productmanage.show', $id);
     });
+
+    Route::post('/vshop/apply-referral', [VshopOrderController::class, 'applyReferral'])->name('vshop.referral.apply');
+    Route::post('/vshop/remove-referral', [VshopOrderController::class, 'removeReferral'])->name('vshop.referral.remove');
     
     // Enquiry store for product page
 

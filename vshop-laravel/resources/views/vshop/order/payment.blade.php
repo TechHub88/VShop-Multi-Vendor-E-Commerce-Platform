@@ -85,19 +85,32 @@
                                              <span class="text-success" style="font-size: 10px; font-weight: 600;" id="applied_msg">Applied!</span>
                                              <button type="button" id="remove_coupon_btn" class="btn btn-sm btn-link text-danger p-0 ms-2" style="font-size: 11px; text-decoration: none; font-weight: 600;">Remove</button>
                                          </div>
-                                     </div>
-                                 </div>
 
-                                 {{-- REFERRAL CODE INPUT --}}
-                                 @if(empty(auth('customer')->user()->referred_by))
-                                 <div class="referral-code-section" style="margin-top: 15px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; padding: 12px 15px;">
-                                     <label style="font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px; display: block;">Have a Referral Code?</label>
-                                     <div style="display: flex; gap: 10px;">
-                                         <input type="text" name="referral_code" placeholder="Enter code here" style="flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; text-transform: uppercase;">
+                                         {{-- Referral Code Group --}}
+                                         @php
+                                             $sessionReferral = session('referral_code') ?? request()->cookie('referral_code');
+                                             $hasReferrer = !empty(auth('customer')->user()->referred_by) || !empty($sessionReferral);
+                                             $displayRefCode = !empty(auth('customer')->user()->referred_by) 
+                                                 ? (\App\Models\Customer::find(auth('customer')->user()->referred_by)->referral_code ?? 'Applied') 
+                                                 : $sessionReferral;
+                                         @endphp
+                                         <input type="hidden" name="referral_code" id="hidden_referral_code" value="{{ $displayRefCode }}">
+
+                                         <div id="referral_promo_group" class="{{ $hasReferrer ? 'd-none' : '' }}">
+                                             <button type="button" id="open_referral_btn" class="btn btn-info" style="color: #fff; background-color: #7E22CE; border-color: #7E22CE; font-weight: 600; font-size: 10px; padding: 3px 8px; border-radius: 4px; line-height: 1.2;">
+                                                 <i class="fa-solid fa-gift me-1" style="font-size: 9px;"></i> Apply Referral
+                                             </button>
+                                         </div>
+                                         <div id="applied_referral_box" class="bg-light border rounded d-flex align-items-center gap-2 {{ $hasReferrer ? '' : 'd-none' }}" style="padding: 3px 6px; border-radius: 4px;">
+                                             <i class="fa-solid fa-circle-check text-success" style="font-size: 11px;"></i>
+                                             <span class="badge bg-purple" id="applied_referral_code" style="font-size: 10px; background-color: #7E22CE !important; padding: 2px 5px; color: #fff;">{{ $displayRefCode }}</span>
+                                             <span class="text-success" style="font-size: 10px; font-weight: 600;">Applied!</span>
+                                             @if(empty(auth('customer')->user()->referred_by))
+                                             <button type="button" id="remove_referral_btn" class="btn btn-sm btn-link text-danger p-0 ms-2" style="font-size: 11px; text-decoration: none; font-weight: 600;">Remove</button>
+                                             @endif
+                                         </div>
                                      </div>
-                                     <p style="font-size: 11px; color: #64748b; margin-top: 6px; margin-bottom: 0;">Support a fellow buyer by entering their referral code.</p>
                                  </div>
-                                 @endif
 
                                 <div class="address-left-bottom payment-table" style="margin-top: 20px;">
                                     <table>
@@ -740,6 +753,105 @@ $(document).ready(function() {
                     text: 'Failed to remove coupon.',
                     confirmButtonColor: '#004392'
                 });
+            }
+        });
+    });
+
+    // Open Referral Code SweetAlert
+    $(document).on('click', '#open_referral_btn', function(e) {
+        e.preventDefault();
+        
+        let referralHtml = `
+            <div class="swal-referral-container" style="text-align: left; font-family: 'Inter', sans-serif;">
+                <div class="swal-input-group" style="display: flex; margin-bottom: 10px; border: 1px solid #ced4da; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <span style="display: flex; align-items: center; padding: 0 15px; background: #fff; color: #6c757d;">
+                        <i class="fa-solid fa-gift"></i>
+                    </span>
+                    <input type="text" id="swal_referral_code" class="form-control" placeholder="Type Referral Code" style="border: none; text-transform: uppercase; font-weight: 700; font-size: 14px; height: 48px; flex: 1; outline: none; padding-left: 5px; box-shadow: none;">
+                    <button id="swal_apply_ref_btn" style="background-color: #7E22CE; color: #fff; border: none; font-weight: 700; padding: 0 25px; font-size: 14px; cursor: pointer; transition: background 0.2s;">APPLY</button>
+                </div>
+                <p style="font-size: 11px; color: #666; margin: 0 5px;">Enter a buyer's referral code to support them.</p>
+            </div>
+        `;
+        
+        Swal.fire({
+            title: 'Apply Referral Code',
+            html: referralHtml,
+            showConfirmButton: false,
+            showCloseButton: true,
+            width: '450px',
+            padding: '20px',
+            didOpen: () => {
+                $('#swal_apply_ref_btn').on('click', function() {
+                    let code = $('#swal_referral_code').val().trim();
+                    if (code) {
+                        runReferralApply(code);
+                    } else {
+                        Swal.showValidationMessage('Please enter a referral code');
+                    }
+                });
+            }
+        });
+    });
+
+    function runReferralApply(code) {
+        $.ajax({
+            url: "{{ route('vshop.referral.apply') }}",
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}",
+                referral_code: code
+            },
+            success: function(response) {
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Applied!',
+                        text: response.message,
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    $('#hidden_referral_code').val(code);
+                    $('#applied_referral_code').text(code);
+                    $('#referral_promo_group').addClass('d-none');
+                    $('#applied_referral_box').removeClass('d-none').addClass('d-flex');
+                } else {
+                    Swal.showValidationMessage(response.message);
+                }
+            },
+            error: function(xhr) {
+                Swal.showValidationMessage('Failed to apply referral code. Please check code validity.');
+            }
+        });
+    }
+
+    // Remove Referral
+    $(document).on('click', '#remove_referral_btn', function(e) {
+        e.preventDefault();
+        $.ajax({
+            url: "{{ route('vshop.referral.remove') }}",
+            type: "POST",
+            data: {
+                _token: "{{ csrf_token() }}"
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#hidden_referral_code').val('');
+                    $('#applied_referral_box').addClass('d-none').removeClass('d-flex');
+                    $('#referral_promo_group').removeClass('d-none');
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Referral Removed',
+                        text: 'Referral code has been removed.',
+                        confirmButtonColor: '#7E22CE',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            },
+            error: function(xhr) {
+                console.error(xhr.responseText);
             }
         });
     });
