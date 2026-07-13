@@ -851,139 +851,74 @@ function validateBankForm(){
 
     /*
     |--------------------------------------------------------------------------
-    | IFSC CODE VALIDATION
+    | CONDITIONAL BANK CODES VALIDATION
     |--------------------------------------------------------------------------
     */
+    
+    let countryName = $('#bank_country option:selected').text().trim().toLowerCase();
+    let isIndia = (countryName === 'india');
 
+    // IFSC CODE VALIDATION
     let ifscInput = $('input[name="ifsc_code"]');
-
     let ifscValue = ifscInput.val().trim().toUpperCase();
-
     let ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 
-    if(ifscValue === ''){
-
-        ifscInput.addClass('is-invalid');
-
-        $('.ifsc-error')
-            .text('IFSC code is required')
-            .css('display','block');
-
-        isValid = false;
-
-    }else if(ifscValue.length !== 11){
-
-        ifscInput.addClass('is-invalid');
-
-        $('.ifsc-error')
-            .text('IFSC code must be exactly 11 characters')
-            .css('display','block');
-
-        isValid = false;
-
-    }else if(!ifscRegex.test(ifscValue)){
-
-        ifscInput.addClass('is-invalid');
-
-        $('.ifsc-error')
-            .text('Invalid IFSC code format')
-            .css('display','block');
-
-        isValid = false;
+    if(isIndia) {
+        if(ifscValue === ''){
+            ifscInput.addClass('is-invalid');
+            $('.ifsc-error').text('IFSC code is required').css('display','block');
+            isValid = false;
+        }else if(ifscValue.length !== 11){
+            ifscInput.addClass('is-invalid');
+            $('.ifsc-error').text('IFSC code must be exactly 11 characters').css('display','block');
+            isValid = false;
+        }else if(!ifscRegex.test(ifscValue)){
+            ifscInput.addClass('is-invalid');
+            $('.ifsc-error').text('Invalid IFSC code format').css('display','block');
+            isValid = false;
+        }
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | SWIFT CODE VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
+    // SWIFT CODE VALIDATION
     let swiftInput = $('input[name="swift_code"]');
-
     let swiftValue = swiftInput.val().trim().toUpperCase();
-
     let swiftRegex = /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
 
-    if(swiftValue === ''){
-
-        swiftInput.addClass('is-invalid');
-
-        swiftInput.closest('.mb-4, .mb-3')
-                  .find('.invalid-feedback')
-                  .text('SWIFT code is required')
-                  .show();
-
-        isValid = false;
-
-    }else if(swiftValue.length !== 8 && swiftValue.length !== 11){
-
-        swiftInput.addClass('is-invalid');
-
-        swiftInput.closest('.mb-4, .mb-3')
-                  .find('.invalid-feedback')
-                  .text('SWIFT code must be 8 or 11 characters')
-                  .show();
-
-        isValid = false;
-
-    }else if(!swiftRegex.test(swiftValue)){
-
-        swiftInput.addClass('is-invalid');
-
-        swiftInput.closest('.mb-4, .mb-3')
-                  .find('.invalid-feedback')
-                  .text('Invalid SWIFT code format')
-                  .show();
-
-        isValid = false;
+    if(!isIndia && countryName !== '' && countryName !== 'select country') {
+        if(swiftValue === ''){
+            swiftInput.addClass('is-invalid');
+            swiftInput.closest('.mb-4, .mb-3').find('.invalid-feedback').text('SWIFT code is required').show();
+            isValid = false;
+        }else if(swiftValue.length !== 8 && swiftValue.length !== 11){
+            swiftInput.addClass('is-invalid');
+            swiftInput.closest('.mb-4, .mb-3').find('.invalid-feedback').text('SWIFT code must be 8 or 11 characters').show();
+            isValid = false;
+        }else if(!swiftRegex.test(swiftValue)){
+            swiftInput.addClass('is-invalid');
+            swiftInput.closest('.mb-4, .mb-3').find('.invalid-feedback').text('Invalid SWIFT code format').show();
+            isValid = false;
+        }
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | BIC CODE VALIDATION
-    |--------------------------------------------------------------------------
-    */
-
+    // BIC CODE VALIDATION
     let bicInput = $('input[name="bic_code"]');
-
     let bicValue = bicInput.val().trim().toUpperCase();
-
     let bicRegex = /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/;
 
-    if(bicValue === ''){
-
-        bicInput.addClass('is-invalid');
-
-        bicInput.closest('.mb-4, .mb-3')
-                .find('.invalid-feedback')
-                .text('BIC code is required')
-                .show();
-
-        isValid = false;
-
-    }else if(bicValue.length !== 8 && bicValue.length !== 11){
-
-        bicInput.addClass('is-invalid');
-
-        bicInput.closest('.mb-4, .mb-3')
-                .find('.invalid-feedback')
-                .text('BIC code must be 8 or 11 characters')
-                .show();
-
-        isValid = false;
-
-    }else if(!bicRegex.test(bicValue)){
-
-        bicInput.addClass('is-invalid');
-
-        bicInput.closest('.mb-4, .mb-3')
-                .find('.invalid-feedback')
-                .text('Invalid BIC code format')
-                .show();
-
-        isValid = false;
+    if(!isIndia && countryName !== '' && countryName !== 'select country') {
+        if(bicValue === ''){
+            bicInput.addClass('is-invalid');
+            bicInput.closest('.mb-4, .mb-3').find('.invalid-feedback').text('BIC code is required').show();
+            isValid = false;
+        }else if(bicValue.length !== 8 && bicValue.length !== 11){
+            bicInput.addClass('is-invalid');
+            bicInput.closest('.mb-4, .mb-3').find('.invalid-feedback').text('BIC code must be 8 or 11 characters').show();
+            isValid = false;
+        }else if(!bicRegex.test(bicValue)){
+            bicInput.addClass('is-invalid');
+            bicInput.closest('.mb-4, .mb-3').find('.invalid-feedback').text('Invalid BIC code format').show();
+            isValid = false;
+        }
     }
 
     return isValid;
@@ -1083,20 +1018,39 @@ function loadBankCities(state, selectedCity = null){
 |--------------------------------------------------------------------------
 */
 
+function toggleBankRequiredFields() {
+    let countryName = $('#bank_country option:selected').text().trim().toLowerCase();
+    
+    if (countryName === 'india') {
+        $('#ifscRequired').show();
+        $('#swiftRequired').hide();
+        $('#bicRequired').hide();
+    } else if (countryName !== '' && countryName !== 'select country') {
+        $('#ifscRequired').hide();
+        $('#swiftRequired').show();
+        $('#bicRequired').show();
+    } else {
+        $('#ifscRequired').hide();
+        $('#swiftRequired').hide();
+        $('#bicRequired').hide();
+    }
+}
+
+// Call on initial load
+toggleBankRequiredFields();
+
 $('#bank_country').on('change', function(){
 
     let countryId = $(this).val();
 
     if(countryId){
-
         loadBankStates(countryId);
-
     }else{
-
         $('#bank_state').html('<option value="">Select State</option>');
-
         $('#bank_city').html('<option value="">Select City</option>');
     }
+    
+    toggleBankRequiredFields();
 
 });
 

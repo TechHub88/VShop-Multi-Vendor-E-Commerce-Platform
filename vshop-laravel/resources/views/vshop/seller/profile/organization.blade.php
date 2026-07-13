@@ -1462,13 +1462,7 @@ $('#sendEmailOtpBtn').click(function(){
                 .addClass('text-info')
                 .html('Sent OTP to your mail');
 
-            // Autofill split OTP inputs
-            if(res.otp) {
-                let otpStr = res.otp.toString();
-                $('.email-otp-digit').each(function(index) {
-                    $(this).val(otpStr[index] || '');
-                });
-            }
+            // Removed OTP autofill as per requirement
 
             // ✅ SHOW OTP BOX
             $('#emailOtpBox').fadeIn();

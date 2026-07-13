@@ -230,7 +230,7 @@ $address = $editContact['address'] ?? [];
                     @enderror
                 </div>
 
-              <div class="col-md-3 mb-2">
+                <div class="col-md-3 mb-2">
 
 <label>
 Photo
@@ -243,7 +243,7 @@ Photo
            name="contact_photo[{{ $i }}]"
            class="form-control photoInput
            @if($errors->has('contact_photo') || $errors->has('contact_photo.'.$i)) is-invalid @endif"
-           accept="image/*">
+           accept="image/*" disabled>
 
     @php
         $photo = $c['photo'] ?? null;
@@ -256,7 +256,7 @@ Photo
 
     <img src="{{ $imgSrc }}" class="previewImg mt-1">
 
-    <span class="remove-image {{ empty($photo) ? 'd-none' : '' }}">
+    <span class="remove-image d-none">
         ×
     </span>
 
@@ -282,7 +282,7 @@ Photo
 
                 <div class="col-md-3 mb-2">
                     <label>Mobile <span class="text-danger">*</span></label>
-                    <input name="contact_mobile[{{ $i }}]" class="form-control mobileInput @error("contact_mobile.$i") is-invalid @enderror" value="{{ $c['mobile'] ?? '' }}">
+                    <input name="contact_mobile[{{ $i }}]" class="form-control mobileInput @error("contact_mobile.$i") is-invalid @enderror" value="{{ $c['mobile'] ?? '' }}" readonly>
                     @error("contact_mobile.$i")
                         <span class="text-danger small">{{ $message }}</span>
                     @enderror
@@ -290,7 +290,7 @@ Photo
 
                 <div class="col-md-3 mb-2">
                     <label>Email <span class="text-danger">*</span></label>
-                    <input name="contact_email[{{ $i }}]" class="form-control @error("contact_email.$i") is-invalid @enderror" value="{{ $c['email'] ?? '' }}">
+                    <input name="contact_email[{{ $i }}]" class="form-control @error("contact_email.$i") is-invalid @enderror" value="{{ $c['email'] ?? '' }}" readonly>
                     @error("contact_email.$i")
                         <span class="text-danger small">{{ $message }}</span>
                     @enderror

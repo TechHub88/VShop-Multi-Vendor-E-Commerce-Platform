@@ -534,7 +534,7 @@ Search
 </div>
 {{-- ================= PRODUCT LIST ================= --}}
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h6 class="fw-bold mb-0">Product List</h6>
+    <h6 class="fw-bold mb-0">List</h6>
     
     @if(isset($hasActiveCampaign) && $hasActiveCampaign)
         <button type="button" class="btn btn-sm btn-success fw-bold open-global-campaign-btn shadow-sm" style="border-radius: 6px;">
