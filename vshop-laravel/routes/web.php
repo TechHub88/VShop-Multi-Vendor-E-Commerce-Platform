@@ -2803,7 +2803,7 @@ Route::post('admin/finance/update-leads-boost-settings', [AdminFinanceController
 // Admin Panel AI Assistant Chat
 Route::post('/admin/ai-chat', [\App\Http\Controllers\Admin\AdminChatController::class, 'handleChat'])->name('admin.ai-chat')->middleware('auth:web,admin_staff');
 
-Route::get('/proxy/yt-thumbnail', function (\Illuminate\Http\Request ) {
+Route::get('/proxy/yt-thumbnail', function (\Illuminate\Http\Request $request) {
     $url = $request->query('url');
     if (!$url) return response()->json(['error' => 'No URL'], 400);
     try {
