@@ -439,10 +439,16 @@
 
                                         {{-- IMAGE SECTION --}}
                                         <div class="product-list-box-left">
+                                            @php
+                                                $currentUser = auth()->guard('customer')->user();
+                                                $referralCode = $currentUser ? $currentUser->referral_code : null;
+                                            @endphp
                                             <div class="share-wishlist-sec">
                                                 <a href="javascript:void(0);" class="share-btn"
                                                    data-url="{{ route('productmanage.show', $product->id) }}"
-                                                   data-title="{{ $product->name }}">
+                                                   data-title="{{ $product->name }}"
+                                                   data-referral-url="{{ url('/p/' . $product->id) }}"
+                                                   data-referral-code="{{ $referralCode }}">
                                                     <i class="fa-solid fa-share-nodes"></i>
                                                 </a>
                                                 <a href="#" class="wishlist-btn" data-product-id="{{ $product->id }}">
@@ -826,15 +832,6 @@
                                                      </button>
                                                      <button class="btn-enquiry email-enquiry" data-contact="email" data-product-id="{{ $product->id }}">
                                                          <i class="fas fa-envelope"></i> Email
-                                                     </button>
-                                                     @php
-                                                         $currentUser = auth()->guard('customer')->user();
-                                                         $referralCode = $currentUser ? $currentUser->referral_code : null;
-                                                     @endphp
-                                                     <button class="btn-enquiry refer-earn-btn" id="referEarnBtn" 
-                                                             data-url="{{ url('/p/' . $product->id) }}" 
-                                                             data-ref="{{ $referralCode }}">
-                                                         <i class="fas fa-gift" style="color: #7E22CE;"></i> Refer & Earn
                                                      </button>
                                                  </div>
                                              </div>
@@ -1607,7 +1604,7 @@
                                 <div class="other-product-box item">
                                     <div class="product-box">
                                         <div class="share-wishlist-sec">
-                                            <a href="javascript:void(0);" class="share-btn" data-url="{{ route('productmanage.show', $relatedProduct->id) }}" data-title="{{ $relatedProduct->name }}"><i class="fa-solid fa-share-nodes"></i></a>
+                                            <a href="javascript:void(0);" class="share-btn" data-url="{{ route('productmanage.show', $relatedProduct->id) }}" data-title="{{ $relatedProduct->name }}" data-referral-url="{{ url('/p/' . $relatedProduct->id) }}" data-referral-code="{{ $referralCode }}"><i class="fa-solid fa-share-nodes"></i></a>
                                             <a href="#" class="wishlist-btn related-wishlist" data-product-id="{{ $relatedProduct->id }}"><i class="fa-solid fa-heart"></i></a>
                                         </div>
                                         <div class="product-box-img"><a href="{{ route('productmanage.show', $relatedProduct->id) }}"><img src="{{ asset($relatedProduct->thumbnail) }}" alt="{{ $relatedProduct->name }}"></a></div>
@@ -1638,12 +1635,35 @@
 </div>
 
 <div id="shareModal" class="share-modal">
-    <div class="share-content">
-        <div class="share-header"><h4>Share Product</h4><span class="close-share">&times;</span></div>
-        <div class="share-options">
-            <button class="share-item whatsapp"><i class="fa-brands fa-whatsapp"></i><span>WhatsApp</span></button>
-            <button class="share-item facebook"><i class="fa-brands fa-facebook"></i><span>Facebook</span></button>
-            <button class="share-item copy"><i class="fa-solid fa-link"></i><span>Copy Link</span></button>
+    <div class="share-content" style="border-radius: 12px; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; padding: 20px;">
+        <div class="share-header" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <h4 style="font-weight: 700; color: #1e293b; font-size: 16px; margin: 0;">Share Product</h4>
+            <span class="close-share" style="font-size: 20px; font-weight: bold; cursor: pointer; color: #64748b;">&times;</span>
+        </div>
+        <div class="share-options" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 15px;">
+            <button class="share-item whatsapp" style="padding: 12px; border-radius: 8px; font-weight: 600;"><i class="fa-brands fa-whatsapp"></i><span>WhatsApp</span></button>
+            <button class="share-item facebook" style="padding: 12px; border-radius: 8px; font-weight: 600;"><i class="fa-brands fa-facebook"></i><span>Facebook</span></button>
+            <button class="share-item copy" style="padding: 12px; border-radius: 8px; font-weight: 600;"><i class="fa-solid fa-link"></i><span>Copy Link</span></button>
+        </div>
+
+        <hr style="border-top: 1px solid #e2e8f0; margin: 15px 0;">
+
+        <!-- Refer & Earn Section -->
+        <div class="refer-earn-section">
+            <h5 style="font-size: 13px; font-weight: 700; color: #7e22ce; margin-top: 0; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-gift"></i> Refer & Earn
+            </h5>
+            @if(!empty($referralCode))
+                <div class="referral-link-container" style="display: flex; gap: 8px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 10px; background: #faf5ff; align-items: center;">
+                    <input type="text" id="shareReferralLink" readonly value="{{ url('/p/' . $product->id) . '?ref=' . $referralCode }}" style="flex: 1; border: none; background: transparent; font-size: 11px; color: #4a5568; outline: none; font-weight: 500; min-width: 0;">
+                    <button class="btn btn-sm btn-purple" id="copyReferralLinkBtn" style="background: #7e22ce; color: #fff; border: none; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; transition: 0.2s;">Copy</button>
+                </div>
+            @else
+                <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 12px; text-align: center;">
+                    <p style="font-size: 11px; color: #64748b; margin-bottom: 8px; font-weight: 500; line-height: 1.4;">Log in to generate your referral link and earn commissions!</p>
+                    <a href="{{ route('vshoplogin') }}" class="btn btn-sm text-white" style="background: #7e22ce; font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 4px; text-decoration: none; display: inline-block;">Login to Refer</a>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -1767,13 +1787,22 @@
 </script>
 
 <script>
-// ========== SHARE MODAL (unchanged) ==========
+// ========== SHARE MODAL ==========
 let shareUrl = '';
 let shareTitle = '';
 
 $(document).on('click','.share-btn',function(){
     shareUrl = $(this).data('url');
     shareTitle = $(this).data('title');
+    
+    // Dynamic referral code & url update
+    let referralCode = $(this).data('referral-code');
+    let referralBaseUrl = $(this).data('referral-url');
+    if (referralCode && referralBaseUrl) {
+        let fullReferralUrl = referralBaseUrl + '?ref=' + referralCode;
+        $('#shareReferralLink').val(fullReferralUrl);
+    }
+    
     $('#shareModal').addClass('active');
 });
 
@@ -1786,18 +1815,39 @@ $(document).on('click','#shareModal',function(e){
 });
 
 $(document).on('click','.whatsapp',function(){
-    let url = "https://wa.me/?text=" + encodeURIComponent(shareTitle + " " + shareUrl);
+    let refInput = document.getElementById('shareReferralLink');
+    let urlToShare = (refInput && refInput.value) ? refInput.value : shareUrl;
+    let url = "https://wa.me/?text=" + encodeURIComponent(shareTitle + " " + urlToShare);
     window.open(url, '_blank');
 });
 
 $(document).on('click','.facebook',function(){
-    let url = "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl);
+    let refInput = document.getElementById('shareReferralLink');
+    let urlToShare = (refInput && refInput.value) ? refInput.value : shareUrl;
+    let url = "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(urlToShare);
     window.open(url, '_blank');
 });
 
 $(document).on('click','.copy',function(){
-    navigator.clipboard.writeText(shareUrl);
-    alert("Link copied!");
+    navigator.clipboard.writeText(shareUrl).then(function() {
+        showToast("Product link copied to clipboard!", "success");
+    }).catch(function() {
+        showToast("Failed to copy link", "error");
+    });
+});
+
+$(document).on('click','#copyReferralLinkBtn',function(e){
+    e.preventDefault();
+    let refInput = document.getElementById('shareReferralLink');
+    if (refInput && refInput.value) {
+        navigator.clipboard.writeText(refInput.value).then(function() {
+            showToast("Referral link copied to clipboard!", "success");
+        }).catch(function() {
+            refInput.select();
+            document.execCommand("copy");
+            showToast("Referral link copied to clipboard!", "success");
+        });
+    }
 });
 
 // ========== ENQUIRY POPUP (NEW) ==========
@@ -1928,49 +1978,7 @@ $(document).ready(function() {
 </script>
 
 
-<script>
 
-let shareUrl = '';
-let shareTitle = '';
-
-$(document).on('click','.share-btn',function(){
-
-    shareUrl = $(this).data('url');
-    shareTitle = $(this).data('title');
-
-    $('#shareModal').addClass('active'); // ✅ FIX
-});
-
-$(document).on('click','.close-share',function(){
-    $('#shareModal').removeClass('active'); // ✅ FIX
-});
-
-// click outside close
-$(document).on('click','#shareModal',function(e){
-    if(e.target.id === 'shareModal'){
-        $(this).removeClass('active');
-    }
-});
-
-// WhatsApp
-$(document).on('click','.whatsapp',function(){
-    let url = "https://wa.me/?text=" + encodeURIComponent(shareTitle + " " + shareUrl);
-    window.open(url, '_blank');
-});
-
-// Facebook
-$(document).on('click','.facebook',function(){
-    let url = "https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(shareUrl);
-    window.open(url, '_blank');
-});
-
-// Copy Link
-$(document).on('click','.copy',function(){
-    navigator.clipboard.writeText(shareUrl);
-    alert("Link copied!");
-});
-
-</script>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -3118,7 +3126,7 @@ document.addEventListener("DOMContentLoaded", function () {
 .thumb-image { cursor: pointer; border: 2px solid transparent; border-radius: 6px; transition: 0.3s; }
 .thumb-image:hover { border-color: #0d6efd; }
 .active-thumb { border-color: #0d6efd !important; }
-.share-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(6px); }
+.share-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; justify-content: center; align-items: center; z-index: 9999; }
 .share-modal.active { display: flex; }
 .share-content { background: #fff; width: 100%; max-width: 480px; border-radius: 18px; padding: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.25); transform: translateY(30px) scale(0.9); opacity: 0; transition: 0.3s ease; }
 .share-modal.active .share-content { transform: translateY(0) scale(1); opacity: 1; }
