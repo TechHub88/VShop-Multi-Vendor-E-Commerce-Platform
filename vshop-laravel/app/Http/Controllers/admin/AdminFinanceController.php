@@ -477,7 +477,7 @@ class AdminFinanceController extends Controller
             DB::beginTransaction();
             
             // Clear existing commission levels
-            CommissionLevel::truncate();
+            CommissionLevel::query()->delete();
             
             // Insert new commission levels
             $levels = $request->input('levels', []);
@@ -1501,7 +1501,7 @@ public function saveAppPricing(Request $request)
         try {
             DB::beginTransaction();
             
-            DB::table('commission_management')->truncate();
+            DB::table('commission_management')->delete();
             
             $commissions = $request->input('commissions', []);
             foreach ($commissions as $comm) {

@@ -621,6 +621,21 @@ class MarketingGrowthController extends Controller
         return response()->json($configs);
     }
 
+    public function deleteReferralConfiguration($id)
+    {
+        DB::table('referral_configurations')->where('id', $id)->delete();
+        return response()->json(['success' => true, 'message' => 'Referral configuration deleted.']);
+    }
+
+    public function updateReferralConfiguration(Request $request, $id)
+    {
+        DB::table('referral_configurations')->where('id', $id)->update([
+            'commission_percentage' => $request->input('commission_percentage'),
+            'description' => json_encode(['referee_discount' => $request->input('referee_discount') ?? 0])
+        ]);
+        return response()->json(['success' => true, 'message' => 'Referral configuration updated.']);
+    }
+
     public function saveReferralConfigurations(Request $request)
     {
         $configs = $request->input('configs');

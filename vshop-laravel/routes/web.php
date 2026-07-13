@@ -1685,6 +1685,8 @@ Route::delete(
         
         Route::get('/referral-configurations', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'getReferralConfigurations']);
         Route::post('/referral-configurations/save', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'saveReferralConfigurations']);
+        Route::put('/referral-configurations/{id}', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'updateReferralConfiguration']);
+        Route::delete('/referral-configurations/{id}', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'deleteReferralConfiguration']);
         
         Route::get('/product-campaigns', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'productCampaignsList']);
         Route::post('/product-campaigns', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'storeProductCampaign']);

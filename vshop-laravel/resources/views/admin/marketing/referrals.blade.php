@@ -1131,8 +1131,31 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
         }
     };
 
-    window.editRefConfig = function(id) {
-        showToast('Edit feature coming soon', true);
+    window.editRefConfig = async function(id) {
+        const pct = prompt('Enter new Commission Percentage:');
+        if (pct === null) return;
+        const disc = prompt('Enter new Referee Discount:');
+        if (disc === null) return;
+        
+        try {
+            const res = await fetch(baseUrl + '/referral-configurations/' + id, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': refCsrfToken
+                },
+                body: JSON.stringify({ commission_percentage: pct, referee_discount: disc })
+            });
+            if (res.ok) {
+                showToast('Configuration updated successfully');
+                window.loadExistingRefConfigs();
+            } else {
+                showToast('Failed to update', true);
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Error updating configuration', true);
+        }
     };
 
     window.deleteRefConfig = async function(id) {
