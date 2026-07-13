@@ -339,26 +339,45 @@ $videos = is_array($product->videos)
 
 @foreach($videos as $vid)
 
-<div class="video-box mb-2 d-flex gap-2">
-
-<input type="text"
-name="video_urls[]"
-value="{{ $vid }}"
-class="form-control video-input">
-
-
+<div class="video-box mb-3">
+    <div class="d-flex gap-2 mb-2 align-items-center">
+        <input type="text"
+        name="video_urls[]"
+        value="{{ $vid }}"
+        class="form-control video-input" placeholder="Paste YouTube URL">
+    </div>
+    <div class="video-preview-container mt-2">
+        @php
+            $id = '';
+            if(str_contains($vid, 'v=')){
+                $parts = explode('v=', $vid);
+                if(isset($parts[1])){
+                    $id = explode('&', $parts[1])[0];
+                }
+            } elseif(str_contains($vid, 'youtu.be/')){
+                $parts = explode('youtu.be/', $vid);
+                if(isset($parts[1])){
+                    $id = explode('?', $parts[1])[0];
+                }
+            }
+        @endphp
+        @if($id)
+            <iframe src="https://www.youtube.com/embed/{{$id}}" width="280" height="160" frameborder="0" allowfullscreen style="border-radius:8px;"></iframe>
+        @endif
+    </div>
 </div>
 
 @endforeach
 
 @else
 
-<div class="video-box mb-2 d-flex gap-2">
-
-<input type="text"
-name="video_urls[]"
-class="form-control video-input">
-
+<div class="video-box mb-3">
+    <div class="d-flex gap-2 mb-2 align-items-center">
+        <input type="text"
+        name="video_urls[]"
+        class="form-control video-input" placeholder="Paste YouTube URL">
+    </div>
+    <div class="video-preview-container mt-2"></div>
 </div>
 
 @endif
@@ -714,10 +733,13 @@ $(document).on('click','.remove-img',function(){
 $('#addVideo').click(function(){
 
     $('#videoWrapper').append(`
-        <div class="video-box mb-2">
-            <input type="text"
-            name="video_urls[]"
-            class="form-control video-input">
+        <div class="video-box mb-3">
+            <div class="d-flex gap-2 mb-2 align-items-center">
+                <input type="text"
+                name="video_urls[]"
+                class="form-control video-input" placeholder="Paste YouTube URL">
+            </div>
+            <div class="video-preview-container mt-2"></div>
         </div>
     `);
 
@@ -747,36 +769,105 @@ $(document).on('input','.video-input',function(){
 | YOUTUBE PREVIEW
 ========================================================= */
 
-$(document).on('blur','.video-input',function(){
+let bannedKeywords = ['dirty', 'porn', 'sex', 'nude', 'nsfw', 'xvideo', 'hentai', 'xhamster', 'pornhub', 'brazzers', 'xxx', 'adult', 'erotic'];
 
-    let url = $(this).val();
+$(document).on('blur','.video-input', async function(){
 
-    $(this).parent().find('iframe').remove();
+    let inputEl = $(this);
+    let url = inputEl.val().trim();
+    let previewContainer = inputEl.closest('.video-box').find('.video-preview-container');
+
+    previewContainer.html('');
+    inputEl.closest('.video-box').find('.yt-error').remove();
+    inputEl.closest('.video-box').find('.yt-scan-status').remove();
 
     if(!url) return;
 
     let id = '';
+    let match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if(match && match[1]) {
+        id = match[1];
+    } else {
+        inputEl.after('<small class="text-danger yt-error d-block mt-1">Invalid YouTube URL.</small>');
+        inputEl.val('');
+        return;
+    }
 
-    if(url.includes('v=')){
-        id = url.split('v=')[1];
-        if(id.includes('&')){
-            id = id.split('&')[0];
+    let statusEl = $('<div class="yt-scan-status text-warning small mt-1 font-weight-bold"><i class="fa fa-spinner fa-spin me-1"></i> Scanning YouTube video for safety guidelines... Please wait.</div>');
+    inputEl.after(statusEl);
+
+    isScanning = true;
+    $('button[type="submit"]').prop('disabled', true);
+
+    try {
+        // 1. Keyword Check
+        let noembedRes = await fetch('https://noembed.com/embed?url=' + encodeURIComponent(url));
+        let noembedData = await noembedRes.json();
+        
+        if (noembedData && noembedData.title) {
+            let titleLower = noembedData.title.toLowerCase();
+            let foundBadKeyword = bannedKeywords.find(word => titleLower.includes(word));
+            if (foundBadKeyword) {
+                throw new Error("Title contains restricted keyword: " + foundBadKeyword);
+            }
         }
-    }
-    else if(url.includes('youtu.be/')){
-        id = url.split('youtu.be/')[1];
-    }
-
-    if(id){
-        $(this).parent().append(`
+        
+        // 2. Thumbnail NSFW Check
+        if (!nsfwModel) await loadNSFWModel();
+        
+        let isUnsafe = false;
+        let nsfwScore = 0;
+        
+        await new Promise((resolve, reject) => {
+            let img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = async function() {
+                try {
+                    let predictions = await nsfwModel.classify(img);
+                    predictions.forEach(p => {
+                        let category = p.className.toLowerCase();
+                        if (category === 'porn' || category === 'hentai' || category === 'sexy') {
+                            nsfwScore += p.probability;
+                        }
+                    });
+                    if (nsfwScore > 0.04) {
+                        isUnsafe = true;
+                    }
+                    resolve();
+                } catch (e) {
+                    resolve();
+                }
+            };
+            img.onerror = () => resolve();
+            img.src = `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+        });
+        
+        if (isUnsafe) {
+            throw new Error("Visuals do not meet our safety guidelines.");
+        }
+        
+        statusEl.remove();
+        isScanning = false;
+        $('button[type="submit"]').prop('disabled', false);
+        
+        previewContainer.html(`
             <iframe
             src="https://www.youtube.com/embed/${id}"
-            width="200"
-            height="120"
+            width="280"
+            height="160"
             frameborder="0"
-            allowfullscreen>
+            allowfullscreen
+            style="border-radius: 8px;">
             </iframe>
         `);
+
+    } catch (err) {
+        statusEl.remove();
+        isScanning = false;
+        $('button[type="submit"]').prop('disabled', false);
+        
+        inputEl.after(`<small class="text-danger yt-error d-block mt-1">Video restricted: ${err.message}</small>`);
+        inputEl.val('');
     }
 
 });
