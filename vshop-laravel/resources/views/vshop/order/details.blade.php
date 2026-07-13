@@ -667,32 +667,42 @@
                     @else
                         @php
                             $st = strtolower($order->status);
-                            $confirmedStatuses = ['pending','paid','confirmed','processing','approved','shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved'];
-                            $packedStatuses = ['processing','approved','shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved'];
-                            $shippedStatuses = ['shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved'];
-                            $deliveredStatuses = ['delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved'];
+                            $confirmedStatuses = ['pending','paid','confirmed','processing','approved','shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved','refunded'];
+                            $packedStatuses = ['processing','approved','shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved','refunded'];
+                            $shippedStatuses = ['shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved','refunded'];
+                            $deliveredStatuses = ['delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved','refunded'];
+                            $refundStatuses = ['refund_requested', 'refunded', 'return_requested', 'return_approved', 'returned'];
                             $allDone = in_array($st, ['delivered','completed']);
+                            $isRefund = in_array($st, $refundStatuses);
+                            $refundDone = in_array($st, ['refunded', 'returned']);
                         @endphp
-                        <div class="track-box {{ in_array($st, $confirmedStatuses) ? 'active' : '' }} {{ $allDone ? 'completed-green' : '' }}">
+                        <div class="track-box {{ in_array($st, $confirmedStatuses) ? 'active' : '' }} {{ $allDone || $isRefund ? 'completed-green' : '' }}">
                             <div class="track-icon"><i class="fa-solid fa-clipboard-check"></i></div>
                             <p class="mt-2 fw-semibold">Confirmed</p>
                             <small class="text-muted">{{ $order->created_at->format('d M, h:i A') }}</small>
                         </div>
-                        <div class="track-box {{ in_array($st, $packedStatuses) ? 'active' : '' }} {{ $allDone ? 'completed-green' : '' }}">
+                        <div class="track-box {{ in_array($st, $packedStatuses) ? 'active' : '' }} {{ $allDone || $isRefund ? 'completed-green' : '' }}">
                             <div class="track-icon"><i class="fa-solid fa-box-open"></i></div>
                             <p class="mt-2 fw-semibold">Packed</p>
                             <small class="text-muted">{{ $order->updated_at->format('d M') }}</small>
                         </div>
-                        <div class="track-box {{ in_array($st, $shippedStatuses) ? 'active' : '' }} {{ $allDone ? 'completed-green' : '' }}">
+                        <div class="track-box {{ in_array($st, $shippedStatuses) ? 'active' : '' }} {{ $allDone || $isRefund ? 'completed-green' : '' }}">
                             <div class="track-icon"><i class="fa-solid fa-truck-fast"></i></div>
                             <p class="mt-2 fw-semibold">Shipped</p>
                             <small class="text-muted">{{ $order->shipped_at ? $order->shipped_at->format('d M, h:i A') : 'Pending' }}</small>
                         </div>
-                        <div class="track-box {{ in_array($st, $deliveredStatuses) ? 'active' : '' }} {{ $allDone ? 'completed-green' : '' }}">
+                        <div class="track-box {{ in_array($st, $deliveredStatuses) ? 'active' : '' }} {{ $allDone || $isRefund ? 'completed-green' : '' }}">
                             <div class="track-icon"><i class="fa-solid fa-house-chimney"></i></div>
                             <p class="mt-2 fw-semibold">Delivered</p>
                             <small class="text-muted">{{ $order->delivered_at ? $order->delivered_at->format('d M, h:i A') : 'Pending' }}</small>
                         </div>
+                        @if($isRefund)
+                        <div class="track-box active {{ $refundDone ? 'completed-green' : '' }}">
+                            <div class="track-icon"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                            <p class="mt-2 fw-semibold">{{ $refundDone ? 'Refunded' : 'Refund Pending' }}</p>
+                            <small class="text-muted">{{ $order->updated_at->format('d M, h:i A') }}</small>
+                        </div>
+                        @endif
                     @endif
                 </div>
 
