@@ -448,15 +448,21 @@ function checkImageSafety(file) {
                     console.log("NSFWJS Predictions:", predictions);
                     
                     let isUnsafe = false;
+                    let nsfwScore = 0;
+
                     predictions.forEach(p => {
                         let category = p.className.toLowerCase();
                         let prob = p.probability;
                         
-                        // Strict trigger thresholds for Porn, Hentai and Sexy content
-                        if ((category === 'porn' || category === 'hentai' || category === 'sexy') && prob > 0.10) {
-                            isUnsafe = true;
+                        if (category === 'porn' || category === 'hentai' || category === 'sexy') {
+                            nsfwScore += prob;
                         }
                     });
+
+                    // Extremely strict check: if combined vulgarity score is > 4%
+                    if (nsfwScore > 0.04) {
+                        isUnsafe = true;
+                    }
 
                     if (isUnsafe) {
                         resolve(false); // Flagged as Unsafe

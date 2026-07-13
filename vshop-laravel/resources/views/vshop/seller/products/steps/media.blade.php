@@ -481,18 +481,21 @@ function checkImageSafety(file) {
                 try {
                     let predictions = await nsfwModel.classify(img);
                     let isUnsafe = false;
+                    let nsfwScore = 0;
                     let reasonText = "";
                     
                     predictions.forEach(p => {
                         let category = p.className.toLowerCase();
                         let prob = p.probability;
                         
-                        // Very strict check for vulgar content
-                        if ((category === 'porn' || category === 'hentai' || category === 'sexy') && prob > 0.10) {
-                            isUnsafe = true;
-                            reasonText = category;
+                        if (category === 'porn' || category === 'hentai' || category === 'sexy') {
+                            nsfwScore += prob;
                         }
                     });
+                    
+                    if (nsfwScore > 0.04) {
+                        isUnsafe = true;
+                    }
                     if (isUnsafe) {
                         resolve({safe: false, reason: "it does not meet our safety and content guidelines."});
                     } else {

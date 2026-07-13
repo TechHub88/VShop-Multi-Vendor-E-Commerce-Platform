@@ -251,15 +251,20 @@ function checkImageSafety(file) {
                 try {
                     let predictions = await nsfwModel.classify(img);
                     let isUnsafe = false;
+                    let nsfwScore = 0;
+                    
                     predictions.forEach(p => {
                         let category = p.className.toLowerCase();
                         let prob = p.probability;
                         
-                        // Strict trigger thresholds
-                        if ((category === 'porn' || category === 'hentai' || category === 'sexy') && prob > 0.10) {
-                            isUnsafe = true;
+                        if (category === 'porn' || category === 'hentai' || category === 'sexy') {
+                            nsfwScore += prob;
                         }
                     });
+
+                    if (nsfwScore > 0.04) {
+                        isUnsafe = true;
+                    }
 
                     if (isUnsafe) {
                         resolve(false); // Flagged as Unsafe
