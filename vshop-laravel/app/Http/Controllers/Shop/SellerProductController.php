@@ -818,7 +818,10 @@ public function getCategories($type)
     }
 
     return MarketplaceCategory::whereIn('type', $types)
-        ->where('seller_id', $sellerId)   // ← add this line
+        ->where(function($q) use ($sellerId) {
+            $q->whereNull('seller_id')
+              ->orWhere('seller_id', $sellerId);
+        })
         ->orderBy('name')
         ->get(['id', 'name'])
         ->unique('name')
@@ -1335,6 +1338,12 @@ public function saveMedia(Request $request, Product $product)
         foreach ($request->video_urls as $url) {
 
             if (!empty(trim($url))) {
+                if (!\App\Services\ImageModeratorService::isSafeVideoURL($url)) {
+                    return response()->json([
+                        'status' => false,
+                        'error' => 'One of the provided video URLs contains inappropriate (NSFW) content.'
+                    ]);
+                }
                 $videos[] = trim($url);
             }
         }

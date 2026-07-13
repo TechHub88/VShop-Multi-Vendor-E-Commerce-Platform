@@ -43,7 +43,8 @@
 
 <form method="POST"
 action="{{ route('seller.marketplace.template.update',$template->id) }}"
-enctype="multipart/form-data">
+enctype="multipart/form-data"
+id="templateForm">
 
 @csrf
 
@@ -117,7 +118,11 @@ enctype="multipart/form-data">
 
                 <input type="file"
                        name="preview_image"
-                       class="form-control">
+                       class="form-control"
+                       id="preview_image"
+                       accept=".jpg,.jpeg,.png">
+
+                <div id="imageError" class="text-danger small mt-1 d-none"></div>
 
                 @if($template->preview_image)
 
@@ -225,7 +230,136 @@ object-fit:cover;
 
 </style>
 
+<script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.2/dist/nsfwjs.min.js"></script>
 <script>
+document.addEventListener("DOMContentLoaded", function(){
+    const form = document.getElementById('templateForm');
+    const image = document.getElementById('preview_image');
+    const imageError = document.getElementById('imageError');
+    let nsfwModel = null;
+    let isScanning = false;
+
+    async function loadNSFWModel() {
+        try {
+            if (!nsfwModel) {
+                nsfwModel = await nsfwjs.load('/models/mobilenet_v2/');
+                console.log("NSFW model loaded successfully.");
+            }
+        } catch (e) {
+            console.error("Failed to load NSFW model:", e);
+        }
+    }
+
+    function checkImageSafety(file) {
+        return new Promise((resolve) => {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let img = new Image();
+                img.onload = async function() {
+                    try {
+                        let predictions = await nsfwModel.classify(img);
+                        let isUnsafe = false;
+                        let nsfwScore = 0;
+                        predictions.forEach(p => {
+                            let category = p.className.toLowerCase();
+                            let prob = p.probability;
+                            if (category === 'porn' || category === 'hentai' || category === 'sexy') {
+                                nsfwScore += prob;
+                            }
+                        });
+                        if (nsfwScore > 0.04) {
+                            isUnsafe = true;
+                        }
+                        if (isUnsafe) {
+                            resolve(false);
+                        } else {
+                            resolve(true);
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        resolve(true);
+                    }
+                };
+                img.onerror = function() {
+                    resolve(true);
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                resolve(true);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    if(image){
+        image.addEventListener('change', async function(){
+            let file = this.files[0];
+            if(!file) return;
+
+            let allowed = ['image/jpeg','image/png'];
+            if(!allowed.includes(file.type)){
+                this.value = '';
+                imageError.classList.remove('d-none');
+                imageError.innerText = "Only JPG & PNG allowed";
+                this.classList.add('is-invalid');
+                return;
+            }
+
+            imageError.classList.add('d-none');
+            image.classList.remove('is-invalid');
+
+            if (!nsfwModel) {
+                imageError.classList.remove('d-none');
+                imageError.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Scanning image...';
+                imageError.classList.add('text-warning');
+                imageError.classList.remove('text-danger');
+                isScanning = true;
+                if(form) form.querySelector('button').disabled = true;
+                await loadNSFWModel();
+            } else {
+                imageError.classList.remove('d-none');
+                imageError.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Scanning image...';
+                imageError.classList.add('text-warning');
+                imageError.classList.remove('text-danger');
+                isScanning = true;
+                if(form) form.querySelector('button').disabled = true;
+            }
+
+            let isSafe = true;
+            if (nsfwModel) {
+                isSafe = await checkImageSafety(file);
+            }
+
+            isScanning = false;
+            if(form) form.querySelector('button').disabled = false;
+
+            if (!isSafe) {
+                this.value = '';
+                imageError.classList.remove('d-none');
+                imageError.innerText = "The uploaded image contains inappropriate (NSFW) content and has been removed.";
+                imageError.classList.add('text-danger');
+                imageError.classList.remove('text-warning');
+                this.classList.add('is-invalid');
+                return;
+            }
+
+            imageError.classList.add('d-none');
+            imageError.classList.add('text-danger');
+            imageError.classList.remove('text-warning');
+        });
+    }
+
+    if(form){
+        form.addEventListener('submit', function(e){
+            if (isScanning) {
+                e.preventDefault();
+                alert("Please wait while image safety scan is in progress...");
+                return;
+            }
+        });
+    }
+});
 
 // ================= AUTO HIDE SUCCESS MESSAGE =================
 setTimeout(function(){

@@ -82,6 +82,12 @@ $routeName = 'productmanage.show';
                 </div>
                 <span class="ms-2 text-muted" style="font-size: 13px;">({{ $totalReviews }} global ratings)</span>
             </div>
+            @if(($seller->logo_trademark ?? '') == 'Yes' && !empty($seller->trademark_file))
+                <div class="mt-2 text-center" style="display: inline-block; padding: 4px 10px; border: 1px dashed #dc3545; border-radius: 4px; background: #fffcfc;">
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                    <span style="color: #28a745; font-weight: 600; font-size: 13px;">Registered Trademark</span>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -116,6 +122,46 @@ $sections = [
 </div>
 @endif
 @endforeach
+
+{{-- ================= ABOUT SELLER ================= --}}
+@if(($seller->logo_trademark ?? '') == 'Yes' && !empty($seller->trademark_file))
+<div class="container mb-5">
+    <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+        <h4 class="mb-0" style="font-weight: 700; color: #0F1111; font-size: 20px;">About Seller</h4>
+    </div>
+    
+    <div class="bg-white p-4 shadow-sm" style="border-radius: 8px; border: 1px solid #E7E7E7;">
+        <h5 style="font-weight: 600; color: #333; margin-bottom: 15px;">Registered Brands</h5>
+        <div class="table-responsive">
+            <table class="table table-bordered mb-0" style="font-size: 14px;">
+                <thead class="table-light">
+                    <tr>
+                        <th>Brand Name</th>
+                        <th>Trademark Status</th>
+                        <th>Document</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 500;">{{ $seller->name ?? $seller->org_name }}</td>
+                        <td class="text-success" style="font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Verified</td>
+                        <td>
+                            <a href="{{ asset($seller->trademark_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="fa-solid fa-file-pdf"></i> View Trademark PDF
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3">
+            <p class="mb-1 text-muted" style="font-size: 13px;"><i class="fa-solid fa-check text-success"></i> Registered Brands</p>
+            <p class="mb-1 text-muted" style="font-size: 13px;"><i class="fa-solid fa-check text-success"></i> All Brands Legally Verified</p>
+            <p class="mb-0 text-muted" style="font-size: 13px;"><i class="fa-solid fa-check text-success"></i> 100% Authentic Products</p>
+        </div>
+    </div>
+</div>
+@endif
 
 {{-- ================= ALL PRODUCTS (GRID) ================= --}}
 @if($products->count() > 0)

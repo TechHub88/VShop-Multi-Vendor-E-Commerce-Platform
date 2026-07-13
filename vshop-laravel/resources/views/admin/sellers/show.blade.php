@@ -818,8 +818,16 @@
                             <div class="v-data-value">{{ ucfirst(str_replace('_', ' ', $seller->business_type ?? '—')) }}</div>
                             <div class="v-data-label">Application Selection</div>
                             <div class="v-data-value">{{ ucfirst($seller->application ?? 'Standard Marketplace') }}</div>
+                            <div class="v-data-label">Hide Product Price</div>
+                            <div class="v-data-value">{{ $seller->hide_price ?? 'No' }}</div>
                             <div class="v-data-label">Trademark</div>
-                            <div class="v-data-value">{{ $seller->logo_trademark ?? 'Not Provided' }}</div>
+                            <div class="v-data-value">
+                                @if(($seller->logo_trademark ?? '') == 'Yes')
+                                    <span class="text-success fw-bold"><i class="ri-checkbox-circle-fill"></i> Yes — Verified</span>
+                                @else
+                                    {{ $seller->logo_trademark ?? 'Not Provided' }}
+                                @endif
+                            </div>
                         </div>
                     </div>
                     

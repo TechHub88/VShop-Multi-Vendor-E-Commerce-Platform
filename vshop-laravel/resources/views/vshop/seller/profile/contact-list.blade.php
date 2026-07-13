@@ -302,13 +302,13 @@ No PAN File
 <td>
 
 <span class="badge rounded-pill px-3 py-2
-@if(($c['pan_status'] ?? '') == 'pending')
+@if(strtolower($c['pan_status'] ?? '') == 'pending')
 bg-warning text-dark
 
-@elseif(($c['pan_status'] ?? '') == 'approved')
+@elseif(strtolower($c['pan_status'] ?? '') == 'approved')
 bg-success
 
-@elseif(($c['pan_status'] ?? '') == 'rejected')
+@elseif(strtolower($c['pan_status'] ?? '') == 'rejected')
 bg-danger
 
 @else
@@ -367,13 +367,13 @@ No Aadhaar File
 <td>
 
 <span class="badge rounded-pill px-3 py-2
-@if(($c['aadhaar_status'] ?? '') == 'pending')
+@if(strtolower($c['aadhaar_status'] ?? '') == 'pending')
 bg-warning text-dark
 
-@elseif(($c['aadhaar_status'] ?? '') == 'approved')
+@elseif(strtolower($c['aadhaar_status'] ?? '') == 'approved')
 bg-success
 
-@elseif(($c['aadhaar_status'] ?? '') == 'rejected')
+@elseif(strtolower($c['aadhaar_status'] ?? '') == 'rejected')
 bg-danger
 
 @else
@@ -420,13 +420,13 @@ bg-secondary
 <td>
 
 <span class="badge rounded-pill px-3 py-2
-@if(($c['address']['status'] ?? '') == 'pending')
+@if(strtolower($c['address']['status'] ?? '') == 'pending')
 bg-warning text-dark
 
-@elseif(($c['address']['status'] ?? '') == 'approved')
+@elseif(strtolower($c['address']['status'] ?? '') == 'approved')
 bg-success
 
-@elseif(($c['address']['status'] ?? '') == 'rejected')
+@elseif(strtolower($c['address']['status'] ?? '') == 'rejected')
 bg-danger
 
 @else

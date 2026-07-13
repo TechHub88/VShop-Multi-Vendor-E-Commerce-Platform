@@ -163,7 +163,7 @@ class="form-control @error('agreement_file') is-invalid @enderror">
 <hr>
 
 {{-- STATUS --}}
-@php $status = $seller->agreement_status ?? 'na'; @endphp
+@php $status = strtolower($seller->agreement_status ?? 'na'); @endphp
 <span class="badge 
 {{ $status=='approved'?'bg-success':($status=='rejected'?'bg-danger':($status=='pending'?'bg-warning text-dark':'bg-secondary')) }}">
 Verification Status: {{ ucfirst($status) }}

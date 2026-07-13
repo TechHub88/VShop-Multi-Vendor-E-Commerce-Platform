@@ -15,9 +15,13 @@
             @endphp
             
             <div class="brand-rating-row">
-                <span class="product-brand-name">
+                <span class="product-brand-name" style="display: flex; align-items: center; gap: 4px;">
+                    <i class="fa-solid fa-circle-check text-primary"></i> 
                     @if(isset($product->created_by) && $product->created_by === 'seller')
                         {{ $product->seller->name ?? 'Seller Store' }}
+                        @if(($product->seller->logo_trademark ?? '') == 'Yes' && !empty($product->seller->trademark_file))
+                            <span class="text-success" style="font-size: 10px; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Trademark Verified</span>
+                        @endif
                     @else
                         {{ $product->brand->name ?? $product->brand_name ?? 'Store' }}
                     @endif

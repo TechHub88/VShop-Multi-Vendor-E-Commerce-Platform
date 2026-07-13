@@ -197,7 +197,7 @@ $lastUpdate = $seller->updated_at
         ->format('d M Y, h:i A')
     : 'N/A';
 
-$status = $seller->status ?? 'pending';
+$status = strtolower($seller->status ?? 'pending');
 
 $contactPersons = $seller->contact_persons;
 

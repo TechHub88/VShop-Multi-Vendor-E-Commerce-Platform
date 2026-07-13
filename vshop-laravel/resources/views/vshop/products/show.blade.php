@@ -471,6 +471,19 @@
     <div class="product-heading-left">
         <h3>{{ $product->name }}</h3>
         
+        <div class="d-flex align-items-center flex-wrap gap-2 mb-2" style="margin-top: 4px;">
+            @php
+                $brandName = $product->brand_name ?? ($product->brand->name ?? null);
+            @endphp
+            @if($brandName)
+                <span class="text-primary" style="font-size: 13px; font-weight: 500;"><i class="fa-solid fa-tag"></i> Brand: {{ $brandName }}</span>
+            @endif
+
+            @if($product->seller && ($product->seller->logo_trademark ?? '') == 'Yes' && !empty($product->seller->trademark_file))
+                <span class="text-success" style="font-size: 13px; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Registered Trademark</span>
+            @endif
+        </div>
+        
         {{-- Instructor/Provider badge (Udemy-style) for courses/services --}}
         @if(in_array($product->type, ['professional', 'vshop-professional', 'vtravel-professional', 'service', 'vshop-service', 'vtravel-service']) && !empty($product->provider_name))
         <div class="d-flex align-items-center gap-2 mb-1" style="margin-top: 2px;">

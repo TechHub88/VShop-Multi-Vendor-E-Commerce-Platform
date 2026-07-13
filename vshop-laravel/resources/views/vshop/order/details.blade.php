@@ -15,7 +15,7 @@
                             <i class="fa-solid fa-arrow-left"></i>
                         </button>
                         <ul>
-                            <li><a href="{{ route('vtravelhome') }}">Home</a> / </li>
+                            <li><a href="{{ url('/') }}">Home</a> / </li>
                             <li><a href="{{ route('vshop.order.list') }}">Orders</a> /</li>
                             <li>Order No : {{ $order->id }}</li>
                         </ul>
@@ -471,12 +471,14 @@
                                                 </a>
                                             </p>                        
                                         </div>
-                                  <p class="address-text">
-                            {{ $shippingAddress->address_line1 ?? '' }},
-                            {{ $shippingAddress->city ?? '' }},
-                            {{ $shippingAddress->state ?? '' }} -
-                            {{ $shippingAddress->pincode ?? '' }}
-                        </p> 
+                                  @if($shippingAddress)
+                                  <p class="address-text mt-2" style="font-size: 13px; color: #555;">
+                                      {{ $shippingAddress->address_line1 ? $shippingAddress->address_line1 . ', ' : '' }}
+                                      {{ $shippingAddress->city ? $shippingAddress->city . ', ' : '' }}
+                                      {{ $shippingAddress->state ? $shippingAddress->state . ' - ' : '' }}
+                                      {{ $shippingAddress->pincode ?? '' }}
+                                  </p>
+                                  @endif 
                         </div>
                                 </div>
 
@@ -814,10 +816,16 @@
     <div class="mt-4 pt-4 border-top">
         <h6 class="fw-bold mb-4" style="font-size: 14px; color: #495057;">Detailed Activity Updates</h6>
         @foreach($order->activityLogs as $log)
-        <div class="timeline-step neutral pb-3" style="padding-left: 0.5rem;">
+        @php
+            $logStr = strtolower($log->description . ' ' . ($log->remarks ?? ''));
+            $isNegativeLog = Str::contains($logStr, ['cancel', 'refund', 'return', 'reject', 'fail']);
+            $logClass = $isNegativeLog ? 'danger' : 'neutral';
+            $textClass = $isNegativeLog ? 'text-danger-custom' : '';
+        @endphp
+        <div class="timeline-step {{ $logClass }} pb-3" style="padding-left: 0.5rem;">
             <div class="step-icon" style="width:12px; height:12px; left:-1.15rem; top:6px;"></div>
             <div class="step-content">
-                <h6 style="font-size: 13px; margin-bottom:2px; color: #495057;">{{ $log->description }}</h6>
+                <h6 class="{{ $textClass }}" style="font-size: 13px; margin-bottom:2px; color: #495057;">{{ $log->description }}</h6>
                 @if($log->remarks)
                 <p style="font-size: 12px; margin-bottom:2px; color: #6c757d;">{{ $log->remarks }}</p>
                 @endif

@@ -523,7 +523,7 @@
                     <thead class="table-dark">
                         <tr>
                             <th>#</th>
-                            <th>Seller</th>
+                            <th>Seller/Buyer</th>
                             <th>Platform</th>
                             <th>Sell Type</th>
                             <th>Commission Type</th>
@@ -684,7 +684,7 @@
                             <table class="table table-bordered table-hover table-striped align-middle mb-0" id="globalRulesTab1Table" style="min-width: 1200px;">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 13%;">Seller</th>
+                                        <th style="width: 13%;">Seller/Buyer</th>
                                         <th style="width: 7%;">App</th>
                                         <th style="width: 9%;">Sell Type</th>
                                         <th style="width: 11%;">Category</th>
@@ -1117,7 +1117,7 @@
                             <tr>
                                 <th>App</th>
                                 <th>Category</th>
-                                <th>Seller</th>
+                                <th>Seller/Buyer</th>
                                 <th>Click Price ($)</th>
                                 <th>Enquiry Price ($)</th>
                                 <th class="text-center">Action</th>
@@ -4295,8 +4295,13 @@ function onCategoryChange(selectElement) {
     
     if (!categoryId) return;
     
+    const selectedCategory = categoriesData.find(c => c.id == categoryId);
+    if (!selectedCategory) return;
+    
+    const matchingIds = categoriesData.filter(c => c.name === selectedCategory.name).map(c => c.id);
+    
     // Filter products by selected category only (no currency matching)
-    let filteredProducts = productsData.filter(p => p.category_id == categoryId);
+    let filteredProducts = productsData.filter(p => matchingIds.includes(p.category_id));
     
     if (filteredProducts.length === 0) {
         productSelect.innerHTML = '<option value="">-- No products found --</option>';
@@ -4449,14 +4454,18 @@ function addGlobalRuleRow() {
     const tbody2 = document.getElementById('globalRulesTab2Body');
     const index = ruleIndexCounter++;
     
-    let sellerOptions = '<option value="">-- Select Seller --</option>';
+    let sellerOptions = '<option value="">-- Select Seller/Buyer --</option>';
     sellersData.forEach(s => {
         sellerOptions += `<option value="${s.id}">${s.name}</option>`;
     });
     
     let categoryOptions = '<option value="">-- Select Category --</option>';
+    let addedCategoryNames = new Set();
     categoriesData.forEach(c => {
-        categoryOptions += `<option value="${c.id}">${c.name}</option>`;
+        if(!addedCategoryNames.has(c.name)) {
+            categoryOptions += `<option value="${c.id}">${c.name}</option>`;
+            addedCategoryNames.add(c.name);
+        }
     });
 
     // TAB 1 - Product & Pricing Row

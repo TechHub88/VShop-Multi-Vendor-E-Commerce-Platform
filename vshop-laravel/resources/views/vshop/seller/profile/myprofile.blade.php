@@ -79,9 +79,9 @@ $contacts = $seller->contact_persons ?? [];
     <h5 class="fw-bold">Seller Onboarding</h5>
 
     <div>
-        @if($seller->status == 'approved')
+        @if(strtolower($seller->status) == 'approved')
             <span class="badge bg-success">Approved</span>
-        @elseif($seller->status == 'pending')
+        @elseif(strtolower($seller->status) == 'pending')
             <span class="badge bg-warning text-dark">Under Review</span>
         @else
             <span class="badge bg-secondary">Incomplete</span>

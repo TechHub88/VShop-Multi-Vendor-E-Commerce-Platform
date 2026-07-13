@@ -33,6 +33,32 @@ class ImageModeratorService
     }
 
     /**
+     * Check if a video URL contains NSFW content (Mock implementation).
+     * Returns true if the URL is safe, false if it contains NSFW keywords.
+     */
+    public static function isSafeVideoURL($url): bool
+    {
+        if (!$url) return true;
+        
+        $lowercaseUrl = strtolower($url);
+        
+        // List of trigger words and blocked domains
+        $blockedKeywords = [
+            'nsfw', 'vulgar', 'nudity', 'naked', 'porn', 'xxx', 'sex', 
+            'pornhub', 'xvideos', 'xnxx', 'redtube', 'youporn'
+        ];
+        
+        foreach ($blockedKeywords as $keyword) {
+            if (str_contains($lowercaseUrl, $keyword)) {
+                Log::warning("Blocked video URL due to NSFW keyword '{$keyword}': {$url}");
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
      * Check via Sightengine API
      */
     private static function checkViaSightengine($imagePath): bool

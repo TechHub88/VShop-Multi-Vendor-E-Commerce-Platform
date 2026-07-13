@@ -399,7 +399,7 @@ $seller = auth()->guard('seller')->user();
                                 <div class="col-md-12 mb-3">
 
                                     @php
-                                        $bankStatus = $seller->bank_status ?? 'na';
+                                        $bankStatus = strtolower($seller->bank_status ?? 'na');
                                     @endphp
 
                                     <div class="d-flex align-items-center gap-2">
