@@ -647,14 +647,14 @@
 <style>
 .professional-timeline {
     position: relative;
-    padding-left: 2.5rem;
-    margin-top: 1.5rem;
-    margin-bottom: 1.5rem;
+    padding-left: 35px; /* Fixed padding without Bootstrap class conflicts */
+    margin-top: 10px;
+    margin-bottom: 10px;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 .timeline-step {
     position: relative;
-    padding-bottom: 1.5rem;
+    padding-bottom: 1rem;
 }
 .timeline-step:last-child {
     padding-bottom: 0;
@@ -665,7 +665,7 @@
     position: absolute;
     top: 24px;
     bottom: -4px;
-    left: -1.35rem; 
+    left: -20px; 
     width: 2px;
     background: #e9ecef;
     z-index: 1;
@@ -676,10 +676,10 @@
 /* The Icon */
 .timeline-step .step-icon {
     position: absolute;
-    left: -1.75rem;
-    top: 4px;
-    width: 16px;
-    height: 16px;
+    left: -26px;
+    top: 6px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background: #e9ecef;
     border: 2px solid #fff;
@@ -694,9 +694,6 @@
 .timeline-step.completed::before {
     background: #28a745;
 }
-/* Half-completed fix - don't color line green if next step is not completed, 
-   but it's easier to just let it be green and the next gray will override? No, 
-   CSS doesn't work that way. We'll use PHP logic to set line color! */
 .timeline-step.completed.line-gray::before {
     background: #e9ecef;
 }
@@ -720,16 +717,16 @@
 }
 
 /* Text Formatting */
-.step-content h6 { margin-bottom: 2px; font-weight: 600; font-size: 15px; }
-.step-content p { margin-bottom: 4px; font-size: 13px; color: #6c757d; }
-.step-content .step-date { font-size: 12px; color: #8e959b; font-weight: 500; }
+.step-content h6 { margin-bottom: 2px; font-weight: 600; font-size: 14px; }
+.step-content p { margin-bottom: 2px; font-size: 12px; color: #6c757d; }
+.step-content .step-date { font-size: 11px; color: #8e959b; font-weight: 500; }
 .text-danger-custom { color: #dc3545 !important; }
 .text-success-custom { color: #28a745 !important; }
 .text-primary-custom { color: #007bff !important; }
 .text-muted-custom { color: #6c757d !important; }
 </style>
 
-<div class="professional-timeline px-2">
+<div class="professional-timeline">
     @php
         $st = strtolower($order->status);
         $isCancelled = $st === 'cancelled';

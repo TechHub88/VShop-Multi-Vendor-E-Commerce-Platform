@@ -641,6 +641,19 @@ public function invoice($id)
     ]);
 
     // =========================
+    // SLA KPI
+    // =========================
+    $delayedOrdersCount = $orders->filter(function($order) {
+        return $order->status !== 'delivered' && \Carbon\Carbon::parse($order->created_at)->lt(now()->subDays(3));
+    })->count();
+
+    $sla = [
+        'on_time'  => $orders->where('status', 'delivered')->count(),
+        'delayed'  => $delayedOrdersCount,
+        'breached' => 0,
+    ];
+
+    // =========================
     // RETURN VIEW
     // =========================
     return view('vshop.seller.orders.mis', compact(
@@ -662,7 +675,8 @@ public function invoice($id)
         'grievance',
         'reviews',
         'locations',
-        'products'
+        'products',
+        'sla'
     ));
 }
 
