@@ -119,6 +119,7 @@ class AuthController extends Controller
             'type'    => 'travel',
             'status'  => 'not applied',
             'referred_by' => $referredBy,
+            'referral_code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $request->name), 0, 3) . rand(1000, 9999)),
         ]);
 
         // Generate OTP
@@ -163,6 +164,7 @@ class AuthController extends Controller
             'type'    => 'product',
             'status'  => 'not applied',
             'referred_by' => $referredBy,
+            'referral_code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $request->name), 0, 3) . rand(1000, 9999)),
         ]);
 
         // Generate OTP

@@ -65,7 +65,7 @@ public function getBoostProducts()
             ];
         });
 
-        // Ensure wallet exists or fetch it
+    
         $wallet = \App\Models\Wallet::firstOrCreate(
             ['user_type' => 'seller', 'seller_id' => $sellerId],
             ['balance' => 0]
@@ -804,9 +804,7 @@ private function checkOwner($product)
 }
 
 
-/* ===================================================
-CATEGORY AJAX
-=================================================== */
+
 public function getCategories($type)
 {
     $sellerId = auth()->guard('seller')->id();
@@ -841,32 +839,15 @@ private function createLog($productId, $module, $old = null, $new = null)
 }
 
 
-
-/* ===================================================
-STEP 1 : BASIC
-=================================================== */
-
 public function basic($id = null)
 {
-    /*
-    |--------------------------------------------------------------------------
-    | PRODUCT
-    |--------------------------------------------------------------------------
-    */
+    
     $product = $id ? Product::findOrFail($id) : new Product();
 
-    /*
-    |--------------------------------------------------------------------------
-    | MODULE TYPE
-    |--------------------------------------------------------------------------
-    */
+   
     $moduleType = $this->getModuleType();
 
-    /*
-    |--------------------------------------------------------------------------
-    | CURRENT MODULE
-    |--------------------------------------------------------------------------
-    */
+   
     $currentModule = 'both';
     if ($moduleType == 'product') {
         $currentModule = 'product';
@@ -1407,10 +1388,6 @@ public function saveMedia(Request $request, Product $product)
         )
     ]);
 }
-
-/* ===================================================
-STEP 3 : SPECIFICATIONS
-=================================================== */
 
 public function specifications(Product $product = null)
 {
