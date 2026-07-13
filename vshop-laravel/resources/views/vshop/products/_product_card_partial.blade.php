@@ -77,8 +77,15 @@
     </div>
 
     {{-- Seller Name --}}
-    <div class="mt-1 text-truncate" style="font-size: 10px; color: #565959;">
-        By: @if($product->created_by === 'seller') {{ $product->seller->name ?? 'Seller' }} @else {{ $product->brand->name ?? $product->brand_name ?? 'Store' }} @endif
+    <div class="mt-1 text-truncate" style="font-size: 10px; color: #565959; display: flex; flex-direction: column; gap: 2px;">
+        <span style="display: flex; align-items: center; gap: 3px;">
+            <i class="fa-solid fa-circle-check text-primary" style="font-size: 9px;"></i> By: @if($product->created_by === 'seller') {{ $product->seller->name ?? 'Seller' }} @else {{ $product->brand->name ?? $product->brand_name ?? 'Store' }} @endif
+        </span>
+        @if(isset($product->created_by) && $product->created_by === 'seller' && ($product->seller->logo_trademark ?? '') == 'Yes' && !empty($product->seller->trademark_file))
+            <span class="text-success" style="font-size: 9px; font-weight: 600; display: flex; align-items: center; gap: 2px;">
+                <i class="fa-solid fa-circle-check" style="font-size: 9px;"></i> Trademark Verified
+            </span>
+        @endif
     </div>
 
     {{-- Action Button --}}

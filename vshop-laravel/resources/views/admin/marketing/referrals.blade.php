@@ -375,7 +375,7 @@
     <div id="tab-configurations" class="ref-tab-pane">
         <div class="card">
             <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-                <span>⚙️ Referral Configurations (Buyer-to-Buyer / Seller-to-Seller)</span>
+                <span>⚙️ Referral Configurations</span>
                 <button type="button" class="btn btn-sm btn-primary" onclick="addRefConfigRow()">+ Add Row</button>
             </div>
             <div class="card-body p-0">
@@ -411,10 +411,11 @@
                             <th>Target Seller (ID & Name)</th>
                             <th>Referrer Reward</th>
                             <th>Referee Discount</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="existingRefConfigsList">
-                        <tr><td colspan="4" class="text-center">Loading...</td></tr>
+                        <tr><td colspan="5" class="text-center">Loading...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -988,7 +989,7 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
             <td>
                 <select name="configs[${rowCount}][type]" class="form-select form-select-sm ref-config-type" onchange="window.updateTargetDropdown(this, ${rowCount})" required>
                     <option value="buyer_to_buyer">Buyer to Buyer</option>
-                    <option value="seller_to_seller">Seller to Seller</option>
+                    <option value="seller_to_seller">Seller to Seller/Buyer</option>
                 </select>
             </td>
             <td>
@@ -1110,19 +1111,46 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
                     }
 
                     html += `<tr>
-                        <td>${item.type === 'buyer_to_buyer' ? 'Buyer to Buyer' : (item.type === 'seller_to_seller' ? 'Seller to Seller' : item.type)}</td>
+                        <td>${item.type === 'buyer_to_buyer' ? 'Buyer to Buyer' : (item.type === 'seller_to_seller' ? 'Seller to Seller/Buyer' : item.type)}</td>
                         <td>${targetDisplay}</td>
                         <td>${item.commission_percentage || 0}%</td>
                         <td>${extra.referee_discount || 0}%</td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1" onclick="editRefConfig(${item.id})"><i class="mdi mdi-pencil"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deleteRefConfig(${item.id})"><i class="mdi mdi-delete"></i></button>
+                        </td>
                     </tr>`;
                 });
             } else {
-                html = '<tr><td colspan="4" class="text-center text-muted">No configurations found</td></tr>';
+                html = '<tr><td colspan="5" class="text-center text-muted">No configurations found</td></tr>';
             }
             document.getElementById('existingRefConfigsList').innerHTML = html;
         } catch(e) {
             console.error(e);
-            document.getElementById('existingRefConfigsList').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Failed to load</td></tr>';
+            document.getElementById('existingRefConfigsList').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load</td></tr>';
+        }
+    };
+
+    window.editRefConfig = function(id) {
+        showToast('Edit feature coming soon', true);
+    };
+
+    window.deleteRefConfig = async function(id) {
+        if (!confirm('Are you sure you want to delete this configuration?')) return;
+        try {
+            const res = await fetch(baseUrl + '/referral-configurations/' + id, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': refCsrfToken }
+            });
+            if (res.ok) {
+                showToast('Configuration deleted successfully');
+                window.loadExistingRefConfigs();
+            } else {
+                showToast('Failed to delete', true);
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Error deleting configuration', true);
         }
     };
 

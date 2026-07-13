@@ -14,28 +14,33 @@
                 $realReviewCount = \App\Models\ProductReview::where('product_id', $product->id)->where('is_approved', 1)->count();
             @endphp
             
-            <div class="brand-rating-row">
-                <span class="product-brand-name" style="display: flex; align-items: center; gap: 4px;">
-                    <i class="fa-solid fa-circle-check text-primary"></i> 
-                    @if(isset($product->created_by) && $product->created_by === 'seller')
-                        {{ $product->seller->name ?? 'Seller Store' }}
-                        @if(($product->seller->logo_trademark ?? '') == 'Yes' && !empty($product->seller->trademark_file))
-                            <span class="text-success" style="font-size: 10px; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Trademark Verified</span>
+            <div class="brand-rating-row" style="align-items: flex-start;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span class="product-brand-name" style="display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-circle-check text-primary" style="font-size: 11px;"></i> 
+                        @if(isset($product->created_by) && $product->created_by === 'seller')
+                            {{ $product->seller->name ?? 'Seller Store' }}
+                        @else
+                            {{ $product->brand->name ?? $product->brand_name ?? 'Store' }}
                         @endif
-                    @else
-                        {{ $product->brand->name ?? $product->brand_name ?? 'Store' }}
+                    </span>
+                    @if(isset($product->created_by) && $product->created_by === 'seller' && ($product->seller->logo_trademark ?? '') == 'Yes' && !empty($product->seller->trademark_file))
+                        <span class="text-success" style="font-size: 9px; font-weight: 600; display: flex; align-items: center; gap: 3px;">
+                            <i class="fa-solid fa-circle-check" style="font-size: 9px;"></i> Trademark Verified
+                        </span>
                     @endif
-                </span>
+                </div>
                 
+                <div style="display: flex; align-items: center; gap: 4px;">
                 @if($realAvgRating > 0)
                 <div class="rating-badge {{ $realAvgRating >= 3 ? 'rating-good' : 'rating-avg' }}">
                     {{ number_format($realAvgRating, 1) }}
                     <i class="fa-solid fa-star"></i>
                 </div>
                 @endif
-                @if($realReviewCount > 0)
                     <span class="rating-count">({{ $realReviewCount }})</span>
                 @endif
+                </div>
             </div>
             
             <div class="price-section">
