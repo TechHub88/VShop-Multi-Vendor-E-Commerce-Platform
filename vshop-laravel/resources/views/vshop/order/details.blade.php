@@ -8,7 +8,7 @@
         <div class="dashboardDtlsArea">
             <div class="dashboardDtlsAreaBody">
                 
-                {{-- ================= BREADCRUMB ================= --}}
+               
                 <div class="bed-cum-sec justify-content-between">
                     <div class="bedcum-left">
                         <button class="back-btn" onclick="window.history.back()">
@@ -22,7 +22,7 @@
                     </div>
                 </div>
 
-                {{-- ================= SUCCESS/ERROR MESSAGES ================= --}}
+             
                 @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     {{ session('success') }}
@@ -38,7 +38,7 @@
                 @endif
 
                 <div class="order-not-deliver-sec">
-                    <div class="order-not-deliver-inner">
+                     <div class="order-not-deliver-inner">
                         
                         {{-- ================= ORDER HEADER ================= --}}
                         <div class="order-list-wrapper">
@@ -89,7 +89,7 @@
 
                         {{-- ================= PAYMENT DETAILS ================= --}}
                         <div class="payment-method-sec">
-    <div class="row align-items-center">
+        <div class="row align-items-center">
 
         <div class="col-md-3">
             <p style="font-size: 13px;"><strong>Payment Method:</strong> {{ ucfirst($order->payment_method) }}</p>
@@ -105,7 +105,7 @@
 
        <div class="col-md-6 text-md-end">
     
-    <div class="d-flex justify-content-start justify-content-md-end align-items-center gap-2 flex-nowrap" style="overflow-x: auto; white-space: nowrap; padding-bottom: 5px;">
+          <div class="d-flex justify-content-start justify-content-md-end align-items-center gap-2 flex-nowrap" style="overflow-x: auto; white-space: nowrap; padding-bottom: 5px;">
 
         {{-- Invoice --}}
         <button type="button" class="btn btn-primary btn-sm invoice-btn rounded-pill px-3 fw-bold d-inline-flex align-items-center" style="font-size:12px;" onclick="downloadInvoice({{ $order->id }})">
@@ -159,7 +159,7 @@
         </button>
         @endif
 
-         {{-- ================= RETURN / RATE ORDER (Global Buttons) ================= --}}
+       
          @if(in_array($order->status, ['delivered', 'shipped']))
              @if($hasReturnableItems)
              <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#returnOrderModal">
@@ -461,15 +461,7 @@
                                         @endif
                                         @endif
 
-                                        {{-- Cancellation / Refund Policy --}}
-                                        @if(!empty($item->product) && (!empty($item->product->refund_policy) || !empty($item->product->cancel_policy_tour) || !empty($item->product->cancel_policy_prof) || !empty($item->product->cancel_policy_other)))
-                                        <div class="mt-2 p-2 bg-light border rounded" style="font-size: 12px; color: #555;">
-                                            <strong><i class="fa fa-shield-alt text-primary me-1"></i> Cancellation & Refund Policy:</strong>
-                                            <div class="mt-1 policy-text-sm">
-                                                {!! $item->product->refund_policy ?? $item->product->cancel_policy_tour ?? $item->product->cancel_policy_prof ?? $item->product->cancel_policy_other !!}
-                                            </div>
-                                        </div>
-                                        @endif
+                                        {{-- Cancellation / Refund Policy Removed as per request --}}
 
                                         {{-- Delivery Address --}}
                                         <div class="product-dtl-sec mt-3">
@@ -652,81 +644,193 @@
                 </div>
                 @endif
 
-                <div class="track-wrapper my-5">
-                    @if($order->status === 'cancelled')
-                        <div class="track-box active">
-                            <div class="track-icon"><i class="fa-solid fa-clipboard-check"></i></div>
-                            <p class="mt-2 fw-semibold">Confirmed</p>
-                            <small class="text-muted">{{ $order->created_at->format('d M, h:i A') }}</small>
-                        </div>
-                        <div class="track-box active cancelled-track">
-                            <div class="track-icon" style="background:#dc3545;"><i class="fa-solid fa-circle-xmark"></i></div>
-                            <p class="mt-2 fw-semibold text-danger">Cancelled</p>
-                            <small class="text-muted">{{ $order->updated_at->format('d M, h:i A') }}</small>
-                        </div>
-                    @else
-                        @php
-                            $st = strtolower($order->status);
-                            $confirmedStatuses = ['pending','paid','confirmed','processing','approved','shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved','refunded'];
-                            $packedStatuses = ['processing','approved','shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved','refunded'];
-                            $shippedStatuses = ['shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved','refunded'];
-                            $deliveredStatuses = ['delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved','refunded'];
-                            $refundStatuses = ['refund_requested', 'refunded', 'return_requested', 'return_approved', 'returned'];
-                            $allDone = in_array($st, ['delivered','completed']);
-                            $isRefund = in_array($st, $refundStatuses);
-                            $refundDone = in_array($st, ['refunded', 'returned']);
-                        @endphp
-                        <div class="track-box {{ in_array($st, $confirmedStatuses) ? 'active' : '' }} {{ $allDone || $isRefund ? 'completed-green' : '' }}">
-                            <div class="track-icon"><i class="fa-solid fa-clipboard-check"></i></div>
-                            <p class="mt-2 fw-semibold">Confirmed</p>
-                            <small class="text-muted">{{ $order->created_at->format('d M, h:i A') }}</small>
-                        </div>
-                        <div class="track-box {{ in_array($st, $packedStatuses) ? 'active' : '' }} {{ $allDone || $isRefund ? 'completed-green' : '' }}">
-                            <div class="track-icon"><i class="fa-solid fa-box-open"></i></div>
-                            <p class="mt-2 fw-semibold">Packed</p>
-                            <small class="text-muted">{{ $order->updated_at->format('d M') }}</small>
-                        </div>
-                        <div class="track-box {{ in_array($st, $shippedStatuses) ? 'active' : '' }} {{ $allDone || $isRefund ? 'completed-green' : '' }}">
-                            <div class="track-icon"><i class="fa-solid fa-truck-fast"></i></div>
-                            <p class="mt-2 fw-semibold">Shipped</p>
-                            <small class="text-muted">{{ $order->shipped_at ? $order->shipped_at->format('d M, h:i A') : 'Pending' }}</small>
-                        </div>
-                        <div class="track-box {{ in_array($st, $deliveredStatuses) ? 'active' : '' }} {{ $allDone || $isRefund ? 'completed-green' : '' }}">
-                            <div class="track-icon"><i class="fa-solid fa-house-chimney"></i></div>
-                            <p class="mt-2 fw-semibold">Delivered</p>
-                            <small class="text-muted">{{ $order->delivered_at ? $order->delivered_at->format('d M, h:i A') : 'Pending' }}</small>
-                        </div>
-                        @if($isRefund)
-                        <div class="track-box active {{ $refundDone ? 'completed-green' : '' }}">
-                            <div class="track-icon"><i class="fa-solid fa-money-bill-transfer"></i></div>
-                            <p class="mt-2 fw-semibold">{{ $refundDone ? 'Refunded' : 'Refund Pending' }}</p>
-                            <small class="text-muted">{{ $order->updated_at->format('d M, h:i A') }}</small>
-                        </div>
-                        @endif
-                    @endif
-                </div>
+<style>
+.professional-timeline {
+    position: relative;
+    padding-left: 2.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+.timeline-step {
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+.timeline-step:last-child {
+    padding-bottom: 0;
+}
+/* The Connecting Line */
+.timeline-step::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    bottom: -4px;
+    left: -1.35rem; 
+    width: 2px;
+    background: #e9ecef;
+    z-index: 1;
+}
+.timeline-step:last-child::before {
+    display: none;
+}
+/* The Icon */
+.timeline-step .step-icon {
+    position: absolute;
+    left: -1.75rem;
+    top: 4px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #e9ecef;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #e9ecef;
+    z-index: 2;
+}
+/* Status Colors */
+.timeline-step.completed .step-icon {
+    background: #28a745;
+    box-shadow: 0 0 0 2px #28a745;
+}
+.timeline-step.completed::before {
+    background: #28a745;
+}
+/* Half-completed fix - don't color line green if next step is not completed, 
+   but it's easier to just let it be green and the next gray will override? No, 
+   CSS doesn't work that way. We'll use PHP logic to set line color! */
+.timeline-step.completed.line-gray::before {
+    background: #e9ecef;
+}
 
-                @if($order->activityLogs && $order->activityLogs->count() > 0)
-                <hr>
-                <h6 class="fw-bold mb-3">Timeline</h6>
-                <div class="timeline px-2">
-                    @foreach($order->activityLogs as $log)
-                    <div class="d-flex mb-3">
-                        <div class="me-3 text-end" style="width: 80px;">
-                            <small class="text-muted d-block">{{ $log->created_at->format('h:i A') }}</small>
-                            <small class="text-muted">{{ $log->created_at->format('d M') }}</small>
-                        </div>
-                        <div class="border-start border-2 border-primary ps-3 position-relative">
-                            <span class="position-absolute top-0 start-0 translate-middle p-1 bg-primary border border-light rounded-circle"></span>
-                            <span class="fw-semibold d-block">{{ $log->description }}</span>
-                            @if($log->remarks)
-                            <small class="text-muted">{{ $log->remarks }}</small>
-                            @endif
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
+/* Cancelled or Returned */
+.timeline-step.danger .step-icon {
+    background: #dc3545;
+    box-shadow: 0 0 0 2px #dc3545;
+}
+.timeline-step.danger::before {
+    background: #e9ecef; 
+}
+/* Processing/Active */
+.timeline-step.processing .step-icon {
+    background: #007bff;
+    box-shadow: 0 0 0 2px #007bff;
+}
+.timeline-step.neutral .step-icon {
+    background: #6c757d;
+    box-shadow: 0 0 0 2px #6c757d;
+}
+
+/* Text Formatting */
+.step-content h6 { margin-bottom: 2px; font-weight: 600; font-size: 15px; }
+.step-content p { margin-bottom: 4px; font-size: 13px; color: #6c757d; }
+.step-content .step-date { font-size: 12px; color: #8e959b; font-weight: 500; }
+.text-danger-custom { color: #dc3545 !important; }
+.text-success-custom { color: #28a745 !important; }
+.text-primary-custom { color: #007bff !important; }
+.text-muted-custom { color: #6c757d !important; }
+</style>
+
+<div class="professional-timeline px-2">
+    @php
+        $st = strtolower($order->status);
+        $isCancelled = $st === 'cancelled';
+        
+        $isConfirmed = true; 
+        $isPacked = in_array($st, ['processing','approved','shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved','refunded']);
+        $isShipped = in_array($st, ['shipped','dispatched','out for delivery','out_for_delivery','delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved','refunded']);
+        $isDelivered = in_array($st, ['delivered','completed','return_requested','return_approved','returned','replacement_requested','replacement_approved','refunded']);
+        
+        $isReturnReq = in_array($st, ['return_requested','return_approved','returned','refunded']);
+        $isReturned = in_array($st, ['returned','refunded']);
+    @endphp
+
+    {{-- Confirmed --}}
+    <div class="timeline-step completed {{ !$isPacked && !$isCancelled ? 'line-gray' : '' }}">
+        <div class="step-icon"></div>
+        <div class="step-content">
+            <h6 class="text-success-custom">Order Confirmed</h6>
+            <p>Your order has been placed.</p>
+            <span class="step-date">{{ $order->created_at->format('D, d M Y - h:i A') }}</span>
+        </div>
+    </div>
+
+    @if($isCancelled)
+    <div class="timeline-step danger">
+        <div class="step-icon"></div>
+        <div class="step-content">
+            <h6 class="text-danger-custom">Cancelled</h6>
+            <p>Your order has been cancelled.</p>
+            <span class="step-date">{{ $order->updated_at->format('D, d M Y - h:i A') }}</span>
+        </div>
+    </div>
+    @else
+        {{-- Packed --}}
+        <div class="timeline-step {{ $isPacked ? 'completed' : 'processing' }} {{ $isPacked && !$isShipped ? 'line-gray' : '' }}">
+            <div class="step-icon"></div>
+            <div class="step-content">
+                <h6 class="{{ $isPacked ? 'text-success-custom' : 'text-primary-custom' }}">Packed</h6>
+                <p>Seller has processed your order.</p>
+                @if($isPacked)
+                <span class="step-date">{{ $order->updated_at->format('D, d M Y - h:i A') }}</span>
                 @endif
+            </div>
+        </div>
+
+        {{-- Shipped --}}
+        <div class="timeline-step {{ $isShipped ? 'completed' : ($isPacked ? 'processing' : '') }} {{ $isShipped && !$isDelivered ? 'line-gray' : '' }}">
+            <div class="step-icon"></div>
+            <div class="step-content">
+                <h6 class="{{ $isShipped ? 'text-success-custom' : ($isPacked ? 'text-primary-custom' : 'text-muted-custom') }}">Shipped</h6>
+                <p>Your item has been picked up by courier partner.</p>
+                @if($isShipped && $order->shipped_at)
+                <span class="step-date">{{ $order->shipped_at->format('D, d M Y - h:i A') }}</span>
+                @endif
+            </div>
+        </div>
+
+        {{-- Delivered --}}
+        <div class="timeline-step {{ $isDelivered ? 'completed' : ($isShipped ? 'processing' : '') }} {{ $isDelivered && !$isReturnReq ? 'line-gray' : '' }}">
+            <div class="step-icon"></div>
+            <div class="step-content">
+                <h6 class="{{ $isDelivered ? 'text-success-custom' : ($isShipped ? 'text-primary-custom' : 'text-muted-custom') }}">Delivered</h6>
+                <p>Package was handed to resident.</p>
+                @if($isDelivered && $order->delivered_at)
+                <span class="step-date">{{ $order->delivered_at->format('D, d M Y - h:i A') }}</span>
+                @endif
+            </div>
+        </div>
+        
+        {{-- Return / Refund --}}
+        @if($isReturnReq)
+        <div class="timeline-step danger">
+            <div class="step-icon"></div>
+            <div class="step-content">
+                <h6 class="text-danger-custom">{{ $isReturned ? 'Refunded / Returned' : 'Return Requested' }}</h6>
+                <p>{{ $isReturned ? 'Item has been returned and refund initiated.' : 'Return request has been placed.' }}</p>
+                <span class="step-date">{{ $order->updated_at->format('D, d M Y - h:i A') }}</span>
+            </div>
+        </div>
+        @endif
+    @endif
+    
+    {{-- Detailed Activity Logs --}}
+    @if($order->activityLogs && $order->activityLogs->count() > 0)
+    <div class="mt-4 pt-4 border-top">
+        <h6 class="fw-bold mb-4" style="font-size: 14px; color: #495057;">Detailed Activity Updates</h6>
+        @foreach($order->activityLogs as $log)
+        <div class="timeline-step neutral pb-3" style="padding-left: 0.5rem;">
+            <div class="step-icon" style="width:12px; height:12px; left:-1.15rem; top:6px;"></div>
+            <div class="step-content">
+                <h6 style="font-size: 13px; margin-bottom:2px; color: #495057;">{{ $log->description }}</h6>
+                @if($log->remarks)
+                <p style="font-size: 12px; margin-bottom:2px; color: #6c757d;">{{ $log->remarks }}</p>
+                @endif
+                <span class="step-date" style="font-size: 11px;">{{ $log->created_at->format('D, d M Y - h:i A') }}</span>
+            </div>
+        </div>
+        @endforeach
+    </div>
+    @endif
+</div>
             </div>
         </div>
     </div>
