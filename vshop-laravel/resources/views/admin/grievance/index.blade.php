@@ -906,7 +906,8 @@ $(document).on("click", ".viewGrievanceBtn", function (e) {
         $('#lbl_ticket_type').text(typeLabels[grv.type] || grv.type);
         $('#lbl_raised_by').text(grv.buyer ? (grv.buyer.name || 'Buyer') : (grv.seller ? (grv.seller.name + ' (Seller)') : 'Platform'));
         $('#lbl_seller_name').text(grv.seller ? grv.seller.name : '—');
-        $('#lbl_ticket_priority').html('<span class="badge bg-' + (grv.priority==='high'?'danger':(grv.priority==='medium'?'warning text-dark':'info')) + '">' + grv.priority.toUpperCase() + '</span>');
+        const priority = grv.priority || 'low';
+        $('#lbl_ticket_priority').html('<span class="badge bg-' + (priority==='high'?'danger':(priority==='medium'?'warning text-dark':'info')) + '">' + priority.toUpperCase() + '</span>');
         $('#lbl_ticket_agent').text(grv.assigned_to || 'Unassigned');
         $('#lbl_ticket_created').text(grv.formatted_date);
         $('#lbl_issue_description').text(grv.message);
@@ -971,7 +972,11 @@ $(document).on("click", ".viewGrievanceBtn", function (e) {
         // Attachments placeholder
         $('#attachments_area').html('<span class="text-muted" style="font-size:12px;">No attachments uploaded.</span>');
 
-        $('#detailsGrievanceModal').modal('show');
+        if (typeof bootstrap !== 'undefined') {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('detailsGrievanceModal')).show();
+        } else {
+            $('#detailsGrievanceModal').modal('show');
+        }
     });
 });
 
@@ -1136,7 +1141,11 @@ $('#saveRuleBtn').on('click', function() {
 $(document).ready(function(){
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('open_complaint') === '1') {
-        $('#createComplaintModal').modal('show');
+        if (typeof bootstrap !== 'undefined') {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('createComplaintModal')).show();
+        } else {
+            $('#createComplaintModal').modal('show');
+        }
         window.history.replaceState({}, document.title, window.location.pathname);
     }
     if (urlParams.get('status') || urlParams.get('type') || urlParams.get('priority')) {
