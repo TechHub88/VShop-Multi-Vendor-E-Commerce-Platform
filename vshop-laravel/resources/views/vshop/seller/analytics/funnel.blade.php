@@ -142,21 +142,21 @@ let lineChart = echarts.init(document.getElementById('lineChart'));
 
 lineChart.setOption({
     tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: ['Jan','Feb','Mar','Apr','May','Jun'] },
+    xAxis: { type: 'category', data: {!! json_encode($trendMonths) !!} },
     yAxis: { type: 'value' },
     series: [
         {
             name: 'Visitors',
             type: 'line',
             smooth: true,
-            data: [120,200,150,280,300,350],
+            data: {!! json_encode($trendVisitors) !!},
             areaStyle: {}
         },
         {
             name: 'Orders',
             type: 'line',
             smooth: true,
-            data: [20,40,30,60,80,90],
+            data: {!! json_encode($trendOrders) !!},
             areaStyle: {}
         }
     ]
@@ -185,11 +185,11 @@ let recoveryChart = echarts.init(document.getElementById('recoveryChart'));
 
 recoveryChart.setOption({
     tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: ['Potential','Abandoned','Email','WhatsApp','Recovered'] },
+    xAxis: { type: 'category', data: {!! json_encode($recoveryLabels) !!} },
     yAxis: { type: 'value' },
     series: [{
         type: 'bar',
-        data: [100,70,10,15,55]
+        data: {!! json_encode($recoveryData) !!}
     }]
 });
 
@@ -198,11 +198,11 @@ let barChart = echarts.init(document.getElementById('barChart'));
 
 barChart.setOption({
     tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: ['Login','Address','Payment','Review'] },
+    xAxis: { type: 'category', data: {!! json_encode($frictionLabels) !!} },
     yAxis: { type: 'value' },
     series: [{
         type: 'bar',
-        data: [15,50,25,10],
+        data: {!! json_encode($frictionData) !!},
         itemStyle: {
             borderRadius: [6,6,0,0]
         }

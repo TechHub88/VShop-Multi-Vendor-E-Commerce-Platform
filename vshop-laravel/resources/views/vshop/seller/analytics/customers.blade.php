@@ -96,16 +96,12 @@
 </div>
 
 @php
-$totalCustomers = count($customers);
+$highValue = $segmentHigh ?? 0;
+$mediumValue = $segmentMedium ?? 0;
+$lowValue = $segmentLow ?? 0;
 
-$highValue = collect($customers)->where('total_spent','>',10000)->count();
-$mediumValue = collect($customers)->whereBetween('total_spent',[5000,10000])->count();
-$lowValue = collect($customers)->where('total_spent','<',5000)->count();
-
-$avgAOV = collect($customers)->avg(fn($c)=> $c->orders > 0 ? $c->total_spent / $c->orders : 0);
-
-$loyal = collect($customers)->where('orders','>=',10)->count();
-$churn = collect($customers)->where('orders','<',3)->count();
+$loyal = $loyalCount ?? 0;
+$churn = $churnCount ?? 0;
 @endphp
 
 {{-- ================= KPI ================= --}}
@@ -166,7 +162,7 @@ $churn = collect($customers)->where('orders','<',3)->count();
 
 <thead class="table-light">
 <tr>
-<th>ID</th>
+<th>Customer Name</th>
 <th>Orders</th>
 <th>Spend</th>
 <th>AOV</th>
@@ -179,22 +175,17 @@ $churn = collect($customers)->where('orders','<',3)->count();
 <tbody>
 @foreach($customers as $c)
 
-@php
-$aov = $c->orders > 0 ? $c->total_spent / $c->orders : 0;
-$return = rand(5,25);
-@endphp
-
 <tr>
-<td>#{{ $c->customer_id }}</td>
+<td>{{ $c->customer_name ?? 'Customer #' . $c->customer_id }}</td>
 <td>{{ $c->orders }}</td>
 <td>₹ {{ number_format($c->total_spent,2) }}</td>
-<td>₹ {{ number_format($aov,2) }}</td>
-<td><span class="badge bg-info">{{ $return }}%</span></td>
+<td>₹ {{ number_format($c->aov ?? 0,2) }}</td>
+<td><span class="badge bg-info">{{ number_format($c->return_rate ?? 0, 1) }}%</span></td>
 
 <td>
-@if($c->orders >= 10)
+@if(($c->loyalty ?? '') == 'Loyal')
 <span class="badge bg-success">Loyal</span>
-@elseif($c->orders >= 5)
+@elseif(($c->loyalty ?? '') == 'Regular')
 <span class="badge bg-primary">Regular</span>
 @else
 <span class="badge bg-danger">Churn</span>
@@ -202,9 +193,9 @@ $return = rand(5,25);
 </td>
 
 <td>
-@if($c->total_spent > 10000)
+@if(($c->segment ?? '') == 'High')
 <span class="badge bg-success">High</span>
-@elseif($c->total_spent > 5000)
+@elseif(($c->segment ?? '') == 'Medium')
 <span class="badge bg-warning">Medium</span>
 @else
 <span class="badge bg-secondary">Low</span>
