@@ -442,10 +442,8 @@ public function placeOrder(Request $request)
             }
         }
 
-        // NOTE: For now, setting payment_status to 'paid' and status to 'delivered' for both COD and UPI.
-        // This logic will be changed later when the shipping gateway is added.
-        $paymentStatus = 'paid';
-        $orderStatus = 'delivered';
+        $paymentStatus = in_array($request->payment_method, ['upi', 'card', 'cod']) || $grandTotal == 0 ? 'paid' : 'pending';
+        $orderStatus = $paymentStatus === 'paid' ? 'paid' : 'pending'; // User requested order status to match payment status
 
         // ================= CREATE ORDER =================
         $order = Order::create([
@@ -1186,16 +1184,14 @@ public function orderAction(Request $request)
             'updated_at' => now(),
         ]);
 
-        // If order was paid, create return request routed to seller first
+        // If order was paid, send to admin refund page instead of auto-refund
         if (in_array($order->payment_status, ['paid', 'completed']) && $order->total_amount > 0) {
             \App\Models\OrderReturn::create([
                 'order_id'    => $order->id,
                 'customer_id' => $order->customer_id,
                 'reason'      => 'Order Cancelled: ' . $request->reason,
                 'note'        => $request->note,
-                'cancelled_dates' => $cancelledDates,
-                'status'      => 'requested', // Goes to seller first
-                'seller_action_deadline' => $sellerDeadline,
+                'status'      => 'approved', // Maps to 'pending' in Admin Buyer Refunds
             ]);
         }
 
@@ -1211,7 +1207,7 @@ public function orderAction(Request $request)
             'seller.paymenthandle'
         );
 
-        return response()->json(['message' => 'Cancellation request sent to seller. If not resolved in 3 days, it will auto-escalate to admin.']);
+        return response()->json(['message' => 'Order cancelled successfully. Refund request sent to admin.']);
     }
 
     if ($request->type == 'return' || $request->type == 'replace') {

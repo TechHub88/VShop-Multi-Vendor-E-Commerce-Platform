@@ -386,9 +386,10 @@
                 @endforelse
             </div>
 
-            <div class="action-buttons ms-auto d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editRule({{ $item['product']->id }})">Edit Rule</button>
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteRule({{ $item['product']->id }})">Delete Rule</button>
+            <div class="action-icons">
+                <i class="ri-edit-2-line" onclick="editRule({{ $item['product']->id }})"></i>
+                <i class="ri-delete-bin-line" style="color:#ef4444;" onclick="deleteRule({{ $item['product']->id }})"></i>
+            </div>
             </div>
         </div>
         @empty
