@@ -12,15 +12,13 @@ class SellerReferralController extends Controller
     public function history()
     {
         $seller = Auth::guard('seller')->user();
-        $customer = \App\Models\Customer::where('email', $seller->email)->orWhere('phone', $seller->mobile)->first();
-        $referrerId = $customer ? $customer->id : -1;
 
         $referrals = ReferralHistory::with(['referrer', 'buyer', 'order.items.product'])
-            ->where('referrer_id', $referrerId)
+            ->where('seller_id', $seller->id)
             ->latest()
             ->paginate(20);
             
-        $totalCommission = ReferralHistory::where('referrer_id', $referrerId)
+        $totalCommission = ReferralHistory::where('seller_id', $seller->id)
             ->where('status', 'paid')
             ->sum('amount');
             

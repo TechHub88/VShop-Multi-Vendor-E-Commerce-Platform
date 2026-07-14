@@ -14,9 +14,9 @@
 
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center">
-        <h2 class="page-title m-0">Buyer Referral History</h2>
+        <h2 class="page-title m-0">Product Referral History</h2>
         <div class="stat-card" style="background:#fff; padding:10px 20px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-            <span style="font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase;">Total Referral Earnings</span>
+            <span style="font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase;">Total Rewards Distributed</span>
             <div style="font-size:20px; font-weight:700; color:#16a34a;">₹{{ number_format($totalCommission, 2) }}</div>
         </div>
     </div>
