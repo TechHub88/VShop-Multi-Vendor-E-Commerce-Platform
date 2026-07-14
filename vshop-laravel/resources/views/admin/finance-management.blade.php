@@ -1667,7 +1667,7 @@
                             <div class="position-relative">
                                 <input type="date" class="form-control form-control-sm payout-date-input" 
                                        style="min-width: 140px; font-size:12px; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; background-color: #fff;"
-                                       value="{{ $row['payout_date'] ?? date('Y-m-d') }}">
+                                       value="{{ $row['release_date'] ?? date('Y-m-d') }}">
                                 <iconify-icon icon="solar:calendar-bold-duotone" class="position-absolute" 
                                              style="right: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #94a3b8; pointer-events: none;"></iconify-icon>
                             </div>
