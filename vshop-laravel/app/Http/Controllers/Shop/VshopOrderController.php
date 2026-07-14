@@ -564,15 +564,18 @@ $this->notifySeller(
 
         /* ================= ORDER ITEMS ================= */
         
-        $hasPreviousPaidReferral = \App\Models\ReferralHistory::where('buyer_id', $customer->id)
-            ->where('status', '!=', 'reversed')
-            ->exists();
-
         foreach ($cartItems as $item) {
 
             $price = $item->main_product_price ?? 0;
             $qty   = $item->main_product_quantity ?? 1;
             $productId = $item->product_id;
+
+            $hasPreviousPaidReferralForProduct = \App\Models\ReferralHistory::where('buyer_id', $customer->id)
+                ->where('status', '!=', 'reversed')
+                ->whereHas('order.items', function ($query) use ($productId) {
+                    $query->where('product_id', $productId);
+                })
+                ->exists();
 
             $product = DB::table('products')
                 ->where('id', $productId)
@@ -609,7 +612,7 @@ $this->notifySeller(
 
             $referralCode = session('referral_code') ?? request()->cookie('referral_code');
             $referralUserId = null;
-            if (!empty($referralCode) && !$hasPreviousPaidReferral) {
+            if (!empty($referralCode) && !$hasPreviousPaidReferralForProduct) {
                 $referrer = \App\Models\Customer::where('referral_code', $referralCode)->first();
                 if ($referrer && $referrer->id !== $customer->id) {
                     $referralUserId = $referrer->id;
