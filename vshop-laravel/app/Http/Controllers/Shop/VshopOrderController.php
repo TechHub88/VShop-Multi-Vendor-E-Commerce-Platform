@@ -817,56 +817,81 @@ $this->notifySeller(
                 }
             }
 
+            /* ================= CANCELLATION POLICY & HOLD LOGIC ================= */
+            $cancelPolicy = $product->refund_policy ?? $product->cancel_policy_tour ?? $product->cancel_policy_prof ?? $product->cancel_policy_other ?? '';
+            $holdDays = 7; // default 7 days
+            
+            if (!empty($cancelPolicy)) {
+                // Try to extract number from string (e.g. "10 days", "24 hrs")
+                if (preg_match('/(\d+)\s*(day|days|hrs|hours)/i', $cancelPolicy, $matches)) {
+                    $num = (int)$matches[1];
+                    $unit = strtolower($matches[2]);
+                    if (str_starts_with($unit, 'hr') || str_starts_with($unit, 'hour')) {
+                        $holdDays = max(1, ceil($num / 24));
+                    } else {
+                        $holdDays = $num;
+                    }
+                } elseif (stripos($cancelPolicy, 'no cancel') !== false || stripos($cancelPolicy, 'non-refundable') !== false) {
+                    $holdDays = 0; // No hold if non-refundable? Or maybe standard 7 days. We'll use 7 days as default for non-refundable to be safe, or 0 if immediate. Let's use 7.
+                    $holdDays = 7;
+                }
+            }
+            
+            $releaseDate = now()->addDays($holdDays)->toDateString();
+            $financeStatus = $holdDays > 0 ? 'hold' : 'success';
+
             // --- SELLER WALLET CREDIT & LEDGER ---
-            $sellerWallet = \App\Models\Wallet::firstOrCreate(
-                ['user_type' => 'seller', 'seller_id' => $sellerId, 'customer_id' => null],
-                ['balance' => 0]
-            );
-            $sellerWallet->increment('balance', $sellerEarning);
+            if ($holdDays == 0) {
+                $sellerWallet = \App\Models\Wallet::firstOrCreate(
+                    ['user_type' => 'seller', 'seller_id' => $sellerId, 'customer_id' => null],
+                    ['balance' => 0]
+                );
+                $sellerWallet->increment('balance', $sellerEarning);
 
-            // Log individual transactions in wallet_transactions for the seller:
-            // 1. Credit 100% of order sale (1000)
-            \App\Models\WalletTransaction::create([
-                'wallet_id' => $sellerWallet->id,
-                'seller_id' => $sellerId,
-                'user_type' => 'seller',
-                'transaction_type' => 'payout',
-                'credit' => $totalPrice,
-                'debit' => 0,
-                'balance_after' => $sellerWallet->balance + $commissionAmount,
-                'description' => "Order sale earning for Order #{$order->id}",
-                'reference_id' => 'ORD-' . $order->id,
-                'status' => 'completed'
-            ]);
-
-            // 2. Debit platform fee (15)
-            \App\Models\WalletTransaction::create([
-                'wallet_id' => $sellerWallet->id,
-                'seller_id' => $sellerId,
-                'user_type' => 'seller',
-                'transaction_type' => 'commission_deduction',
-                'credit' => 0,
-                'debit' => $platformAmount,
-                'balance_after' => $sellerWallet->balance + ($referralAmount > 0 ? $referralAmount : 0),
-                'description' => "Platform fee deduction for Order #{$order->id}",
-                'reference_id' => 'ORD-' . $order->id,
-                'status' => 'completed'
-            ]);
-
-            // 3. Debit referral commission (30) (if applicable)
-            if ($referralAmount > 0) {
+                // Log individual transactions in wallet_transactions for the seller:
+                // 1. Credit 100% of order sale
                 \App\Models\WalletTransaction::create([
                     'wallet_id' => $sellerWallet->id,
                     'seller_id' => $sellerId,
                     'user_type' => 'seller',
-                    'transaction_type' => 'referral_deduction',
-                    'credit' => 0,
-                    'debit' => $referralAmount,
-                    'balance_after' => $sellerWallet->balance,
-                    'description' => "Referral commission deduction for Order #{$order->id}",
+                    'transaction_type' => 'payout',
+                    'credit' => $totalPrice,
+                    'debit' => 0,
+                    'balance_after' => $sellerWallet->balance + $commissionAmount,
+                    'description' => "Order sale earning for Order #{$order->id}",
                     'reference_id' => 'ORD-' . $order->id,
                     'status' => 'completed'
                 ]);
+
+                // 2. Debit platform fee
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $sellerWallet->id,
+                    'seller_id' => $sellerId,
+                    'user_type' => 'seller',
+                    'transaction_type' => 'commission_deduction',
+                    'credit' => 0,
+                    'debit' => $platformAmount,
+                    'balance_after' => $sellerWallet->balance + ($referralAmount > 0 ? $referralAmount : 0),
+                    'description' => "Platform fee deduction for Order #{$order->id}",
+                    'reference_id' => 'ORD-' . $order->id,
+                    'status' => 'completed'
+                ]);
+
+                // 3. Debit referral commission
+                if ($referralAmount > 0) {
+                    \App\Models\WalletTransaction::create([
+                        'wallet_id' => $sellerWallet->id,
+                        'seller_id' => $sellerId,
+                        'user_type' => 'seller',
+                        'transaction_type' => 'referral_deduction',
+                        'credit' => 0,
+                        'debit' => $referralAmount,
+                        'balance_after' => $sellerWallet->balance,
+                        'description' => "Referral commission deduction for Order #{$order->id}",
+                        'reference_id' => 'ORD-' . $order->id,
+                        'status' => 'completed'
+                    ]);
+                }
             }
 
             // Log to seller_finances table so seller sees it in their finance panel
@@ -878,8 +903,9 @@ $this->notifySeller(
                 'credit'            => $totalPrice,
                 'debit'             => 0,
                 'commission_amount' => 0,
-                'status'            => 'success',
-                'note'              => 'Order sale earning',
+                'status'            => $financeStatus,
+                'note'              => $holdDays > 0 ? "Order sale earning (On Hold for {$holdDays} days)" : 'Order sale earning',
+                'release_date'      => $releaseDate,
                 'created_at'        => now(),
                 'updated_at'        => now()
             ]);
@@ -892,8 +918,9 @@ $this->notifySeller(
                 'credit'            => 0,
                 'debit'             => $platformAmount,
                 'commission_amount' => $platformAmount,
-                'status'            => 'success',
+                'status'            => $financeStatus,
                 'note'              => 'Platform fee deduction',
+                'release_date'      => $releaseDate,
                 'created_at'        => now(),
                 'updated_at'        => now()
             ]);
@@ -907,8 +934,9 @@ $this->notifySeller(
                     'credit'            => 0,
                     'debit'             => $referralAmount,
                     'commission_amount' => $referralAmount,
-                    'status'            => 'success',
+                    'status'            => $financeStatus,
                     'note'              => 'Referral commission deduction',
+                    'release_date'      => $releaseDate,
                     'created_at'        => now(),
                     'updated_at'        => now()
                 ]);

@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('vshop:refund-sla-check')->daily();
 Schedule::command('orders:auto-refund-expired')->hourly();
+Schedule::command('hold:release')->daily();

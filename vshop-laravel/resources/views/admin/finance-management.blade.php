@@ -1636,8 +1636,8 @@
                 </thead>
                 <tbody>
                     @foreach($earningsDetails as $row)
-                    <tr data-seller-id="{{ $row['seller_id'] }}">
-                        <td class="col-payout-check text-center"><input type="checkbox" class="payout-checkbox" style="margin:0;" value="{{ $row['seller_id'] }}"></td>
+                    <tr data-transaction-id="{{ $row['id'] }}">
+                        <td class="col-payout-check text-center"><input type="checkbox" class="payout-checkbox" style="margin:0;" value="{{ $row['id'] }}"></td>
                         <td class="col-payout-seller">
                             <a href="#" class="fw-bold text-primary" onclick="showSellerDetails({{ $row['seller_id'] }})">
                                 {{ $row['seller_code'] }} ({{ $row['location'] }})
@@ -3772,9 +3772,9 @@ function bulkSelectAll(checked) {
 }
 
 function applyBulkUpdate() {
-    const sellerIds = Array.from(document.querySelectorAll('.bulk-seller-cb:checked')).map(cb => cb.value);
-    if (sellerIds.length === 0) {
-        document.getElementById('bulkUpdateStatus').innerHTML = '<div class="alert alert-warning py-2 fs-8">Please select at least one seller.</div>';
+    const transactionIds = Array.from(document.querySelectorAll('.bulk-seller-cb:checked')).map(cb => cb.value);
+    if (transactionIds.length === 0) {
+        document.getElementById('bulkUpdateStatus').innerHTML = '<div class="alert alert-warning py-2 fs-8">Please select at least one transaction.</div>';
         return;
     }
     const holdDays    = document.getElementById('bulkHoldDays').value;
@@ -3796,14 +3796,14 @@ function applyBulkUpdate() {
     fetch('{{ route("admin.finance.update-earnings-settings") }}', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-        body: JSON.stringify({ seller_ids: sellerIds, updates: updates })
+        body: JSON.stringify({ transaction_ids: transactionIds, updates: updates })
     })
     .then(r => r.json())
     .then(d => {
         btn.disabled = false;
         btn.innerHTML = '<iconify-icon icon="solar:save-bold" class="align-middle me-1"></iconify-icon> Apply Bulk Update';
         if (d.success) {
-            document.getElementById('bulkUpdateStatus').innerHTML = `<div class="alert alert-success py-2 fs-8"><iconify-icon icon="solar:check-circle-bold-duotone" class="me-1"></iconify-icon> ${d.message} — ${sellerIds.length} sellers updated.</div>`;
+            document.getElementById('bulkUpdateStatus').innerHTML = `<div class="alert alert-success py-2 fs-8"><iconify-icon icon="solar:check-circle-bold-duotone" class="me-1"></iconify-icon> ${d.message} — ${transactionIds.length} transactions updated.</div>`;
             setTimeout(() => { bootstrap.Modal.getInstance(document.getElementById('bulkUpdateModal')).hide(); location.reload(); }, 1500);
         } else {
             document.getElementById('bulkUpdateStatus').innerHTML = `<div class="alert alert-danger py-2 fs-8">${d.message}</div>`;

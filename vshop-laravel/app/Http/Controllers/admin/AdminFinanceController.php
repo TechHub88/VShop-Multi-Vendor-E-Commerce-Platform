@@ -278,74 +278,71 @@ class AdminFinanceController extends Controller
     }
 
     $earningsDetails = [];
-    foreach ($sellers as $index => $seller) {
+    $earningTransactions = \App\Models\SellerFinance::where('transaction_type', 'earning')
+        ->with(['seller', 'order', 'order.items.product'])
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    foreach ($earningTransactions as $txn) {
+        $seller = $txn->seller;
+        if (!$seller) continue;
+        
         $location = $seller->billing_city ?: 'Mumbai';
-        
-        $totalSales = SellerCommission::where('seller_id', $seller->id)->sum('order_amount') * $exchangeRate;
-        if ($totalSales == 0) {
-            $totalSales = Order::where('seller_id', $seller->id)->where('payment_status', 'paid')->sum('total_amount') * $exchangeRate;
-        }
-        
         $app = $seller->application ?? 'vshop';
-        $platformCommission = SellerCommission::where('seller_id', $seller->id)->sum('commission_amount') * $exchangeRate;
-        if ($platformCommission == 0) {
-            $cleanAppKey = 'vShop';
-            if (stripos($app, 'travel') !== false) $cleanAppKey = 'vTravel';
-            elseif (stripos($app, 'edge') !== false) $cleanAppKey = 'vEdge';
-            elseif (stripos($app, 'campus') !== false) $cleanAppKey = 'vCampus';
+        
+        // Find platform commission for this specific transaction
+        $deductionTxn = \App\Models\SellerFinance::where('transaction_type', 'commission_deduction')
+            ->where('order_id', $txn->order_id)
+            ->where('seller_id', $txn->seller_id)
+            ->where('note', 'like', '%Platform%')
+            ->first();
             
-            $commRate = (float) ($appWiseCommission[$cleanAppKey] ?? 10);
-            if ($commRate <= 0) $commRate = 10;
-            $platformCommission = $totalSales * ($commRate / 100);
+        $platformCommission = $deductionTxn ? $deductionTxn->debit : 0;
+        
+        $sellerPayout = $txn->credit - $platformCommission;
+        
+        // Find products for this seller in this order
+        $productNames = [];
+        if ($txn->order) {
+            foreach ($txn->order->items as $item) {
+                if ($item->product && $item->product->created_by_id == $seller->id) {
+                    $productNames[] = $item->product->name;
+                }
+            }
         }
+        $productNamesStr = implode(', ', array_unique($productNames)) ?: 'Unknown Product';
         
-        $sellerPayout = $totalSales - $platformCommission;
-        $referralPayout = $totalSales * 0.006;
-        
-        $holdDays = $seller->hold_days ?? GlobalSetting::get('hold_days', 7);
-        
-        // Query actual qualified enquiries/clicks lead credit charges from SellerFinance
-        $perEnquiry = SellerFinance::where('seller_id', $seller->id)->where('transaction_type', 'enquiry')->sum('credit') * $exchangeRate;
-        $perClick = SellerFinance::where('seller_id', $seller->id)->where('transaction_type', 'click')->sum('credit') * $exchangeRate;
-        
-        $payoutSchedule = $seller->payout_frequency ?: 'Weekly';
-        
-        // Query latest payout transaction status from SellerFinance
-        $latestPayout = SellerFinance::where('seller_id', $seller->id)->where('transaction_type', 'payout')->orderBy('created_at', 'desc')->first();
-        $payoutStatus = $latestPayout ? ucfirst($latestPayout->status) : 'Pending';
-        
-        $gstRate = (float) GlobalSetting::get('gst_rate', 18);
-        $estTax = $platformCommission * ($gstRate / 100);
-        $netPayout = $sellerPayout - $referralPayout - $estTax;
-        
-        $remainingBalance = SellerFinance::where('seller_id', $seller->id)->orderBy('created_at', 'desc')->value('balance') * $exchangeRate ?? 0;
-        
-        $latestOrder = Order::where('seller_id', $seller->id)->orderBy('created_at', 'desc')->first();
-        $purchaseDate = $latestOrder ? $latestOrder->created_at->format('Y-m-d') : '2026-05-01';
-        $releaseDate = date('Y-m-d', strtotime("{$purchaseDate} + {$holdDays} days"));
-        
+        // Hold days logic - calculate difference between release_date and created_at
+        $holdDays = 0;
+        if ($txn->release_date) {
+            $created = \Carbon\Carbon::parse($txn->created_at)->startOfDay();
+            $release = \Carbon\Carbon::parse($txn->release_date)->startOfDay();
+            $holdDays = $created->diffInDays($release);
+        }
+
         $earningsDetails[] = [
+            'id' => $txn->id,
             'seller_id' => $seller->id,
             'seller_code' => 'S-' . (1000 + $seller->id),
             'name' => $seller->name,
             'location' => $location,
-            'app' => $app,
-            'total_sales' => $totalSales,
+            'app' => $productNamesStr, // Showing products here instead of app name
+            'total_sales' => $txn->credit,
             'platform_commission' => $platformCommission,
             'seller_payout' => $sellerPayout,
             'hold_days' => $holdDays,
-            'payout_schedule' => $payoutSchedule,
-            'payout_status' => $payoutStatus,
-            'referral_payout' => $referralPayout,
+            'payout_schedule' => $seller->payout_frequency ?: 'Weekly',
+            'payout_status' => ucfirst($txn->status),
+            'referral_payout' => 0,
             'reff_schedule' => 'Monthly',
             'referral_status' => 'Approved',
-            'est_tax' => $estTax,
-            'net_payout' => $netPayout,
-            'remaining_balance' => $remainingBalance,
-            'per_enquiry_amount' => $perEnquiry,
-            'per_click_amount' => $perClick,
-            'purchase_date' => $purchaseDate,
-            'release_date' => $releaseDate,
+            'est_tax' => 0,
+            'net_payout' => $sellerPayout,
+            'remaining_balance' => 0,
+            'per_enquiry_amount' => 0,
+            'per_click_amount' => 0,
+            'purchase_date' => $txn->created_at->format('Y-m-d'),
+            'release_date' => $txn->release_date ? date('Y-m-d', strtotime($txn->release_date)) : $txn->created_at->format('Y-m-d'),
         ];
     }
 
@@ -595,32 +592,41 @@ class AdminFinanceController extends Controller
     public function updateEarningsSettings(Request $request)
     {
         try {
-            // ---- BULK UPDATE (multiple sellers) ----
-            if ($request->has('seller_ids') && is_array($request->seller_ids)) {
-                $sellerIds = $request->seller_ids;
+            // ---- BULK UPDATE (multiple transactions) ----
+            if ($request->has('transaction_ids') && is_array($request->transaction_ids)) {
+                $transactionIds = $request->transaction_ids;
                 $updates   = $request->input('updates', []);
                 $count     = 0;
 
-                foreach ($sellerIds as $sid) {
-                    $seller = Seller::find($sid);
-                    if (!$seller) continue;
+                foreach ($transactionIds as $tid) {
+                    // Find the earning transaction
+                    $txn = \App\Models\SellerFinance::find($tid);
+                    if (!$txn || $txn->transaction_type !== 'earning') continue;
 
-                    if (!empty($updates['hold_days']))
-                        $seller->hold_days = $updates['hold_days'];
-                    if (!empty($updates['payout_schedule']))
-                        $seller->payout_frequency = $updates['payout_schedule'];
-                    $seller->save();
+                    // Also find associated deductions to update them in sync
+                    $relatedTxns = \App\Models\SellerFinance::where('order_id', $txn->order_id)
+                                    ->where('seller_id', $txn->seller_id)
+                                    ->where('status', 'hold')
+                                    ->get();
 
-                    if (!empty($updates['purchase_date'])) {
-                        $latestOrder = Order::where('seller_id', $seller->id)->orderBy('created_at', 'desc')->first();
-                        if ($latestOrder) {
-                            $latestOrder->created_at = $updates['purchase_date'];
-                            $latestOrder->save();
+                    if (!empty($updates['hold_days'])) {
+                        // Calculate new release date based on created_at and new hold days
+                        $newReleaseDate = \Carbon\Carbon::parse($txn->created_at)->startOfDay()->addDays($updates['hold_days'])->toDateString();
+                        
+                        foreach ($relatedTxns as $rel) {
+                            $rel->release_date = $newReleaseDate;
+                            
+                            // Replace (On Hold for X days) in note
+                            $rel->note = preg_replace('/\(On Hold for \d+ days\)/', "(On Hold for {$updates['hold_days']} days)", $rel->note);
+                            $rel->save();
                         }
                     }
+                    
+                    // Note: payout_schedule isn't natively on transaction, skip or apply to seller if requested
+                    
                     $count++;
                 }
-                return response()->json(['success' => true, 'message' => "Bulk update applied to {$count} seller(s) successfully"]);
+                return response()->json(['success' => true, 'message' => "Bulk update applied to {$count} transaction(s) successfully"]);
             }
 
             // ---- SINGLE SELLER UPDATE ----
