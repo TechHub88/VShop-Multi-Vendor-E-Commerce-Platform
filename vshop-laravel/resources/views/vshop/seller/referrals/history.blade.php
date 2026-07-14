@@ -33,6 +33,7 @@
                     <tr>
                         <th>Date</th>
                         <th>Order ID</th>
+                        <th>Product</th>
                         <th>Referred Buyer</th>
                         <th>Referrer (Code)</th>
                       
@@ -44,10 +45,26 @@
                 </thead>
                 <tbody>
                     @forelse($referrals as $ref)
+                    @php
+                        $referrerSeller = null;
+                        if ($ref->referrer) {
+                            $referrerSeller = \App\Models\Seller::where('email', $ref->referrer->email)
+                                ->orWhere('mobile', $ref->referrer->phone)
+                                ->first();
+                        }
+                        $isPoints = !$referrerSeller;
+                    @endphp
                     <tr>
                         <td>{{ $ref->created_at->format('d M, Y H:i') }}</td>
                         <td>
                             <a href="javascript:void(0)" data-bs-toggle="modal" data-bs-target="#orderModal{{ $ref->order_id }}" class="text-primary fw-bold">#{{ $ref->order_id }}</a>
+                        </td>
+                        <td>
+                            @if($ref->order && $ref->order->items->first() && $ref->order->items->first()->product)
+                                {{ \Illuminate\Support\Str::limit($ref->order->items->first()->product->name, 25) }}
+                            @else
+                                -
+                            @endif
                         </td>
                         <td>
                             <div class="fw-bold">{{ $ref->buyer->name ?? 'N/A' }}</div>
@@ -60,8 +77,16 @@
                         </td>
                        
                         <td>{{ $ref->commission_percent }}%</td>
-                        <td class="text-success fw-bold">+₹{{ number_format($ref->amount, 2) }}</td>
-                        <td><span class="badge bg-success" style="font-size: 11px;">Real Money</span></td>
+                        <td class="{{ $isPoints ? 'text-warning' : 'text-success' }} fw-bold">
+                            {{ $isPoints ? '+' . intval($ref->amount) . ' Points' : '+₹' . number_format($ref->amount, 2) }}
+                        </td>
+                        <td>
+                            @if($isPoints)
+                                <span class="badge bg-warning" style="font-size: 11px;">Reward Points</span>
+                            @else
+                                <span class="badge bg-success" style="font-size: 11px;">Real Money</span>
+                            @endif
+                        </td>
                         <td>
                             <span class="badge-success">{{ ucfirst($ref->status) }}</span>
                         </td>
@@ -69,7 +94,7 @@
 
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center py-4 text-muted">No referral earnings yet.</td>
+                        <td colspan="9" class="text-center py-4 text-muted">No referral earnings yet.</td>
                     </tr>
                     @endforelse
                 </tbody>
