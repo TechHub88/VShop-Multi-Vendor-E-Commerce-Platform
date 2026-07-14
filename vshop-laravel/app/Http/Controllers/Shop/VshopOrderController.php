@@ -1,9 +1,9 @@
 <?php
 
 namespace App\Http\Controllers\Shop;
-
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -12,7 +12,6 @@ use App\Models\CartItem;
 use App\Models\SellerFinance;
 use App\Models\Tax;
 use App\Models\GlobalSetting;
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +19,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use App\Models\StockMovement;
 use App\Services\NotificationService;
-
 
 use Illuminate\Support\Facades\Session;
 
@@ -38,7 +36,6 @@ class VshopOrderController extends Controller
         $product->decrement('stock_qty', $qty);
         $stockAfter = $product->stock_qty;
 
-        // Log movement
         StockMovement::create([
             'product_id' => $productId,
             'type' => 'out',
@@ -84,7 +81,7 @@ public function payment(Request $request)
             ->with('error', 'Please login first');
     }
 
-    // ================= CART / BUY NOW =================
+    
     if ($request->has('is_buy_now')) {
 
         $product = Product::find($request->product_id);
