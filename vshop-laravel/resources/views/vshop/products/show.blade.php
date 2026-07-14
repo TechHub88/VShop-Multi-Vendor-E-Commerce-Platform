@@ -1752,9 +1752,11 @@
 
             if (selectedSlotsData.size === 0) {
                 wrapper.hide();
-                if (productConfig.hasSlots) {
-                    productConfig.quantity = 1;
-                    updateTotalPrice();
+                if (window.productConfig && window.productConfig.hasSlots) {
+                    window.productConfig.quantity = 1;
+                    if (typeof window.updateTotalPrice === 'function') {
+                        window.updateTotalPrice();
+                    }
                 }
                 return;
             }
@@ -1779,9 +1781,11 @@
                 `);
             });
 
-            if (productConfig.hasSlots) {
-                productConfig.quantity = selectedSlotsData.size > 0 ? selectedSlotsData.size : 1;
-                updateTotalPrice();
+            if (window.productConfig && window.productConfig.hasSlots) {
+                window.productConfig.quantity = selectedSlotsData.size > 0 ? selectedSlotsData.size : 1;
+                if (typeof window.updateTotalPrice === 'function') {
+                    window.updateTotalPrice();
+                }
             }
         }
 
@@ -2396,12 +2400,15 @@ $(document).ready(function() {
             qtyInput.value = productConfig.quantity;
         }
 
-        // Update add to cart button text
         const addToCartBtn = document.getElementById('addToCartBtn');
         if (addToCartBtn) {
             addToCartBtn.innerHTML = `Add to Cart · ₹ <span id="totalPrice">${formatNumber(total)}</span>`;
         }
     }
+
+    // Expose globally for the slot selector script
+    window.productConfig = productConfig;
+    window.updateTotalPrice = updateTotalPrice;
 
     // ================= QUANTITY CONTROLS =================
     const decrementBtn = document.getElementById('decrementQty');
