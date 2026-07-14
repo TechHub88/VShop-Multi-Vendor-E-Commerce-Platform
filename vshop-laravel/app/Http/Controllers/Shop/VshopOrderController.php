@@ -632,8 +632,14 @@ $this->notifySeller(
                     } else {
                         // Priority B: Global Referral configurations
                         $config = $referralConfigs->whereIn('type', ['buyer_to_buyer', 'seller_to_seller'])
-                                                  ->where('reference_id', $referralUserId)
+                                                  ->where('reference_id', $productId)
                                                   ->first();
+                                                  
+                        if (!$config) {
+                            $config = $referralConfigs->whereIn('type', ['buyer_to_buyer', 'seller_to_seller'])
+                                                      ->where('reference_id', $sellerId)
+                                                      ->first();
+                        }
                                                   
                         if (!$config) {
                             $config = $referralConfigs->where('type', 'level_commission')
@@ -645,6 +651,26 @@ $this->notifySeller(
                             $referrerComm = (float) $config->commission_percentage;
                             $referralAmount = ($totalPrice * $referrerComm) / 100;
                             $appliedConfigType = $config->type;
+                            
+                            // Apply Referee Reward Points
+                            $configDesc = json_decode($config->description, true);
+                            $refereeDiscount = $configDesc['referee_discount'] ?? 0;
+                            if ($refereeDiscount > 0) {
+                                $refereeRewardAmount = ($totalPrice * $refereeDiscount) / 100;
+                                \App\Models\Reward::create([
+                                    'customer_id' => $customer->id,
+                                    'type' => 'points',
+                                    'points' => (int) $refereeRewardAmount,
+                                    'amount' => $refereeRewardAmount / 10,
+                                    'description' => "Referral Reward for purchasing {$product->name}",
+                                    'status' => 'active',
+                                    'expiry_date' => now()->addDays(180)
+                                ]);
+                                
+                                // Sync customer points
+                                $customer->reward_points = \App\Models\Reward::getValidPoints($customer->id);
+                                $customer->save();
+                            }
                         }
                     }
                 }
@@ -1131,55 +1157,7 @@ private function calculateOrderSummary($cartItems)
     $summary['reward_discount'] = $rewardDiscount;
     $summary['reward_points'] = session('order.reward_points', 0);
 
-    // --- REFERRAL DISCOUNT LOGIC FOR DISPLAY ---
-    $customer = Auth::guard('customer')->user();
-    $referralDiscount = 0;
-    $referralCode = session('referral_code') ?? request()->cookie('referral_code');
-    $referrerId = null;
-
-    if (!empty($referralCode)) {
-        $referrer = \App\Models\Customer::where('referral_code', $referralCode)->first();
-        if ($referrer && $customer && $referrer->id !== $customer->id) {
-            $referrerId = $referrer->id;
-        }
-    }
-    
-    if ($customer && $referrerId) {
-        // Group items by seller to check first purchase per seller
-        $sellerIds = [];
-        foreach ($cartItems as $item) {
-            $sId = $item->product->created_by_id ?? null;
-            if ($sId) {
-                $sellerIds[$sId] = ($sellerIds[$sId] ?? 0) + (($item->main_product_price ?? 0) * ($item->main_product_quantity ?? 1));
-            }
-        }
-
-        foreach($sellerIds as $sellerId => $sellerSubtotal) {
-            $hasOrderedBefore = DB::table('orders')
-                ->where('customer_id', $customer->id)
-                ->where('seller_id', $sellerId)
-                ->exists();
-
-            if (!$hasOrderedBefore) {
-                $config = DB::table('referral_configurations')
-                    ->where('type', 'buyer_to_buyer')
-                    ->where('reference_id', $sellerId)
-                    ->where('status', 1)
-                    ->first();
-
-                if ($config) {
-                    $configExtra = json_decode($config->description, true);
-                    $refereeDiscountPercent = $configExtra['referee_discount'] ?? 0;
-
-                    if ($refereeDiscountPercent > 0) {
-                        $referralDiscount += $sellerSubtotal * ($refereeDiscountPercent / 100);
-                    }
-                }
-            }
-        }
-    }
-    
-    $summary['referral_discount'] = $referralDiscount;
+    $summary['referral_discount'] = 0;
 
     $summary['grand_total'] =
         $summary['subtotal'] +
@@ -1187,8 +1165,7 @@ private function calculateOrderSummary($cartItems)
         $summary['sgst'] +
         $summary['igst'] -
         $couponDiscount -
-        $rewardDiscount -
-        $referralDiscount;
+        $rewardDiscount;
 
     return $summary;
 }
