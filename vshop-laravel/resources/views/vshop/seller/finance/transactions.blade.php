@@ -256,6 +256,7 @@ class="form-control form-control-sm">
                 <th>ID</th>
                 <th>Type</th>
                 <th>Reference</th>
+                <th>Product</th>
                 <th>Lead Charge</th>
                 <th>Amount</th>
                 <th>Boost Campaign Charge</th>
@@ -297,6 +298,14 @@ class="form-control form-control-sm">
                     </td>
 
                     <td>{{ $t->reference_no }}</td>
+
+                    <td>
+                        @if($t->order && $t->order->items->first() && $t->order->items->first()->product)
+                            {{ \Illuminate\Support\Str::limit($t->order->items->first()->product->name, 30) }}
+                        @else
+                            -
+                        @endif
+                    </td>
 
                     <td>
                         <span class="money text-muted" data-amount="0"></span>

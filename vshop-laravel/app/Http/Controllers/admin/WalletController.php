@@ -127,6 +127,20 @@ class WalletController extends Controller
         foreach ($transactions as $transaction) {
             $transaction->user_name = $this->getUserName($transaction);
             $transaction->badge_color = $this->getTransactionBadgeColor($transaction->transaction_type);
+            
+            $productName = 'N/A';
+            if (str_starts_with($transaction->reference_id, 'ORD-')) {
+                $orderId = str_replace('ORD-', '', $transaction->reference_id);
+                $orderItem = \Illuminate\Support\Facades\DB::table('order_items')
+                    ->where('order_id', $orderId)
+                    ->join('products', 'order_items.product_id', '=', 'products.id')
+                    ->select('products.name')
+                    ->first();
+                if ($orderItem) {
+                    $productName = \Illuminate\Support\Str::limit($orderItem->name, 40);
+                }
+            }
+            $transaction->product_name = $productName;
         }
         
         return response()->json([

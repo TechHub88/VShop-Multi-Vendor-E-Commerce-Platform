@@ -52,11 +52,27 @@ class MyAccountController extends Controller
             'closed' => Grievance::where('buyer_id', $customer->id)->where('status', 'closed')->count(),
         ];
 
+        $transactions = WalletTransaction::where('customer_id', $customer->id)->orderBy('id','desc')->get();
+        foreach ($transactions as $txn) {
+            $txn->product_name = 'N/A';
+            if (str_starts_with($txn->reference_id, 'ORD-')) {
+                $orderId = str_replace('ORD-', '', $txn->reference_id);
+                $orderItem = \Illuminate\Support\Facades\DB::table('order_items')
+                    ->where('order_id', $orderId)
+                    ->join('products', 'order_items.product_id', '=', 'products.id')
+                    ->select('products.name')
+                    ->first();
+                if ($orderItem) {
+                    $txn->product_name = \Illuminate\Support\Str::limit($orderItem->name, 40);
+                }
+            }
+        }
+
         return view('vshop.myaccount', [
             'profile' => $customer,
             'addresses' => Address::where('customer_id', $customer->id)->get(),
             'walletBalance' => $customer->wallet_balance ?? 0,
-            'transactions' => WalletTransaction::where('customer_id', $customer->id)->orderBy('id','desc')->get(),
+            'transactions' => $transactions,
             'rewardPoints' => Reward::getValidPoints($customer->id),
             'cashbackEarned' => Reward::where('customer_id', $customer->id)->where('type','cashback')->sum('amount'),
             'referralBalance' => Referral::where('customer_id', $customer->id)->where('status','successful')->sum('reward_amount'),

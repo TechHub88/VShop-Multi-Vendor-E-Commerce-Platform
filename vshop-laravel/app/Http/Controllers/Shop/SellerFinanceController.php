@@ -207,7 +207,7 @@ public function transactions(Request $request)
     }
 
     /* ================= DATA ================= */
-    $transactions = $query->latest()->paginate(15)->appends($request->all());
+    $transactions = $query->with(['order.items.product'])->latest()->paginate(15)->appends($request->all());
 
     /* ================= SUMMARY ================= */
     $summary = [

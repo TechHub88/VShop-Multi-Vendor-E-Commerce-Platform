@@ -270,11 +270,12 @@
                             <h5 class="fw-bold mb-3">Transaction History</h5>
                             <div class="table-responsive">
                                 <table class="table align-middle">
-                                    <thead class="table-light"><tr><th>Date</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead>
+                                    <thead class="table-light"><tr><th>Date</th><th>Product</th><th>Description</th><th>Amount</th><th>Status</th></tr></thead>
                                     <tbody id="ledgerBody">
                                         @forelse($transactions as $tx)
                                         <tr>
                                             <td>{{ $tx->created_at->format('d M Y') }}</td>
+                                            <td>{{ $tx->product_name ?? 'N/A' }}</td>
                                             <td>{{ preg_replace('/\s*\(Platform Commission.*?\)/i', '', $tx->description) }}</td>
                                             <td class="{{ $tx->credit > 0 ? 'text-success fw-bold' : 'text-danger' }}">
                                                 {{ $tx->credit > 0 ? '+' : '-' }}₹{{ number_format($tx->credit > 0 ? $tx->credit : $tx->debit, 2) }}
@@ -282,7 +283,7 @@
                                             <td><span class="badge bg-{{ $tx->status=='success'?'success':'danger' }} rounded-pill">{{ ucfirst($tx->status) }}</span></td>
                                         </tr>
                                         @empty
-                                        <tr><td colspan="4" class="text-center">No transactions yet</td></tr>
+                                        <tr><td colspan="5" class="text-center">No transactions yet</td></tr>
                                         @endforelse
                                     </tbody>
                                 </table>
