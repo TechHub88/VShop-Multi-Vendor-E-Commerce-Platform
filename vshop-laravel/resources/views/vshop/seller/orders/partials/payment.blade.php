@@ -120,6 +120,8 @@
 <th>Customer</th>
 <th>Date</th>
 <th>Total</th>
+<th>Ref. Comm</th>
+<th>Earning</th>
 <th>Paid</th>
 <th>Balance</th>
 <th>Status</th>
@@ -547,6 +549,10 @@ rows += `
 <td>${formatDate(o.created_at)}</td>
 
 <td>₹${o.total_amount}</td>
+
+<td>₹${o.referral_commission_amount ?? 0}</td>
+
+<td>₹${o.total_amount - (o.referral_commission_amount ?? 0)}</td>
 
 <td>₹${paid}</td>
 

@@ -584,7 +584,14 @@ $this->notifySeller(
             $referrerComm = 0;
             $platformComm = 1.5; // 1.5% platform commission
 
-            $referralUserId = $customer->referred_by ?? null;
+            $referralCode = session('referral_code') ?? request()->cookie('referral_code');
+            $referralUserId = null;
+            if (!empty($referralCode)) {
+                $referrer = \App\Models\Customer::where('referral_code', $referralCode)->first();
+                if ($referrer && $referrer->id !== $customer->id) {
+                    $referralUserId = $referrer->id;
+                }
+            }
             $referralAmount = 0;
             $isSelfReferral = false;
 
@@ -656,10 +663,7 @@ $this->notifySeller(
                         ]);
                     } else {
                         // Dynamically fetch points from RewardRedemptionTier based on commission %
-                        $rewardTier = \App\Models\RewardRedemptionTier::where('discount_amount', $referrerComm)
-                                        ->where('status', 'active')
-                                        ->first();
-                        $pointsToGive = $rewardTier ? $rewardTier->points_required : (int) $referralAmount;
+                        $pointsToGive = (int) $referralAmount;
 
                         // Credit reward points to customer referrer
                         $referrerCustomer->increment('reward_points', $pointsToGive);
