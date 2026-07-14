@@ -233,8 +233,6 @@ public function placeOrder(Request $request)
             } elseif (!$referrer && !empty($referralCode)) {
                 return back()->with('error', 'Invalid referral code provided.');
             }
-        } elseif (!empty($customer->referred_by)) {
-            $referrerId = $customer->referred_by;
         }
 
         $primaryPaymentMethod = is_array($request->payment_method) ? ($request->payment_method[0] ?? 'cod') : $request->payment_method;

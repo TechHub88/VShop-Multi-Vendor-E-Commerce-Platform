@@ -89,10 +89,8 @@
                                          {{-- Referral Code Group --}}
                                          @php
                                              $sessionReferral = session('referral_code') ?? request()->cookie('referral_code');
-                                             $hasReferrer = !empty(auth('customer')->user()->referred_by) || !empty($sessionReferral);
-                                             $displayRefCode = !empty(auth('customer')->user()->referred_by) 
-                                                 ? (\App\Models\Customer::find(auth('customer')->user()->referred_by)->referral_code ?? 'Applied') 
-                                                 : $sessionReferral;
+                                             $hasReferrer = !empty($sessionReferral);
+                                             $displayRefCode = $sessionReferral;
                                          @endphp
                                          <input type="hidden" name="referral_code" id="hidden_referral_code" value="{{ $displayRefCode }}">
 
@@ -105,9 +103,7 @@
                                              <i class="fa-solid fa-circle-check text-success" style="font-size: 11px;"></i>
                                              <span class="badge bg-purple" id="applied_referral_code" style="font-size: 10px; background-color: #7E22CE !important; padding: 2px 5px; color: #fff;">{{ $displayRefCode }}</span>
                                              <span class="text-success" style="font-size: 10px; font-weight: 600;">Applied!</span>
-                                             @if(empty(auth('customer')->user()->referred_by))
                                              <button type="button" id="remove_referral_btn" class="btn btn-sm btn-link text-danger p-0 ms-2" style="font-size: 11px; text-decoration: none; font-weight: 600;">Remove</button>
-                                             @endif
                                          </div>
                                      </div>
                                  </div>
