@@ -95,26 +95,7 @@
                     <i class="fa-solid fa-layer-group"></i> Bulk Actions (<span id="bulkSelectedCount">0</span>)
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end p-2" aria-labelledby="bulkActionsDropdownBtn" style="min-width: 250px;">
-                    <li class="px-2 py-1">
-                        <label class="form-label small fw-bold text-muted mb-2 text-uppercase d-block" style="font-size: 11px;">Approve / Reject</label>
-                        <div class="bg-light border rounded p-2 position-relative d-flex justify-content-center align-items-center hover-toggle-box" style="height: 40px; cursor: pointer;">
-                            <span class="text-success fw-bold small toggle-label toggle-label-right position-absolute" style="right: 15px; opacity:0; transition:0.3s; pointer-events:none;"><i class="fa-solid fa-check-circle me-1"></i> Approve</span>
-                            <div class="form-check form-switch m-0 p-0" style="z-index: 2;" title="Toggle to Approve/Reject">
-                                <input class="form-check-input m-0 bulk-action-toggle" type="checkbox" role="switch" data-action-on="bulkApproveItem" data-action-off="bulkRejectItem" style="width: 3em; height: 1.5em; cursor:pointer; box-shadow:none;">
-                            </div>
-                            <span class="text-danger fw-bold small toggle-label toggle-label-left position-absolute" style="left: 15px; opacity:0; transition:0.3s; pointer-events:none;">Reject <i class="fa-solid fa-times-circle ms-1"></i></span>
-                        </div>
-                    </li>
-                    <li class="px-2 py-1 mt-2">
-                        <label class="form-label small fw-bold text-muted mb-2 text-uppercase d-block" style="font-size: 11px;">Enable / Disable</label>
-                        <div class="bg-light border rounded p-2 position-relative d-flex justify-content-center align-items-center hover-toggle-box" style="height: 40px; cursor: pointer;">
-                            <span class="text-primary fw-bold small toggle-label toggle-label-right position-absolute" style="right: 15px; opacity:0; transition:0.3s; pointer-events:none;"><i class="fa-solid fa-play-circle me-1"></i> Enable</span>
-                            <div class="form-check form-switch m-0 p-0" style="z-index: 2;" title="Toggle to Enable/Disable">
-                                <input class="form-check-input m-0 bulk-action-toggle" type="checkbox" role="switch" data-action-on="bulkEnableItem" data-action-off="bulkDisableItem" style="width: 3em; height: 1.5em; cursor:pointer; box-shadow:none;">
-                            </div>
-                            <span class="text-warning fw-bold small toggle-label toggle-label-left position-absolute" style="left: 15px; opacity:0; transition:0.3s; pointer-events:none;">Disable <i class="fa-solid fa-ban ms-1"></i></span>
-                        </div>
-                    </li>
+
                     <li class="px-2 py-1 mt-2">
                         <label class="form-label small fw-bold text-muted mb-2 text-uppercase d-block" style="font-size: 11px;">Auto / Manual Apprv.</label>
                         <div class="bg-light border rounded p-2 position-relative d-flex justify-content-center align-items-center hover-toggle-box" style="height: 40px; cursor: pointer;">
@@ -131,10 +112,6 @@
 
                 <!-- Hidden Original Buttons to keep JS intact -->
                 <div class="d-none">
-                    <button id="bulkApproveItem"></button>
-                    <button id="bulkRejectItem"></button>
-                    <button id="bulkEnableItem"></button>
-                    <button id="bulkDisableItem"></button>
                     <button id="bulkAutoApproveItem"></button>
                     <button id="bulkManualApproveItem"></button>
                 </div>
@@ -976,6 +953,50 @@ $('#bulkDisableItem').off('click').on('click', function(e) {
     }).then((result) => {
         if(result.isConfirmed && result.value) {
             executeBulkAction('disable', result.value);
+        }
+    });
+});
+
+// Bulk Auto Approve
+$('#bulkAutoApproveItem').off('click').on('click', function(e) {
+    e.preventDefault();
+    if(selectedIds.length === 0) { 
+        Swal.fire('Warning', 'No items selected', 'warning'); 
+        return; 
+    }
+    Swal.fire({
+        title: 'Enable Auto Approval',
+        text: `Future updates to these ${selectedIds.length} item(s) will be automatically approved.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#0a58ca',
+        confirmButtonText: 'Yes, Enable Auto Approval',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if(result.isConfirmed) {
+            executeBulkAction('auto_approve', null);
+        }
+    });
+});
+
+// Bulk Manual Approve
+$('#bulkManualApproveItem').off('click').on('click', function(e) {
+    e.preventDefault();
+    if(selectedIds.length === 0) { 
+        Swal.fire('Warning', 'No items selected', 'warning'); 
+        return; 
+    }
+    Swal.fire({
+        title: 'Enable Manual Approval',
+        text: `Future updates to these ${selectedIds.length} item(s) will require manual approval.`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#084298',
+        confirmButtonText: 'Yes, Set to Manual',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if(result.isConfirmed) {
+            executeBulkAction('manual_approve', null);
         }
     });
 });

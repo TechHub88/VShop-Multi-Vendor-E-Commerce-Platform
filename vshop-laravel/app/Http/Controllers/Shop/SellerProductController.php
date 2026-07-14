@@ -965,9 +965,11 @@ public function saveBasic(Request $request, Product $product = null)
         }
     }
 
-    // Check Auto Approve flag for existing products, otherwise default to pending
-    if ($product && $product->is_auto_approve) {
-        $data['status'] = 'approved';
+    // Check Auto Approve flag for existing products, or default to verified if new product
+    if (!$product) {
+        $data['status'] = 'verified';
+    } else if ($product->is_auto_approve) {
+        $data['status'] = 'verified';
     } else {
         $data['status'] = 'pending';
     }
