@@ -822,18 +822,17 @@ $this->notifySeller(
             $holdDays = 7; // default 7 days
             
             if (!empty($cancelPolicy)) {
-                // Try to extract number from string (e.g. "10 days", "24 hrs")
-                if (preg_match('/(\d+)\s*(day|days|hrs|hours)/i', $cancelPolicy, $matches)) {
+                $cleanPolicy = strip_tags($cancelPolicy);
+                if (stripos($cleanPolicy, 'no cancel') !== false || stripos($cleanPolicy, 'non-refundable') !== false || stripos($cleanPolicy, 'no return') !== false) {
+                    $holdDays = 0;
+                } elseif (preg_match('/(\d+)[-\s]*(day|days|hrs|hours)?/i', $cleanPolicy, $matches)) {
                     $num = (int)$matches[1];
-                    $unit = strtolower($matches[2]);
+                    $unit = !empty($matches[2]) ? strtolower($matches[2]) : 'days';
                     if (str_starts_with($unit, 'hr') || str_starts_with($unit, 'hour')) {
                         $holdDays = max(1, ceil($num / 24));
                     } else {
                         $holdDays = $num;
                     }
-                } elseif (stripos($cancelPolicy, 'no cancel') !== false || stripos($cancelPolicy, 'non-refundable') !== false) {
-                    $holdDays = 0; // No hold if non-refundable? Or maybe standard 7 days. We'll use 7 days as default for non-refundable to be safe, or 0 if immediate. Let's use 7.
-                    $holdDays = 7;
                 }
             }
             

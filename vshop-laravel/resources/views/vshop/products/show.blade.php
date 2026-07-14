@@ -885,7 +885,7 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="policy-tab" data-bs-toggle="tab" data-bs-target="#policy-tab-pane" type="button" role="tab" aria-controls="policy-tab-pane" aria-selected="false">
                                 @if(in_array($product->type, ['service', 'professional', 'vshop-professional', 'vtravel-professional', 'tour', 'vtravel-tour']))
-                                    Cancellation Policy
+                                    Return/Refund/Cancellation Policy
                                 @else
                                     Delivery & Returns
                                 @endif
@@ -1559,7 +1559,7 @@
                         <div class="tab-pane fade" id="policy-tab-pane" role="tabpanel" aria-labelledby="policy-tab" tabindex="0">
                             <div class="p-3 bg-white rounded shadow-sm border">
                                 @if(in_array($product->type, ['service', 'professional', 'vshop-professional', 'vtravel-professional', 'tour', 'vtravel-tour']))
-                                    <h4 class="mb-3 text-dark">Cancellation Policy</h4>
+                                    <h4 class="mb-3 text-dark">Return/Refund/Cancellation Policy</h4>
                                     @php
                                         $cancelPolicy = $product->cancel_policy_tour ?? ($product->cancel_policy_prof ?? $product->cancel_policy_other);
                                     @endphp
