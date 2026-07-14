@@ -629,20 +629,36 @@ class AdminFinanceController extends Controller
                                     ->where('status', 'hold')
                                     ->get();
 
+                    if (!empty($updates['purchase_date'])) {
+                        $txn->created_at = $updates['purchase_date'];
+                    }
                     if (!empty($updates['hold_days'])) {
                         // Calculate new release date based on created_at and new hold days
                         $newReleaseDate = \Carbon\Carbon::parse($txn->created_at)->startOfDay()->addDays($updates['hold_days'])->toDateString();
                         
+                        $txn->release_date = $newReleaseDate;
+                        
                         foreach ($relatedTxns as $rel) {
+                            if (!empty($updates['purchase_date'])) {
+                                $rel->created_at = $updates['purchase_date'];
+                            }
                             $rel->release_date = $newReleaseDate;
                             
                             // Replace (On Hold for X days) in note
-                            $rel->note = preg_replace('/\(On Hold for \d+ days\)/', "(On Hold for {$updates['hold_days']} days)", $rel->note);
+                            if ($rel->note) {
+                                $rel->note = preg_replace('/\(On Hold for \d+ days\)/', "(On Hold for {$updates['hold_days']} days)", $rel->note);
+                            }
+                            $rel->save();
+                        }
+                    } else if (!empty($updates['purchase_date'])) {
+                        // If only purchase date is updated, recalculate release date with existing hold days if possible
+                        // Or just update created_at for related txns
+                        foreach ($relatedTxns as $rel) {
+                            $rel->created_at = $updates['purchase_date'];
                             $rel->save();
                         }
                     }
-                    
-                    // Note: payout_schedule isn't natively on transaction, skip or apply to seller if requested
+                    $txn->save();
                     
                     $count++;
                 }
