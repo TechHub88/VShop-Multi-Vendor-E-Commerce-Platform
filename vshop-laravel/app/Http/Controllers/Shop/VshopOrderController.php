@@ -624,53 +624,46 @@ $this->notifySeller(
                     $isSelfReferral = true;
                 } else {
                     $appliedConfigType = 'level_commission';
-                    // Priority A: Seller specific Referrer Commission from commission_management
-                    if (isset($fallbackReferrerComm) && $fallbackReferrerComm > 0) {
-                        $referrerComm = $fallbackReferrerComm;
-                        $referralAmount = ($totalPrice * $referrerComm) / 100;
-                        $appliedConfigType = 'seller_to_seller'; // Treat as seller rule
-                    } else {
-                        // Priority B: Global Referral configurations
+                    // Priority B: Global Referral configurations
+                    $config = $referralConfigs->whereIn('type', ['buyer_to_buyer', 'seller_to_seller'])
+                                              ->where('reference_id', $productId)
+                                              ->first();
+                                              
+                    if (!$config) {
                         $config = $referralConfigs->whereIn('type', ['buyer_to_buyer', 'seller_to_seller'])
-                                                  ->where('reference_id', $productId)
+                                                  ->where('reference_id', $sellerId)
                                                   ->first();
-                                                  
-                        if (!$config) {
-                            $config = $referralConfigs->whereIn('type', ['buyer_to_buyer', 'seller_to_seller'])
-                                                      ->where('reference_id', $sellerId)
-                                                      ->first();
-                        }
-                                                  
-                        if (!$config) {
-                            $config = $referralConfigs->where('type', 'level_commission')
-                                                      ->where('reference_id', 1)
-                                                      ->first();
-                        }
+                    }
+                                              
+                    if (!$config) {
+                        $config = $referralConfigs->where('type', 'level_commission')
+                                                  ->where('reference_id', 1)
+                                                  ->first();
+                    }
+                    
+                    if ($config) {
+                        $referrerComm = (float) $config->commission_percentage;
+                        $referralAmount = ($totalPrice * $referrerComm) / 100;
+                        $appliedConfigType = $config->type;
                         
-                        if ($config) {
-                            $referrerComm = (float) $config->commission_percentage;
-                            $referralAmount = ($totalPrice * $referrerComm) / 100;
-                            $appliedConfigType = $config->type;
+                        // Apply Referee Reward Points
+                        $configDesc = json_decode($config->description, true);
+                        $refereeDiscount = $configDesc['referee_discount'] ?? 0;
+                        if ($refereeDiscount > 0) {
+                            $refereeRewardAmount = ($totalPrice * $refereeDiscount) / 100;
+                            \App\Models\Reward::create([
+                                'customer_id' => $customer->id,
+                                'type' => 'points',
+                                'points' => (int) $refereeRewardAmount,
+                                'amount' => $refereeRewardAmount / 10,
+                                'description' => "Referral Reward for purchasing {$product->name}",
+                                'status' => 'active',
+                                'expiry_date' => now()->addDays(180)
+                            ]);
                             
-                            // Apply Referee Reward Points
-                            $configDesc = json_decode($config->description, true);
-                            $refereeDiscount = $configDesc['referee_discount'] ?? 0;
-                            if ($refereeDiscount > 0) {
-                                $refereeRewardAmount = ($totalPrice * $refereeDiscount) / 100;
-                                \App\Models\Reward::create([
-                                    'customer_id' => $customer->id,
-                                    'type' => 'points',
-                                    'points' => (int) $refereeRewardAmount,
-                                    'amount' => $refereeRewardAmount / 10,
-                                    'description' => "Referral Reward for purchasing {$product->name}",
-                                    'status' => 'active',
-                                    'expiry_date' => now()->addDays(180)
-                                ]);
-                                
-                                // Sync customer points
-                                $customer->reward_points = \App\Models\Reward::getValidPoints($customer->id);
-                                $customer->save();
-                            }
+                            // Sync customer points
+                            $customer->reward_points = \App\Models\Reward::getValidPoints($customer->id);
+                            $customer->save();
                         }
                     }
                 }

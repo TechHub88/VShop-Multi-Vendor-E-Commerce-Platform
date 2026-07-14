@@ -185,7 +185,7 @@ class Order extends Model
         if (!$sellerId && $this->relationLoaded('items') && $this->items->isNotEmpty()) {
             $sellerId = $this->items->first()->product->created_by_id ?? null;
         }
-        $appType = strtolower($this->app_type ?? 'v-shop');
+        $appType = strtolower($this->app_type ?? 'vshop');
         
         $sellerComm = 100;
         $referrerComm = 0;
