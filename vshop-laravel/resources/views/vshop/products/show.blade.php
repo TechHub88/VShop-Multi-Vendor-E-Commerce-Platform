@@ -800,12 +800,14 @@
                                              @php
                                                  $isPhysicalProduct = in_array($product->type, ['product', 'vshop-product']) || empty($product->type);
                                                  $isOutOfStock = $isPhysicalProduct && (is_null($product->stock_qty) || $product->stock_qty === '' || $product->stock_qty <= 0);
+                                                 $slotsCheckArr = json_decode($product->professional_slots, true);
+                                                 $hasSlots = !empty($slotsCheckArr) && is_array($slotsCheckArr);
                                              @endphp
 
                                              {{-- QUANTITY AND CART + ENQUIRY BUTTONS --}}
                                              <div class="action-row d-flex align-items-center gap-2 flex-wrap">
                                                  <!-- Quantity -->
-                                                 <div class="qty-box d-flex align-items-center" style="{{ !$isPhysicalProduct ? 'display: none !important;' : '' }} {{ $isOutOfStock ? 'opacity: 0.5; pointer-events: none;' : '' }}">
+                                                 <div class="qty-box d-flex align-items-center" style="{{ $hasSlots ? 'display: none !important;' : '' }} {{ $isOutOfStock ? 'opacity: 0.5; pointer-events: none;' : '' }}">
                                                      <button type="button" id="decrementQty" {{ $isOutOfStock ? 'disabled' : '' }}>-</button>
                                                      <input type="text" id="quantity" value="1" readonly>
                                                      <button type="button" id="incrementQty" {{ $isOutOfStock ? 'disabled' : '' }}>+</button>
@@ -1750,7 +1752,7 @@
 
             if (selectedSlotsData.size === 0) {
                 wrapper.hide();
-                if (!productConfig.isPhysicalProduct) {
+                if (productConfig.hasSlots) {
                     productConfig.quantity = 1;
                     updateTotalPrice();
                 }
@@ -1777,7 +1779,7 @@
                 `);
             });
 
-            if (!productConfig.isPhysicalProduct) {
+            if (productConfig.hasSlots) {
                 productConfig.quantity = selectedSlotsData.size > 0 ? selectedSlotsData.size : 1;
                 updateTotalPrice();
             }
@@ -2141,7 +2143,8 @@ $(document).ready(function() {
             combinations: @json($combinations),
             mainStock: {{ is_null($product->stock_qty) || $product->stock_qty === '' ? 'null' : $product->stock_qty }},
             lowStockThreshold: {{ is_null($product->low_stock_threshold) || $product->low_stock_threshold === '' ? 'null' : $product->low_stock_threshold }},
-            isPhysicalProduct: {{ in_array($product->type, ['product', 'vshop-product']) || empty($product->type) ? 'true' : 'false' }}
+            isPhysicalProduct: {{ in_array($product->type, ['product', 'vshop-product']) || empty($product->type) ? 'true' : 'false' }},
+            hasSlots: {{ $hasSlots ? 'true' : 'false' }}
         };
 
     // Initialize the page
@@ -2386,6 +2389,11 @@ $(document).ready(function() {
         const totalPriceEl = document.getElementById('totalPrice');
         if (totalPriceEl) {
             totalPriceEl.textContent = formatNumber(total);
+        }
+
+        const qtyInput = document.getElementById('quantity');
+        if (qtyInput) {
+            qtyInput.value = productConfig.quantity;
         }
 
         // Update add to cart button text
