@@ -26,11 +26,7 @@ use Illuminate\Support\Facades\Session;
 
 class VshopOrderController extends Controller
 {
-    // ... existing methods ...
-
-    /**
-     * Decrement stock and log movement
-     */
+    
     protected function decrementStockAndLog(int $productId, int $qty, int $orderId)
     {
         $product = Product::find($productId);
@@ -167,7 +163,7 @@ public function payment(Request $request)
             ->with('error', 'Please select address first');
     }
 
-    // ================= CALCULATE ORDER SUMMARY (AFTER ADDRESS) =================
+    
     $orderSummary = $this->calculateOrderSummary($cartItems);
 
     $availableCoupons = \App\Models\Coupon::where('status', 'active')
@@ -215,28 +211,36 @@ public function placeOrder(Request $request)
             return back()->with('error', 'Please login first');
         }
 
-        $referrerId = $customer->referred_by ?? null;
-        $referralCode = $request->referral_code ?? session('referral_code') ?? request()->cookie('referral_code');
-        if (empty($referrerId) && !empty($referralCode)) {
-            $referrer = \App\Models\Customer::where('referral_code', $referralCode)
-                ->first();
-                
-            if ($referrer) {
-                $referrerId = $referrer->id;
-                $customer->referred_by = $referrerId;
-                $customer->save();
-                
-                \App\Models\Referral::firstOrCreate([
-                    'customer_id' => $referrerId,
-                    'referred_customer_id' => $customer->id,
-                ], [
-                    'referral_code' => $referrer->referral_code,
-                    'status' => 'successful',
-                    'reward_amount' => 0,
-                    'completed_at' => now(),
-                ]);
-            } else {
-                return back()->with('error', 'Invalid referral code provided.');
+        $hasPastOrders = \App\Models\Order::where('customer_id', $customer->id)->exists();
+        $referrerId = null;
+
+        // ONLY apply referral if it's the customer's very first order
+        if (!$hasPastOrders) {
+            $referralCode = $request->referral_code ?? session('referral_code') ?? request()->cookie('referral_code');
+            
+            if (!empty($referralCode)) {
+                $referrer = \App\Models\Customer::where('referral_code', $referralCode)->first();
+                if ($referrer && $referrer->id !== $customer->id) {
+                    $referrerId = $referrer->id;
+                    if (empty($customer->referred_by)) {
+                        $customer->referred_by = $referrerId;
+                        $customer->save();
+                        
+                        \App\Models\Referral::firstOrCreate([
+                            'customer_id' => $referrerId,
+                            'referred_customer_id' => $customer->id,
+                        ], [
+                            'referral_code' => $referrer->referral_code,
+                            'status' => 'successful',
+                            'reward_amount' => 0,
+                            'completed_at' => now(),
+                        ]);
+                    }
+                } elseif (!$referrer && !empty($referralCode)) {
+                    return back()->with('error', 'Invalid referral code provided.');
+                }
+            } elseif (!empty($customer->referred_by)) {
+                $referrerId = $customer->referred_by;
             }
         }
 
@@ -1796,6 +1800,10 @@ public function updateAddressSession(Request $request)
 
         if (!$customer) {
             return response()->json(['success' => false, 'message' => 'Please login first.']);
+        }
+
+        if (\App\Models\Order::where('customer_id', $customer->id)->exists()) {
+            return response()->json(['success' => false, 'message' => 'Referral code can only be used on your first purchase.']);
         }
 
         if ($customer->referral_code === $code) {
