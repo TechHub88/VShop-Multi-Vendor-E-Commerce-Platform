@@ -653,14 +653,20 @@ $this->notifySeller(
                             'updated_at'        => now()
                         ]);
                     } else {
+                        // Dynamically fetch points from RewardRedemptionTier based on commission %
+                        $rewardTier = \App\Models\RewardRedemptionTier::where('discount_amount', $referrerComm)
+                                        ->where('status', 'active')
+                                        ->first();
+                        $pointsToGive = $rewardTier ? $rewardTier->points_required : (int) $referralAmount;
+
                         // Credit reward points to customer referrer
-                        $referrerCustomer->increment('reward_points', $referralAmount);
+                        $referrerCustomer->increment('reward_points', $pointsToGive);
 
                         // Log to rewards table
                         \App\Models\Reward::create([
                             'customer_id' => $referrerCustomer->id,
                             'type' => 'points',
-                            'points' => (int) $referralAmount,
+                            'points' => (int) $pointsToGive,
                             'amount' => $referralAmount,
                             'description' => "Referral commission points for Customer #{$customer->id}'s purchase on Order #{$order->id}",
                             'status' => 'active',
@@ -680,7 +686,7 @@ $this->notifySeller(
                             'credit' => 0,
                             'debit' => 0,
                             'balance_after' => $referrerCustomerWallet->balance,
-                            'description' => "Referral commission earning (credited as {$referralAmount} reward points) for Order #{$order->id}",
+                            'description' => "Referral commission earning (credited as {$pointsToGive} reward points) for Order #{$order->id}",
                             'reference_id' => 'ORD-' . $order->id,
                             'status' => 'completed'
                         ]);

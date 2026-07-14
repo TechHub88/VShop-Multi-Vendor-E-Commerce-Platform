@@ -468,12 +468,18 @@ class Order extends Model
                             }
                         } else {
                             // Referrer is normal buyer -> reverse reward points
-                            $referrerCustomer->decrement('reward_points', $referralAmount);
+                            $rewardRecord = \App\Models\Reward::where('customer_id', $referrerCustomer->id)
+                                ->where('description', 'like', "%Referral commission points%Order #{$order->id}%")
+                                ->where('points', '>', 0)
+                                ->first();
+                            $pointsToReverse = $rewardRecord ? $rewardRecord->points : (int) $referralAmount;
+
+                            $referrerCustomer->decrement('reward_points', $pointsToReverse);
 
                             \App\Models\Reward::create([
                                 'customer_id' => $referrerCustomer->id,
                                 'type' => 'points',
-                                'points' => (int) -$referralAmount,
+                                'points' => (int) -$pointsToReverse,
                                 'amount' => -$referralAmount,
                                 'description' => "Referral commission points reversed for cancelled Order #{$order->id}",
                                 'status' => 'active',
