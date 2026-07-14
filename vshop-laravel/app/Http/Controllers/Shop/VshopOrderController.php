@@ -600,7 +600,15 @@ $this->notifySeller(
                     $isSelfReferral = true;
                 } else {
                     // Check configurations
-                    $config = $referralConfigs->firstWhere('reference_id', $sellerId) ?? $referralConfigs->first();
+                    $config = $referralConfigs->whereIn('type', ['buyer_to_buyer', 'seller_to_seller'])
+                                              ->where('reference_id', $referralUserId)
+                                              ->first();
+                                              
+                    if (!$config) {
+                        $config = $referralConfigs->where('type', 'level_commission')
+                                                  ->where('reference_id', 1)
+                                                  ->first();
+                    }
                     
                     if ($config) {
                         $referrerComm = (float) $config->commission_percentage;
