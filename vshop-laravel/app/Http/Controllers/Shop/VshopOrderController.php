@@ -572,7 +572,7 @@ $this->notifySeller(
 
             $product = DB::table('products')
                 ->where('id', $productId)
-                ->select('created_by_id')
+                ->select('created_by_id', 'category_id', 'name')
                 ->first();
 
             $sellerId = $product->created_by_id;
@@ -615,6 +615,47 @@ $this->notifySeller(
             $platformAmount = ($totalPrice * $platformComm) / 100;
             $commissionAmount = $referralAmount + $platformAmount;
             $sellerEarning = $totalPrice - $commissionAmount;
+
+            // --- BUYER CATEGORY & PRODUCT REWARD POINTS ---
+            $catReward = $referralConfigs->where('type', 'category_reward')->where('reference_id', $product->category_id)->first();
+            if ($catReward) {
+                $rewardValue = 0;
+                if ($catReward->reward_type === 'fixed') {
+                    $rewardValue = $catReward->reward_value * $qty;
+                } else {
+                    $rewardValue = ($totalPrice * $catReward->reward_value) / 100;
+                }
+                if ($rewardValue > 0) {
+                    \App\Models\Reward::create([
+                        'customer_id' => $customer->id,
+                        'type' => 'points',
+                        'points' => (int) $rewardValue,
+                        'amount' => 0,
+                        'description' => "Category Reward for purchasing {$product->name}",
+                        'status' => 'active',
+                        'expiry_date' => now()->addDays(180)
+                    ]);
+                }
+            }
+
+            $prodReward = $referralConfigs->where('type', 'product_campaign')->where('reference_id', $productId)->first();
+            if ($prodReward) {
+                $today = now()->format('Y-m-d');
+                if ($today >= $prodReward->start_date && $today <= $prodReward->end_date) {
+                    $rewardValue = $prodReward->reward_value * $qty;
+                    if ($rewardValue > 0) {
+                        \App\Models\Reward::create([
+                            'customer_id' => $customer->id,
+                            'type' => 'points',
+                            'points' => (int) $rewardValue,
+                            'amount' => 0,
+                            'description' => "Product Campaign Reward for purchasing {$product->name}",
+                            'status' => 'active',
+                            'expiry_date' => now()->addDays(180)
+                        ]);
+                    }
+                }
+            }
 
             // --- REFERRER PAYOUT & LEDGER ---
             if ($referralUserId && $referralAmount > 0) {
