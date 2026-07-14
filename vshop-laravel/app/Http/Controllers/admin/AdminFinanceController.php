@@ -287,7 +287,8 @@ class AdminFinanceController extends Controller
         $seller = $txn->seller;
         if (!$seller) continue;
         
-        $location = $seller->billing_city ?: 'Mumbai';
+        $locationParts = array_filter([$seller->billing_city, $seller->billing_state, $seller->billing_country]);
+        $location = !empty($locationParts) ? implode(', ', $locationParts) : 'Not specified';
         $app = $seller->application ?? 'vshop';
         
         // Find platform commission for this specific transaction
@@ -302,15 +303,24 @@ class AdminFinanceController extends Controller
         $sellerPayout = $txn->credit - $platformCommission;
         
         // Find products for this seller in this order
-        $productNames = [];
+        $productDetails = [];
         if ($txn->order) {
             foreach ($txn->order->items as $item) {
                 if ($item->product && $item->product->created_by_id == $seller->id) {
-                    $productNames[] = $item->product->name;
+                    $thumb = $item->product->thumbnail;
+                    if ($thumb) {
+                        $thumbUrl = str_starts_with($thumb, 'http') ? $thumb : asset('storage/' . $thumb);
+                    } else {
+                        $thumbUrl = asset('assets/images/default-product.png');
+                    }
+                    $productDetails[] = [
+                        'name' => $item->product->name,
+                        'image' => $thumbUrl
+                    ];
                 }
             }
         }
-        $productNamesStr = implode(', ', array_unique($productNames)) ?: 'Unknown Product';
+        $productDetails = array_values($productDetails);
         
         // Hold days logic - calculate difference between release_date and created_at
         $holdDays = 0;
@@ -326,7 +336,7 @@ class AdminFinanceController extends Controller
             'seller_code' => 'S-' . (1000 + $seller->id),
             'name' => $seller->name,
             'location' => $location,
-            'app' => $productNamesStr, // Showing products here instead of app name
+            'app' => count($productDetails) > 0 ? $productDetails : 'Unknown Product', // Array of products for UI
             'total_sales' => $txn->credit,
             'platform_commission' => $platformCommission,
             'seller_payout' => $sellerPayout,
@@ -336,7 +346,7 @@ class AdminFinanceController extends Controller
             'referral_payout' => 0,
             'reff_schedule' => 'Monthly',
             'referral_status' => 'Approved',
-            'est_tax' => 0,
+            'est_tax' => $txn->tax_amount + $txn->gst_amount,
             'net_payout' => $sellerPayout,
             'remaining_balance' => 0,
             'per_enquiry_amount' => 0,
@@ -788,19 +798,28 @@ public function escalateDispute(Request $request)
     public function releaseHold(Request $request)
     {
         try {
-            $request->validate(['seller_id' => 'required|exists:sellers,id']);
-            
-            $seller = Seller::find($request->seller_id);
-            $seller->settlement_hold = false;
-            $seller->settlement_hold_reason = null;
-            $seller->settlement_hold_date = null;
-            $seller->save();
-            
-            // Update finance records
-            SellerFinance::where('seller_id', $seller->id)
-                ->where('transaction_type', 'hold')
-                ->where('status', 'pending')
-                ->update(['status' => 'released', 'release_date' => now()]);
+            if ($request->has('transaction_id')) {
+                // Specific transaction manual release
+                $txn = \App\Models\SellerFinance::find($request->transaction_id);
+                if ($txn && $txn->status === 'pending') {
+                    $txn->update(['status' => 'released', 'release_date' => now()]);
+                }
+            } else {
+                // Bulk / seller level fallback
+                $request->validate(['seller_id' => 'required|exists:sellers,id']);
+                
+                $seller = Seller::find($request->seller_id);
+                $seller->settlement_hold = false;
+                $seller->settlement_hold_reason = null;
+                $seller->settlement_hold_date = null;
+                $seller->save();
+                
+                // Update finance records
+                SellerFinance::where('seller_id', $seller->id)
+                    ->where('transaction_type', 'earning')
+                    ->where('status', 'pending')
+                    ->update(['status' => 'released', 'release_date' => now()]);
+            }
             
             return response()->json(['success' => true, 'message' => 'Hold released successfully']);
         } catch (\Exception $e) {

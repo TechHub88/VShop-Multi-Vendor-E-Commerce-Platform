@@ -1644,7 +1644,16 @@
                             </a>
                         </td>
                         <td class="col-payout-app">
-                            <span class="badge bg-secondary-soft text-secondary text-uppercase">{{ $row['app'] }}</span>
+                            @if(is_array($row['app']))
+                                @foreach($row['app'] as $prod)
+                                    <div class="d-flex align-items-center mb-1">
+                                        <img src="{{ $prod['image'] }}" alt="img" class="rounded me-2 border" style="width: 24px; height: 24px; object-fit: cover;">
+                                        <span class="text-dark fw-medium text-truncate" style="max-width: 150px; font-size: 11px;" title="{{ $prod['name'] }}">{{ $prod['name'] }}</span>
+                                    </div>
+                                @endforeach
+                            @else
+                                <span class="badge bg-secondary-soft text-secondary text-uppercase">{{ $row['app'] }}</span>
+                            @endif
                         </td>
                         <td class="col-payout-sales">{{ $currencySymbol }}{{ number_format($row['total_sales'], 2) }}</td>
                         <td class="col-payout-comm">{{ $currencySymbol }}{{ number_format($row['platform_commission'], 2) }}</td>
@@ -1674,7 +1683,7 @@
                          </td>
 
                         <td class="col-payout-status">
-                            <span class="badge bg-{{ $row['payout_status'] == 'Approved' ? 'success' : ($row['payout_status'] == 'Pending' ? 'warning' : 'info') }}-soft">
+                            <span class="badge bg-{{ in_array(strtolower($row['payout_status']), ['approved', 'success', 'released']) ? 'success' : (strtolower($row['payout_status']) == 'pending' ? 'warning' : 'info') }}-soft text-{{ in_array(strtolower($row['payout_status']), ['approved', 'success', 'released']) ? 'success' : (strtolower($row['payout_status']) == 'pending' ? 'warning' : 'info') }}">
                                 {{ $row['payout_status'] }}
                             </span>
                         </td>
@@ -1708,8 +1717,8 @@
                         
                         <td class="col-payout-action text-center">
                             <div class="d-flex gap-1 justify-content-center align-items-center">
-                                <button type="button" class="btn btn-sm btn-success py-1 px-2" title="Save Row Changes" onclick="saveSellerRow({{ $row['seller_id'] }}, this)">
-                                    <iconify-icon icon="solar:diskette-bold" class="align-middle"></iconify-icon> Save
+                                <button type="button" class="btn btn-sm btn-outline-success py-1 px-2" title="Manual Release" onclick="manualRelease({{ $row['id'] }}, this)" {{ strtolower($row['payout_status']) === 'pending' ? '' : 'disabled' }}>
+                                    <iconify-icon icon="solar:check-circle-bold-duotone" class="align-middle"></iconify-icon> Release
                                 </button>
                                 <div class="dropdown">
                                     <button class="btn btn-primary btn-sm btn-icon" data-bs-toggle="dropdown">
@@ -3696,22 +3705,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     Select sellers and apply bulk settings. Leave a field blank to skip updating that field.
                 </div>
 
-                <!-- Seller Selection -->
+                <!-- Transaction Selection -->
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Select Sellers to Update</label>
-                    <div class="border rounded p-2" style="max-height:180px; overflow-y:auto;" id="bulkSellerCheckboxes">
-                        @foreach($sellers as $s)
-                        <div class="form-check">
-                            <input class="form-check-input bulk-seller-cb" type="checkbox" value="{{ $s->id }}" id="bulkSeller{{ $s->id }}">
-                            <label class="form-check-label small" for="bulkSeller{{ $s->id }}">
-                                S-{{ $s->id }} — {{ $s->name }}
-                            </label>
-                        </div>
-                        @endforeach
-                    </div>
-                    <div class="d-flex gap-2 mt-1">
-                        <button class="btn btn-outline-primary btn-sm" onclick="bulkSelectAll(true)">Select All</button>
-                        <button class="btn btn-outline-secondary btn-sm" onclick="bulkSelectAll(false)">Deselect All</button>
+                    <label class="form-label fw-semibold">Selected Transactions</label>
+                    <div class="border rounded p-3 bg-light text-center">
+                        <span id="bulkSelectedCountModal" class="fw-bold fs-5 text-primary">0</span> <span class="text-muted">transaction(s) selected for update.</span>
                     </div>
                 </div>
 
@@ -3758,21 +3756,18 @@ document.addEventListener('DOMContentLoaded', function() {
 // BULK UPDATE MODAL
 // ==========================================
 function openBulkUpdateModal() {
-    // Pre-tick checkboxes that are already selected via the main earnings table checkboxes
     const selectedIds = Array.from(document.querySelectorAll('.payout-checkbox:checked')).map(cb => cb.value);
-    document.querySelectorAll('.bulk-seller-cb').forEach(cb => {
-        cb.checked = selectedIds.includes(cb.value);
-    });
+    if(selectedIds.length === 0) {
+        Swal.fire('Warning', 'Please select at least one transaction.', 'warning');
+        return;
+    }
+    document.getElementById('bulkSelectedCountModal').innerText = selectedIds.length;
     document.getElementById('bulkUpdateStatus').innerHTML = '';
     new bootstrap.Modal(document.getElementById('bulkUpdateModal')).show();
 }
 
-function bulkSelectAll(checked) {
-    document.querySelectorAll('.bulk-seller-cb').forEach(cb => cb.checked = checked);
-}
-
 function applyBulkUpdate() {
-    const transactionIds = Array.from(document.querySelectorAll('.bulk-seller-cb:checked')).map(cb => cb.value);
+    const transactionIds = Array.from(document.querySelectorAll('.payout-checkbox:checked')).map(cb => cb.value);
     if (transactionIds.length === 0) {
         document.getElementById('bulkUpdateStatus').innerHTML = '<div class="alert alert-warning py-2 fs-8">Please select at least one transaction.</div>';
         return;
@@ -6376,44 +6371,44 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 <script>
 // Professional Save Function
-function saveSellerRow(sellerId, buttonElement) {
-    const row = $(buttonElement).closest('tr');
-    
-    // Get all updated values
-    const holdDays = row.find('.hold-days-input').val();
-    const payoutDate = row.find('.payout-date-input').val();
-    const referralDate = row.find('.referral-date-input').val();
-    
-    // Professional loading state
-    const originalHtml = $(buttonElement).html();
-    $(buttonElement).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
-    $(buttonElement).prop('disabled', true);
-    
-    // AJAX call to save data
-    $.ajax({
-        url: '/admin/seller-payout/update',
-        method: 'POST',
-        data: {
-            _token: '{{ csrf_token() }}',
-            seller_id: sellerId,
-            hold_days: holdDays,
-            payout_date: payoutDate,
-            referral_date: referralDate
-        },
-        success: function(response) {
-            if (response.success) {
-                showProfessionalToast('Seller payout data updated successfully!', 'success');
-            } else {
-                showProfessionalToast(response.message || 'Error updating seller data', 'error');
-            }
-        },
-        error: function(xhr) {
-            console.error(xhr);
-            showProfessionalToast('An error occurred while saving data', 'error');
-        },
-        complete: function() {
-            $(buttonElement).html(originalHtml);
-            $(buttonElement).prop('disabled', false);
+function manualRelease(transactionId, btn) {
+    Swal.fire({
+        title: 'Release Hold?',
+        text: 'Are you sure you want to manually release this transaction hold?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Release',
+        confirmButtonColor: '#198754'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            btn.disabled = true;
+            
+            fetch('{{ route("admin.finance.release-hold") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ transaction_id: transactionId })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if(res.success) {
+                    showProfessionalToast('Transaction released successfully!', 'success');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showProfessionalToast(res.message || 'Error releasing transaction', 'error');
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }
+            })
+            .catch(() => {
+                showProfessionalToast('Failed to release transaction', 'error');
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            });
         }
     });
 }
