@@ -1714,6 +1714,8 @@ Route::delete(
         Route::post('/reward-tier', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'storeRewardTier']);
         Route::post('/reward-tier/{id}', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'updateRewardTier']);
         Route::post('/reward-tier/{id}/delete', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'deleteRewardTier']);
+        
+        Route::get('/transactions', [\App\Http\Controllers\admin\MarketingGrowthController::class, 'getTransactions']);
     });
     Route::get('/get-subcategories', [App\Http\Controllers\admin\ProductController::class, 'getSubcategories'])
         ->name('get.subcategories');

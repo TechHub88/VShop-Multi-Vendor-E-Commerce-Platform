@@ -231,8 +231,7 @@ class MarketingGrowthController extends Controller
     public function getCategories()
     {
         $cats = DB::table('marketplace_categories')
-            ->select('name', \Illuminate\Support\Facades\DB::raw('GROUP_CONCAT(id) as ids'))
-            ->groupBy('name')
+            ->select('id', 'name')
             ->orderBy('name')
             ->get();
         return response()->json($cats);

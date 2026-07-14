@@ -903,19 +903,6 @@ async function loadFraudAnalytics() {
     document.getElementById('flaggedReferralsTable').innerHTML = '<tr><td>john_doe</td><td>jane_doe</td><td>Same device</td><td>2025-03-15</td></tr>';
 }
 
-// ========== Tab Switching ==========
-document.querySelectorAll('.ref-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.ref-tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const tabId = btn.dataset.tab;
-        document.querySelectorAll('.ref-tab-pane').forEach(p => p.classList.remove('active'));
-        document.getElementById(`tab-${tabId}`).classList.add('active');
-        if (tabId === 'campaigns') loadCampaigns();
-        if (tabId === 'fraud-analytics') loadFraudAnalytics();
-        if (tabId === 'transactions') loadTransactions();
-    });
-});
 
 // ========== Initial Load ==========
 (async function init() {
@@ -934,6 +921,15 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
             document.getElementById('tab-' + this.dataset.tab).classList.add('active');
             if (this.dataset.tab === 'configurations') {
                 loadExistingRefConfigs();
+            }
+            if (this.dataset.tab === 'transactions') {
+                loadTransactions();
+            }
+            if (this.dataset.tab === 'campaigns') {
+                loadCampaigns();
+            }
+            if (this.dataset.tab === 'fraud-analytics') {
+                loadFraudAnalytics();
             }
         });
     });

@@ -556,7 +556,7 @@ $this->notifySeller(
 
         // Fetch all commission rules once to avoid repeated queries in loop
         $commissionRules = \Illuminate\Support\Facades\DB::table('commission_management')->get();
-        $referralConfigs = \Illuminate\Support\Facades\DB::table('referral_configurations')->where('status', 'active')->get();
+        $referralConfigs = \Illuminate\Support\Facades\DB::table('referral_configurations')->where('status', 1)->get();
 
         /* ================= ORDER ITEMS ================= */
         
