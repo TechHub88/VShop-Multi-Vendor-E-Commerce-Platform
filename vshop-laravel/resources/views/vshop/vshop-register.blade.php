@@ -185,10 +185,15 @@
 
                     <div class="countdown-timer" id="countdownTimer">OTP expires in 05:00</div>
 
-                    <div class="fotm-input-box">
-                        <i class="fa-regular fa-key"></i>
-                        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP" maxlength="6" autocomplete="off">
+                    <div class="otp-inputs-container d-flex justify-content-center gap-2 mt-3 mb-3">
+                        <input type="text" class="otp-digit form-control text-center fw-bold border-primary" maxlength="1" style="width: 45px; height: 50px; font-size: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <input type="text" class="otp-digit form-control text-center fw-bold border-primary" maxlength="1" style="width: 45px; height: 50px; font-size: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <input type="text" class="otp-digit form-control text-center fw-bold border-primary" maxlength="1" style="width: 45px; height: 50px; font-size: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <input type="text" class="otp-digit form-control text-center fw-bold border-primary" maxlength="1" style="width: 45px; height: 50px; font-size: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <input type="text" class="otp-digit form-control text-center fw-bold border-primary" maxlength="1" style="width: 45px; height: 50px; font-size: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                        <input type="text" class="otp-digit form-control text-center fw-bold border-primary" maxlength="1" style="width: 45px; height: 50px; font-size: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
                     </div>
+                    <input type="hidden" id="otpInput">
                     <div id="otpError" class="error-text" style="display:none;"></div>
                 </div>
                 <div class="modal-footer d-flex justify-content-between align-items-center">
@@ -210,6 +215,31 @@
             let timeLeft = 300;
             let currentEmail = '';
             let currentPhone = '';
+
+            /* ---- OTP Inputs Logic ---- */
+            $('.otp-digit').on('input', function() {
+                // Allow only numbers
+                this.value = this.value.replace(/[^0-9]/g, '');
+                var val = $(this).val();
+                if (val.length === 1) {
+                    $(this).next('.otp-digit').focus();
+                }
+                updateHiddenOtp();
+            });
+
+            $('.otp-digit').on('keydown', function(e) {
+                if (e.key === 'Backspace' && !$(this).val()) {
+                    $(this).prev('.otp-digit').focus();
+                }
+            });
+
+            function updateHiddenOtp() {
+                let otpVal = '';
+                $('.otp-digit').each(function() {
+                    otpVal += $(this).val();
+                });
+                $('#otpInput').val(otpVal);
+            }
 
             /* ---- Timer ---- */
             function startCountdown() {
@@ -252,6 +282,7 @@
                             $('#resendOtpBtn').hide();
                             startCountdown();
                             $('#otpInput').val('');
+                            $('.otp-digit').val('');
                             $('#otpError').hide().text('');
                             $('#otpModal').modal('show');
                             $('#successAlert').text('OTP sent to your email. Please verify to complete registration.').show();
