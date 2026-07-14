@@ -295,6 +295,7 @@
                                     data-status="{{ $product->status }}" 
                                     data-category-id="{{ $product->category_id ?? 0 }}"
                                     data-seller-id="{{ $product->created_by_id }}"
+                                    data-auto-approve="{{ $product->is_auto_approve ?? 0 }}"
                                     data-name="{{ strtolower($product->name ?? '') }} {{ strtolower($product->product_code ?? '') }} {{ strtolower($product->sku ?? '') }}">
                                     <td><input type="checkbox" class="productCheckbox" value="{{ $product->id }}"></td>
                                     <td>{{ $loop->iteration }}</td>
@@ -751,13 +752,24 @@ let currentProductId = null;
 // Update bulk button visibility and selected count
 function updateBulkUI() {
     selectedIds = [];
+    let firstAutoApproveState = null;
+    
     $('.productCheckbox:checked').each(function() { 
-        selectedIds.push($(this).val()); 
+        selectedIds.push($(this).val());
+        if (firstAutoApproveState === null) {
+            firstAutoApproveState = $(this).closest('tr').data('auto-approve');
+        }
     });
+    
     let count = selectedIds.length;
     if(count > 0) {
         $('#bulkDropdownWrapper').show();
         $('#bulkSelectedCount').text(count);
+        
+        if (firstAutoApproveState !== null) {
+            let isAuto = (firstAutoApproveState == 1 || firstAutoApproveState == true);
+            $('.bulk-action-toggle').prop('checked', isAuto);
+        }
     } else {
         $('#bulkDropdownWrapper').hide();
     }

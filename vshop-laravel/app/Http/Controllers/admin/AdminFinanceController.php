@@ -330,6 +330,12 @@ class AdminFinanceController extends Controller
             $holdDays = $created->diffInDays($release);
         }
 
+        // Get seller wallet balance
+        $sellerWallet = \App\Models\Wallet::where('user_type', 'seller')
+            ->where('seller_id', $seller->id)
+            ->first();
+        $walletBalance = $sellerWallet ? $sellerWallet->balance : 0;
+
         $earningsDetails[] = [
             'id' => $txn->id,
             'seller_id' => $seller->id,
@@ -348,7 +354,7 @@ class AdminFinanceController extends Controller
             'referral_status' => 'Approved',
             'est_tax' => $txn->tax_amount + $txn->gst_amount,
             'net_payout' => $sellerPayout,
-            'remaining_balance' => 0,
+            'remaining_balance' => $walletBalance,
             'per_enquiry_amount' => 0,
             'per_click_amount' => 0,
             'purchase_date' => $txn->created_at->format('Y-m-d'),
