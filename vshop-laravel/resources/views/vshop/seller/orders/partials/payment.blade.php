@@ -552,7 +552,7 @@ rows += `
 
 <td>₹${o.referral_commission_amount ?? 0}</td>
 
-<td>₹${o.total_amount - (o.referral_commission_amount ?? 0)}</td>
+<td>${o.finance_status === 'hold' ? '<span class=\"badge bg-warning text-dark\">On Hold</span>' : '₹' + (o.total_amount - (o.referral_commission_amount ?? 0))}</td>
 
 <td>₹${paid}</td>
 

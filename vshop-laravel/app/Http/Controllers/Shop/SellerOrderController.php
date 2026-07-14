@@ -1248,6 +1248,13 @@ public function payment(Request $request)
                 ? 0
                 : $o->total_amount;
 
+            $finance = \Illuminate\Support\Facades\DB::table('seller_finances')
+                ->where('order_id', $o->id)
+                ->where('seller_id', $o->seller_id)
+                ->where('transaction_type', 'earning')
+                ->first();
+            $o->finance_status = $finance ? $finance->status : 'success';
+
             return $o;
         });
 
