@@ -1876,7 +1876,7 @@ public function getAllSellers(Request $request)
 {
     try {
         // Get ALL sellers - no conditions at all
-        $sellers = Seller::orderBy('name', 'asc')->get();
+        $sellers = Seller::orderBy('name', 'asc')->get()->unique('name');
 
         $formattedSellers = $sellers->map(function($seller) {
             return [
@@ -1888,7 +1888,7 @@ public function getAllSellers(Request $request)
                 'application' => $seller->application ?? 'vshop',
                 'status' => $seller->status
             ];
-        });
+        })->values();
 
         return response()->json([
             'success' => true,

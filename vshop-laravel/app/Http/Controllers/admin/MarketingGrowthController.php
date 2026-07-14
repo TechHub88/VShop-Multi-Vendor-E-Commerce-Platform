@@ -39,15 +39,7 @@ class MarketingGrowthController extends Controller
             if ($t->buyer_id) {
                 // Buyer-to-buyer
                 $referrerData = $t->referrer ? ['name' => $t->referrer->name, 'email' => $t->referrer->email] : null;
-                // Check if referrer is a seller
-                if ($t->referrer) {
-                    $isSeller = \App\Models\Seller::where('email', $t->referrer->email)
-                        ->orWhere('phone', $t->referrer->phone)
-                        ->exists();
-                    if ($isSeller) {
-                        $payoutType = 'Seller Wallet';
-                    }
-                }
+                $payoutType = 'Buyer Points';
             } else {
                 // Seller-to-seller (referrer_id is seller ID)
                 $referralType = 'Seller to Seller';
@@ -231,7 +223,9 @@ class MarketingGrowthController extends Controller
     public function getCategories()
     {
         $cats = DB::table('marketplace_categories')
-            ->select('id', 'name')
+            ->select('name')
+            ->selectRaw('MIN(id) as id')
+            ->groupBy('name')
             ->orderBy('name')
             ->get();
         return response()->json($cats);
@@ -247,7 +241,7 @@ class MarketingGrowthController extends Controller
     public function getSellers()
     {
         return response()->json(
-            DB::table('sellers')->select('id', 'name', 'org_name')->orderBy('name')->get()
+            DB::table('sellers')->select('name')->selectRaw('MIN(id) as id, MIN(org_name) as org_name')->groupBy('name')->orderBy('name')->get()
         );
     }
 

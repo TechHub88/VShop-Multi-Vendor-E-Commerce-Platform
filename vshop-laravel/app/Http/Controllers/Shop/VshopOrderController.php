@@ -594,6 +594,7 @@ $this->notifySeller(
             }
             $referralAmount = 0;
             $isSelfReferral = false;
+            $appliedConfigType = 'level_commission';
 
             if ($referralUserId) {
                 if ($referralUserId == $customer->id) {
@@ -613,6 +614,7 @@ $this->notifySeller(
                     if ($config) {
                         $referrerComm = (float) $config->commission_percentage;
                         $referralAmount = ($totalPrice * $referrerComm) / 100;
+                        $appliedConfigType = $config->type;
 
                         if (!$hasPreviousPaidReferral) {
                         }
@@ -669,10 +671,15 @@ $this->notifySeller(
             if ($referralUserId && $referralAmount > 0) {
                 $referrerCustomer = \App\Models\Customer::find($referralUserId);
                 if ($referrerCustomer) {
+                    $shouldGivePoints = ($appliedConfigType === 'buyer_to_buyer');
+
                     // Check if referrer is listed in seller panel
-                    $referrerSeller = \App\Models\Seller::where('email', $referrerCustomer->email)
-                        ->orWhere('mobile', $referrerCustomer->phone)
-                        ->first();
+                    $referrerSeller = null;
+                    if (!$shouldGivePoints) {
+                        $referrerSeller = \App\Models\Seller::where('email', $referrerCustomer->email)
+                            ->orWhere('mobile', $referrerCustomer->phone)
+                            ->first();
+                    }
 
                     if ($referrerSeller) {
                         // Credit cash to referrer's seller wallet

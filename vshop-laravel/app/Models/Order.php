@@ -184,13 +184,11 @@ class Order extends Model
         // If order doesn't have seller_id directly, try to get it from the first item
         if (!$sellerId && $this->relationLoaded('items') && $this->items->isNotEmpty()) {
             $sellerId = $this->items->first()->product->created_by_id ?? null;
-        } elseif (!$sellerId) {
-            // Lazy load if not already loaded (less optimal but necessary if seller_id is missing)
-            $firstItem = $this->items()->with('product')->first();
-            $sellerId = $firstItem->product->created_by_id ?? null;
-        }
-
-        $appType = 'vshop'; // Default to vshop
+        $appType = strtolower($this->app_type ?? 'v-shop');
+        
+        $sellerComm = 100;
+        $referrerComm = 0;
+        $platformComm = 0;
 
         try {
             static $rules = null;
@@ -204,8 +202,6 @@ class Order extends Model
             });
                                   
             if ($specificRule) {
-                $sellerComm = $specificRule->seller_commission;
-                $referrerComm = $specificRule->referrer_commission;
                 $platformComm = $specificRule->platform_commission;
             } else {
                 // Priority 2: Match by App Type with no specific seller
@@ -213,29 +209,41 @@ class Order extends Model
                                  ->where('app_type', $appType)
                                  ->first();
                 if ($appRule) {
-                    $sellerComm = $appRule->seller_commission;
-                    $referrerComm = $appRule->referrer_commission;
                     $platformComm = $appRule->platform_commission;
                 } else {
                     // Priority 3: Generic fallback in DB
                     $generalRule = $rules->whereNull('seller_id')->first();
                     if ($generalRule) {
-                        $sellerComm = $generalRule->seller_commission;
-                        $referrerComm = $generalRule->referrer_commission;
                         $platformComm = $generalRule->platform_commission;
                     }
                 }
             }
         } catch (\Exception $e) {
             // Ignore DB errors and use default
+            $platformComm = 1.5;
+        }
+        
+        $totalAmount = (float) ($this->total_amount ?? 0);
+        
+        // Use the actual referral commission stored on the order!
+        if (!empty($this->referrer_id) || !empty($this->referred_by)) {
+            $referrerComm = (float) ($this->referral_commission_percent ?? 0);
+            $referrerAmt = (float) ($this->referral_commission_amount ?? 0);
+        } else {
+            $referrerComm = 0;
+            $referrerAmt = 0;
         }
 
-        $totalAmount = $this->total_amount ?? 0;
+        $platformAmt = $totalAmount * ($platformComm / 100);
+        
+        // Final Seller share is whatever is left after taking out platform and referral commissions
+        $sellerAmt = $totalAmount - $platformAmt - $referrerAmt;
+        $sellerComm = 100 - $platformComm - $referrerComm;
 
         return (object) [
-            'seller' => $totalAmount * ($sellerComm / 100),
-            'referrer' => $totalAmount * ($referrerComm / 100),
-            'platform' => $totalAmount * ($platformComm / 100),
+            'seller' => max(0, $sellerAmt),
+            'referrer' => $referrerAmt,
+            'platform' => $platformAmt,
             'seller_pct' => $sellerComm,
             'referrer_pct' => $referrerComm,
             'platform_pct' => $platformComm,
@@ -247,6 +255,7 @@ class Order extends Model
     public function getSellerShareAttribute() { return $this->commission_split->seller; }
     public function getReferrerShareAttribute() { return $this->commission_split->referrer; }
     public function getPlatformShareAttribute() { return $this->commission_split->platform; }
+
 
     public function getSellerNameAttribute() {
         if ($this->seller) return $this->seller->name;
