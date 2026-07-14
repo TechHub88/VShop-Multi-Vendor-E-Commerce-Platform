@@ -1061,7 +1061,7 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
         const formData = new FormData(form);
         
         try {
-            const res = await fetch(baseUrl + '/referral-configurations/save', {
+            const res = await fetch(baseUrl + '/referral-api/referral-configurations/save', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': refCsrfToken,
@@ -1086,7 +1086,7 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
     window.loadExistingRefConfigs = async function() {
         try {
             await window.loadSellers();
-            const res = await fetch(baseUrl + '/referral-configurations');
+            const res = await fetch(baseUrl + '/referral-api/referral-configurations');
             const data = await res.json();
             let html = '';
             if (data.length) {
@@ -1138,7 +1138,7 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
         if (disc === null) return;
         
         try {
-            const res = await fetch(baseUrl + '/referral-configurations/' + id, {
+            const res = await fetch(baseUrl + '/referral-api/referral-configurations/' + id, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1161,7 +1161,7 @@ document.querySelectorAll('.ref-tab-btn').forEach(btn => {
     window.deleteRefConfig = async function(id) {
         if (!confirm('Are you sure you want to delete this configuration?')) return;
         try {
-            const res = await fetch(baseUrl + '/referral-configurations/' + id, {
+            const res = await fetch(baseUrl + '/referral-api/referral-configurations/' + id, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': refCsrfToken }
             });

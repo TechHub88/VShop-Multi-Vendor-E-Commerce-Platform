@@ -16,8 +16,8 @@
     <div class="col-12 d-flex justify-content-between align-items-center">
         <h2 class="page-title m-0">Buyer Referral History</h2>
         <div class="stat-card" style="background:#fff; padding:10px 20px; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-            <span style="font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase;">Total Commission Paid</span>
-            <div style="font-size:20px; font-weight:700; color:#ef4444;">- ₹{{ number_format($totalCommission, 2) }}</div>
+            <span style="font-size:12px; color:#64748b; font-weight:600; text-transform:uppercase;">Total Referral Earnings</span>
+            <div style="font-size:20px; font-weight:700; color:#16a34a;">₹{{ number_format($totalCommission, 2) }}</div>
         </div>
     </div>
 </div>
@@ -37,7 +37,8 @@
                         <th>Referrer (Code)</th>
                       
                         <th>Commission %</th>
-                        <th>Amount Deducted</th>
+                        <th>Amount Earned</th>
+                        <th>Reward Type</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -59,7 +60,8 @@
                         </td>
                        
                         <td>{{ $ref->commission_percent }}%</td>
-                        <td class="text-danger fw-bold">-₹{{ number_format($ref->amount, 2) }}</td>
+                        <td class="text-success fw-bold">+₹{{ number_format($ref->amount, 2) }}</td>
+                        <td><span class="badge bg-success" style="font-size: 11px;">Real Money</span></td>
                         <td>
                             <span class="badge-success">{{ ucfirst($ref->status) }}</span>
                         </td>
@@ -67,7 +69,7 @@
 
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-muted">No referral commissions paid yet.</td>
+                        <td colspan="8" class="text-center py-4 text-muted">No referral earnings yet.</td>
                     </tr>
                     @endforelse
                 </tbody>

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Shop;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
-
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -32,7 +31,7 @@ class VshopOrderController extends Controller
             return;
         }
         $stockBefore = $product->stock_qty ?? 0;
-        // Decrement stock
+    
         $product->decrement('stock_qty', $qty);
         $stockAfter = $product->stock_qty;
 
@@ -59,8 +58,7 @@ private function notifySeller($sellerId, $type, $message, $route = null, $hash =
         if(!$sellerId) return;
 
         $link = $route ? route($route) . $hash : null;
-
-        NotificationService::notify(
+    NotificationService::notify(
             $sellerId,
             'seller',
             $type,
@@ -211,34 +209,32 @@ public function placeOrder(Request $request)
         $hasPastOrders = \App\Models\Order::where('customer_id', $customer->id)->exists();
         $referrerId = null;
 
-        // ONLY apply referral if it's the customer's very first order
-        if (!$hasPastOrders) {
-            $referralCode = $request->referral_code ?? session('referral_code') ?? request()->cookie('referral_code');
-            
-            if (!empty($referralCode)) {
-                $referrer = \App\Models\Customer::where('referral_code', $referralCode)->first();
-                if ($referrer && $referrer->id !== $customer->id) {
-                    $referrerId = $referrer->id;
-                    if (empty($customer->referred_by)) {
-                        $customer->referred_by = $referrerId;
-                        $customer->save();
-                        
-                        \App\Models\Referral::firstOrCreate([
-                            'customer_id' => $referrerId,
-                            'referred_customer_id' => $customer->id,
-                        ], [
-                            'referral_code' => $referrer->referral_code,
-                            'status' => 'successful',
-                            'reward_amount' => 0,
-                            'completed_at' => now(),
-                        ]);
-                    }
-                } elseif (!$referrer && !empty($referralCode)) {
-                    return back()->with('error', 'Invalid referral code provided.');
+        $referralCode = $request->referral_code ?? session('referral_code') ?? request()->cookie('referral_code');
+        
+        if (!empty($referralCode)) {
+            $referrer = \App\Models\Customer::where('referral_code', $referralCode)->first();
+            if ($referrer && $referrer->id !== $customer->id) {
+                $referrerId = $referrer->id;
+                
+                if (empty($customer->referred_by)) {
+                    $customer->referred_by = $referrerId;
+                    $customer->save();
+                    
+                    \App\Models\Referral::firstOrCreate([
+                        'customer_id' => $referrerId,
+                        'referred_customer_id' => $customer->id,
+                    ], [
+                        'referral_code' => $referrer->referral_code,
+                        'status' => 'successful',
+                        'reward_amount' => 0,
+                        'completed_at' => now(),
+                    ]);
                 }
-            } elseif (!empty($customer->referred_by)) {
-                $referrerId = $customer->referred_by;
+            } elseif (!$referrer && !empty($referralCode)) {
+                return back()->with('error', 'Invalid referral code provided.');
             }
+        } elseif (!empty($customer->referred_by)) {
+            $referrerId = $customer->referred_by;
         }
 
         $primaryPaymentMethod = is_array($request->payment_method) ? ($request->payment_method[0] ?? 'cod') : $request->payment_method;
@@ -562,8 +558,14 @@ $this->notifySeller(
 
         // Fetch all commission rules once to avoid repeated queries in loop
         $commissionRules = \Illuminate\Support\Facades\DB::table('commission_management')->get();
+        $referralConfigs = \Illuminate\Support\Facades\DB::table('referral_configurations')->where('status', 'active')->get();
 
         /* ================= ORDER ITEMS ================= */
+        
+        $totalRefereeDiscount = 0;
+        $hasPreviousPaidReferral = \App\Models\ReferralHistory::where('buyer_id', $customer->id)
+            ->where('status', '!=', 'reversed')
+            ->exists();
 
         foreach ($cartItems as $item) {
 
@@ -582,7 +584,7 @@ $this->notifySeller(
 
             /* ================= DYNAMIC COMMISSION CALCULATION ================= */
 
-            $referrerComm = 3.0; // 3% referral commission
+            $referrerComm = 0;
             $platformComm = 1.5; // 1.5% platform commission
 
             $referralUserId = $customer->referred_by ?? null;
@@ -593,13 +595,19 @@ $this->notifySeller(
                 if ($referralUserId == $customer->id) {
                     $isSelfReferral = true;
                 } else {
-                    // Check if buyer has used referral on a previous order (referral is only paid on first order)
-                    $hasPreviousPaidReferral = \App\Models\ReferralHistory::where('buyer_id', $customer->id)
-                        ->where('status', '!=', 'reversed')
-                        ->exists();
-
-                    if (!$hasPreviousPaidReferral) {
+                    // Check configurations
+                    $config = $referralConfigs->firstWhere('reference_id', $sellerId) ?? $referralConfigs->first();
+                    
+                    if ($config) {
+                        $referrerComm = (float) $config->commission_percentage;
                         $referralAmount = ($totalPrice * $referrerComm) / 100;
+
+                        if (!$hasPreviousPaidReferral) {
+                            $desc = json_decode($config->description, true);
+                            if (isset($desc['referee_discount'])) {
+                                $totalRefereeDiscount += ($totalPrice * (float) $desc['referee_discount']) / 100;
+                            }
+                        }
                     }
                 }
             }
@@ -903,6 +911,21 @@ $this->notifySeller(
             'order.reward_points',
             'order.reward_discount'
         ]);
+
+        // --- REFEREE DISCOUNT CASHBACK ---
+        if ($totalRefereeDiscount > 0) {
+            $pointsToGive = ceil($totalRefereeDiscount);
+            \App\Models\Reward::create([
+                'customer_id' => $customer->id,
+                'order_id' => $order->id,
+                'points' => $pointsToGive,
+                'transaction_type' => 'earned',
+                'description' => "First purchase referral discount cashback",
+                'expiry_date' => now()->addDays(180),
+                'status' => 'active',
+            ]);
+            $customer->increment('reward_points', $pointsToGive);
+        }
 
         DB::commit();
 
@@ -1799,9 +1822,6 @@ public function updateAddressSession(Request $request)
             return response()->json(['success' => false, 'message' => 'Please login first.']);
         }
 
-        if (\App\Models\Order::where('customer_id', $customer->id)->exists()) {
-            return response()->json(['success' => false, 'message' => 'Referral code can only be used on your first purchase.']);
-        }
 
         if ($customer->referral_code === $code) {
             return response()->json(['success' => false, 'message' => 'You cannot refer yourself.']);

@@ -970,14 +970,65 @@ public function cancelPickupAndRefund(Request $request)
         // Deduct Seller
         $sellerId = $order->seller_id;
         $sellerWallet = \App\Models\Wallet::firstOrCreate(['user_type' => 'seller', 'seller_id' => $sellerId], ['balance' => 0]);
-        $sellerWallet->balance -= $refundAmount;
+        
+        $sellerFinance = \Illuminate\Support\Facades\DB::table('seller_finances')
+            ->where('order_id', $order->id)
+            ->where('seller_id', $sellerId)
+            ->where('transaction_type', 'earning')
+            ->first();
+            
+        $deductAmount = $sellerFinance ? $sellerFinance->credit : $refundAmount;
+
+        $sellerWallet->balance -= $deductAmount;
         $sellerWallet->save();
         \App\Models\WalletTransaction::create([
             'wallet_id' => $sellerWallet->id, 'seller_id' => $sellerId, 'customer_id' => null,
-            'user_type' => 'seller', 'transaction_type' => 'refund_deduction', 'credit' => 0, 'debit' => $refundAmount,
+            'user_type' => 'seller', 'transaction_type' => 'refund_deduction', 'credit' => 0, 'debit' => $deductAmount,
             'balance_after' => $sellerWallet->balance, 'description' => "Refund Deduction for Order #{$order->id} (Canceled pickup)",
             'reference_id' => 'REFDED_' . $returnReq->id . '_' . time(), 'status' => 'completed'
         ]);
+
+        // Reverse Referrer Reward
+        $referralHistory = \App\Models\ReferralHistory::where('order_id', $order->id)->where('status', 'paid')->first();
+        if ($referralHistory) {
+            $referralHistory->status = 'reversed';
+            $referralHistory->save();
+            
+            $referrerCustomer = \App\Models\Customer::find($referralHistory->referrer_id);
+            if ($referrerCustomer) {
+                $referrerSeller = \App\Models\Seller::where('email', $referrerCustomer->email)
+                    ->orWhere('mobile', $referrerCustomer->phone)->first();
+                    
+                if ($referrerSeller) {
+                    $referrerWallet = \App\Models\Wallet::where('user_type', 'seller')->where('seller_id', $referrerSeller->id)->first();
+                    if ($referrerWallet) {
+                        $referrerWallet->balance -= $referralHistory->amount;
+                        $referrerWallet->save();
+                        
+                        \App\Models\WalletTransaction::create([
+                            'wallet_id' => $referrerWallet->id, 'seller_id' => $referrerSeller->id, 'customer_id' => null,
+                            'user_type' => 'seller', 'transaction_type' => 'refund_deduction', 'credit' => 0, 'debit' => $referralHistory->amount,
+                            'balance_after' => $referrerWallet->balance, 'description' => "Referral commission reversed for Order #{$order->id} (Refunded)",
+                            'reference_id' => 'REFDED_REF_' . $returnReq->id . '_' . time(), 'status' => 'completed'
+                        ]);
+                    }
+                } else {
+                    $pointsToDeduct = ceil($referralHistory->amount);
+                    $referrerCustomer->decrement('reward_points', $pointsToDeduct);
+                }
+            }
+        }
+
+        // Reverse Referee Discount Cashback
+        $rewardCashback = \App\Models\Reward::where('order_id', $order->id)
+            ->where('transaction_type', 'earned')
+            ->where('description', 'like', '%discount cashback%')
+            ->first();
+        if ($rewardCashback && $rewardCashback->status !== 'reversed') {
+            $rewardCashback->status = 'reversed';
+            $rewardCashback->save();
+            $customer->decrement('reward_points', $rewardCashback->points);
+        }
 
         // Notifications
         \App\Services\NotificationService::notify($customer->id, 'customer', 'wallet', "₹{$refundAmount} has been refunded to your wallet for Order #{$order->id} (Seller canceled pickup).", route('vshop.order.details', $order->id));
