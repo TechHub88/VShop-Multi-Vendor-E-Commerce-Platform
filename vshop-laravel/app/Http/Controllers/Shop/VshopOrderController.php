@@ -211,7 +211,11 @@ public function placeOrder(Request $request)
 
         $referralCode = $request->referral_code ?? session('referral_code') ?? request()->cookie('referral_code');
         
-        if (!empty($referralCode)) {
+        $hasPreviousPaidReferralTop = \App\Models\ReferralHistory::where('buyer_id', $customer->id)
+            ->where('status', '!=', 'reversed')
+            ->exists();
+
+        if (!empty($referralCode) && !$hasPreviousPaidReferralTop) {
             $referrer = \App\Models\Customer::where('referral_code', $referralCode)->first();
             if ($referrer && $referrer->id !== $customer->id) {
                 $referrerId = $referrer->id;
@@ -605,7 +609,7 @@ $this->notifySeller(
 
             $referralCode = session('referral_code') ?? request()->cookie('referral_code');
             $referralUserId = null;
-            if (!empty($referralCode)) {
+            if (!empty($referralCode) && !$hasPreviousPaidReferral) {
                 $referrer = \App\Models\Customer::where('referral_code', $referralCode)->first();
                 if ($referrer && $referrer->id !== $customer->id) {
                     $referralUserId = $referrer->id;
