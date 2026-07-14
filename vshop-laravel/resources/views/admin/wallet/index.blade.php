@@ -84,7 +84,7 @@
             <div class="col-md-2"><label class="form-label small mb-1">Order ID</label><input type="text" class="form-control form-control-sm" id="refundOrderFilter" placeholder="Search Order ID"></div>
             <div class="col-md-3"><label class="form-label small mb-1">Date Range</label><div class="d-flex gap-1"><input type="date" class="form-control form-control-sm" id="refundStartDate" value="{{ date('Y-m-d', strtotime('-30 days')) }}"><input type="date" class="form-control form-control-sm" id="refundEndDate" value="{{ date('Y-m-d') }}"></div></div>
             <div class="col-md-3"><div class="d-flex gap-2"><button class="btn btn-primary btn-sm" id="filterRefundsBtn"><i class="mdi mdi-filter-outline me-1"></i>Filter</button><button class="btn btn-outline-secondary btn-sm" id="resetRefundsFilterBtn">Reset</button></div></div></div></div>
-            <div class="card-body pt-2"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th><input type="checkbox" id="selectAllRefunds"></th><th>Order ID</th><th>Buyer ID</th><th>Buyer Name</th><th>Amount <span class="currency-label">(₹)</span></th><th>Reason</th><th>Request Date</th><th>Pickup Req.</th><th>Pickup Status</th><th>Status</th><th>Actions</th></tr></thead><tbody id="refundsTableBody">
+            <div class="card-body pt-2"><div class="table-responsive"><table class="table table-hover table-sm align-middle wallet-table"><thead><tr><th><input type="checkbox" id="selectAllRefunds"></th><th>Order ID</th><th>Buyer ID</th><th>Buyer Name</th><th>Amount <span class="currency-label">(₹)</span></th><th>Reason</th><th>Request Date</th><th>Status</th><th>Actions</th></tr></thead><tbody id="refundsTableBody">
             @forelse($refundsData as $refund)
             <tr>
                 <td><input type="checkbox" class="refund-checkbox" data-id="{{ $refund->id }}"></td>
@@ -94,16 +94,7 @@
                 <td class="fw-semibold"><span class="money" data-amount="{{ $refund->total_amount }}">₹{{ number_format($refund->total_amount, 2) }}</span></td>
                 <td><span class="badge bg-soft-secondary">{{ $refund->reason ?? 'N/A' }}</span></td>
                 <td><small>{{ \Carbon\Carbon::parse($refund->created_at)->format('d M Y h:i A') }}</small></td>
-                <td>
-                    @if(isset($refund->seller_pickup_required) && $refund->seller_pickup_required)
-                        <span class="badge bg-soft-warning">Yes</span>
-                    @else
-                        <span class="badge bg-soft-success">No</span>
-                    @endif
-                </td>
-                <td>
-                    <span class="badge bg-soft-info">{{ ucfirst($refund->pickup_status ?? 'Pending') }}</span>
-                </td>
+
                 <td>
                     @if($refund->status == 'requested')
                         <span class="badge bg-soft-warning">Requested</span>
@@ -120,14 +111,14 @@
                         <span class="badge bg-soft-secondary">{{ ucfirst($refund->status) }}</span>
                     @endif
                 </td>
-                <td>
-                    <div class="d-flex gap-1">
+                <td class="text-nowrap">
+                    <div class="d-flex gap-1 flex-nowrap">
                         @if($refund->status == 'approved')
-                            <button class="btn btn-sm btn-success approve-refund" data-id="{{ $refund->id }}" data-amount="{{ $refund->total_amount }}">Issue Refund</button>
-                            <button class="btn btn-sm btn-danger decline-refund" data-id="{{ $refund->id }}">Decline</button>
+                            <button class="btn btn-sm btn-success approve-refund text-nowrap" data-id="{{ $refund->id }}" data-amount="{{ $refund->total_amount }}">Issue Refund</button>
+                            <button class="btn btn-sm btn-danger decline-refund text-nowrap" data-id="{{ $refund->id }}">Decline</button>
                         @endif
 
-                        <button class="btn btn-sm btn-info view-refund-detail" data-order-id="{{ $refund->order_id }}" data-refund-id="{{ $refund->id }}"><i class="mdi mdi-eye me-1"></i>View</button>
+                        <button class="btn btn-sm btn-info view-refund-detail text-nowrap" data-order-id="{{ $refund->order_id }}" data-refund-id="{{ $refund->id }}"><i class="mdi mdi-eye me-1"></i>View Order</button>
                     </div>
                 </td>
             </tr>

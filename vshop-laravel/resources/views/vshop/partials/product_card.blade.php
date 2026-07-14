@@ -39,7 +39,6 @@
                 </div>
                 @endif
                     <span class="rating-count">({{ $realReviewCount }})</span>
-                @endif
                 </div>
             </div>
             
