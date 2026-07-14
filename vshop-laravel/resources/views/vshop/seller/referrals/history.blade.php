@@ -122,9 +122,9 @@
             <div class="row mb-4">
                 <div class="col-md-6">
                     <h6 class="text-muted text-uppercase small fw-bold mb-2">Customer Info</h6>
-                    <p class="mb-1 fw-bold">{{ $ref->order->customer->name ?? ($ref->buyer->name ?? 'N/A') }}</p>
-                    <p class="mb-1 text-muted small"><i class="fas fa-envelope me-2"></i>{{ $ref->order->customer->email ?? ($ref->buyer->email ?? 'N/A') }}</p>
-                    <p class="mb-0 text-muted small"><i class="fas fa-phone me-2"></i>{{ $ref->order->customer->phone ?? ($ref->buyer->phone ?? 'N/A') }}</p>
+                    <p class="mb-1 fw-bold">{{ optional($ref->order->customer)->name ?? ($ref->buyer->name ?? 'N/A') }}</p>
+                    <p class="mb-1 text-muted small"><i class="fas fa-envelope me-2"></i>{{ optional($ref->order->customer)->email ?? ($ref->buyer->email ?? 'N/A') }}</p>
+                    <p class="mb-0 text-muted small"><i class="fas fa-phone me-2"></i>{{ optional($ref->order->customer)->phone ?? ($ref->buyer->phone ?? 'N/A') }}</p>
                 </div>
                 <div class="col-md-6 text-md-end mt-3 mt-md-0">
                     <h6 class="text-muted text-uppercase small fw-bold mb-2">Order Info</h6>
@@ -155,7 +155,7 @@
                                         @endif
                                         <div>
                                             <div class="fw-bold" style="font-size:13px;">{{ $item->product_name ?? ($item->product ? $item->product->name : 'N/A') }}</div>
-                                            @if($item->seller_id != Auth::guard('seller')->id())
+                                            @if(($item->product->created_by_id ?? null) != Auth::guard('seller')->id())
                                                 <span class="badge bg-secondary" style="font-size:10px;">Other Seller</span>
                                             @endif
                                         </div>

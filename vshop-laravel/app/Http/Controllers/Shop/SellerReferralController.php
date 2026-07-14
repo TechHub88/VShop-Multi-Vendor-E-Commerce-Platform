@@ -16,11 +16,11 @@ class SellerReferralController extends Controller
         $referrerId = $customer ? $customer->id : -1;
 
         $referrals = ReferralHistory::with(['referrer', 'buyer', 'order.items.product'])
-            ->where('seller_id', $seller->id)
+            ->where('referrer_id', $referrerId)
             ->latest()
             ->paginate(20);
             
-        $totalCommission = ReferralHistory::where('seller_id', $seller->id)
+        $totalCommission = ReferralHistory::where('referrer_id', $referrerId)
             ->where('status', 'paid')
             ->sum('amount');
             
