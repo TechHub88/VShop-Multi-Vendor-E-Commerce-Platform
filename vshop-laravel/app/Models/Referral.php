@@ -40,4 +40,19 @@ class Referral extends Model
     {
         return $this->belongsTo(Customer::class, 'referred_customer_id');
     }
+
+    /**
+     * Get the total points earned from this referral (signup bonus + purchase points)
+     */
+    public function getTotalRewardEarnedAttribute()
+    {
+        $signupBonus = (float) ($this->reward_amount ?? 0);
+        
+        $purchasePoints = \App\Models\ReferralHistory::where('referrer_id', $this->customer_id)
+            ->where('buyer_id', $this->referred_customer_id)
+            ->where('status', 'paid')
+            ->sum('amount');
+            
+        return $signupBonus + (float) $purchasePoints;
+    }
 }

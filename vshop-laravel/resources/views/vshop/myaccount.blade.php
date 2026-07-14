@@ -478,7 +478,7 @@
                                         @endif
                                     </td>
                                     <td><span class="badge bg-primary rounded-pill px-3">{{ $ref->referredCustomer->orders_count ?? 0 }}</span></td>
-                                    <td class="text-success fw-bold">{{ number_format($ref->reward_amount, 0) }} Points</td>
+                                    <td class="text-success fw-bold">{{ number_format($ref->total_reward_earned, 0) }} Points</td>
                                 </tr>
                                 @empty
                                 <tr>
