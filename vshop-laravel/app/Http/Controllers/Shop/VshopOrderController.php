@@ -582,7 +582,26 @@ $this->notifySeller(
             /* ================= DYNAMIC COMMISSION CALCULATION ================= */
 
             $referrerComm = 0;
-            $platformComm = 1.5; // 1.5% platform commission
+            $platformComm = 1.5; // Default fallback
+
+            $appType = 'v-shop';
+            // Priority 1: Exact Match for this Seller
+            $specificRule = $commissionRules->first(function ($rule) use ($sellerId, $appType) {
+                return $rule->seller_id == $sellerId && strtolower($rule->app_type) == $appType;
+            });
+            
+            if ($specificRule) {
+                $platformComm = (float) $specificRule->platform_commission;
+                $fallbackReferrerComm = (float) $specificRule->referrer_commission;
+            } else {
+                // Priority 2: Generic Match
+                $generalRule = $commissionRules->whereNull('seller_id')->where('app_type', $appType)->first() 
+                                ?? $commissionRules->whereNull('seller_id')->first();
+                if ($generalRule) {
+                    $platformComm = (float) $generalRule->platform_commission;
+                    $fallbackReferrerComm = (float) $generalRule->referrer_commission;
+                }
+            }
 
             $referralCode = session('referral_code') ?? request()->cookie('referral_code');
             $referralUserId = null;
@@ -600,23 +619,28 @@ $this->notifySeller(
                 if ($referralUserId == $customer->id) {
                     $isSelfReferral = true;
                 } else {
-                    // Check configurations
-                    $config = $referralConfigs->whereIn('type', ['buyer_to_buyer', 'seller_to_seller'])
-                                              ->where('reference_id', $referralUserId)
-                                              ->first();
-                                              
-                    if (!$config) {
-                        $config = $referralConfigs->where('type', 'level_commission')
-                                                  ->where('reference_id', 1)
-                                                  ->first();
-                    }
-                    
-                    if ($config) {
-                        $referrerComm = (float) $config->commission_percentage;
+                    $appliedConfigType = 'level_commission';
+                    // Priority A: Seller specific Referrer Commission from commission_management
+                    if (isset($fallbackReferrerComm) && $fallbackReferrerComm > 0) {
+                        $referrerComm = $fallbackReferrerComm;
                         $referralAmount = ($totalPrice * $referrerComm) / 100;
-                        $appliedConfigType = $config->type;
-
-                        if (!$hasPreviousPaidReferral) {
+                        $appliedConfigType = 'seller_to_seller'; // Treat as seller rule
+                    } else {
+                        // Priority B: Global Referral configurations
+                        $config = $referralConfigs->whereIn('type', ['buyer_to_buyer', 'seller_to_seller'])
+                                                  ->where('reference_id', $referralUserId)
+                                                  ->first();
+                                                  
+                        if (!$config) {
+                            $config = $referralConfigs->where('type', 'level_commission')
+                                                      ->where('reference_id', 1)
+                                                      ->first();
+                        }
+                        
+                        if ($config) {
+                            $referrerComm = (float) $config->commission_percentage;
+                            $referralAmount = ($totalPrice * $referrerComm) / 100;
+                            $appliedConfigType = $config->type;
                         }
                     }
                 }

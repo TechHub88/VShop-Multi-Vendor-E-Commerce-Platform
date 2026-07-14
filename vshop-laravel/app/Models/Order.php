@@ -184,6 +184,7 @@ class Order extends Model
         // If order doesn't have seller_id directly, try to get it from the first item
         if (!$sellerId && $this->relationLoaded('items') && $this->items->isNotEmpty()) {
             $sellerId = $this->items->first()->product->created_by_id ?? null;
+        }
         $appType = strtolower($this->app_type ?? 'v-shop');
         
         $sellerComm = 100;

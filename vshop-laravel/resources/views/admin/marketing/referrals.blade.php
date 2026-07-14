@@ -623,8 +623,7 @@ async function loadCategoryRewards() {
     const tbody = document.getElementById('categoryRewardsTable');
     tbody.innerHTML = '';
     data.forEach(item => {
-        const cat = categories.find(c => c.ids.split(',').includes(String(item.category_id)));
-        const catName = cat ? cat.name : item.category_name;
+        const catName = item.category_name;
         const rewardText = item.reward_type === 'fixed' ? `<span class="money" data-amount="${item.reward_value}">₹${item.reward_value}</span>` : `${item.reward_value}%`;
         tbody.innerHTML += `<tr>
             <td>${catName}</td>
