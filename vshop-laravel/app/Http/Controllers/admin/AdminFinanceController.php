@@ -287,7 +287,11 @@ class AdminFinanceController extends Controller
         $seller = $txn->seller;
         if (!$seller) continue;
         
-        $locationParts = array_filter([$seller->billing_city, $seller->billing_state, $seller->billing_country]);
+        $cityName = \Illuminate\Support\Facades\DB::table('cities')->where('id', $seller->billing_city)->value('name') ?: $seller->billing_city;
+        $stateName = \Illuminate\Support\Facades\DB::table('states')->where('id', $seller->billing_state)->value('name') ?: $seller->billing_state;
+        $countryName = \Illuminate\Support\Facades\DB::table('countries')->where('id', $seller->billing_country)->value('name') ?: $seller->billing_country;
+
+        $locationParts = array_filter([$cityName, $stateName, $countryName]);
         $location = !empty($locationParts) ? implode(', ', $locationParts) : 'Not specified';
         $app = $seller->application ?? 'vshop';
         

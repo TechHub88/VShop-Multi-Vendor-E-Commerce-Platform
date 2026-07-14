@@ -3773,15 +3773,13 @@ function applyBulkUpdate() {
         return;
     }
     const holdDays    = document.getElementById('bulkHoldDays').value;
-    const schedule    = document.getElementById('bulkPayoutSchedule').value;
     const purchDate   = document.getElementById('bulkPurchaseDate').value;
-    if (!holdDays && !schedule && !purchDate) {
+    if (!holdDays && !purchDate) {
         document.getElementById('bulkUpdateStatus').innerHTML = '<div class="alert alert-warning py-2 fs-8">Please fill at least one field to update.</div>';
         return;
     }
     const updates = {};
     if (holdDays)  updates.hold_days       = holdDays;
-    if (schedule)  updates.payout_schedule = schedule;
     if (purchDate) updates.purchase_date   = purchDate;
 
     const btn = document.querySelector('#bulkUpdateModal .btn-primary');
@@ -6671,12 +6669,14 @@ function showSellerDetails(sellerId) {
     const isReleased = row.payout_status.toLowerCase() !== 'pending';
     const isDelayed = today > releaseDate && !isReleased;
     
+    let appText = Array.isArray(row.app) ? row.app.map(p => p.name).join(', ') : row.app;
+    
     const timelineHtml = `
         <div class="row mb-4">
             <div class="col-md-6 border-end">
                 <h6 class="fw-bold text-secondary mb-3"><iconify-icon icon="solar:info-circle-bold-duotone" class="align-middle me-1"></iconify-icon> Escrow Parameters</h6>
                 <table class="table table-sm table-borderless fs-7">
-                    <tr><td class="text-muted">Application Source:</td><td class="fw-semibold text-uppercase">${row.app}</td></tr>
+                    <tr><td class="text-muted">Application Source:</td><td class="fw-semibold text-uppercase">${appText}</td></tr>
                     <tr><td class="text-muted">Total Sales Value:</td><td class="fw-semibold">${currencySym}${parseFloat(row.total_sales).toFixed(2)}</td></tr>
                     <tr><td class="text-muted">Platform Admin Share:</td><td class="fw-semibold text-primary">${currencySym}${parseFloat(row.platform_commission).toFixed(2)}</td></tr>
                     <tr><td class="text-muted">Net Seller Payout:</td><td class="fw-semibold text-success">${currencySym}${parseFloat(row.net_payout).toFixed(2)}</td></tr>
