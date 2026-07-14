@@ -2303,7 +2303,7 @@ $(document).ready(function() {
         } else if (productConfig.lowStockThreshold !== null && stock <= productConfig.lowStockThreshold) {
             stockStatus.innerHTML = `<p class="in-stock text-warning" style="color: #ff9900 !important; font-weight: bold;">
                 <i class="fa-solid fa-triangle-exclamation"></i> 
-                Low Stock! Only <span id="availableStock">${stock}</span> left
+                Low Stock! Only a few left <span id="availableStock" class="d-none">${stock}</span>
             </p>`;
             if (addToCartBtn) addToCartBtn.disabled = false;
             if (buyNowBtn) buyNowBtn.disabled = false;
