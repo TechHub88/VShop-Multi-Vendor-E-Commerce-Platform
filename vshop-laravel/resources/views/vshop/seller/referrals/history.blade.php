@@ -46,13 +46,12 @@
                 <tbody>
                     @forelse($referrals as $ref)
                     @php
-                        $referrerSeller = null;
-                        if ($ref->referrer) {
-                            $referrerSeller = \App\Models\Seller::where('email', $ref->referrer->email)
-                                ->orWhere('mobile', $ref->referrer->phone)
-                                ->first();
-                        }
-                        $isPoints = !$referrerSeller;
+                        $isMoney = \Illuminate\Support\Facades\DB::table('seller_finances')
+                            ->where('order_id', $ref->order_id)
+                            ->where('transaction_type', 'earning')
+                            ->where('note', 'like', '%Referral earning%')
+                            ->exists();
+                        $isPoints = !$isMoney;
                     @endphp
                     <tr>
                         <td>{{ $ref->created_at->format('d M, Y H:i') }}</td>
