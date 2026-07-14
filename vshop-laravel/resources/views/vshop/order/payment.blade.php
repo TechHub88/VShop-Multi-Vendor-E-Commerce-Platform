@@ -807,10 +807,9 @@ $(document).ready(function() {
                         timer: 1500,
                         showConfirmButton: false
                     });
-                    $('#hidden_referral_code').val(code);
-                    $('#applied_referral_code').text(code);
-                    $('#referral_promo_group').addClass('d-none');
-                    $('#applied_referral_box').removeClass('d-none').addClass('d-flex');
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1500);
                 } else {
                     Swal.showValidationMessage(response.message);
                 }
@@ -844,6 +843,9 @@ $(document).ready(function() {
                         timer: 1500,
                         showConfirmButton: false
                     });
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1500);
                 }
             },
             error: function(xhr) {

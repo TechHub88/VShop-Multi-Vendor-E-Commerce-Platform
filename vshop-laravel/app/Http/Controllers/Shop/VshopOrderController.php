@@ -560,7 +560,6 @@ $this->notifySeller(
 
         /* ================= ORDER ITEMS ================= */
         
-        $totalRefereeDiscount = 0;
         $hasPreviousPaidReferral = \App\Models\ReferralHistory::where('buyer_id', $customer->id)
             ->where('status', '!=', 'reversed')
             ->exists();
@@ -601,10 +600,6 @@ $this->notifySeller(
                         $referralAmount = ($totalPrice * $referrerComm) / 100;
 
                         if (!$hasPreviousPaidReferral) {
-                            $desc = json_decode($config->description, true);
-                            if (isset($desc['referee_discount'])) {
-                                $totalRefereeDiscount += ($totalPrice * (float) $desc['referee_discount']) / 100;
-                            }
                         }
                     }
                 }
@@ -910,20 +905,6 @@ $this->notifySeller(
             'order.reward_discount'
         ]);
 
-        // --- REFEREE DISCOUNT CASHBACK ---
-        if ($totalRefereeDiscount > 0) {
-            $pointsToGive = ceil($totalRefereeDiscount);
-            \App\Models\Reward::create([
-                'customer_id' => $customer->id,
-                'order_id' => $order->id,
-                'points' => $pointsToGive,
-                'transaction_type' => 'earned',
-                'description' => "First purchase referral discount cashback",
-                'expiry_date' => now()->addDays(180),
-                'status' => 'active',
-            ]);
-            $customer->increment('reward_points', $pointsToGive);
-        }
 
         DB::commit();
 
@@ -1062,11 +1043,20 @@ private function calculateOrderSummary($cartItems)
     $summary['reward_discount'] = $rewardDiscount;
     $summary['reward_points'] = session('order.reward_points', 0);
 
-    // --- BUYER-TO-BUYER REFERRAL LOGIC FOR DISPLAY ---
+    // --- REFERRAL DISCOUNT LOGIC FOR DISPLAY ---
     $customer = Auth::guard('customer')->user();
     $referralDiscount = 0;
+    $referralCode = session('referral_code') ?? request()->cookie('referral_code');
+    $referrerId = null;
+
+    if (!empty($referralCode)) {
+        $referrer = \App\Models\Customer::where('referral_code', $referralCode)->first();
+        if ($referrer && $customer && $referrer->id !== $customer->id) {
+            $referrerId = $referrer->id;
+        }
+    }
     
-    if ($customer && $customer->referred_by) {
+    if ($customer && $referrerId) {
         // Group items by seller to check first purchase per seller
         $sellerIds = [];
         foreach ($cartItems as $item) {
