@@ -307,6 +307,13 @@
                                             @else ID: {{ $product->id }}
                                             @endif
                                         </small>
+                                        <div class="mt-1">
+                                            @if($product->is_auto_approve)
+                                                <span class="badge bg-success-soft text-success border border-success" style="font-size: 10px;"><iconify-icon icon="solar:bolt-bold-duotone" class="align-middle"></iconify-icon> Auto Apprv</span>
+                                            @else
+                                                <span class="badge bg-secondary-soft text-secondary border border-secondary" style="font-size: 10px;"><iconify-icon icon="solar:hand-bold-duotone" class="align-middle"></iconify-icon> Manual Apprv</span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td>
                                         <span class="category-name">{{ $product->category->name ?? '-' }}</span>
