@@ -25,7 +25,7 @@ class OrderItem extends Model
         'combo_product_price',
         'is_combo_item',
         'gst_percent',
-        'courier_charge','commission_amount','seller_earning','commission_percent'
+        'courier_charge','commission_amount','seller_earning','commission_percent','referral_earning','platform_earning'
     ];
 
     // Relation to Product

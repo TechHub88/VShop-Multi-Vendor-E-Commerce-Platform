@@ -588,7 +588,7 @@ $this->notifySeller(
             $referrerComm = 0;
             $platformComm = 1.5; // Default fallback
 
-            $appType = 'v-shop';
+            $appType = 'vshop';
             // Priority 1: Exact Match for this Seller
             $specificRule = $commissionRules->first(function ($rule) use ($sellerId, $appType) {
                 return $rule->seller_id == $sellerId && strtolower($rule->app_type) == $appType;
@@ -994,9 +994,13 @@ $this->notifySeller(
 
         // Update the order's referral payout columns
         $totalReferralAmount = OrderItem::where('order_id', $order->id)->sum('referral_earning');
-        $order->referral_commission_percent = $totalReferralAmount > 0 ? 3.0 : 0;
+        // Retrieve the latest commission percent from the cart loop (assumes same rate for simplicity)
+        $order->referral_commission_percent = $totalReferralAmount > 0 ? (isset($referrerComm) ? $referrerComm : 0) : 0;
         $order->referral_commission_amount = $totalReferralAmount;
         $order->referral_paid = $totalReferralAmount > 0 ? 1 : 0;
+        if ($totalReferralAmount > 0 && isset($referralUserId)) {
+            $order->referrer_id = $referralUserId;
+        }
         $order->save();
 
         /* ================= CLEAR CART (ONLY IF NOT BUY NOW) ================= */
