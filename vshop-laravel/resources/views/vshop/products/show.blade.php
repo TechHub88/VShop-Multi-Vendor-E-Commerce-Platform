@@ -805,7 +805,7 @@
                                              {{-- QUANTITY AND CART + ENQUIRY BUTTONS --}}
                                              <div class="action-row d-flex align-items-center gap-2 flex-wrap">
                                                  <!-- Quantity -->
-                                                 <div class="qty-box d-flex align-items-center" style="{{ $isOutOfStock ? 'opacity: 0.5; pointer-events: none;' : '' }}">
+                                                 <div class="qty-box d-flex align-items-center" style="{{ !$isPhysicalProduct ? 'display: none !important;' : '' }} {{ $isOutOfStock ? 'opacity: 0.5; pointer-events: none;' : '' }}">
                                                      <button type="button" id="decrementQty" {{ $isOutOfStock ? 'disabled' : '' }}>-</button>
                                                      <input type="text" id="quantity" value="1" readonly>
                                                      <button type="button" id="incrementQty" {{ $isOutOfStock ? 'disabled' : '' }}>+</button>
@@ -1750,6 +1750,10 @@
 
             if (selectedSlotsData.size === 0) {
                 wrapper.hide();
+                if (!productConfig.isPhysicalProduct) {
+                    productConfig.quantity = 1;
+                    updateTotalPrice();
+                }
                 return;
             }
             
@@ -1772,6 +1776,11 @@
                     </span>
                 `);
             });
+
+            if (!productConfig.isPhysicalProduct) {
+                productConfig.quantity = selectedSlotsData.size > 0 ? selectedSlotsData.size : 1;
+                updateTotalPrice();
+            }
         }
 
         // Remove slot from selected list
