@@ -965,8 +965,8 @@ public function saveBasic(Request $request, Product $product = null)
         }
     }
 
-    // Category is already validated to exist in marketplace_categories via 'exists:marketplace_categories,id'
-    if (!$isSuspicious) {
+    // Check Auto Approve flag for existing products, otherwise default to pending
+    if ($product && $product->is_auto_approve) {
         $data['status'] = 'approved';
     } else {
         $data['status'] = 'pending';

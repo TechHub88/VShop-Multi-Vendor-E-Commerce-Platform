@@ -841,7 +841,7 @@ public function products(Request $request)
     public function bulkAction(Request $request)
     {
         $request->validate([
-            'action' => 'required|in:approve,reject,enable,disable',
+            'action' => 'required|in:approve,reject,enable,disable,auto_approve,manual_approve',
             'product_ids' => 'required|array',
             'product_ids.*' => 'exists:products,id'
         ]);
@@ -854,12 +854,44 @@ public function products(Request $request)
             case 'enable':
             case 'disable':
                 return $this->bulkEnableDisable($request);
+            case 'auto_approve':
+            case 'manual_approve':
+                return $this->bulkAutoApproveToggle($request);
             default:
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid action'
                 ], 400);
         }
+    }
+    
+    public function bulkAutoApproveToggle(Request $request)
+    {
+        $request->validate([
+            'product_ids' => 'required|array',
+            'action' => 'required|in:auto_approve,manual_approve',
+            'product_ids.*' => 'exists:products,id'
+        ]);
+        
+        $isAutoApprove = $request->action == 'auto_approve' ? 1 : 0;
+        $count = 0;
+        
+        foreach ($request->product_ids as $id) {
+            $product = Product::find($id);
+            if ($product) {
+                $product->is_auto_approve = $isAutoApprove;
+                $product->save();
+                $count++;
+            }
+        }
+        
+        $modeStr = $isAutoApprove ? "Auto Approval" : "Manual Approval";
+        $message = "$count products set to $modeStr successfully";
+        
+        return response()->json([
+            'success' => true,
+            'message' => $message
+        ]);
     }
     
     // Get subcategories by category

@@ -115,6 +115,16 @@
                             <span class="text-warning fw-bold small toggle-label toggle-label-left position-absolute" style="left: 15px; opacity:0; transition:0.3s; pointer-events:none;">Disable <i class="fa-solid fa-ban ms-1"></i></span>
                         </div>
                     </li>
+                    <li class="px-2 py-1 mt-2">
+                        <label class="form-label small fw-bold text-muted mb-2 text-uppercase d-block" style="font-size: 11px;">Auto / Manual Apprv.</label>
+                        <div class="bg-light border rounded p-2 position-relative d-flex justify-content-center align-items-center hover-toggle-box" style="height: 40px; cursor: pointer;">
+                            <span class="text-primary fw-bold small toggle-label toggle-label-right position-absolute" style="right: 15px; opacity:0; transition:0.3s; pointer-events:none;"><i class="fa-solid fa-robot me-1"></i> Auto</span>
+                            <div class="form-check form-switch m-0 p-0" style="z-index: 2;" title="Toggle Auto/Manual Approval">
+                                <input class="form-check-input m-0 bulk-action-toggle" type="checkbox" role="switch" data-action-on="bulkAutoApproveItem" data-action-off="bulkManualApproveItem" style="width: 3em; height: 1.5em; cursor:pointer; box-shadow:none;">
+                            </div>
+                            <span class="text-secondary fw-bold small toggle-label toggle-label-left position-absolute" style="left: 15px; opacity:0; transition:0.3s; pointer-events:none;">Manual <i class="fa-solid fa-user-check ms-1"></i></span>
+                        </div>
+                    </li>
                     <li><hr class="dropdown-divider"></li>
                     <li><a class="dropdown-item fw-medium" href="#" id="bulkCategoryItem"><i class="fa-solid fa-tags text-info me-2"></i> Change Category</a></li>
                 </ul>
@@ -125,6 +135,8 @@
                     <button id="bulkRejectItem"></button>
                     <button id="bulkEnableItem"></button>
                     <button id="bulkDisableItem"></button>
+                    <button id="bulkAutoApproveItem"></button>
+                    <button id="bulkManualApproveItem"></button>
                 </div>
             </div>
         </div>
