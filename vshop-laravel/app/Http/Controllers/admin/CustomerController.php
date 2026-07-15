@@ -314,6 +314,36 @@ class CustomerController extends Controller
 
         return view('admin.customers.block', compact('customers', 'totalCustomers', 'activeCustomers', 'inactiveCustomers', 'blockedCustomers', 'search', 'status'));
     }
+
+    public function toggleStatus(Request $request, $id)
+    {
+        try {
+            $customer = Customer::findOrFail($id);
+            $isBlocked = $request->block ? 1 : 0;
+            
+            $customer->is_blocked = $isBlocked;
+            
+            // Optional: Also change status if blocked
+            // if ($isBlocked) {
+            //     $customer->status = 'blocked';
+            // }
+            
+            $customer->save();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Customer block status updated successfully.',
+                'is_blocked' => $isBlocked
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating customer status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
     
      public function validationDuplicates()
     {

@@ -39,7 +39,8 @@ class EmployeeLoginController extends Controller
             'email' => $request->email,
             'password' => $request->password,
             'type' => 'travel',
-            'status' => 'approved'
+            'status' => 'approved',
+            'is_blocked' => 0
         ])) {
             $request->session()->regenerate();
             return redirect()->route('vtravelhome');
@@ -60,7 +61,8 @@ class EmployeeLoginController extends Controller
             'email' => $request->email,
             'password' => $request->password,
             'type' => 'product',
-            'status' => 'approved'
+            'status' => 'approved',
+            'is_blocked' => 0
         ])) {
             $request->session()->regenerate();
             return redirect()->route('home');

@@ -239,12 +239,7 @@
                                             {{ $customer->is_blocked ? 'Unblock Customer' : 'Block Customer' }}
                                         </button>
                                         
-                                        <!-- Quick status switcher -->
-                                        <select class="form-select form-select-sm status-switcher" data-id="{{ $customer->id }}" style="width: 110px;">
-                                            <option value="active" {{ $customer->status == 'active' ? 'selected' : '' }}>Active</option>
-                                            <option value="inactive" {{ $customer->status == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                                            <option value="pending" {{ $customer->status == 'pending' ? 'selected' : '' }}>Pending</option>
-                                        </select>
+                                        
                                     </div>
                                 </td>
                             </tr>
