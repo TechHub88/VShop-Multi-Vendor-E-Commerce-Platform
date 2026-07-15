@@ -35,6 +35,9 @@ WORKDIR /var/www/html
 # Copy application source
 COPY . .
 
+# Ensure bootstrap/cache directory exists (required by artisan package:discover)
+RUN mkdir -p bootstrap/cache && chmod 775 bootstrap/cache
+
 # Install dependencies (no dev, optimized autoloader)
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
