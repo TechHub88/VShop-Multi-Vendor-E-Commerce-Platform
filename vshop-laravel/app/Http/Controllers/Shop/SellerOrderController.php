@@ -395,6 +395,9 @@ public function index(Request $request)
             Order::reverseOrderFunds($order);
         }
 
+        if (strtolower($finalStatus) === 'delivered') {
+            \App\Models\Order::releaseOrderHoldFundsIfNoReturn($order);
+        }
         if (strtolower($finalStatus) === 'delivered' && $order->referrer_id && !$order->referral_paid) {
             $commissionPercent = 3.0;
             $commissionAmount = ($order->total_amount * $commissionPercent) / 100;

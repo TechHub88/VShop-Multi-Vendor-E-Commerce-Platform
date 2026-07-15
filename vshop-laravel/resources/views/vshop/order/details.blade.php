@@ -115,6 +115,7 @@
         {{-- ===== CALCULATE IF ORDER HAS RETURNABLE ITEMS ===== --}}
         @php
             $hasReturnableItems = false;
+            $hasNoReturnPolicy = false;
             foreach($order->items as $oItem) {
                 $prod = $oItem->product;
                 if ($prod) {
@@ -127,7 +128,14 @@
                             $isCourse = true;
                         }
                     }
-                    if (!$isProfOrService && !$isCourse) {
+                    
+                    $cancelPolicy = $prod->refund_policy ?? $prod->cancel_policy_tour ?? $prod->cancel_policy_prof ?? $prod->cancel_policy_other ?? '';
+                    $cleanPolicy = strip_tags($cancelPolicy);
+                    if (stripos($cleanPolicy, 'no cancel') !== false || stripos($cleanPolicy, 'non-refundable') !== false || stripos($cleanPolicy, 'no return') !== false) {
+                        $hasNoReturnPolicy = true;
+                    }
+
+                    if (!$isProfOrService && !$isCourse && !$hasNoReturnPolicy) {
                         $hasReturnableItems = true;
                     }
                 }
@@ -138,6 +146,9 @@
         @php
             $statusLower = strtolower($order->status);
             $canCancel = in_array($statusLower, ['pending', 'processing', 'approved', 'paid', 'confirmed']);
+            if ($hasNoReturnPolicy) {
+                $canCancel = false;
+            }
             $isOutForDelivery = in_array($statusLower, ['out for delivery', 'out_for_delivery', 'shipped', 'dispatched']);
             $isDelivered = in_array($statusLower, ['delivered', 'completed']);
             

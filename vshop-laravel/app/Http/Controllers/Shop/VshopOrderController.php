@@ -737,7 +737,7 @@ $this->notifySeller(
             }
             
             $releaseDate = now()->addDays($holdDays)->toDateString();
-            $financeStatus = $holdDays > 0 ? 'hold' : 'success';
+            $financeStatus = 'hold'; // Always hold until delivery/cron
 
                         /* ================= ORDER ITEM ================= */
 
@@ -778,7 +778,7 @@ $this->notifySeller(
         // Ensure we have a valid hold days from the loop
         $finalHoldDays = isset($holdDays) ? $holdDays : 7;
         $releaseDate = now()->addDays($finalHoldDays)->toDateString();
-        $financeStatus = $finalHoldDays > 0 ? 'hold' : 'success';
+        $financeStatus = 'hold'; // Always hold until delivery/cron
 
         // --- 1. SELLER FINANCE LOGGING ---
         DB::table('seller_finances')->insert([
@@ -883,28 +883,6 @@ $this->notifySeller(
                     'status' => 'paid',
                 ]);
             }
-        }
-
-        // --- 3. SELLER WALLET CREDIT & LEDGER ---
-        if ($finalHoldDays == 0) {
-            $sellerWallet = \App\Models\Wallet::firstOrCreate(
-                ['user_type' => 'seller', 'seller_id' => $sellerId, 'customer_id' => null],
-                ['balance' => 0]
-            );
-            $sellerWallet->increment('balance', $totalSellerEarning);
-
-            \App\Models\WalletTransaction::create([
-                'wallet_id' => $sellerWallet->id,
-                'seller_id' => $sellerId,
-                'user_type' => 'seller',
-                'transaction_type' => 'payout',
-                'credit' => $totalSellerEarning,
-                'debit' => 0,
-                'balance_after' => $sellerWallet->balance,
-                'description' => "Order sale earning for Order #{$order->id}",
-                'reference_id' => 'ORD-' . $order->id,
-                'status' => 'completed'
-            ]);
         }
 
         // --- 4. ADMIN ESCROW WALLET LOAD & PAYOUTS ---

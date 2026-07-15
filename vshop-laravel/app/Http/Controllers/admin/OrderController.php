@@ -978,6 +978,10 @@ public function showManageOrder(Request $request, $orderId){
                 Order::reverseOrderFunds($order);
             }
 
+                        if (strtolower($newStatus) === 'delivered' || strtolower($newStatus) === 'completed') {
+                \App\Models\Order::releaseOrderHoldFundsIfNoReturn($order);
+            }
+
             // ── Referral commission on delivery ──
             if (
                 strtolower($newStatus) === 'delivered' ||

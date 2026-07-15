@@ -338,6 +338,121 @@ class Order extends Model
     /**
      * Reverse all payouts and referral commission, and refund the buyer if they have paid.
      */
+    public static function releaseOrderHoldFundsIfNoReturn(Order $order)
+    {
+        // 1. Check if ANY item in order has the "no return" policy
+        $hasNoReturnPolicy = false;
+        
+        foreach ($order->items as $item) {
+            $prod = $item->product;
+            if ($prod) {
+                $cancelPolicy = $prod->refund_policy ?? $prod->cancel_policy_tour ?? $prod->cancel_policy_prof ?? $prod->cancel_policy_other ?? '';
+                $cleanPolicy = strip_tags($cancelPolicy);
+                if (stripos($cleanPolicy, 'no cancel') !== false || stripos($cleanPolicy, 'non-refundable') !== false || stripos($cleanPolicy, 'no return') !== false) {
+                    $hasNoReturnPolicy = true;
+                    break;
+                }
+            }
+        }
+        
+        if (!$hasNoReturnPolicy) {
+            return false;
+        }
+
+        // 2. Fetch all held earnings for this order
+        $heldEarnings = \Illuminate\Support\Facades\DB::table('seller_finances')
+            ->where('status', 'hold')
+            ->where('order_id', $order->id)
+            ->where('transaction_type', 'earning')
+            ->get();
+
+        if ($heldEarnings->isEmpty()) {
+            return false;
+        }
+
+        foreach ($heldEarnings as $earning) {
+            $deductions = \Illuminate\Support\Facades\DB::table('seller_finances')
+                ->where('status', 'hold')
+                ->where('order_id', $earning->order_id)
+                ->where('seller_id', $earning->seller_id)
+                ->where('transaction_type', 'commission_deduction')
+                ->get();
+
+            $totalDeduction = $deductions->sum('debit');
+            $netSellerEarning = $earning->credit - $totalDeduction;
+
+            if ($netSellerEarning > 0) {
+                $sellerWallet = \App\Models\Wallet::firstOrCreate(
+                    ['user_type' => 'seller', 'seller_id' => $earning->seller_id, 'customer_id' => null],
+                    ['balance' => 0]
+                );
+
+                $sellerWallet->increment('balance', $netSellerEarning);
+
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $sellerWallet->id,
+                    'seller_id' => $earning->seller_id,
+                    'user_type' => 'seller',
+                    'transaction_type' => 'payout',
+                    'credit' => $earning->credit,
+                    'debit' => 0,
+                    'balance_after' => $sellerWallet->balance + $totalDeduction,
+                    'description' => "Order sale earning (Released on Delivery) for Order #{$earning->order_id}",
+                    'reference_id' => $earning->reference_no,
+                    'status' => 'completed'
+                ]);
+
+                foreach ($deductions as $deduction) {
+                    \App\Models\WalletTransaction::create([
+                        'wallet_id' => $sellerWallet->id,
+                        'seller_id' => $earning->seller_id,
+                        'user_type' => 'seller',
+                        'transaction_type' => str_contains(strtolower($deduction->note), 'referral') ? 'referral_deduction' : 'commission_deduction',
+                        'credit' => 0,
+                        'debit' => $deduction->debit,
+                        'balance_after' => $sellerWallet->balance,
+                        'description' => "{$deduction->note} for Order #{$earning->order_id}",
+                        'reference_id' => $earning->reference_no,
+                        'status' => 'completed'
+                    ]);
+                }
+            }
+
+            // Mark as released
+            \Illuminate\Support\Facades\DB::table('seller_finances')
+                ->where('status', 'hold')
+                ->where('order_id', $earning->order_id)
+                ->where('seller_id', $earning->seller_id)
+                ->update([
+                    'status' => 'released',
+                    'updated_at' => now(),
+                    'release_date' => now(),
+                    'note' => \Illuminate\Support\Facades\DB::raw("REPLACE(note, '(On Hold', '(Released')")
+                ]);
+                
+            // Escrow update
+            $escrowWallet = \App\Models\Wallet::firstOrCreate(
+                ['user_type' => 'platform', 'seller_id' => null, 'customer_id' => null],
+                ['balance' => 0]
+            );
+
+            $escrowWallet->decrement('balance', $netSellerEarning);
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $escrowWallet->id,
+                'user_type' => 'platform',
+                'transaction_type' => 'payout',
+                'credit' => 0,
+                'debit' => $netSellerEarning,
+                'balance_after' => $escrowWallet->balance,
+                'description' => "Payout to Seller #{$earning->seller_id} (Released on Delivery) for Order #{$earning->order_id}",
+                'reference_id' => $earning->reference_no,
+                'status' => 'completed'
+            ]);
+        }
+        
+        return true;
+    }
+
     public static function reverseOrderFunds(Order $order)
     {
         if ($order->refund_status === 'completed') {
