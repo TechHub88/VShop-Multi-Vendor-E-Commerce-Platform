@@ -53,6 +53,16 @@ public function getBoostProducts()
         $data = $products->values()->map(function($product, $index) use ($boostRules, $sellerId) {
             $boostRule = $this->getBoostRule($product, $sellerId, $boostRules);
             $boostPerDay = $boostRule ? (float)$boostRule->per_day : null;
+            
+            $productDays = 7; // Default fallback
+            if ($boostRule && $boostRule->start_date && $boostRule->end_date) {
+                $start = \Carbon\Carbon::parse($boostRule->start_date);
+                $end = \Carbon\Carbon::parse($boostRule->end_date);
+                $productDays = $start->diffInDays($end);
+                if ($productDays < 1) {
+                    $productDays = 1;
+                }
+            }
 
             return [
                 'id' => $product->id,
@@ -61,6 +71,7 @@ public function getBoostProducts()
                 'price' => $product->price ?? 0,
                 'is_boosted' => $product->is_boosted,
                 'per_day' => $boostPerDay,
+                'days' => $productDays,
                 'is_top' => $index < 2 && ($product->sold > 0 || $product->popularity > 0),
                 'image_url' => $product->thumbnail ? asset($product->thumbnail) : asset('images/no-image.png')
             ];
@@ -141,10 +152,23 @@ public function submitBoost(Request $request)
             ->get();
 
         $totalCost = 0;
+        $productDurations = [];
         foreach ($products as $product) {
             $boostRule = $this->getBoostRule($product, $sellerId, $boostRules);
             $perDay = $boostRule ? (float)$boostRule->per_day : 0;
-            $totalCost += ($perDay * $days);
+            
+            $productDays = $days;
+            if ($boostRule && $boostRule->start_date && $boostRule->end_date) {
+                $start = \Carbon\Carbon::parse($boostRule->start_date);
+                $end = \Carbon\Carbon::parse($boostRule->end_date);
+                $productDays = $start->diffInDays($end);
+                if ($productDays < 1) {
+                    $productDays = 1;
+                }
+            }
+            
+            $productDurations[$product->id] = $productDays;
+            $totalCost += ($perDay * $productDays);
         }
 
         // Get the wallet record from DB
@@ -306,7 +330,8 @@ if ($sellerData && $sellerData->referred_by && $totalCost > 0) {
             foreach ($products as $product) {
                 $boostRule = $this->getBoostRule($product, $sellerId, $boostRules);
                 $perDay = $boostRule ? (float)$boostRule->per_day : 0;
-                $boostAmount = $perDay * $days;
+                $productDays = $productDurations[$product->id] ?? $days;
+                $boostAmount = $perDay * $productDays;
 
                 \App\Models\BoostedListing::create([
                     'product_id' => $product->id,
@@ -315,7 +340,7 @@ if ($sellerData && $sellerData->referred_by && $totalCost > 0) {
                     'per_day' => $perDay,
                     'boost_amount' => $boostAmount,
                     'start_date' => \Carbon\Carbon::today()->toDateString(),
-                    'end_date' => \Carbon\Carbon::today()->addDays((int)$days)->toDateString(),
+                    'end_date' => \Carbon\Carbon::today()->addDays((int)$productDays)->toDateString(),
                     'status' => 'active',
                     'impressions' => 0,
                     'clicks' => 0,

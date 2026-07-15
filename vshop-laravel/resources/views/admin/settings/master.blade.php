@@ -574,18 +574,11 @@
         <!-- ========== BOOST REVENUE ENGINE TAB ========== -->
         <div class="tab-pane active" id="tab-boost-revenue">
             <div class="metrics-grid">
-                <div class="metric-card card-primary">
-                    <div class="metric-icon-box"><i class='bx bx-trending-up'></i></div>
-                    <div class="metric-info">
-                        <div class="metric-value money" id="boost-total-revenue" data-amount="0">₹0</div>
-                        <div class="metric-label">Total Boost Revenue</div>
-                    </div>
-                </div>
                 <div class="metric-card card-success">
                     <div class="metric-icon-box"><i class='bx bx-money-withdraw'></i></div>
                     <div class="metric-info">
                         <div class="metric-value money" id="boost-total-amount" data-amount="0">₹0</div>
-                        <div class="metric-label">Total Boost Spend</div>
+                        <div class="metric-label">Total Boost Revenue</div>
                     </div>
                 </div>
                 <div class="metric-card card-info">
@@ -793,7 +786,7 @@
                             <tr>
                                 <th>Seller Name</th>
                                 <th>Active Campaigns</th>
-                                <th>Total Boost Spend</th>
+                                <th>Total Boost Revenue</th>
                                 <th>Total Revenue Generated</th>
                                 <th>Avg ROI</th>
                             </tr>

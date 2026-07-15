@@ -430,6 +430,7 @@ if ($seller) {
                                 </div>
                             </th>
                             <th width="120" class="text-center">Per Day Cost</th>
+                            <th width="120" class="text-center">Duration</th>
                             <th width="120" class="text-center">Current Status</th>
                         </tr>
                     </thead>
@@ -2638,13 +2639,14 @@ function loadBoostProducts() {
                     let perDay = p.per_day !== null && p.per_day !== undefined ? parseFloat(p.per_day) : null;
                     let fmtPerDay = perDay !== null ? '₹' + perDay.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '';
                     let isDisabled = perDay === null ? 'disabled' : '';
+                    let days = p.days !== null && p.days !== undefined ? parseInt(p.days) : 7;
 
                     html += `
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="me-3">
-                                        <input class="form-check-input boost-item-checkbox" type="checkbox" name="product_ids[]" value="${p.id}" data-per-day="${perDay || 0}" ${isChecked} ${isDisabled} style="appearance: auto !important; position: static !important; opacity: 1 !important; width: 1.2rem; height: 1.2rem; cursor: pointer; display: inline-block;">
+                                        <input class="form-check-input boost-item-checkbox" type="checkbox" name="product_ids[]" value="${p.id}" data-per-day="${perDay || 0}" data-days="${days}" ${isChecked} ${isDisabled} style="appearance: auto !important; position: static !important; opacity: 1 !important; width: 1.2rem; height: 1.2rem; cursor: pointer; display: inline-block;">
                                     </div>
                                     <div style="width: 45px; height: 45px; overflow: hidden; border-radius: 6px; border: 1px solid #e0e0e0; margin-right: 12px;">
                                         <img src="${p.image_url}" alt="Product" style="width: 100%; height: 100%; object-fit: cover;">
@@ -2656,6 +2658,7 @@ function loadBoostProducts() {
                                 </div>
                             </td>
                             <td class="text-center fw-bold text-dark">${fmtPerDay}</td>
+                            <td class="text-center fw-bold text-primary">${days} Days</td>
                             <td class="text-center status-badge-cell">${badge}</td>
                         </tr>
                     `;
@@ -2675,11 +2678,11 @@ function loadBoostProducts() {
 
 function updateBoostCostCalculation() {
     let count = $('.boost-item-checkbox:checked:not(:disabled)').length;
-    let days = parseInt($('#boostModalDays').val()) || 1;
     let totalCost = 0;
     
     $('.boost-item-checkbox:checked:not(:disabled)').each(function() {
-        let perDay = parseFloat($(this).data('per-day')) || 50.00;
+        let perDay = parseFloat($(this).data('per-day')) || 0;
+        let days = parseInt($(this).data('days')) || 7;
         totalCost += (perDay * days);
     });
     

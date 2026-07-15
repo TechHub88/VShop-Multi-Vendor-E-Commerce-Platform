@@ -1800,6 +1800,7 @@ Route::get('/orders/export', [OrderController::class, 'exportOrders'])->name('or
         
     Route::prefix('customers')->name('customers.')->group(function () {
         Route::get('/block-control', [\App\Http\Controllers\admin\CustomerController::class, 'blockControl'])->name('block-control');
+        Route::get('/block control', function() { return redirect()->route('admin.customers.block-control'); });
         Route::post('/{id}/toggle-status', [\App\Http\Controllers\admin\CustomerController::class, 'toggleStatus'])->name('toggle-status');
         
         Route::get('/merge', [\App\Http\Controllers\admin\CustomerController::class, 'mergeView'])->name('merge');

@@ -664,9 +664,9 @@
     <div class="d-flex align-items-center gap-2 mb-3">
         <i class="bi bi-rocket-takeoff-fill text-danger" style="font-size: 18px;"></i>
         <h6 class="mb-0 fw-bold" style="color: #0b4da1;">Promotion & Boosting</h6>
-        <div class="ms-auto text-warning fw-bold" style="font-size: 12px; cursor: pointer;">
+        <a href="{{ url('seller/grievance') }}" class="ms-auto text-warning fw-bold text-decoration-none" style="font-size: 12px;">
             <i class="bi bi-lightbulb-fill"></i> Help Center
-        </div>
+        </a>
     </div>
     <p style="font-size: 12px; color: #64748b; margin-bottom: 15px;">Configure your next boost campaign to reach your target buyers and convert them.</p>
 
@@ -690,18 +690,17 @@
                 <div class="pricing-section mb-3">
                     <div class="pricing-section-title">
                         DURATION & BUDGET
-                        <a href="{{ url('seller/grievance') }}" class="text-decoration-none" style="font-size:10px; color:#0b4da1;"><i class="bi bi-info-circle"></i> Help center</a>
                     </div>
                     
                     @if(isset($adminBoostRule))
                         <div class="alert alert-info py-2" style="font-size: 11px;">
-                            <i class="bi bi-info-circle"></i> Duration is set by admin category rule. If you have any issues regarding price, please <a href="{{ url('seller/grievance') }}">connect with admin</a>.
+                            <i class="bi bi-info-circle"></i> Duration is set by admin category rule. If you have any issues regarding price, connect admin.
                         </div>
                         <input type="text" class="form-control bg-light" value="{{ $adminBoostDays ?? 7 }} Days" readonly>
                         <input type="hidden" name="boost_duration" id="boostDuration" value="{{ $adminBoostDays ?? 7 }}">
                     @else
                         <div class="alert alert-info py-2" style="font-size: 11px;">
-                            <i class="bi bi-info-circle"></i> Duration is set by admin. If you have any issues regarding price, please <a href="{{ url('seller/grievance') }}">connect with admin</a>.
+                            <i class="bi bi-info-circle"></i> Duration is set by admin. If you have any issues regarding price, connect admin.
                         </div>
                         <input type="text" class="form-control bg-light" value="{{ old('boost_duration', $product->boost_duration ?? 7) }} Days" readonly>
                         <input type="hidden" name="boost_duration" id="boostDuration" value="{{ old('boost_duration', $product->boost_duration ?? 7) }}">

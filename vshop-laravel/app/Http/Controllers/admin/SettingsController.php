@@ -97,8 +97,8 @@ class SettingsController extends Controller
                     'enquiries'         => $boost->enquiries,
                     'conversions'       => $boost->conversions,
                     'revenue_generated' => $boost->revenue_generated,
-                    'is_suggestion'     => $boost->is_suggestion,
-                    'created_at'        => $boost->created_at->format('d M Y H:i'),
+                    'is_suggestion'     => $boost->status === 'suggestion',
+                    'created_at'        => $boost->created_at ? $boost->created_at->format('d M Y H:i') : '',
                 ];
             })->toArray();
 
@@ -225,7 +225,6 @@ class SettingsController extends Controller
                 'start_date'    => $startDate,
                 'end_date'      => $endDate,
                 'status'        => $status ?? 'active',
-                'is_suggestion' => 0 // it's from admin
             ]);
         }
 
@@ -282,8 +281,6 @@ class SettingsController extends Controller
         $data['seller_id']   = empty($data['seller_id']) ? null : $data['seller_id'];
         $data['category_id'] = empty($data['category_id']) ? null : $data['category_id'];
         $data['product_id']  = empty($data['product_id']) ? null : $data['product_id'];
-        $data['is_suggestion'] = 0;
-
         $boost->update([
             'product_id'    => $data['product_id'],
             'category_id'   => $data['category_id'],
@@ -298,7 +295,6 @@ class SettingsController extends Controller
             'enquiries'     => $data['enquiries'] ?? 0,
             'conversions'   => $data['conversions'] ?? 0,
             'revenue_generated' => $data['revenue_generated'] ?? 0,
-            'is_suggestion' => 0
         ]);
 
         return redirect()->back()->with('success', 'Boost updated successfully.');
