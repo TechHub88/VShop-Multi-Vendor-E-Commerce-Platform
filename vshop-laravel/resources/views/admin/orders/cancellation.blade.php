@@ -564,7 +564,39 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @forelse($returnFlows ?? [] as $rf)
+                            <tr>
+                                <td>#{{ $rf->order_id }}</td>
+                                <td>
+                                    <span class="small">{{ $rf->order->items->first()->product->name ?? 'N/A' }}</span>
+                                    @if(($rf->order->items->count() ?? 0) > 1)
+                                        <small class="text-muted d-block">+{{ $rf->order->items->count() - 1 }} more items</small>
+                                    @endif
+                                </td>
+                                <td>{{ $rf->customer->name ?? 'N/A' }}</td>
+                                <td>
+                                    @if($rf->status == 'refunded' || $rf->status == 'completed')
+                                        <span class="badge bg-success bg-opacity-10 text-success fw-semibold"><i class="ri-checkbox-circle-line me-1"></i>Returned</span>
+                                    @elseif($rf->status == 'approved')
+                                        <span class="badge bg-info bg-opacity-10 text-info fw-semibold"><i class="ri-truck-line me-1"></i>In Transit</span>
+                                    @else
+                                        <span class="badge bg-warning bg-opacity-10 text-warning fw-semibold"><i class="ri-time-line me-1"></i>{{ ucfirst($rf->status) }}</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($rf->pickup_status)
+                                        <span class="text-secondary small"><i class="ri-barcode-box-line me-1"></i>{{ ucfirst($rf->pickup_status) }}</span>
+                                    @else
+                                        <span class="text-muted small">N/A</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="small text-muted">{{ $rf->pickup_date ? \Carbon\Carbon::parse($rf->pickup_date)->format('d M Y') : 'Pending Schedule' }}</span>
+                                </td>
+                            </tr>
+                            @empty
                             <tr><td colspan="6" class="text-center text-muted py-4">No active return flows to monitor.</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -606,7 +638,26 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @forelse($refundFlows ?? [] as $rf)
+                            <tr>
+                                <td>#{{ $rf->order_id }}</td>
+                                <td><strong>₹{{ number_format($rf->order->refund_amount ?? $rf->order->total_amount ?? $rf->order->total ?? 0, 2) }}</strong></td>
+                                <td><span class="badge bg-light text-dark text-uppercase">{{ $rf->refund_mode ?? 'wallet' }}</span></td>
+                                <td><span class="text-muted font-monospace small">{{ $rf->otp ? 'TXN-'.$rf->otp : 'TXN-REF-'.$rf->id }}</span></td>
+                                <td><span class="small text-muted">{{ $rf->updated_at ? $rf->updated_at->format('d M Y, h:i A') : '-' }}</span></td>
+                                <td>
+                                    @if($rf->status == 'refunded')
+                                        <span class="badge bg-success bg-opacity-10 text-success fw-semibold"><i class="ri-checkbox-circle-line me-1"></i>Verified</span>
+                                    @elseif($rf->admin_refund_status == 'pending')
+                                        <span class="badge bg-warning bg-opacity-10 text-warning fw-semibold"><i class="ri-time-line me-1"></i>Pending</span>
+                                    @else
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary fw-semibold">{{ ucfirst($rf->status) }}</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            @empty
                             <tr><td colspan="6" class="text-center text-muted py-4">No pending refunds to verify.</td></tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>

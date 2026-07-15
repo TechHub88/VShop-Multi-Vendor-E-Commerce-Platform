@@ -347,10 +347,14 @@
                     <tbody id="ordersTableBody">
                         @forelse($orders ?? [] as $order)
                         <tr class="order-row" data-order-id="{{ $order->id }}" onclick="showOrderDetails({{ $order->id }})">
-                            <td>
-                                <span class="fw-semibold text-primary">#{{ $order->id }}</span>
-                                <small class="d-block text-muted">{{ $order->order_number ?? 'N/A' }}</small>
-                            </td>
+                             <td>
+                                 <span class="fw-semibold text-primary">#{{ $order->id }}</span>
+                                 @if($order->tracking_id)
+                                     <small class="d-block"><a href="javascript:void(0)" class="text-primary text-decoration-underline" style="font-size: 11px;" onclick="event.stopPropagation(); viewTracking('{{ $order->tracking_id }}', '{{ $order->courier_name ?? 'Standard' }}')">View tracking ID</a></small>
+                                 @else
+                                     <small class="d-block text-muted">Tracking: N/A</small>
+                                 @endif
+                             </td>
                             <td>
                                 <div>{{ $order->customer->name ?? 'N/A' }}</div>
                                 <small class="text-muted">{{ $order->customer->phone ?? '' }}</small>
@@ -616,7 +620,10 @@ function renderTable(orders) {
             
             html += `
                 <tr class="order-row" data-order-id="${order.id}" onclick="showOrderDetails(${order.id})">
-                    <td><span class="fw-semibold text-primary">#${order.id}</span><small class="d-block text-muted">${order.order_number || 'N/A'}</small></td>
+                    <td>
+                        <span class="fw-semibold text-primary">#${order.id}</span>
+                        ${order.tracking_id ? `<small class="d-block"><a href="javascript:void(0)" class="text-primary text-decoration-underline" style="font-size: 11px;" onclick="event.stopPropagation(); viewTracking('${order.tracking_id}', '${order.courier_name || 'Standard'}')">View tracking ID</a></small>` : '<small class="d-block text-muted">Tracking: N/A</small>'}
+                    </td>
                     <td><div>${order.customer?.name || 'N/A'}</div><small class="text-muted">${order.customer?.phone || ''}</small></td>
                     <td>${order.created_at ? `<span class="stage-completed"><i class="fa-regular fa-calendar-check me-1"></i>${new Date(order.created_at).toLocaleDateString()}</span><small class="d-block text-muted">${new Date(order.created_at).toLocaleTimeString()}</small>` : '<span class="stage-missing"><i class="fa-regular fa-clock me-1"></i>Not recorded</span>'}</td>
                     <td>${paymentIsDone ? `<span class="stage-completed"><i class="fa-regular fa-credit-card me-1"></i>${new Date(order.updated_at).toLocaleDateString()}</span><small class="d-block text-muted">${order.payment_method || order.payment_type || 'N/A'}${order.transaction_id ? '<br>ID: '+order.transaction_id : ''}</small>` : '<span class="stage-missing"><i class="fa-regular fa-hourglass-half me-1"></i>Pending</span>'}</td>

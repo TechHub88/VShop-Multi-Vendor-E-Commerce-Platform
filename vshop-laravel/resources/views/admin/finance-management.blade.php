@@ -43,8 +43,8 @@
                     <iconify-icon icon="solar:chart-square-bold-duotone" class="align-middle me-1"></iconify-icon> Trackers
                 </button>
                 <ul class="dropdown-menu shadow">
-                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#holdReasonModal"><iconify-icon icon="solar:clipboard-list-bold-duotone" class="me-2 text-warning"></iconify-icon> Hold Reason Tracking</a></li>
-                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#settlementHoldModal"><iconify-icon icon="solar:clock-circle-bold-duotone" class="me-2 text-warning"></iconify-icon> Settlement Delay Tracker</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="showHoldReasonModal()"><iconify-icon icon="solar:clipboard-list-bold-duotone" class="me-2 text-warning"></iconify-icon> Hold Reason Tracking</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="showSettlementHoldModal()"><iconify-icon icon="solar:clock-circle-bold-duotone" class="me-2 text-warning"></iconify-icon> Settlement Delay Tracker</a></li>
                 </ul>
             </div>
             <button class="btn btn-primary btn-sm shadow-sm" onclick="exportData()">
@@ -1845,7 +1845,7 @@
             </div>
             <div class="modal-body p-4">
                 <div class="d-flex justify-content-between mb-3">
-                    <input type="text" id="searchHoldTracker" class="form-control form-control-sm w-25" placeholder="Search Seller...">
+                    <input type="text" id="searchHoldTracker" class="form-control form-control-sm w-25" placeholder="Search Seller..." oninput="filterHoldTracker()">
                     <select id="sortHoldTracker" class="form-select form-select-sm w-25">
                         <option value="newest">Newest First</option>
                         <option value="oldest">Oldest First</option>
@@ -1928,7 +1928,7 @@
             </div>
             <div class="modal-body p-4">
                 <div class="d-flex justify-content-between mb-3">
-                    <input type="text" id="searchHoldReason" class="form-control form-control-sm w-25" placeholder="Search Reason...">
+                    <input type="text" id="searchHoldReason" class="form-control form-control-sm w-25" placeholder="Search Reason..." oninput="filterHoldReasons()">
                     <select id="sortHoldReason" class="form-select form-select-sm w-25">
                         <option value="newest">Newest First</option>
                         <option value="oldest">Oldest First</option>
@@ -6600,6 +6600,57 @@ function showEarningBreakdown(sellerId) {
     const targetEl = document.getElementById('earningBreakdownContent');
     if (targetEl) targetEl.innerHTML = html;
     new bootstrap.Modal(document.getElementById('earningBreakdownModal')).show();
+}
+
+function filterHoldReasons() {
+    let val = document.getElementById('searchHoldReason').value.toLowerCase();
+    let rows = document.querySelectorAll('#holdReasonTableBody tr');
+    rows.forEach(row => {
+        let text = row.innerText.toLowerCase();
+        row.style.display = text.includes(val) ? '' : 'none';
+    });
+}
+
+function filterHoldTracker() {
+    let val = document.getElementById('searchHoldTracker').value.toLowerCase();
+    let rows = document.querySelectorAll('#settlementHoldTableBody tr');
+    rows.forEach(row => {
+        let text = row.innerText.toLowerCase();
+        row.style.display = text.includes(val) ? '' : 'none';
+    });
+}
+
+function showHoldReasonModal() {
+    let html = '';
+    earningsDetails.forEach(row => {
+        if (row.hold_days > 0 || row.hold_reason) {
+            const purchaseDate = new Date(row.purchase_date);
+            const fmtPurchase = purchaseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+            
+            html += `
+                <tr>
+                    <td class="fw-bold">${row.seller_code}</td>
+                    <td>${row.name}</td>
+                    <td><span class="text-muted small">${row.hold_reason || 'SLA Verification Hold'}</span></td>
+                    <td><span class="badge bg-secondary-soft text-secondary">System Admin</span></td>
+                    <td>${fmtPurchase}</td>
+                    <td>
+                        <span class="badge bg-warning-soft text-warning">
+                            ${row.payout_status}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        }
+    });
+
+    if (!html) {
+        html = `<tr><td colspan="6" class="text-center text-muted py-3">No active holds found.</td></tr>`;
+    }
+
+    const targetEl = document.getElementById('holdReasonTableBody');
+    if (targetEl) targetEl.innerHTML = html;
+    new bootstrap.Modal(document.getElementById('holdReasonModal')).show();
 }
 
 function showSettlementHoldModal() {

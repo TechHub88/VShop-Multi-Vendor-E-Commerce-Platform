@@ -212,7 +212,23 @@ public function cancellation(Request $request)
         ->orderBy('id', 'desc')
         ->paginate(10);
 
-    return view('admin.orders.cancellation', compact('returns', 'sellers', 'products', 'cities'));
+    // Fetch all return flows for modal
+    $returnFlows = \App\Models\OrderReturn::with(['customer', 'order.items.product'])
+        ->where('return_type', 'return')
+        ->orderBy('id', 'desc')
+        ->get();
+
+    // Fetch all refund flows for modal
+    $refundFlows = \App\Models\OrderReturn::with(['customer', 'order.items.product'])
+        ->where(function($q) {
+            $q->where('status', 'refunded')
+              ->orWhereNotNull('refund_mode')
+              ->orWhereNotNull('admin_refund_status');
+        })
+        ->orderBy('id', 'desc')
+        ->get();
+
+    return view('admin.orders.cancellation', compact('returns', 'sellers', 'products', 'cities', 'returnFlows', 'refundFlows'));
 }
 
 
