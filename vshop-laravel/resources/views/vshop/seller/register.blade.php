@@ -305,7 +305,7 @@ a:hover {
                 <label class="form-label">Referral Code <span style="font-size: 12px; color: #94a3b8;">(Optional)</span></label>
                 <div class="d-flex gap-2 align-items-center">
                     <i class="bi bi-gift" style="font-size: 18px; color: #2563eb;"></i>
-                    <input type="text" id="regReferralCode" name="referral_code" class="form-control" placeholder="Enter referral code (e.g. VSHOP-XXXXXX)" maxlength="20" style="text-transform: uppercase;">
+                    <input type="text" id="regReferralCode" name="referral_code" class="form-control" placeholder="Enter referral code (e.g. VSHOP-XXXXXX)" maxlength="20" style="text-transform: uppercase;" value="{{ request('ref') }}">
                 </div>
             </div>
 

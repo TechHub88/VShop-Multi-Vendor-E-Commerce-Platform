@@ -967,7 +967,119 @@ $this->notifySeller(
         }
         $order->save();
 
-        /* ================= CLEAR CART (ONLY IF NOT BUY NOW) ================= */
+        // --- 5. SELLER REFERRAL LOGIC (First Purchase Reward) ---
+$sellerData = \App\Models\Seller::find($globalSellerId);
+if ($sellerData && $sellerData->referred_by) {
+    // Check if this is the FIRST completed order for this seller
+    $completedOrdersCount = \App\Models\Order::where('seller_id', $sellerData->id)
+        ->whereIn('payment_status', ['paid', 'completed'])
+        ->count();
+
+    if ($completedOrdersCount == 1) { // It means THIS is the first order
+        $referralConfig = \Illuminate\Support\Facades\DB::table('referral_configurations')
+            ->where('type', 'seller_to_seller')
+            ->where('status', 1)
+            ->first();
+
+        if ($referralConfig && $referralConfig->commission_percentage > 0) {
+            $rewardPercentage = $referralConfig->commission_percentage;
+            
+            // Calculate reward amount based on $totalOrderAmount
+            $rewardAmount = ($totalOrderAmount * $rewardPercentage) / 100;
+            
+            if ($rewardAmount > 0) {
+                // The platform pays BOTH the referrer and the referee
+                $referrerWallet = \App\Models\Wallet::firstOrCreate(
+                    ['user_type' => 'seller', 'seller_id' => $sellerData->referred_by, 'customer_id' => null],
+                    ['balance' => 0]
+                );
+                
+                $refereeWallet = \App\Models\Wallet::firstOrCreate(
+                    ['user_type' => 'seller', 'seller_id' => $sellerData->id, 'customer_id' => null],
+                    ['balance' => 0]
+                );
+                
+                // Deduct from Escrow
+                $escrowWallet->decrement('balance', $rewardAmount * 2); 
+                
+                // Payout from Escrow
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $escrowWallet->id,
+                    'user_type' => 'platform',
+                    'transaction_type' => 'seller_referral_payout',
+                    'credit' => 0,
+                    'debit' => $rewardAmount * 2,
+                    'balance_after' => $escrowWallet->balance,
+                    'description' => "Seller Referral Reward Payout (First Purchase) for Seller #{$sellerData->referred_by} and Seller #{$sellerData->id} on Order #{$order->id}",
+                    'reference_id' => 'ORD-' . $order->id,
+                    'status' => 'completed'
+                ]);
+
+                // Credit Referrer
+                $referrerWallet->increment('balance', $rewardAmount);
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $referrerWallet->id,
+                    'seller_id' => $sellerData->referred_by,
+                    'user_type' => 'seller',
+                    'transaction_type' => 'referral_reward',
+                    'credit' => $rewardAmount,
+                    'debit' => 0,
+                    'balance_after' => $referrerWallet->balance,
+                    'description' => "Referral Reward (Seller B's First Purchase) for referring Seller #{$sellerData->id}",
+                    'reference_id' => 'ORD-' . $order->id,
+                    'status' => 'completed'
+                ]);
+                
+                // Credit Referee (Seller B)
+                $refereeWallet->increment('balance', $rewardAmount);
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $refereeWallet->id,
+                    'seller_id' => $sellerData->id,
+                    'user_type' => 'seller',
+                    'transaction_type' => 'referral_reward',
+                    'credit' => $rewardAmount,
+                    'debit' => 0,
+                    'balance_after' => $refereeWallet->balance,
+                    'description' => "Welcome Referral Reward (First Purchase) via Referrer #{$sellerData->referred_by}",
+                    'reference_id' => 'ORD-' . $order->id,
+                    'status' => 'completed'
+                ]);
+                
+                // Insert to ReferralHistory
+                \App\Models\ReferralHistory::create([
+                    'referrer_id' => $sellerData->referred_by,
+                    'buyer_id' => null,
+                    'seller_id' => $sellerData->id,
+                    'order_id' => $order->id,
+                    'amount' => $rewardAmount * 2, 
+                    'commission_percent' => $rewardPercentage,
+                    'status' => 'paid',
+                ]);
+                
+                // Send notification to Referrer
+                \App\Services\NotificationService::notify(
+                    'seller',
+                    $sellerData->referred_by,
+                    'referral_reward',
+                    'Referral Reward Received',
+                    "You have received ₹{$rewardAmount} as a reward because a seller you referred (Seller #{$sellerData->id}) got their first purchase!",
+                    '/seller/finance'
+                );
+                
+                // Send notification to Referee
+                \App\Services\NotificationService::notify(
+                    'seller',
+                    $sellerData->id,
+                    'referral_reward',
+                    'Welcome Reward Received',
+                    "You have received ₹{$rewardAmount} as a welcome reward for your first purchase!",
+                    '/seller/finance'
+                );
+            }
+        }
+    }
+}
+/* ================= CLEAR CART (ONLY IF NOT BUY NOW) ================= */
 
         if (!$isBuyNow) {
             CartItem::where('customer_id', $customer->id)->delete();

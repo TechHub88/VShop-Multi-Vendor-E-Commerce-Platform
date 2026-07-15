@@ -171,7 +171,115 @@ public function submitBoost(Request $request)
         // Also update session to keep header consistent for current request
         session(['seller_dummy_wallet' => $wallet->balance]);
 
-        // First set all products to not boosted, then boost selected ones
+        // --- SELLER REFERRAL LOGIC (Boost Reward) ---
+$sellerData = \App\Models\Seller::find($sellerId);
+if ($sellerData && $sellerData->referred_by && $totalCost > 0) {
+    $referralConfig = \Illuminate\Support\Facades\DB::table('referral_configurations')
+        ->where('type', 'seller_to_seller')
+        ->where('status', 1)
+        ->first();
+
+    if ($referralConfig && $referralConfig->commission_percentage > 0) {
+        $rewardPercentage = $referralConfig->commission_percentage;
+        
+        // Calculate reward amount based on $totalCost
+        $rewardAmount = ($totalCost * $rewardPercentage) / 100;
+        
+        if ($rewardAmount > 0) {
+            $referrerWallet = \App\Models\Wallet::firstOrCreate(
+                ['user_type' => 'seller', 'seller_id' => $sellerData->referred_by, 'customer_id' => null],
+                ['balance' => 0]
+            );
+            
+            $refereeWallet = clone $wallet; // we already have referee's wallet
+            
+            $escrowWallet = \App\Models\Wallet::firstOrCreate(
+                ['user_type' => 'platform', 'seller_id' => null, 'customer_id' => null],
+                ['balance' => 0]
+            );
+            
+            // Deduct from Escrow
+            $escrowWallet->decrement('balance', $rewardAmount * 2); 
+            
+            // Payout from Escrow
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $escrowWallet->id,
+                'user_type' => 'platform',
+                'transaction_type' => 'seller_referral_payout',
+                'credit' => 0,
+                'debit' => $rewardAmount * 2,
+                'balance_after' => $escrowWallet->balance,
+                'description' => "Seller Referral Reward Payout (Product Boost) for Seller #{$sellerData->referred_by} and Seller #{$sellerId}",
+                'reference_id' => 'BOOST-' . time(),
+                'status' => 'completed'
+            ]);
+
+            // Credit Referrer
+            $referrerWallet->increment('balance', $rewardAmount);
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $referrerWallet->id,
+                'seller_id' => $sellerData->referred_by,
+                'user_type' => 'seller',
+                'transaction_type' => 'referral_reward',
+                'credit' => $rewardAmount,
+                'debit' => 0,
+                'balance_after' => $referrerWallet->balance,
+                'description' => "Referral Reward (Seller B's Product Boost) for referring Seller #{$sellerId}",
+                'reference_id' => 'BOOST-' . time(),
+                'status' => 'completed'
+            ]);
+            
+            // Credit Referee (Seller B)
+            $refereeWallet->increment('balance', $rewardAmount);
+            // Also update the in-memory wallet object balance since it might be used later
+            $wallet->balance += $rewardAmount;
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $refereeWallet->id,
+                'seller_id' => $sellerId,
+                'user_type' => 'seller',
+                'transaction_type' => 'referral_reward',
+                'credit' => $rewardAmount,
+                'debit' => 0,
+                'balance_after' => $refereeWallet->balance,
+                'description' => "Referral Reward (Product Boost) via Referrer #{$sellerData->referred_by}",
+                'reference_id' => 'BOOST-' . time(),
+                'status' => 'completed'
+            ]);
+            
+            // Insert to ReferralHistory
+            \App\Models\ReferralHistory::create([
+                'referrer_id' => $sellerData->referred_by,
+                'buyer_id' => null,
+                'seller_id' => $sellerId,
+                'order_id' => null,
+                'amount' => $rewardAmount * 2, 
+                'commission_percent' => $rewardPercentage,
+                'status' => 'paid',
+            ]);
+            
+            // Send notification to Referrer
+            \App\Services\NotificationService::notify(
+                'seller',
+                $sellerData->referred_by,
+                'referral_reward',
+                'Referral Reward Received',
+                "You have received ₹{$rewardAmount} as a reward because a seller you referred (Seller #{$sellerId}) boosted their product!",
+                '/seller/finance'
+            );
+            
+            // Send notification to Referee
+            \App\Services\NotificationService::notify(
+                'seller',
+                $sellerId,
+                'referral_reward',
+                'Boost Reward Received',
+                "You have received ₹{$rewardAmount} as a reward for boosting your product!",
+                '/seller/finance'
+            );
+        }
+    }
+}
+// First set all products to not boosted, then boost selected ones
         Product::where('created_by_id', $sellerId)->update(['is_boosted' => 0]);
 
         if (!empty($productIds)) {

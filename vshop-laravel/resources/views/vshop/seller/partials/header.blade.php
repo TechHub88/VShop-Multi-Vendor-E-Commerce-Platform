@@ -1844,8 +1844,8 @@ function toggleReferralInputs() {
 }
 
 function generateReferralLink() {
-    const slug = "{{ $seller->slug ?? $seller->username ?? $seller->id ?? '332994' }}";
-    const refUrl = window.location.origin + '/refer/' + slug;
+    const slug = "{{ $seller->referral_code ?? $seller->slug ?? $seller->username ?? $seller->id ?? '332994' }}";
+    const refUrl = window.location.origin + '/seller/register?ref=' + encodeURIComponent(slug);
     
     const previewBox = document.getElementById('refPreviewBox');
     const previewLink = document.getElementById('refPreviewLink');
