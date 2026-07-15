@@ -817,11 +817,11 @@
                     <input type="hidden" name="promotion_goal" id="promotionGoal" value="{{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') }}">
                 </div>
 
-                </div>
             </div>
         </div>
     </div>
 </div>
+
 
 {{-- COMMON LISTING PRICING --}}
 <div class="common-listing-header">
