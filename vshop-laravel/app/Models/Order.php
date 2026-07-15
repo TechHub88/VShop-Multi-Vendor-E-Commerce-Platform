@@ -165,6 +165,11 @@ class Order extends Model
         return $this->hasMany(ActivityLog::class, 'order_id')->orderBy('created_at', 'asc');
     }
 
+    public function sellerFinances()
+    {
+        return $this->hasMany(SellerFinance::class, 'order_id');
+    }
+
 
     /*
     |--------------------------------------------------------------------------

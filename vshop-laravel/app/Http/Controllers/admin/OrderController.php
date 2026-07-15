@@ -37,9 +37,9 @@ class OrderController extends Controller
             \Log::error('Failed to save activity log: ' . $e->getMessage());
         }
     }
-   public function index(Request $request)
+    public function index(Request $request)
     {
-        $query = Order::query()->with(['seller', 'customer']);
+        $query = Order::query()->with(['seller', 'customer', 'sellerFinances']);
         
         // Apply filters
         if ($request->filled('seller')) {

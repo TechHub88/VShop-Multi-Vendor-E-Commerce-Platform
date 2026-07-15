@@ -256,6 +256,12 @@
                             <td class="fw-bold">₹{{ number_format($order->total_amount ?? 0, 2) }}</td>
                             <td class="text-primary fw-bold">
                                 ₹{{ number_format($order->seller_share, 2) }}
+                                @php
+                                    $isHold = $order->sellerFinances->where('transaction_type', 'earning')->where('status', 'hold')->first();
+                                @endphp
+                                @if($isHold)
+                                    <span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem; padding: 2px 4px;">Hold</span>
+                                @endif
                                 <br><small class="text-muted fw-normal" style="font-size:0.7rem;">({{ $order->commission_split->seller_pct ?? 0 }}%)</small>
                                 <br><small class="text-dark fw-semibold" style="font-size:0.75rem;">Seller: {{ $order->seller_name ?? 'N/A' }}</small>
                             </td>
