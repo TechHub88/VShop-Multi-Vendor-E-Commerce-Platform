@@ -7,11 +7,11 @@
 
 // Delete the cached routes file directly
 $cachePaths = [
-    __DIR__ . '/bootstrap/cache/routes-v7.php',
-    __DIR__ . '/bootstrap/cache/routes.php',
-    __DIR__ . '/bootstrap/cache/config.php',
-    __DIR__ . '/bootstrap/cache/packages.php',
-    __DIR__ . '/bootstrap/cache/services.php',
+    __DIR__ . '/../bootstrap/cache/routes-v7.php',
+    __DIR__ . '/../bootstrap/cache/routes.php',
+    __DIR__ . '/../bootstrap/cache/config.php',
+    __DIR__ . '/../bootstrap/cache/packages.php',
+    __DIR__ . '/../bootstrap/cache/services.php',
 ];
 
 $results = [];
@@ -30,8 +30,9 @@ foreach ($cachePaths as $path) {
 
 // Also try running artisan commands
 try {
-    require __DIR__ . '/vendor/autoload.php';
-    $app = require_once __DIR__ . '/bootstrap/app.php';
+    require __DIR__ . '/../vendor/autoload.php';
+    $app = require_once __DIR__ . '/../bootstrap/app.php';
+
     $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
     $kernel->bootstrap();
     
