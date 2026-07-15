@@ -1788,19 +1788,12 @@ Route::get('/orders/export', [OrderController::class, 'exportOrders'])->name('or
 
     Route::get('/admin/customers', [\App\Http\Controllers\admin\CustomerController::class, 'index'])
         ->name('customers.index');
-    Route::get('/customers/{id}', [\App\Http\Controllers\admin\CustomerController::class, 'show'])
-        ->name('customers.show');
     Route::post('customers/search', [\App\Http\Controllers\admin\CustomerController::class, 'search'])->name('customers.search');
-
-    Route::delete('/customers/{id}', [\App\Http\Controllers\admin\CustomerController::class, 'destroy'])
-        ->name('customers.destroy');
-
     Route::post('customers/bulk-destroy', [\App\Http\Controllers\admin\CustomerController::class, 'bulkDestroy'])
         ->name('customers.bulk-destroy');
         
     Route::prefix('customers')->name('customers.')->group(function () {
         Route::get('/block-control', [\App\Http\Controllers\admin\CustomerController::class, 'blockControl'])->name('block-control');
-        Route::get('/block control', function() { return redirect()->route('admin.customers.block-control'); });
         Route::post('/{id}/toggle-status', [\App\Http\Controllers\admin\CustomerController::class, 'toggleStatus'])->name('toggle-status');
         
         Route::get('/merge', [\App\Http\Controllers\admin\CustomerController::class, 'mergeView'])->name('merge');
@@ -1815,6 +1808,12 @@ Route::get('/orders/export', [OrderController::class, 'exportOrders'])->name('or
         Route::get('/validation/address', [\App\Http\Controllers\admin\CustomerController::class, 'validationAddress'])->name('validation.address');
         Route::get('/validation/duplicates', [\App\Http\Controllers\admin\CustomerController::class, 'validationDuplicates'])->name('validation.duplicates');
     });
+
+    Route::get('/customers/{id}', [\App\Http\Controllers\admin\CustomerController::class, 'show'])
+        ->name('customers.show');
+    Route::delete('/customers/{id}', [\App\Http\Controllers\admin\CustomerController::class, 'destroy'])
+        ->name('customers.destroy');
+
     
     
 
