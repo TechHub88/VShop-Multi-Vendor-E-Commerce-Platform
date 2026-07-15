@@ -42,8 +42,41 @@ class ProductController extends Controller
         $query->where('category_id', $request->category_id);
     }
 
+    // ✅ Search keyword filter
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('description', 'like', "%{$search}%")
+              ->orWhere('sku', 'like', "%{$search}%");
+        });
+    }
+
+    // ✅ Product Type Filter
+    if ($request->filled('product_type')) {
+        $query->where('product_type', $request->product_type);
+    }
+
+    // ✅ Sorting
+    $sort = $request->sort ?? 'latest';
+    if ($sort == 'newest') {
+        $query->latest();
+    } elseif ($sort == 'oldest') {
+        $query->oldest();
+    } elseif ($sort == 'name_asc') {
+        $query->orderBy('name', 'asc');
+    } elseif ($sort == 'name_desc') {
+        $query->orderBy('name', 'desc');
+    } elseif ($sort == 'price_high') {
+        $query->orderBy('price', 'desc');
+    } elseif ($sort == 'price_low') {
+        $query->orderBy('price', 'asc');
+    } else {
+        $query->latest();
+    }
+
     // ✅ Data
-    $products = $query->latest()->paginate(20);
+    $products = $query->paginate(20)->withQueryString();
     $brands = Brand::all();
     $categories = Category::all();
 

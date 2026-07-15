@@ -499,54 +499,54 @@ input:disabled + .toggle-slider {
     </div>
 
     <!-- PROFESSIONAL FILTER BAR -->
-    <div class="filter-bar mb-4">
+    <form method="GET" action="{{ route('admin.customers.index') }}" class="filter-bar mb-4">
         <div class="filter-grid">
             <div class="filter-group">
                 <label><i class="fas fa-search me-1"></i> Search</label>
                 <div class="input-group">
                     <span class="input-group-text"><i class="fas fa-search"></i></span>
-                    <input type="text" id="keywordSearch" class="form-control" placeholder="Name, email, ID...">
+                    <input type="text" name="search" id="keywordSearch" class="form-control" placeholder="Name, email, ID..." value="{{ request('search') }}">
                 </div>
             </div>
             
             <div class="filter-group">
                 <label><i class="fas fa-tag me-1"></i> Buyer Type</label>
-                <select id="customerTypeFilter" class="form-select">
+                <select name="customer_type" id="customerTypeFilter" class="form-select">
                     <option value="">All Types</option>
-                    <option value="direct_selling">Direct Buyers</option>
-                    <option value="dropshipping">Vshop-Buyers</option>
+                    <option value="direct_selling" {{ request('customer_type') == 'direct_selling' ? 'selected' : '' }}>Direct Buyers</option>
+                    <option value="dropshipping" {{ request('customer_type') == 'dropshipping' ? 'selected' : '' }}>Vshop-Buyers</option>
                 </select>
             </div>
             
             <div class="filter-group">
                 <label><i class="fas fa-filter me-1"></i> Status</label>
-                <select id="statusFilter" class="form-select">
+                <select name="status" id="statusFilter" class="form-select">
                     <option value="">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="pending">Pending</option>
-                    <option value="blocked">Blocked</option>
+                    <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                    <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                    <option value="blocked" {{ request('status') == 'blocked' ? 'selected' : '' }}>Blocked</option>
                 </select>
             </div>
             
             <div class="filter-group">
                 <label><i class="fas fa-sort me-1"></i> Sort By</label>
-                <select id="sortFilter" class="form-select">
-                    <option value="newest">Newest First</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="name_asc">Name (A-Z)</option>
-                    <option value="name_desc">Name (Z-A)</option>
+                <select name="sort" id="sortFilter" class="form-select">
+                    <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest First</option>
+                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest First</option>
+                    <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                    <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
                 </select>
             </div>
             
             <div class="filter-actions">
-                <button type="button" id="applySearch" class="btn btn-search">
+                <button type="submit" class="btn btn-search">
                     <i class="fas fa-search me-1"></i> Search
                 </button>
                 
-                <button type="button" id="applySearch" class="btn reset-btn">
+                <a href="{{ route('admin.customers.index') }}" class="btn reset-btn d-flex align-items-center justify-content-center text-decoration-none">
                      Reset
-                </button>
+                </a>
                 
                 <div class="divider-vertical"></div>
                 
@@ -578,7 +578,7 @@ input:disabled + .toggle-slider {
                 </button>
             </div>
         </div>
-    </div>
+    </form>
 
     <!-- TABLE -->
     <div class="card">

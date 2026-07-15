@@ -49,7 +49,7 @@ class CustomerController extends Controller
             });
         }
         
-        $customers = $query->latest()->paginate(15);
+        $customers = $query->latest()->paginate(15)->withQueryString();
         
         // KPI data
         $totalCustomers = Customer::count();

@@ -45,7 +45,36 @@ class SellermanagementController extends Controller
             $query->where('agreement_status', 'pending');
         }
 
-        $sellers = $query->latest()->paginate(15);
+        // Search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('mobile', 'like', "%{$search}%");
+            });
+        }
+
+        // Platform filter
+        if ($request->filled('platform')) {
+            $platform = $request->platform;
+            $query->where(function ($q) use ($platform) {
+                $q->where('approved_platforms', 'like', "%\"{$platform}\"%")
+                  ->orWhere('approved_platforms', 'like', "%{$platform}%");
+            });
+        }
+
+        // Sorting
+        $sort = $request->sort ?? 'latest';
+        if ($sort == 'name_asc') {
+            $query->orderBy('name', 'asc');
+        } elseif ($sort == 'name_desc') {
+            $query->orderBy('name', 'desc');
+        } else {
+            $query->latest();
+        }
+
+        $sellers = $query->paginate(15)->withQueryString();
 
         return view('admin.sellers.index', compact('sellers'));
     }

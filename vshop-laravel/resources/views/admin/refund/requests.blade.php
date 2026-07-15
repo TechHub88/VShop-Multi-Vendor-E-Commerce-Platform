@@ -55,41 +55,42 @@
     <!-- Search, Filter and Export Controls - All in One Row -->
    <div class="card mb-3">
     <div class="card-body">
-        <div class="filter-area mb-3 p-3 bg-light rounded">
+        <form method="GET" action="{{ route('admin.refund.requests') }}" class="filter-area mb-3 p-3 bg-light rounded">
             <div class="d-flex flex-nowrap gap-3 align-items-center" style="overflow-x: auto; padding-bottom: 10px;">
                 <!-- Search keyword -->
                 <div class="flex-shrink-0" style="min-width: 200px;">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
-                        <input type="text" id="keywordSearch" class="form-control" placeholder="Search name, email...">
+                        <input type="text" name="search" id="keywordSearch" class="form-control" placeholder="Search name, email..." value="{{ request('search') }}">
                     </div>
                 </div>
                 
                 <!-- Brand Dropdown Filter -->
-                <!--<div class="flex-shrink-0" style="min-width: 180px;">-->
-                <!--    <div class="input-group input-group-sm">-->
-                <!--        <span class="input-group-text"><i class="fas fa-tag"></i></span>-->
-                <!--        <select id="brandFilter" class="form-select">-->
-                <!--            <option value="">All Brands</option>-->
-                <!--            @foreach($brands as $brand)-->
-                <!--                @if($brand->name)-->
-                <!--                    <option value="{{ $brand->name }}">{{ $brand->name }}</option>-->
-                <!--                @endif-->
-                <!--            @endforeach-->
-                <!--        </select>-->
-                <!--    </div>-->
-                <!--</div>-->
+                <div class="flex-shrink-0" style="min-width: 180px;">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                        <select name="brand_id" id="brandFilter" class="form-select">
+                            <option value="">All Brands</option>
+                            @foreach($brands as $brand)
+                                @if($brand->name)
+                                    <option value="{{ $brand->id }}" {{ request('brand_id') == $brand->id ? 'selected' : '' }}>{{ $brand->name }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
                 
                 <!-- Status Filter -->
                 <div class="flex-shrink-0" style="min-width: 160px;">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text"><i class="fas fa-circle"></i></span>
-                        <select id="statusFilter" class="form-select">
+                        <select name="customer_status" id="statusFilter" class="form-select">
                             <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="pending">Pending</option>
-                            <option value="blocked">Blocked</option>
+                            <option value="active" {{ request('customer_status') == 'active' ? 'selected' : '' }}>Active</option>
+                            <option value="inactive" {{ request('customer_status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                            <option value="pending" {{ request('customer_status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="blocked" {{ request('customer_status') == 'blocked' ? 'selected' : '' }}>Blocked</option>
+                            <option value="Refund" {{ request('customer_status') == 'Refund' ? 'selected' : '' }}>Refund</option>
                         </select>
                     </div>
                 </div>
@@ -98,22 +99,22 @@
                 <div class="flex-shrink-0" style="min-width: 160px;">
                     <div class="input-group input-group-sm">
                         <span class="input-group-text"><i class="fas fa-sort"></i></span>
-                        <select id="sortFilter" class="form-select">
-                            <option value="newest">Newest First</option>
-                            <option value="oldest">Oldest First</option>
-                            <option value="name_asc">Name (A-Z)</option>
-                            <option value="name_desc">Name (Z-A)</option>
+                        <select name="sort" id="sortFilter" class="form-select">
+                            <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest First</option>
+                            <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest First</option>
+                            <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                            <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
                         </select>
                     </div>
                 </div>
                 
                 <!-- Search Button -->
-                <div class="flex-shrink-0">
-                    <button type="button" id="applySearch" class="btn btn-success btn-sm">
+                <div class="flex-shrink-0 d-flex gap-2">
+                    <button type="submit" class="btn btn-success btn-sm">
                         <i class="fas fa-search me-1"></i> Search
                     </button>
                     
-                    <button class="btn reset-btn btn-sm">Reset</button>
+                    <a href="{{ route('admin.refund.requests') }}" class="btn btn-outline-secondary btn-sm d-flex align-items-center">Reset</a>
                 </div>
                 
                 <!-- Divider -->
@@ -170,7 +171,7 @@
                     </button>
                 </div>
             </div>
-        </div>
+        </form>
 
         <!-- Loading Indicator -->
         <div id="loadingIndicator" class="text-center py-4" style="display: none;">
@@ -528,150 +529,10 @@ $(document).ready(function() {
         }
     });
     
-    // ================= 5. SEARCH FUNCTIONALITY =================
-    $('#applySearch').click(function() {
-        performClientSideSearch();
+    // ================= 5. FILTER CHANGE EVENTS =================
+    $('#brandFilter, #statusFilter, #sortFilter').on('change', function() {
+        $(this).closest('form').submit();
     });
-    
-    // Enter key support
-    $('#keywordSearch').on('keypress', function(e) {
-        if (e.which === 13) {
-            e.preventDefault();
-            performClientSideSearch();
-        }
-    });
-    
-    // ================= 6. CLIENT-SIDE SEARCH =================
-    function performClientSideSearch() {
-        var keyword = $('#keywordSearch').val().toLowerCase();
-        var selectedBrand = $('#brandFilter').val();
-        var selectedStatus = $('#statusFilter').val();
-        var selectedSort = $('#sortFilter').val();
-        
-        var rows = $('#usersTableBody tr');
-        var visibleRows = [];
-        var visibleCount = 0;
-        
-        rows.each(function() {
-            var $row = $(this);
-            var name = $row.find('td[data-column="name"]').text().toLowerCase();
-            var email = $row.find('td[data-column="email"]').text().toLowerCase();
-            var brand = $row.find('td[data-column="brand"]').data('brand') || $row.find('td[data-column="brand"]').text();
-            var status = $row.find('td[data-column="status"]').data('status') || $row.find('td[data-column="status"] .badge').text().toLowerCase();
-            
-            var show = true;
-            
-            // Keyword filter (search in name and email)
-            if (keyword) {
-                var keywordMatch = name.includes(keyword) || email.includes(keyword);
-                if (!keywordMatch) {
-                    show = false;
-                }
-            }
-            
-            // Brand filter
-            if (selectedBrand && brand !== selectedBrand) {
-                show = false;
-            }
-            
-            // Status filter
-            if (selectedStatus && status !== selectedStatus) {
-                show = false;
-            }
-            
-            if (show) {
-                $row.show();
-                visibleCount++;
-                visibleRows.push({
-                    row: $row,
-                    name: $row.find('td[data-column="name"]').text(),
-                    created_at: $row.find('td[data-column="created_at"]').text()
-                });
-            } else {
-                $row.hide();
-            }
-        });
-        
-        // Apply sorting
-        if (selectedSort && visibleRows.length > 0) {
-            applySorting(visibleRows, selectedSort);
-        }
-        
-        // Show results message
-        if (visibleCount === 0) {
-            showNoResults('No users found matching your criteria');
-        } else {
-            // Remove any existing no results row
-            $('#usersTableBody tr.no-results-row').remove();
-            
-            // Show success message
-            console.log(`Found ${visibleCount} user(s)`);
-        }
-    }
-    
-    // ================= 7. APPLY SORTING =================
-    function applySorting(visibleRows, sortFilter) {
-        var tbody = $('#usersTableBody');
-        
-        // Sort the rows array
-        visibleRows.sort(function(a, b) {
-            switch(sortFilter) {
-                case 'name_asc':
-                    return a.name.localeCompare(b.name);
-                case 'name_desc':
-                    return b.name.localeCompare(a.name);
-                case 'newest':
-                    // Assuming newer dates are later in alphabet
-                    return b.created_at.localeCompare(a.created_at);
-                case 'oldest':
-                    return a.created_at.localeCompare(b.created_at);
-                default:
-                    return 0;
-            }
-        });
-        
-        // Reorder rows in the table
-        tbody.empty();
-        visibleRows.forEach(function(item) {
-            tbody.append(item.row);
-        });
-    }
-    
-    // ================= 8. SHOW NO RESULTS =================
-    function showNoResults(message) {
-        var tbody = $('#usersTableBody');
-        
-        // Hide all existing rows
-        tbody.find('tr').hide();
-        
-        // Check if no results row already exists
-        if (tbody.find('tr.no-results-row').length === 0) {
-            var msg = message || 'No users found for the selected criteria';
-            
-            var noResultsRow = '<tr class="no-results-row">' +
-                '<td colspan="8" class="text-center text-muted py-4">' +
-                    '<i class="fas fa-users fa-2x mb-2"></i>' +
-                    '<p>' + msg + '</p>' +
-                '</td>' +
-            '</tr>';
-            
-            tbody.append(noResultsRow);
-        }
-    }
-    
-    // ================= 9. RESET FILTERS =================
-    function resetFilters() {
-        $('#keywordSearch').val('');
-        $('#brandFilter').val('');
-        $('#statusFilter').val('');
-        $('#sortFilter').val('newest');
-        
-        // Show all rows
-        $('#usersTableBody tr').show();
-        
-        // Remove no results row if exists
-        $('#usersTableBody tr.no-results-row').remove();
-    }
     
     // ================= 10. EXPORT CSV =================
     $('#exportCsvBtn').click(function() {

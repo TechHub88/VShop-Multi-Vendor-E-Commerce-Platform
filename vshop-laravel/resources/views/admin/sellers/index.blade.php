@@ -24,6 +24,43 @@
     <div class="card">
         <div class="card-body">
 
+            <!-- Seller Filters -->
+            <form method="GET" action="{{ route('admin.sellers.index') }}" class="mb-4">
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                @if(request('filter'))
+                    <input type="hidden" name="filter" value="{{ request('filter') }}">
+                @endif
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-muted small"><i class="fas fa-search me-1"></i> Search Seller</label>
+                        <input type="text" name="search" class="form-control form-control-sm" placeholder="Name, email, mobile..." value="{{ request('search') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted small"><i class="fas fa-cubes me-1"></i> Platform</label>
+                        <select name="platform" class="form-select form-select-sm">
+                            <option value="">All Platforms</option>
+                            <option value="product" {{ request('platform') == 'product' ? 'selected' : '' }}>V-Shop</option>
+                            <option value="travel" {{ request('platform') == 'travel' ? 'selected' : '' }}>V-Travel</option>
+                            <option value="vcampus" {{ request('platform') == 'vcampus' ? 'selected' : '' }}>V-Campus</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold text-muted small"><i class="fas fa-sort me-1"></i> Sort By</label>
+                        <select name="sort" class="form-select form-select-sm">
+                            <option value="latest" {{ request('sort') == 'latest' ? 'selected' : '' }}>Latest Registered</option>
+                            <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                            <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary btn-sm flex-grow-1">Filter</button>
+                        <a href="{{ route('admin.sellers.index', request()->only(['status', 'filter'])) }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+                    </div>
+                </div>
+            </form>
+
             <div class="table-responsive">
                 <table class="table table-hover align-middle table-nowrap mb-0">
 

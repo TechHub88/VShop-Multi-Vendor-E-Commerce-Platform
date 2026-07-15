@@ -25,13 +25,13 @@
         <div class="card-body">
 
             <!-- Search, Filter and Export Controls - All in One Row -->
-            <div class="filter-area mb-4 p-4 bg-light rounded">
+            <form method="GET" action="{{ route('admin.products.index') }}" class="filter-area mb-4 p-4 bg-light rounded">
                 <div class="d-flex flex-nowrap gap-3 align-items-center" style="overflow-x: auto; padding-bottom: 10px;">
                     <!-- Search keyword -->
                     <div class="flex-shrink-0" style="min-width: 180px;">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text"><i class="fas fa-search"></i></span>
-                            <input type="text" id="keywordSearch" class="form-control" placeholder="Search products...">
+                            <input type="text" name="search" id="keywordSearch" class="form-control" placeholder="Search products..." value="{{ request('search') }}">
                         </div>
                     </div>
                     
@@ -39,10 +39,10 @@
                     <div class="flex-shrink-0" style="min-width: 180px;">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text"><i class="fas fa-tag"></i></span>
-                            <select id="brandFilter" class="form-select">
+                            <select name="brand_id" id="brandFilter" class="form-select">
                                 <option value="">All Brands</option>
-                                @foreach($brands as $brand)
-                                    <option value="{{ $brand->name }}">{{ $brand->name }}</option>
+                                @foreach($brands as $b)
+                                    <option value="{{ $b->id }}" {{ request('brand_id') == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -52,10 +52,10 @@
                     <div class="flex-shrink-0" style="min-width: 180px;">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text"><i class="fas fa-layer-group"></i></span>
-                            <select id="categoryFilter" class="form-select">
+                            <select name="category_id" id="categoryFilter" class="form-select">
                                 <option value="">All Categories</option>
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->name }}">{{ $category->name }}</option>
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>{{ $cat->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -65,43 +65,42 @@
                     <div class="flex-shrink-0" style="min-width: 160px;">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text"><i class="fas fa-cube"></i></span>
-                            <select id="typeFilter" class="form-select">
+                            <select name="product_type" id="typeFilter" class="form-select">
                                 <option value="">All Types</option>
-                                <option value="simple">Simple</option>
-                                <option value="attribute">Attribute</option>
-                                <option value="combo">Combo</option>
+                                <option value="simple" {{ request('product_type') == 'simple' ? 'selected' : '' }}>Simple</option>
+                                <option value="attribute" {{ request('product_type') == 'attribute' ? 'selected' : '' }}>Attribute</option>
+                                <option value="combo" {{ request('product_type') == 'combo' ? 'selected' : '' }}>Combo</option>
                             </select>
                         </div>
                     </div>
-                    
-                  
                     
                     <!-- Sort By -->
                     <div class="flex-shrink-0" style="min-width: 160px;">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text"><i class="fas fa-sort"></i></span>
-                            <select id="sortFilter" class="form-select">
+                            <select name="sort" id="sortFilter" class="form-select">
                                 <option value="">Default</option>
-                                <option value="newest">Newest First</option>
-                                <option value="oldest">Oldest First</option>
-                                <option value="name_asc">Name (A-Z)</option>
-                                <option value="name_desc">Name (Z-A)</option>
-                                <option value="price_high">Price High to Low</option>
-                                <option value="price_low">Price Low to High</option>
+                                <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest First</option>
+                                <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest First</option>
+                                <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                                <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
+                                <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }}>Price High to Low</option>
+                                <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }}>Price Low to High</option>
                             </select>
                         </div>
                     </div>
                     
                     <!-- Search Button -->
-                    <div class="flex-shrink-0">
-                        <button type="button" id="applySearch" class="btn btn-success btn-sm">
+                    <div class="flex-shrink-0 d-flex gap-2">
+                        <button type="submit" class="btn btn-success btn-sm">
                             <i class="fas fa-search me-1"></i> Search
                         </button>
+                        <a href="{{ route('admin.products.index') }}" class="btn btn-outline-secondary btn-sm">
+                            Reset
+                        </a>
                     </div>
-                    
-                   
                 </div>
-            </div>
+            </form>
 
             <!-- Loading Indicator -->
             <div id="loadingIndicator" class="text-center py-4" style="display: none;">
@@ -202,7 +201,9 @@
                     </tbody>
                 </table>
             </div>
-            {{ $products->links('pagination::bootstrap-5') }}
+            <div class="mt-4">
+                {{ $products->links() }}
+            </div>
 
 
         </div>
@@ -353,153 +354,7 @@
 $(document).ready(function() {
     console.log('Products page loaded');
     
-    // ================= 1. SEARCH FUNCTIONALITY =================
-    $('#applySearch').click(function() {
-        performClientSideSearch();
-    });
-    
-    // Enter key support
-    $('#keywordSearch').on('keypress', function(e) {
-        if (e.which === 13) {
-            e.preventDefault();
-            performClientSideSearch();
-        }
-    });
-    
-    // ================= 2. CLIENT-SIDE SEARCH =================
-    function performClientSideSearch() {
-        var keyword = $('#keywordSearch').val().toLowerCase();
-        var selectedBrand = $('#brandFilter').val();
-        var selectedCategory = $('#categoryFilter').val();
-        var selectedType = $('#typeFilter').val();
-        var sortFilter = $('#sortFilter').val();
-        
-        var rows = $('#productsTableBody tr');
-        var visibleRows = [];
-        var visibleCount = 0;
-        
-        rows.each(function() {
-            var $row = $(this);
-            var name = $row.find('td:nth-child(3)').text().toLowerCase();
-            var sku = $row.find('td:nth-child(4)').text().toLowerCase();
-            var brand = $row.find('td:nth-child(5)').data('brand') || $row.find('td:nth-child(5)').text();
-            var category = $row.find('td:nth-child(6)').data('category') || $row.find('td:nth-child(6)').text();
-            var type = $row.find('td:nth-child(7)').data('type') || $row.find('td:nth-child(7) .badge').text().toLowerCase();
-            var price = parseFloat($row.find('td:nth-child(8)').data('price')) || 0;
-            
-            var show = true;
-            
-            // Keyword filter (search in name and SKU)
-            if (keyword) {
-                var keywordMatch = name.includes(keyword) || sku.includes(keyword);
-                if (!keywordMatch) {
-                    show = false;
-                }
-            }
-            
-            // Brand filter
-            if (selectedBrand && brand !== selectedBrand) {
-                show = false;
-            }
-            
-            // Category filter
-            if (selectedCategory && category !== selectedCategory) {
-                show = false;
-            }
-            
-            // Type filter
-            if (selectedType && type !== selectedType) {
-                show = false;
-            }
-            
-            if (show) {
-                $row.show();
-                visibleCount++;
-                visibleRows.push({
-                    row: $row,
-                    name: $row.find('td:nth-child(3)').text(),
-                    price: price
-                });
-            } else {
-                $row.hide();
-            }
-        });
-        
-        // Apply sorting
-        if (sortFilter && visibleRows.length > 0) {
-            applySorting(visibleRows, sortFilter);
-        }
-        
-        // Show results message
-        if (visibleCount === 0) {
-            showNoResults('No products found matching your criteria');
-        } else {
-            // Remove any existing no results row
-            $('#productsTableBody tr.no-results-row').remove();
-            
-            // Show success message
-            Swal.fire({
-                icon: 'success',
-                title: 'Search Complete',
-                text: `Found ${visibleCount} product(s)`,
-                timer: 1500,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
-            });
-        }
-    }
-    
-    // ================= 3. APPLY SORTING =================
-    function applySorting(visibleRows, sortFilter) {
-        var tbody = $('#productsTableBody');
-        
-        // Sort the rows array
-        visibleRows.sort(function(a, b) {
-            switch(sortFilter) {
-                case 'name_asc':
-                    return a.name.localeCompare(b.name);
-                case 'name_desc':
-                    return b.name.localeCompare(a.name);
-                case 'price_high':
-                    return b.price - a.price;
-                case 'price_low':
-                    return a.price - b.price;
-                default:
-                    return 0;
-            }
-        });
-        
-        // Reorder rows in the table
-        tbody.empty();
-        visibleRows.forEach(function(item) {
-            tbody.append(item.row);
-        });
-    }
-    
-    // ================= 4. SHOW NO RESULTS =================
-    function showNoResults(message) {
-        var tbody = $('#productsTableBody');
-        
-        // Hide all existing rows
-        tbody.find('tr').hide();
-        
-        // Check if no results row already exists
-        if (tbody.find('tr.no-results-row').length === 0) {
-            var msg = message || 'No products found for the selected criteria';
-            
-            var noResultsRow = '<tr class="no-results-row">' +
-                '<td colspan="9" class="text-center text-muted py-4">' +
-                    '<i class="fas fa-box fa-2x mb-2"></i>' +
-                    '<p>' + msg + '</p>' +
-                '</td>' +
-            '</tr>';
-            
-            tbody.append(noResultsRow);
-        }
-    }
-    
-    // ================= 5. ATTACH DELETE HANDLERS =================
+    // ================= 1. ATTACH DELETE HANDLERS =================
     function attachDeleteHandlers() {
         $('.delete-btn').off('click').on('click', function(e) {
             e.preventDefault();
@@ -522,13 +377,12 @@ $(document).ready(function() {
         });
     }
     
-    // ================= 6. FILTER CHANGE EVENTS =================
+    // ================= 2. FILTER CHANGE EVENTS =================
     $('#brandFilter, #categoryFilter, #typeFilter, #sortFilter').on('change', function() {
-        // Auto-search when filter changes (optional)
-        // performClientSideSearch();
+        $(this).closest('form').submit();
     });
     
-    // ================= 7. INITIALIZE =================
+    // ================= 3. INITIALIZE =================
     attachDeleteHandlers();
     console.log('Products functionality initialized');
 });

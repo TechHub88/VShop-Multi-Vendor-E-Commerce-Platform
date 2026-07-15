@@ -15,7 +15,7 @@ use App\Models\RefundSetting;
 class RefundController extends Controller
 {
     // Refund Requests
-  public function requests()
+  public function requests(Request $request)
 {
     $refundRequests = OrderReturn::with('customer','order')
         ->latest()
@@ -23,9 +23,43 @@ class RefundController extends Controller
 
     $brands = Brand::all();
 
-    // Only customers with status = 'Refund'
-    $customers = Customer::where('status', 'Refund')
-        ->paginate(10);
+    $query = Customer::query();
+
+    // Search filter
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('email', 'like', "%{$search}%");
+        });
+    }
+
+    // Brand filter
+    if ($request->filled('brand_id')) {
+        $query->where('brand_id', $request->brand_id);
+    }
+
+    // Status filter
+    if ($request->filled('customer_status')) {
+        $query->where('status', $request->customer_status);
+    } else {
+        // Default list is customers with status = 'Refund' if no status filter is selected, or we can keep it as is
+        $query->where('status', 'Refund');
+    }
+
+    // Sorting
+    $sort = $request->sort ?? 'newest';
+    if ($sort == 'name_asc') {
+        $query->orderBy('name', 'asc');
+    } elseif ($sort == 'name_desc') {
+        $query->orderBy('name', 'desc');
+    } elseif ($sort == 'oldest') {
+        $query->oldest();
+    } else {
+        $query->latest();
+    }
+
+    $customers = $query->paginate(10)->withQueryString();
 
     return view('admin.refund.requests', compact('refundRequests', 'brands', 'customers'));
 }

@@ -112,7 +112,7 @@ class OrderController extends Controller
             });
         }
         
-        $orders = $query->latest()->paginate(15);
+        $orders = $query->latest()->paginate(15)->withQueryString();
         
         // Compute KPI Counts accurately
         $directOrdersCount = Order::whereNull('referrer_id')->count();
