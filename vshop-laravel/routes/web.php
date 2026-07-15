@@ -1615,11 +1615,11 @@ Route::delete(
 
 
     Route::get('/', [AdminReviewController::class, 'index'])->name('index');
-    Route::get('/{review}/edit', [AdminReviewController::class, 'edit'])->name('edit');
-    Route::put('/{review}', [AdminReviewController::class, 'update'])->name('update');
-    Route::delete('/{review}', [AdminReviewController::class, 'destroy'])->name('destroy');
-    Route::post('/{review}/toggle-status', [AdminReviewController::class, 'toggleStatus'])->name('toggle-status');
-    Route::post('/{review}/reply', [AdminReviewController::class, 'addReply'])->name('reply');
+    Route::get('/{review}/edit', [AdminReviewController::class, 'edit'])->name('edit')->where('review', '[0-9]+');
+    Route::put('/{review}', [AdminReviewController::class, 'update'])->name('update')->where('review', '[0-9]+');
+    Route::delete('/{review}', [AdminReviewController::class, 'destroy'])->name('destroy')->where('review', '[0-9]+');
+    Route::post('/{review}/toggle-status', [AdminReviewController::class, 'toggleStatus'])->name('toggle-status')->where('review', '[0-9]+');
+    Route::post('/{review}/reply', [AdminReviewController::class, 'addReply'])->name('reply')->where('review', '[0-9]+');
     Route::get('/stats', [AdminReviewController::class, 'getStats'])->name('stats');
     Route::post('/reviews/{id}/approve',[AdminReviewController::class,'approve'])->name('review.approve');
     Route::post('/reviews/{id}/reject',[AdminReviewController::class,'reject'])->name('review.reject');
