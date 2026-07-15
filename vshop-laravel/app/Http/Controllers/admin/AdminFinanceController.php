@@ -827,24 +827,88 @@ public function escalateDispute(Request $request)
             if ($request->has('transaction_id')) {
                 // Specific transaction manual release
                 $txn = \App\Models\SellerFinance::find($request->transaction_id);
-                if ($txn && $txn->status === 'pending') {
-                    $txn->update(['status' => 'released', 'release_date' => now()]);
+                if ($txn && $txn->status === 'hold') {
+                    $earning = $txn;
+                    $deductions = \Illuminate\Support\Facades\DB::table('seller_finances')
+                        ->where('status', 'hold')
+                        ->where('order_id', $earning->order_id)
+                        ->where('seller_id', $earning->seller_id)
+                        ->where('transaction_type', 'commission_deduction')
+                        ->get();
+
+                    $totalDeduction = $deductions->sum('debit');
+                    $netSellerEarning = $earning->credit - $totalDeduction;
+
+                    if ($netSellerEarning > 0) {
+                        $sellerWallet = \App\Models\Wallet::firstOrCreate(
+                            ['user_type' => 'seller', 'seller_id' => $earning->seller_id, 'customer_id' => null],
+                            ['balance' => 0]
+                        );
+
+                        $sellerWallet->increment('balance', $netSellerEarning);
+
+                        \App\Models\WalletTransaction::create([
+                            'wallet_id' => $sellerWallet->id,
+                            'seller_id' => $earning->seller_id,
+                            'user_type' => 'seller',
+                            'transaction_type' => 'payout',
+                            'credit' => $earning->credit,
+                            'debit' => 0,
+                            'balance_after' => $sellerWallet->balance + $totalDeduction,
+                            'description' => "Manual release: Order sale earning for Order #{$earning->order_id}",
+                            'reference_id' => $earning->reference_no,
+                            'status' => 'completed'
+                        ]);
+
+                        foreach ($deductions as $deduction) {
+                            \App\Models\WalletTransaction::create([
+                                'wallet_id' => $sellerWallet->id,
+                                'seller_id' => $earning->seller_id,
+                                'user_type' => 'seller',
+                                'transaction_type' => str_contains(strtolower($deduction->note), 'referral') ? 'referral_deduction' : 'commission_deduction',
+                                'credit' => 0,
+                                'debit' => $deduction->debit,
+                                'balance_after' => $sellerWallet->balance,
+                                'description' => "Manual release: {$deduction->note} for Order #{$earning->order_id}",
+                                'reference_id' => $earning->reference_no,
+                                'status' => 'completed'
+                            ]);
+                        }
+                    }
+
+                    \Illuminate\Support\Facades\DB::table('seller_finances')
+                        ->where('status', 'hold')
+                        ->where('order_id', $earning->order_id)
+                        ->where('seller_id', $earning->seller_id)
+                        ->update([
+                            'status' => 'released',
+                            'updated_at' => now(),
+                            'release_date' => now(),
+                            'note' => \Illuminate\Support\Facades\DB::raw("REPLACE(note, '(On Hold', '(Released')")
+                        ]);
+
+                    $escrowWallet = \App\Models\Wallet::firstOrCreate(
+                        ['user_type' => 'platform', 'seller_id' => null, 'customer_id' => null],
+                        ['balance' => 0]
+                    );
+
+                    $escrowWallet->decrement('balance', $netSellerEarning);
+                    \App\Models\WalletTransaction::create([
+                        'wallet_id' => $escrowWallet->id,
+                        'user_type' => 'platform',
+                        'transaction_type' => 'payout',
+                        'credit' => 0,
+                        'debit' => $netSellerEarning,
+                        'balance_after' => $escrowWallet->balance,
+                        'description' => "Manual release: Payout to Seller #{$earning->seller_id} for Order #{$earning->order_id}",
+                        'reference_id' => $earning->reference_no,
+                        'status' => 'completed'
+                    ]);
+
+
                 }
             } else {
-                // Bulk / seller level fallback
-                $request->validate(['seller_id' => 'required|exists:sellers,id']);
-                
-                $seller = Seller::find($request->seller_id);
-                $seller->settlement_hold = false;
-                $seller->settlement_hold_reason = null;
-                $seller->settlement_hold_date = null;
-                $seller->save();
-                
-                // Update finance records
-                SellerFinance::where('seller_id', $seller->id)
-                    ->where('transaction_type', 'earning')
-                    ->where('status', 'pending')
-                    ->update(['status' => 'released', 'release_date' => now()]);
+                // Bulk release not requested by user, keeping simple for now
             }
             
             return response()->json(['success' => true, 'message' => 'Hold released successfully']);

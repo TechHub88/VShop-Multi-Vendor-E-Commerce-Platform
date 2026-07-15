@@ -963,18 +963,8 @@ $this->notifySeller(
 
             // 2. Debit seller payout from escrow (Hold Logic)
             if ($holdDays > 0) {
-                // DON'T decrement escrow balance yet
-                \App\Models\WalletTransaction::create([
-                    'wallet_id' => $escrowWallet->id,
-                    'user_type' => 'platform',
-                    'transaction_type' => 'hold',
-                    'credit' => 0,
-                    'debit' => $sellerEarning,
-                    'balance_after' => $escrowWallet->balance,
-                    'description' => "Seller payout on HOLD for Order #{$order->id} ({$holdDays} days)",
-                    'reference_id' => 'ORD-' . $order->id,
-                    'status' => 'pending'
-                ]);
+                // DON'T create a wallet transaction for the hold, as it causes a false debit to appear in the ledger.
+                // The hold is tracked in seller_finances, and the payout transaction will be created upon release.
             } else {
                 $escrowWallet->decrement('balance', $sellerEarning);
                 \App\Models\WalletTransaction::create([

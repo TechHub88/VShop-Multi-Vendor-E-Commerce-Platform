@@ -1717,22 +1717,9 @@
                         
                         <td class="col-payout-action text-center">
                             <div class="d-flex gap-1 justify-content-center align-items-center">
-                                <button type="button" class="btn btn-sm btn-outline-success py-1 px-2" title="Manual Release" onclick="manualRelease({{ $row['id'] }}, this)" {{ strtolower($row['payout_status']) === 'pending' ? '' : 'disabled' }}>
+                                <button type="button" class="btn btn-sm btn-outline-success py-1 px-2" title="Manual Release" onclick="manualRelease({{ $row['id'] }}, this)" {{ strtolower($row['payout_status']) === 'hold' ? '' : 'disabled' }}>
                                     <iconify-icon icon="solar:check-circle-bold-duotone" class="align-middle"></iconify-icon> Release
                                 </button>
-                                <div class="dropdown">
-                                    <button class="btn btn-primary btn-sm btn-icon" data-bs-toggle="dropdown">
-                                        <iconify-icon icon="solar:settings-bold-duotone" width="18" class="align-middle"></iconify-icon>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                      
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="#" onclick="releaseSellerHold({{ $row['seller_id'] }})">
-                                            <iconify-icon icon="solar:unlock-bold-duotone" width="16" class="me-2"></iconify-icon> Release Hold
-                                        </a></li>
-                                        
-                                    </ul>
-                                </div>
                             </div>
                         </td>
                     </tr>

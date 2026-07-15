@@ -101,7 +101,7 @@ class ReleaseSellerHoldFunds extends Command
                 ->where('order_id', $earning->order_id)
                 ->where('seller_id', $earning->seller_id)
                 ->update([
-                    'status' => 'success',
+                    'status' => 'released',
                     'updated_at' => now(),
                     'note' => \Illuminate\Support\Facades\DB::raw("REPLACE(note, '(On Hold', '(Released')") // Just a simple string update if it contains (On Hold...)
                 ]);
@@ -126,14 +126,7 @@ class ReleaseSellerHoldFunds extends Command
                 'status' => 'completed'
             ]);
 
-            // Update the pending 'hold' transaction for this order
-            \App\Models\WalletTransaction::where('user_type', 'platform')
-                ->where('transaction_type', 'hold')
-                ->where('reference_id', $earning->reference_no)
-                ->update([
-                    'status' => 'completed',
-                    'description' => \Illuminate\Support\Facades\DB::raw("REPLACE(description, 'on HOLD', 'RELEASED')")
-                ]);
+
 
             $releasedCount++;
             $totalReleased += $netSellerEarning;
