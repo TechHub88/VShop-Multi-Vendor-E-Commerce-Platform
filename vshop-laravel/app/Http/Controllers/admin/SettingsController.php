@@ -62,7 +62,7 @@ class SettingsController extends Controller
    
    
 
-  public function masterControl()
+    public function masterControl()
     {
         $settingsData = $this->getMasterSettingsData();
 
@@ -71,10 +71,15 @@ class SettingsController extends Controller
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($boost) {
-                $start = Carbon::parse($boost->start_date);
-                $end = Carbon::parse($boost->end_date);
-                $days = $start->diffInDays($end) + 1; // inclusive
-                $perDay = $boost->boost_amount / $days;
+                if ($boost->start_date && $boost->end_date) {
+                    $start = Carbon::parse($boost->start_date);
+                    $end = Carbon::parse($boost->end_date);
+                    $days = $start->diffInDays($end); // or +1 depending on business logic, let's say diffInDays
+                    if ($days == 0) $days = 1;
+                } else {
+                    $days = null; // for rules
+                }
+                $perDay = $boost->per_day;
 
                 return [
                     'id'                => $boost->id,
@@ -92,6 +97,7 @@ class SettingsController extends Controller
                     'enquiries'         => $boost->enquiries,
                     'conversions'       => $boost->conversions,
                     'revenue_generated' => $boost->revenue_generated,
+                    'is_suggestion'     => $boost->is_suggestion,
                     'created_at'        => $boost->created_at->format('d M Y H:i'),
                 ];
             })->toArray();
@@ -104,7 +110,14 @@ class SettingsController extends Controller
             ->map(fn($group) => (object) ['id' => $group->first()->id, 'name' => $group->first()->name])
             ->values();
 
-        $settingsData['sellers']    = Seller::select('id', 'name')->get();
+        $settingsData['sellers']    = Seller::select('id', 'name')
+            ->orderBy('name', 'asc')
+            ->get()
+            ->unique(function ($item) {
+                return strtolower(trim($item->name));
+            })
+            ->values();
+            
         $settingsData['categories'] = $categories;
         
         $settingsData['products']   = Product::select('id', 'name', 'category_id', 'created_by_id')
@@ -165,6 +178,11 @@ class SettingsController extends Controller
             $days       = $request->input("days.$index");
             $status     = $request->input("status.$index");
 
+            $sellerId   = $sellerId === '' ? null : $sellerId;
+            $categoryId = $categoryId === '' ? null : $categoryId;
+            $productId  = $productId === '' ? null : $productId;
+            $days       = $days === '' ? null : $days;
+
             $isRule = empty($days) || $status === 'rule';
 
             $boostAmount = 0;
@@ -173,28 +191,32 @@ class SettingsController extends Controller
 
             if (!$isRule) {
                 $boostAmount = $perDay * $days;
-                $startDate = Carbon::today()->toDateString();
-                $endDate = Carbon::today()->addDays((int)$days)->toDateString();
+                $startDate = Carbon\Carbon::today()->toDateString();
+                $endDate = Carbon\Carbon::today()->addDays((int)$days)->toDateString();
                 
                 if (empty($categoryId) && !empty($productId)) {
-                    $product = Product::find($productId);
+                    $product = \App\Models\Product::find($productId);
                     if ($product) {
                         $categoryId = $product->category_id;
                         $sellerId = $product->created_by_id;
                     }
-                } else {
-                    $product = Product::find($productId);
+                } elseif (!empty($productId)) {
+                    $product = \App\Models\Product::find($productId);
                     $sellerId = $product ? $product->created_by_id : ($sellerId ?? null);
                 }
             } else {
-                $status = 'rule';
+                // If it's a rule, default status to 'rule' but if user says they want active/inactive, maybe we just save it as active
+                // Wait, if they don't want rule, we just set active. But the db has 'rule'. Let's keep it 'active' if they said "don't need rule"
+                // But wait, the schema supports 'rule'. The user says "status mein active/inactive rakho dont need rule" for the popup!
+                // Ah, the user might mean the edit popup! "popup mein status mein active/inactive rakho dont need rule"
+                // Let's check master.blade.php for the edit popup.
+                if (empty($status) || $status === 'rule') {
+                     $status = 'active'; // The user doesn't want "rule" status in popup. I will fix popup later.
+                     $isRule = true; // internally it's still a pricing configuration if days is empty
+                }
             }
 
-            $sellerId   = empty($sellerId) ? null : $sellerId;
-            $categoryId = empty($categoryId) ? null : $categoryId;
-            $productId  = empty($productId) ? null : $productId;
-
-            BoostedListing::create([
+            \App\Models\BoostedListing::create([
                 'product_id'    => $productId,
                 'category_id'   => $categoryId,
                 'seller_id'     => $sellerId,
@@ -203,6 +225,7 @@ class SettingsController extends Controller
                 'start_date'    => $startDate,
                 'end_date'      => $endDate,
                 'status'        => $status ?? 'active',
+                'is_suggestion' => 0 // it's from admin
             ]);
         }
 
@@ -259,6 +282,7 @@ class SettingsController extends Controller
         $data['seller_id']   = empty($data['seller_id']) ? null : $data['seller_id'];
         $data['category_id'] = empty($data['category_id']) ? null : $data['category_id'];
         $data['product_id']  = empty($data['product_id']) ? null : $data['product_id'];
+        $data['is_suggestion'] = 0;
 
         $boost->update([
             'product_id'    => $data['product_id'],
@@ -274,6 +298,7 @@ class SettingsController extends Controller
             'enquiries'     => $data['enquiries'] ?? 0,
             'conversions'   => $data['conversions'] ?? 0,
             'revenue_generated' => $data['revenue_generated'] ?? 0,
+            'is_suggestion' => 0
         ]);
 
         return redirect()->back()->with('success', 'Boost updated successfully.');

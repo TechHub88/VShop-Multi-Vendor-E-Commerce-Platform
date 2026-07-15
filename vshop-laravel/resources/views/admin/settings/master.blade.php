@@ -735,7 +735,12 @@
                                     <td class="fw-semibold text-success"><span class="money" data-amount="{{ $boost['per_day'] ?? 0 }}">₹{{ number_format($boost['per_day'] ?? 0, 2) }}</span></td>
                                     <td>{{ $boost['days'] ?? 1 }}</td>
                                     <td class="fw-semibold"><span class="money" data-amount="{{ $boost['boost_amount'] }}">₹{{ number_format($boost['boost_amount'], 2) }}</span></td>
-                                    <td><span class="status-badge status-{{ strtolower($boost['status']) }}" id="status-badge-{{ $boost['id'] }}">{{ $boost['status'] }}</span></td>
+                                    <td>
+                                        <span class="status-badge status-{{ strtolower($boost['status']) }}" id="status-badge-{{ $boost['id'] }}">{{ $boost['status'] }}</span>
+                                        @if($boost['is_suggestion'] ?? false)
+                                            <span class="badge bg-warning ms-1" style="font-size:0.7em;">Suggestion</span>
+                                        @endif
+                                    </td>
                                     <td>
                                         <div class="d-flex gap-2 text-muted fs-12">
                                             <span><i class='bx bx-show'></i> {{ $boost['impressions'] ?? 0 }}</span>

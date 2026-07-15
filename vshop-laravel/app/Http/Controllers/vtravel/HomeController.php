@@ -251,9 +251,17 @@ public function vshophome(Request $request)
         ->whereNotNull('regular_price')
         ->whereColumn('regular_price', '>', 'price');
 
-    // Get active campaigns for the filter buttons
+    $currentDateTime = now();
     $activeCampaigns = \App\Models\Advertisement::where('type', 'campaign')
         ->where('is_active', 1)
+        ->where(function($q) use ($currentDateTime) {
+            $q->whereNull('start_date')
+              ->orWhere('start_date', '<=', $currentDateTime);
+        })
+        ->where(function($q) use ($currentDateTime) {
+            $q->whereNull('end_date')
+              ->orWhere('end_date', '>=', $currentDateTime);
+        })
         ->get();
 
     if ($request->has('campaign_id') && $request->campaign_id != '') {

@@ -620,15 +620,19 @@ class AdminFinanceController extends Controller
                 $count     = 0;
 
                 foreach ($transactionIds as $tid) {
-                    // Find the earning transaction
+                    // Find the transaction (earning or hold)
                     $txn = \App\Models\SellerFinance::find($tid);
-                    if (!$txn || $txn->transaction_type !== 'earning') continue;
+                    if (!$txn || !in_array($txn->transaction_type, ['earning', 'hold'])) continue;
 
-                    // Also find associated deductions to update them in sync
-                    $relatedTxns = \App\Models\SellerFinance::where('order_id', $txn->order_id)
-                                    ->where('seller_id', $txn->seller_id)
-                                    ->where('status', 'hold')
-                                    ->get();
+                    // Also find associated deductions/earnings to update them in sync if we have order_id
+                    $relatedTxns = collect();
+                    if ($txn->order_id) {
+                        $relatedTxns = \App\Models\SellerFinance::where('order_id', $txn->order_id)
+                                        ->where('seller_id', $txn->seller_id)
+                                        ->where('id', '!=', $txn->id)
+                                        ->whereIn('transaction_type', ['earning', 'hold'])
+                                        ->get();
+                    }
 
                     if (!empty($updates['purchase_date'])) {
                         $txn->created_at = $updates['purchase_date'];
@@ -643,6 +647,11 @@ class AdminFinanceController extends Controller
                             $txn->hold_reason = $updates['hold_reason'];
                         }
                         
+                        // Replace (On Hold for X days) in note
+                        if ($txn->note) {
+                            $txn->note = preg_replace('/\(On Hold for \d+ days\)/', "(On Hold for {$updates['hold_days']} days)", $txn->note);
+                        }
+                        
                         foreach ($relatedTxns as $rel) {
                             if (!empty($updates['purchase_date'])) {
                                 $rel->created_at = $updates['purchase_date'];
@@ -651,16 +660,12 @@ class AdminFinanceController extends Controller
                             if (isset($updates['hold_reason'])) {
                                 $rel->hold_reason = $updates['hold_reason'];
                             }
-                            
-                            // Replace (On Hold for X days) in note
                             if ($rel->note) {
                                 $rel->note = preg_replace('/\(On Hold for \d+ days\)/', "(On Hold for {$updates['hold_days']} days)", $rel->note);
                             }
                             $rel->save();
                         }
                     } else if (!empty($updates['purchase_date'])) {
-                        // If only purchase date is updated, recalculate release date with existing hold days if possible
-                        // Or just update created_at for related txns
                         foreach ($relatedTxns as $rel) {
                             $rel->created_at = $updates['purchase_date'];
                             $rel->save();

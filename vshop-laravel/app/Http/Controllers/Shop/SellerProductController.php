@@ -51,7 +51,8 @@ public function getBoostProducts()
         $boostRules = \App\Models\BoostedListing::all();
 
         $data = $products->values()->map(function($product, $index) use ($boostRules, $sellerId) {
-            $boostPerDay = $this->calculateBoostPerDay($product, $sellerId, $boostRules);
+            $boostRule = $this->getBoostRule($product, $sellerId, $boostRules);
+            $boostPerDay = $boostRule ? (float)$boostRule->per_day : null;
 
             return [
                 'id' => $product->id,
@@ -86,7 +87,7 @@ public function getBoostProducts()
     }
 }
 
-private function calculateBoostPerDay($product, $sellerId, $boostRules)
+private function getBoostRule($product, $sellerId, $boostRules)
 {
     // 1. Exact Product Match
     $rule = $boostRules->first(function ($r) use ($product) {
@@ -121,7 +122,7 @@ private function calculateBoostPerDay($product, $sellerId, $boostRules)
         });
     }
 
-    return $rule ? (float)$rule->per_day : null;
+    return $rule;
 }
 
 public function submitBoost(Request $request)
@@ -141,7 +142,8 @@ public function submitBoost(Request $request)
 
         $totalCost = 0;
         foreach ($products as $product) {
-            $perDay = $this->calculateBoostPerDay($product, $sellerId, $boostRules);
+            $boostRule = $this->getBoostRule($product, $sellerId, $boostRules);
+            $perDay = $boostRule ? (float)$boostRule->per_day : 0;
             $totalCost += ($perDay * $days);
         }
 
@@ -294,8 +296,7 @@ if ($sellerData && $sellerData->referred_by && $totalCost > 0) {
         }
     }
 }
-// First set all products to not boosted, then boost selected ones
-        Product::where('created_by_id', $sellerId)->update(['is_boosted' => 0]);
+// Do not set all products to not boosted so previous boosts persist
 
         if (!empty($productIds)) {
             Product::where('created_by_id', $sellerId)
@@ -303,7 +304,8 @@ if ($sellerData && $sellerData->referred_by && $totalCost > 0) {
                    ->update(['is_boosted' => 1]);
 
             foreach ($products as $product) {
-                $perDay = $this->calculateBoostPerDay($product, $sellerId, $boostRules);
+                $boostRule = $this->getBoostRule($product, $sellerId, $boostRules);
+                $perDay = $boostRule ? (float)$boostRule->per_day : 0;
                 $boostAmount = $perDay * $days;
 
                 \App\Models\BoostedListing::create([
@@ -1862,11 +1864,15 @@ public function price(Product $product = null)
     // Calculate boost per day amount from rules table
     $sellerId = auth('seller')->id() ?? ($product->created_by_id ?? null);
     $boostRules = \App\Models\BoostedListing::all();
-    $boostPerDay = $this->calculateBoostPerDay($product, $sellerId, $boostRules);
+    $adminBoostRule = $this->getBoostRule($product, $sellerId, $boostRules);
+    $boostPerDay = $adminBoostRule ? (float)$adminBoostRule->per_day : null;
+    $adminBoostDays = $adminBoostRule && $adminBoostRule->start_date && $adminBoostRule->end_date 
+        ? \Carbon\Carbon::parse($adminBoostRule->start_date)->diffInDays(\Carbon\Carbon::parse($adminBoostRule->end_date))
+        : null;
 
     return view(
         'vshop.seller.products.steps.price',
-        compact('product', 'attributes', 'combinations', 'taxes', 'countries', 'states', 'cities', 'boostPerDay')
+        compact('product', 'attributes', 'combinations', 'taxes', 'countries', 'states', 'cities', 'boostPerDay', 'adminBoostRule', 'adminBoostDays')
     );
 }
 
@@ -2139,6 +2145,7 @@ public function savePrice(Request $request, Product $product)
 
         $startDate = date('Y-m-d');
         $endDate = date('Y-m-d', strtotime("+$duration days"));
+        $status = $request->has('is_suggestion') ? 'suggestion' : 'active';
 
         $existing = \Illuminate\Support\Facades\DB::table('boosted_listings')->where('product_id', $product->id)->first();
         if ($existing) {
@@ -2149,7 +2156,7 @@ public function savePrice(Request $request, Product $product)
                 'boost_amount' => $totalBudget,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
-                'status' => 'active',
+                'status' => $status,
                 'updated_at' => now()
             ]);
         } else {
@@ -2161,7 +2168,7 @@ public function savePrice(Request $request, Product $product)
                 'boost_amount' => $totalBudget,
                 'start_date' => $startDate,
                 'end_date' => $endDate,
-                'status' => 'active',
+                'status' => $status,
                 'created_at' => now(),
                 'updated_at' => now()
             ]);

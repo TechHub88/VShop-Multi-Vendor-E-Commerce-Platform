@@ -679,26 +679,33 @@
         <div class="row g-3">
             <div class="col-md-5">
                 <div class="pricing-section mb-3">
-                    <div class="pricing-section-title">SECTION 1: BOOST CONTROLS</div>
-                    <div class="mb-2" style="font-size: 12px; font-weight: 600;">Boost Duration</div>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <button type="button" class="btn-boost-duration" data-days="1">1 Day</button>
-                        <button type="button" class="btn-boost-duration" data-days="3">3 Days</button>
-                        <button type="button" class="btn-boost-duration" data-days="7">7 Days</button>
-                        <button type="button" class="btn-boost-duration" data-days="15">15 Days</button>
-                        <button type="button" class="btn-boost-duration" data-days="30">30 Days</button>
+                    <div class="pricing-section-title">
+                        DURATION & BUDGET
+                        <a href="{{ url('seller/grievance') }}" class="text-decoration-none" style="font-size:10px; color:#0b4da1;"><i class="bi bi-info-circle"></i> Help center</a>
                     </div>
-                    <input type="hidden" name="boost_duration" id="boostDuration" value="{{ old('boost_duration', $product->boost_duration ?? 7) }}">
+                    
+                    @if(isset($adminBoostRule))
+                        <div class="alert alert-info py-2" style="font-size: 11px;">
+                            <i class="bi bi-info-circle"></i> Duration is set by admin category rule. If you have any issues regarding price, please <a href="{{ url('seller/grievance') }}">connect with admin</a>.
+                        </div>
+                        <input type="text" class="form-control bg-light" value="{{ $adminBoostDays ?? 7 }} Days" readonly>
+                        <input type="hidden" name="boost_duration" id="boostDuration" value="{{ $adminBoostDays ?? 7 }}">
+                    @else
+                        <div class="alert alert-info py-2" style="font-size: 11px;">
+                            <i class="bi bi-info-circle"></i> Duration is set by admin. If you have any issues regarding price, please <a href="{{ url('seller/grievance') }}">connect with admin</a>.
+                        </div>
+                        <input type="text" class="form-control bg-light" value="{{ old('boost_duration', $product->boost_duration ?? 7) }} Days" readonly>
+                        <input type="hidden" name="boost_duration" id="boostDuration" value="{{ old('boost_duration', $product->boost_duration ?? 7) }}">
+                    @endif
                 </div>
 
                 <div class="pricing-section">
-                    <div class="pricing-section-title">SECTION 2: BUDGETING</div>
                     <div class="row g-2 mb-3">
                         <div class="col-6">
                             <label style="font-size:10px; font-weight:600;">Daily Budget</label>
                             <div class="budget-input-group">
                                 <span class="currency">₹</span>
-                                 <input type="number" name="daily_budget" id="dailyBudget" value="{{ old('daily_budget', $product->daily_budget ?? ($boostPerDay !== null ? number_format($boostPerDay, 2, '.', '') : '')) }}">
+                                <input type="number" name="daily_budget" id="dailyBudget" value="{{ old('daily_budget', $product->daily_budget ?? ($boostPerDay !== null ? number_format($boostPerDay, 2, '.', '') : '')) }}" readonly style="background-color:#f1f5f9;">
                             </div>
                         </div>
                         <div class="col-6">
@@ -719,26 +726,7 @@
                     </div>
                 </div>
 
-                <div class="pricing-section mt-3">
-                    <div class="pricing-section-title">HARD STOP RULES</div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="stop_daily_budget" id="stopDailyBudget" value="1" {{ old('stop_daily_budget', $product->stop_daily_budget ?? false) ? 'checked' : '' }}>
-                        <label class="form-check-label" style="font-size: 11px;">Stop when daily budget reached (pause, resume next day)</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="stop_total_budget" id="stopTotalBudget" value="1" {{ old('stop_total_budget', $product->stop_total_budget ?? false) ? 'checked' : '' }}>
-                        <label class="form-check-label" style="font-size: 11px;">Stop when total budget reached (campaign ends)</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="notify_before_exhaust" id="notifyBeforeExhaust" value="1" {{ old('notify_before_exhaust', $product->notify_before_exhaust ?? true) ? 'checked' : '' }}>
-                        <label class="form-check-label" style="font-size: 11px;">Notify me before budget exhausts</label>
-                        <select name="notify_percentage" class="form-select form-select-sm mt-1" style="width: auto; display: inline-block; margin-left: 10px;">
-                            <option value="80" {{ old('notify_percentage', $product->notify_percentage ?? 95) == 80 ? 'selected' : '' }}>80%</option>
-                            <option value="90" {{ old('notify_percentage', $product->notify_percentage ?? 95) == 90 ? 'selected' : '' }}>90%</option>
-                            <option value="95" {{ old('notify_percentage', $product->notify_percentage ?? 95) == 95 ? 'selected' : '' }}>95%</option>
-                        </select>
-                    </div>
-                </div>
+           
             </div>
 
             <div class="col-md-3">
@@ -821,35 +809,6 @@
                     <input type="hidden" name="promotion_goal" id="promotionGoal" value="{{ old('promotion_goal', $product->promotion_goal ?? 'enquiries') }}">
                 </div>
 
-                <div class="pricing-section" style="position: relative;">
-                    <div class="pricing-section-title d-flex justify-content-between">
-                        <span>AI RECOMMENDATION</span>
-                        <div class="v-ai-button" id="openAiModalBtn">
-                            <i class="bi bi-cpu"></i> v-Ai
-                        </div>
-                    </div>
-                    <div class="ai-recommendation-card">
-                        <div class="ai-recommendation-header">AI RECOMMENDED BOOST</div>
-                        <div class="ai-recommendation-body" style="position: relative; min-height: 110px;">
-                            <!-- Subtle Loading Overlay -->
-                            <div class="ai-card-loader" style="display: none; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.92); align-items:center; justify-content:center; border-radius:6px; z-index:10; flex-direction: row; gap: 8px;">
-                                <div class="spinner-border text-primary spinner-border-sm" role="status" style="width: 1rem; height: 1rem;"></div>
-                                <span style="font-size: 11px; font-weight:600; color: #0b4da1;">v-Ai analyzing...</span>
-                            </div>
-                            <!-- Default instruction message (shown when no AI data) -->
-                            <div id="aiInstructionMsg" class="text-center py-3">
-                                <i class="bi bi-info-circle text-muted" style="font-size: 22px;"></i>
-                                <p class="text-muted mb-0 mt-2" style="font-size: 11px; font-weight: 500;">Select Country, State & City in Target Audience section, then click <strong>v-Ai</strong> button to get AI recommendations.</p>
-                            </div>
-                            <!-- AI data (hidden by default, shown after AI call) -->
-                            <div id="aiDataContent" style="display: none;">
-                                <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Recommended Daily Budget:</span><strong id="aiBudget">--</strong></div>
-                                <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Expected Reach:</span><strong id="aiReach">--</strong></div>
-                                <div class="d-flex justify-content-between align-items-center mb-2"><span style="font-size: 11px;">Estimated Enquiries:</span><strong id="aiEnquiries">--</strong></div>
-                                <div class="d-flex justify-content-between align-items-center"><span style="font-size: 11px;">Recommended Cities:</span><strong id="aiCities">--</strong></div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1003,76 +962,7 @@
 
 </div>
 
-{{-- AI RECOMMENDATION MODAL WITH MULTI-SELECT CHECKBOX DROPDOWN --}}
-<div id="aiModal" class="ai-modal-backdrop">
-    <div class="ai-modal-content">
-        <div class="ai-modal-header">
-            <h5><i class="bi bi-cpu me-2"></i> AI Recommendation</h5>
-            <button class="ai-modal-close" id="closeAiModalBtn">&times;</button>
-        </div>
-        <div class="ai-modal-body">
-            <div class="mb-3">
-                <label class="form-label fw-bold">Recommended Budget</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-light">₹</span>
-                    <input type="number" id="modalBudget" class="form-control" value="5000">
-                </div>
-            </div>
-            <div class="mb-3">
-                <label class="form-label fw-bold">Expected Reach Range</label>
-                <div class="row g-2">
-                    <div class="col-6">
-                        <input type="number" id="modalReachMin" class="form-control" placeholder="Min" value="12000">
-                    </div>
-                    <div class="col-6">
-                        <input type="number" id="modalReachMax" class="form-control" placeholder="Max" value="18000">
-                    </div>
-                </div>
-            </div>
-            <div class="mb-3">
-                <label class="form-label fw-bold">Estimated Enquiries</label>
-                <div class="row g-2">
-                    <div class="col-6">
-                        <input type="number" id="modalEnqMin" class="form-control" placeholder="Min" value="120">
-                    </div>
-                    <div class="col-6">
-                        <input type="number" id="modalEnqMax" class="form-control" placeholder="Max" value="180">
-                    </div>
-                </div>
-            </div>
-            
-            {{-- Multi-Select City Dropdown with Checkboxes --}}
-            <div class="mb-2">
-                <label class="form-label fw-bold">Recommended Cities (Multi-select)</label>
-                <div class="city-multiselect-container" id="modalCityContainer">
-                    <div class="city-multiselect-header" id="modalCityHeader">
-                        <span id="modalSelectedCitiesText">Select Cities</span>
-                        <i class="bi bi-chevron-down"></i>
-                    </div>
-                    <div class="city-multiselect-dropdown" id="modalCityDropdown">
-                        <div class="city-search-box">
-                            <input type="text" id="modalCitySearch" placeholder="Search cities..." class="form-control form-control-sm">
-                        </div>
-                        <div class="city-options-list" id="modalCityOptionsList">
-                            @foreach($cities ?? [] as $city)
-                                <label class="city-option">
-                                    <input type="checkbox" value="{{ $city->name }}" class="modal-city-checkbox" 
-                                        {{ in_array($city->name, ['Kolkata', 'Delhi']) ? 'checked' : '' }}>
-                                    <span>{{ $city->name }}</span>
-                                </label>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-                <small class="text-muted">Click to select multiple cities</small>
-            </div>
-        </div>
-        <div class="ai-modal-footer">
-            <button class="btn btn-outline-secondary btn-sm" id="resetAiBtn">Reset</button>
-            <button class="btn btn-primary btn-sm" id="applyAiBtn" style="background: #0b4da1;">Apply</button>
-        </div>
-    </div>
-</div>
+
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -1583,288 +1473,8 @@ $(document).ready(function(){
     $(document).on('change', '.city-checkbox', function() { updateSelectedCitiesText(); });
     updateSelectedCitiesText();
 
-    // ================= AI MODAL MULTI-SELECT CITY DROPDOWN =================
-    $('#modalCityHeader').on('click', function(e) {
-        e.stopPropagation();
-        $('#modalCityContainer').toggleClass('show');
-    });
-
-    $(document).on('click', function(e) {
-        if (!$(e.target).closest('#modalCityContainer').length) {
-            $('#modalCityContainer').removeClass('show');
-        }
-    });
-
-    $('#modalCitySearch').on('keyup', function() {
-        let searchTerm = $(this).val().toLowerCase();
-        $('#modalCityOptionsList .city-option').each(function() {
-            let cityName = $(this).find('span').text().toLowerCase();
-            $(this).toggle(cityName.indexOf(searchTerm) > -1);
-        });
-    });
-
-    function updateModalSelectedCitiesText() {
-        let selected = [];
-        $('.modal-city-checkbox:checked').each(function() {
-            selected.push($(this).val());
-        });
-        if(selected.length === 0) $('#modalSelectedCitiesText').text('Select Cities');
-        else if(selected.length <= 2) $('#modalSelectedCitiesText').text(selected.join(', '));
-        else $('#modalSelectedCitiesText').text(selected.length + ' cities selected');
-    }
-
-    $(document).on('change', '.modal-city-checkbox', function() { updateModalSelectedCitiesText(); });
-    updateModalSelectedCitiesText();
-
-    // ================= AI MODAL OPEN/CLOSE/APPLY/RESET =================
-    const aiModal = $('#aiModal');
-    const openAiBtn = $('#openAiModalBtn');
-    const closeAiBtn = $('#closeAiModalBtn');
-    const applyAiBtn = $('#applyAiBtn');
-    const resetAiBtn = $('#resetAiBtn');
-
-    let currentAiRecommendedCities = [];
-
-    openAiBtn.on('click', function() {
-        // Check if country/state/city is selected
-        let targetCountryVal = $('#targetCountry').val();
-        let targetStateVal = $('#targetState').val();
-        let hasCities = $('.city-checkbox:checked').length > 0;
-
-        if (!targetCountryVal || targetCountryVal === '') {
-            Swal.fire('Location Required', 'Please select Country, State & City in Target Audience section before generating AI recommendations.', 'warning');
-            return;
-        }
-
-        // Show SweetAlert loading box
-        Swal.fire({
-            title: 'Generating AI Recommendation...',
-            text: 'Please wait while we calculate the target budget and audience reach.',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
-        });
-
-        let currentGoal = $('#promotionGoal').val() || 'enquiries';
-
-        // Gather selected target areas for AI recommendation optimization
-        let targetCountry = $('#targetCountry').val();
-        let targetState = $('#targetState').val() ? $('#targetState option:selected').text().trim() : '';
-        let selectedCities = [];
-        $('.city-checkbox:checked').each(function() {
-            selectedCities.push($(this).closest('.city-option').find('span').text().trim());
-        });
-
-        $.ajax({
-            url: "{{ route('seller.products.price.ai-recommend', $product->id ?? 0) }}",
-            type: "POST",
-            data: {
-                _token: "{{ csrf_token() }}",
-                goal: currentGoal,
-                country: targetCountry,
-                state: targetState,
-                cities: selectedCities
-            },
-            dataType: 'json',
-            success: function(res) {
-                Swal.close();
-                if (res.success && res.recommendation) {
-                    let rec = res.recommendation;
-                    currentAiRecommendedCities = rec.recommended_cities_info || [];
-
-                    // Show AI data content, hide instruction
-                    $('#aiInstructionMsg').hide();
-                    $('#aiDataContent').show();
-                    
-                    // Populate modal inputs
-                    $('#modalBudget').val(rec.budget);
-                    $('#modalReachMin').val(rec.reach_min);
-                    $('#modalReachMax').val(rec.reach_max);
-                    $('#modalEnqMin').val(rec.enquiries_min);
-                    $('#modalEnqMax').val(rec.enquiries_max);
-                    
-                    // Uncheck all existing modal checkboxes
-                    $('.modal-city-checkbox').prop('checked', false);
-                    
-                    // Recommended city names from API
-                    let cityNames = rec.recommended_cities || [];
-                    
-                    cityNames.forEach(cityName => {
-                        let matched = false;
-                        $('.modal-city-checkbox').each(function() {
-                            if ($(this).val().toLowerCase() === cityName.toLowerCase()) {
-                                $(this).prop('checked', true);
-                                matched = true;
-                            }
-                        });
-                        
-                        // Append if not found
-                        if (!matched) {
-                            let newHtml = `<label class="city-option">
-                                <input type="checkbox" value="${cityName}" class="modal-city-checkbox" checked>
-                                <span>${cityName}</span>
-                            </label>`;
-                            $('#modalCityOptionsList').append(newHtml);
-                        }
-                    });
-                    
-                    updateModalSelectedCitiesText();
-                    aiModal.css('display', 'flex');
-                } else {
-                    Swal.fire('Error', res.message || 'Could not parse recommendation', 'error');
-                }
-            },
-            error: function(xhr) {
-                Swal.close();
-                let errMsg = 'Failed to fetch AI recommendation. Please try again.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errMsg = xhr.responseJSON.message;
-                }
-                Swal.fire('Error', errMsg, 'error');
-            }
-        });
-    });
-    
-    closeAiBtn.on('click', function() { aiModal.hide(); });
-    $(window).on('click', function(e) { if($(e.target).is(aiModal)) aiModal.hide(); });
-
-    applyAiBtn.on('click', function() {
-        let budgetVal = $('#modalBudget').val();
-        $('#dailyBudget').val(budgetVal);
-        $('input[name="daily_budget"]').val(budgetVal);
-        
-        $('#aiBudget').text('₹' + budgetVal);
-        $('#aiReach').text($('#modalReachMin').val() + ' - ' + $('#modalReachMax').val());
-        $('#aiEnquiries').text($('#modalEnqMin').val() + ' - ' + $('#modalEnqMax').val());
-        
-        let selectedCitiesNames = [];
-        $('.modal-city-checkbox:checked').each(function() {
-            let cityName = $(this).val();
-            selectedCitiesNames.push(cityName);
-            
-            // Sync with main form Section 3
-            // Find in currentAiRecommendedCities
-            let matchedCity = currentAiRecommendedCities.find(c => c.name.toLowerCase() === cityName.toLowerCase());
-            let cityId = matchedCity ? matchedCity.id : cityName; // fall back to name if no ID found
-            
-            // Look for matching checkbox in the main form
-            let mainCheckbox = $('.city-checkbox').filter(function() {
-                return $(this).val() == cityId || $(this).siblings('span').text().trim().toLowerCase() === cityName.toLowerCase();
-            });
-            
-            if (mainCheckbox.length > 0) {
-                mainCheckbox.prop('checked', true);
-            } else {
-                // If the placeholder text is there, clear it first
-                if ($('#cityOptionsList p').length > 0) {
-                    $('#cityOptionsList').empty();
-                }
-                // Append checked checkbox to Section 3
-                let mainHtml = `<label class="city-option">
-                    <input type="checkbox" name="target_city[]" value="${cityId}" class="city-checkbox" checked>
-                    <span>${cityName}</span>
-                </label>`;
-                $('#cityOptionsList').append(mainHtml);
-            }
-        });
-        
-        if(selectedCitiesNames.length > 0) {
-            $('#aiCities').text(selectedCitiesNames.join(', '));
-        } else {
-            $('#aiCities').text('No cities selected');
-        }
-        
-        updateSelectedCitiesText();
-        calculateNetTotal();
-        aiModal.hide();
-    });
-
-    resetAiBtn.on('click', function() {
-        $('#modalBudget').val(5000);
-        $('#modalReachMin').val(12000);
-        $('#modalReachMax').val(18000);
-        $('#modalEnqMin').val(120);
-        $('#modalEnqMax').val(180);
-        $('.modal-city-checkbox').each(function() {
-            $(this).prop('checked', ($(this).val() === 'Kolkata' || $(this).val() === 'Delhi'));
-        });
-        updateModalSelectedCitiesText();
-    });
-
-    // ================= AI AUTO FETCH SYSTEM =================
-    let aiFetchTimeout = null;
-
-    function triggerAiAutoFetch() {
-        // If boost is not enabled, do not fetch anything
-        if (!$('#boostStatus').is(':checked')) {
-            return;
-        }
-
-        // Show subtle inline card loader
-        $('.ai-card-loader').css('display', 'flex');
-
-        if (aiFetchTimeout) {
-            clearTimeout(aiFetchTimeout);
-        }
-
-        aiFetchTimeout = setTimeout(function() {
-            let currentGoal = $('#promotionGoal').val() || 'enquiries';
-            let targetCountry = $('#targetCountry').val();
-            let targetState = $('#targetState').val() ? $('#targetState option:selected').text().trim() : '';
-            let selectedCities = [];
-            $('.city-checkbox:checked').each(function() {
-                selectedCities.push($(this).closest('.city-option').find('span').text().trim());
-            });
-            let dailyBudget = parseFloat($('#dailyBudget').val()) || 700;
-
-            $.ajax({
-                url: "{{ route('seller.products.price.ai-recommend', $product->id ?? 0) }}",
-                type: "POST",
-                data: {
-                    _token: "{{ csrf_token() }}",
-                    goal: currentGoal,
-                    country: targetCountry,
-                    state: targetState,
-                    cities: selectedCities,
-                    daily_budget: dailyBudget
-                },
-                dataType: 'json',
-                success: function(res) {
-                    $('.ai-card-loader').hide();
-                    if (res.success && res.recommendation) {
-                        let rec = res.recommendation;
-                        
-                        // Dynamically update the AI recommendation card displays
-                        $('#aiBudget').text('₹' + rec.budget);
-                        $('#aiReach').text(rec.reach_min + ' - ' + rec.reach_max);
-                        $('#aiEnquiries').text(rec.enquiries_min + ' - ' + rec.enquiries_max);
-                        
-                        let recCities = rec.recommended_cities || [];
-                        if (recCities.length > 0) {
-                            $('#aiCities').text(recCities.join(', '));
-                        } else {
-                            $('#aiCities').text('No cities suggested');
-                        }
-                    }
-                },
-                error: function() {
-                    $('.ai-card-loader').hide();
-                }
-            });
-        }, 1000); // 1-second debounce
-    }
-
-    // Attach triggers for auto fetch
-    $(document).on('change', '.city-checkbox', function() { triggerAiAutoFetch(); });
-    $(document).on('change', '#targetState', function() { triggerAiAutoFetch(); });
-    $(document).on('change', '#targetCountry', function() { triggerAiAutoFetch(); });
-    $('.goal-option').on('click', function() { triggerAiAutoFetch(); });
-    $('#boostStatus').on('change', function() { triggerAiAutoFetch(); });
-
     // ================= INITIAL CALCULATIONS =================
     calculateNetTotal();
-    triggerAiAutoFetch();
 });
 </script>
 
