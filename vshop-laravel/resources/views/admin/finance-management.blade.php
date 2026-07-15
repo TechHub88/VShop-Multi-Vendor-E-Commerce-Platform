@@ -1862,6 +1862,7 @@
                                 <th class="text-center">Hold Period</th>
                                 <th>Recorded Date</th>
                                 <th>Scheduled Release</th>
+                                <th>Reason</th>
                                 <th class="text-center">Remaining / Delay</th>
                                 <th>Status</th>
                             </tr>
@@ -3722,7 +3723,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         <small class="text-muted fs-8">Leave blank to skip</small>
                     </div>
                 </div>
-
+                
+                <div class="row g-3 mt-1">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Reason for Hold Extension</label>
+                        <input type="text" class="form-control form-control-sm" id="bulkHoldReason" placeholder="Enter reason (Required if updating Hold Days)">
+                    </div>
+                </div>
                 <!-- Status Preview -->
                 <div class="mt-3" id="bulkUpdateStatus"></div>
             </div>
@@ -3761,12 +3768,23 @@ function applyBulkUpdate() {
     }
     const holdDays    = document.getElementById('bulkHoldDays').value;
     const purchDate   = document.getElementById('bulkPurchaseDate').value;
+    const holdReason  = document.getElementById('bulkHoldReason').value;
+
     if (!holdDays && !purchDate) {
         document.getElementById('bulkUpdateStatus').innerHTML = '<div class="alert alert-warning py-2 fs-8">Please fill at least one field to update.</div>';
         return;
     }
+
+    if (holdDays && !holdReason.trim()) {
+        document.getElementById('bulkUpdateStatus').innerHTML = '<div class="alert alert-warning py-2 fs-8">Please provide a reason for extending hold days.</div>';
+        return;
+    }
+
     const updates = {};
-    if (holdDays)  updates.hold_days       = holdDays;
+    if (holdDays) {
+        updates.hold_days = holdDays;
+        updates.hold_reason = holdReason;
+    }
     if (purchDate) updates.purchase_date   = purchDate;
 
     const btn = document.querySelector('#bulkUpdateModal .btn-primary');
@@ -6624,6 +6642,7 @@ function showSettlementHoldModal() {
                 <td class="text-center fw-bold">${row.hold_days} Days</td>
                 <td>${fmtPurchase}</td>
                 <td>${fmtRelease}</td>
+                <td><span class="text-muted small">${row.hold_reason || 'N/A'}</span></td>
                 <td class="text-center">${remainingOrDelayText}</td>
                 <td>
                     <span class="badge bg-${badgeColor}-soft text-${badgeColor}">

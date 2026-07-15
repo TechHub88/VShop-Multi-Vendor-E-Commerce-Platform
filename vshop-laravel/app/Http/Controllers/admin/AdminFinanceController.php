@@ -346,11 +346,12 @@ class AdminFinanceController extends Controller
             'seller_code' => 'S-' . (1000 + $seller->id),
             'name' => $seller->name,
             'location' => $location,
-            'app' => count($productDetails) > 0 ? $productDetails : 'Unknown Product', // Array of products for UI
+            'app' => count($productDetails) > 0 ? implode(', ', array_column($productDetails, 'name')) : 'Unknown Product', // Array of products for UI
             'total_sales' => $txn->credit,
             'platform_commission' => $platformCommission,
             'seller_payout' => $sellerPayout,
             'hold_days' => $holdDays,
+            'hold_reason' => $txn->hold_reason,
             'payout_schedule' => $seller->payout_frequency ?: 'Weekly',
             'payout_status' => ucfirst($txn->status),
             'referral_payout' => 0,
@@ -634,15 +635,22 @@ class AdminFinanceController extends Controller
                     }
                     if (!empty($updates['hold_days'])) {
                         // Calculate new release date based on created_at and new hold days
-                        $newReleaseDate = \Carbon\Carbon::parse($txn->created_at)->startOfDay()->addDays($updates['hold_days'])->toDateString();
+                        $baseDate = $txn->created_at ? $txn->created_at : now();
+                        $newReleaseDate = \Carbon\Carbon::parse($baseDate)->startOfDay()->addDays($updates['hold_days'])->toDateString();
                         
                         $txn->release_date = $newReleaseDate;
+                        if (isset($updates['hold_reason'])) {
+                            $txn->hold_reason = $updates['hold_reason'];
+                        }
                         
                         foreach ($relatedTxns as $rel) {
                             if (!empty($updates['purchase_date'])) {
                                 $rel->created_at = $updates['purchase_date'];
                             }
                             $rel->release_date = $newReleaseDate;
+                            if (isset($updates['hold_reason'])) {
+                                $rel->hold_reason = $updates['hold_reason'];
+                            }
                             
                             // Replace (On Hold for X days) in note
                             if ($rel->note) {

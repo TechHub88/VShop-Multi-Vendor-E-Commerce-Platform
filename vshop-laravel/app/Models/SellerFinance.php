@@ -21,7 +21,9 @@ class SellerFinance extends Model
         'status',
         'note',
         'dispute_status',
-        'settlement_cycle','release_date'
+        'settlement_cycle',
+        'release_date',
+        'hold_reason'
     ];
 
     // Add this relationship to fix the error
