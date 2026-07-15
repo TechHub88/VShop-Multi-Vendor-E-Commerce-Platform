@@ -366,6 +366,11 @@
                 body: JSON.stringify({ message: msg, context: pageContext })
             });
             
+            if (!response.ok) {
+                appendAdminMsg('Sorry, I am unable to respond right now. Please try again.', false);
+                return;
+            }
+            
             const data = await response.json();
             if(data.status === 'success') {
                 appendAdminMsg(data.reply, false);
@@ -374,7 +379,7 @@
             }
         } catch (err) {
             console.error(err);
-            appendAdminMsg('An error occurred.', false);
+            appendAdminMsg('An error occurred. Please try again.', false);
         }
     }
 

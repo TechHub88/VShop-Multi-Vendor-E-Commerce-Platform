@@ -189,7 +189,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light py-3">
                         <tr>
-                            <th class="ps-4">Customer Details</th>
+                            <th class="ps-4">Buyer Details</th>
                             <th>Register Date</th>
                             <th>Status Badge</th>
                             <th>Current State</th>
@@ -236,7 +236,7 @@
                                                 data-id="{{ $customer->id }}" 
                                                 data-blocked="{{ $customer->is_blocked }}">
                                             <i class="fas {{ $customer->is_blocked ? 'fa-user-check me-1' : 'fa-user-slash me-1' }}"></i>
-                                            {{ $customer->is_blocked ? 'Unblock Customer' : 'Block Customer' }}
+                                            {{ $customer->is_blocked ? 'Unblock Buyer' : 'Block Buyer' }}
                                         </button>
                                         
                                         
@@ -293,7 +293,7 @@ $(document).ready(function() {
                     button.data('blocked', response.is_blocked);
                     if (response.is_blocked) {
                         button.removeClass('btn-success').addClass('btn-danger')
-                              .html('<i class="fas fa-user-check me-1"></i> Unblock Customer');
+                              .html('<i class="fas fa-user-check me-1"></i> Unblock Buyer');
                         
                         // Update current state badge
                         $(`.block-badge-${customerId}`).removeClass('bg-success bg-opacity-10 text-success border border-success')
@@ -301,7 +301,7 @@ $(document).ready(function() {
                                                         .html('<i class="fas fa-user-slash me-1"></i> Blocked');
                     } else {
                         button.removeClass('btn-danger').addClass('btn-success')
-                              .html('<i class="fas fa-user-slash me-1"></i> Block Customer');
+                              .html('<i class="fas fa-user-slash me-1"></i> Block Buyer');
                         
                         // Update current state badge
                         $(`.block-badge-${customerId}`).removeClass('bg-danger text-white')

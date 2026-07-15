@@ -1788,6 +1788,8 @@ Route::get('/orders/export', [OrderController::class, 'exportOrders'])->name('or
 
     Route::get('/admin/customers', [\App\Http\Controllers\admin\CustomerController::class, 'index'])
         ->name('customers.index');
+    Route::get('/customers/{id}', [\App\Http\Controllers\admin\CustomerController::class, 'show'])
+        ->name('customers.show');
     Route::post('customers/search', [\App\Http\Controllers\admin\CustomerController::class, 'search'])->name('customers.search');
 
     Route::delete('/customers/{id}', [\App\Http\Controllers\admin\CustomerController::class, 'destroy'])

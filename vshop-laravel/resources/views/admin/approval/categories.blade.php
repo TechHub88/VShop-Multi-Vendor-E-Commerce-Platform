@@ -10,6 +10,20 @@
     .btn-reject {
         background: linear-gradient(180deg, #dc3545 0%, #a71d2a 100%);
     }
+    .custom-seller-scroll::-webkit-scrollbar {
+        width: 5px;
+    }
+    .custom-seller-scroll::-webkit-scrollbar-track {
+        background: #f8fafc; 
+        border-radius: 4px;
+    }
+    .custom-seller-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1; 
+        border-radius: 4px;
+    }
+    .custom-seller-scroll::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8; 
+    }
 </style>
 
 <div class="container-fluid">
@@ -24,7 +38,6 @@
                             <th>Type</th>
                             <th>Seller</th>
                             <th>Status</th>
-                            <th width="220">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -43,63 +56,65 @@
                                 </span>
                             </td>
                             <td>
-                                @if(isset($cat->sellers) && count($cat->sellers) > 0)
-                                    @foreach($cat->sellers as $s)
-                                        <div class="{{ !$loop->last ? 'mb-2 pb-2 border-bottom border-light' : '' }}">
-                                            <div class="fw-semibold text-dark fs-13">
-                                                {{ $s->name ?? $s->email ?? 'N/A' }}
+                                <div class="custom-seller-scroll" style="max-height: 120px; overflow-y: auto; padding-right: 5px;">
+                                    @if(isset($cat->sellers) && count($cat->sellers) > 0)
+                                        @foreach($cat->sellers as $s)
+                                            <div class="{{ !$loop->last ? 'mb-2 pb-2 border-bottom border-light' : '' }}">
+                                                <div class="fw-semibold text-dark fs-13">
+                                                    {{ $s->name ?? $s->email ?? 'N/A' }}
+                                                </div>
+                                                @php
+                                                    $approved = is_string($s->approved_platforms ?? null) ? json_decode($s->approved_platforms, true) : ($s->approved_platforms ?? []);
+                                                    if(!is_array($approved)) $approved = [];
+                                                @endphp
+                                                <div class="mt-1 d-flex gap-1 flex-wrap">
+                                                    @if(count($approved) > 0)
+                                                        @foreach($approved as $p)
+                                                            @if ($p == 'product')
+                                                                <span class="badge bg-info-subtle text-info px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Shop</span>
+                                                            @elseif ($p == 'travel')
+                                                                <span class="badge bg-success-subtle text-success px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Travel</span>
+                                                            @elseif (($s->app_v_campus ?? false) || $p == 'vcampus')
+                                                                <span class="badge bg-warning-subtle text-warning px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Campus</span>
+                                                            @else
+                                                                <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">{{ ucfirst($p) }}</span>
+                                                            @endif
+                                                        @endforeach
+                                                    @else
+                                                        <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">No Platform</span>
+                                                    @endif
+                                                </div>
                                             </div>
-                                            @php
-                                                $approved = is_string($s->approved_platforms ?? null) ? json_decode($s->approved_platforms, true) : ($s->approved_platforms ?? []);
-                                                if(!is_array($approved)) $approved = [];
-                                            @endphp
-                                            <div class="mt-1 d-flex gap-1 flex-wrap">
-                                                @if(count($approved) > 0)
-                                                    @foreach($approved as $p)
-                                                        @if ($p == 'product')
-                                                            <span class="badge bg-info-subtle text-info px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Shop</span>
-                                                        @elseif ($p == 'travel')
-                                                            <span class="badge bg-success-subtle text-success px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Travel</span>
-                                                        @elseif (($s->app_v_campus ?? false) || $p == 'vcampus')
-                                                            <span class="badge bg-warning-subtle text-warning px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Campus</span>
-                                                        @else
-                                                            <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">{{ ucfirst($p) }}</span>
-                                                        @endif
-                                                    @endforeach
-                                                @else
-                                                    <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">No Platform</span>
-                                                @endif
-                                            </div>
+                                        @endforeach
+                                    @elseif($cat->seller)
+                                        <div>
+                                            {{ $cat->seller->name ?? $cat->seller->email ?? 'N/A' }}
                                         </div>
-                                    @endforeach
-                                @elseif($cat->seller)
-                                    <div>
-                                        {{ $cat->seller->name ?? $cat->seller->email ?? 'N/A' }}
-                                    </div>
-                                    @php
-                                        $approved = is_string($cat->seller->approved_platforms ?? null) ? json_decode($cat->seller->approved_platforms, true) : ($cat->seller->approved_platforms ?? []);
-                                        if(!is_array($approved)) $approved = [];
-                                    @endphp
-                                    <div class="mt-1 d-flex gap-1 flex-wrap">
-                                        @if(count($approved) > 0)
-                                            @foreach($approved as $p)
-                                                @if ($p == 'product')
-                                                    <span class="badge bg-info-subtle text-info px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Shop</span>
-                                                @elseif ($p == 'travel')
-                                                    <span class="badge bg-success-subtle text-success px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Travel</span>
-                                                @elseif (($cat->seller->app_v_campus ?? false) || $p == 'vcampus')
-                                                    <span class="badge bg-warning-subtle text-warning px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Campus</span>
-                                                @else
-                                                    <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">{{ ucfirst($p) }}</span>
-                                                @endif
-                                            @endforeach
-                                        @else
-                                            <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">No Platform</span>
-                                        @endif
-                                    </div>
-                                @else
-                                    <span class="text-muted">System</span>
-                                @endif
+                                        @php
+                                            $approved = is_string($cat->seller->approved_platforms ?? null) ? json_decode($cat->seller->approved_platforms, true) : ($cat->seller->approved_platforms ?? []);
+                                            if(!is_array($approved)) $approved = [];
+                                        @endphp
+                                        <div class="mt-1 d-flex gap-1 flex-wrap">
+                                            @if(count($approved) > 0)
+                                                @foreach($approved as $p)
+                                                    @if ($p == 'product')
+                                                        <span class="badge bg-info-subtle text-info px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Shop</span>
+                                                    @elseif ($p == 'travel')
+                                                        <span class="badge bg-success-subtle text-success px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Travel</span>
+                                                    @elseif (($cat->seller->app_v_campus ?? false) || $p == 'vcampus')
+                                                        <span class="badge bg-warning-subtle text-warning px-1 py-0.5" style="font-size: 9px; font-weight: 600;">V-Campus</span>
+                                                    @else
+                                                        <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">{{ ucfirst($p) }}</span>
+                                                    @endif
+                                                @endforeach
+                                            @else
+                                                <span class="badge bg-secondary-subtle text-secondary px-1 py-0.5" style="font-size: 9px; font-weight: 600;">No Platform</span>
+                                            @endif
+                                        </div>
+                                    @else
+                                        <span class="text-muted">System</span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="status-col">
                                 @php $status = $cat->approval_status; @endphp
@@ -113,28 +128,10 @@
                                     <span class="badge bg-secondary">{{ ucfirst($status) }}</span>
                                 @endif
                             </td>
-                            <td class="action-col">
-                                @if($status == 'pending')
-                                    <button class="btn btn-sm btn-approve approveBtn"
-                                            data-id="{{ $cat->id }}"
-                                            data-type="category"
-                                            data-status="approved">
-                                        <i class="fas fa-check"></i> Approve
-                                    </button>
-                                    <button class="btn btn-sm btn-reject rejectBtn"
-                                            data-id="{{ $cat->id }}"
-                                            data-type="category"
-                                            data-status="rejected">
-                                        <i class="fas fa-times"></i> Reject
-                                    </button>
-                                @else
-                                    <span class="text-muted">Action Completed</span>
-                                @endif
-                            </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="text-center">No categories found for this panel.</td>
+                            <td colspan="5" class="text-center">No categories found for this panel.</td>
                         </tr>
                         @endforelse
                     </tbody>

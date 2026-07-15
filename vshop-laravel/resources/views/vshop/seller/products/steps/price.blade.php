@@ -19,12 +19,18 @@
         display: flex;
         gap: 25px;
         align-items: flex-start;
+        flex-wrap: nowrap;
+        overflow: hidden;
     }
     .marketplace-left {
         flex: 1;
+        min-width: 0;
     }
     .marketplace-right {
-        width: 300px;
+        width: 280px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 20px;
     }
     .pricing-panel {
         background: #f8f9fa;

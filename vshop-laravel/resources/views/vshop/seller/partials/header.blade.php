@@ -310,7 +310,7 @@ if ($seller) {
                         <p style="font-size: 11px; color: #64748b; margin-top: 6px;">Share this code with other sellers to earn rewards when they register.</p>
                     </div>
 
-                    <div class="ref-form-group">
+                    <div class="ref-form-group" style="display: none !important;">
                         <label class="ref-form-label">Referral Reward Type & Amount</label>
                         <div class="ref-radio-group mb-2">
                             <label class="ref-radio-option">

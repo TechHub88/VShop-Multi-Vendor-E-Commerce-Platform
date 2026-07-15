@@ -1,4 +1,4 @@
-@extends('admin.main')
+@extends('layouts.vertical', ['title' => 'Seller Analytics'])
 
 @section('content')
 <style>
