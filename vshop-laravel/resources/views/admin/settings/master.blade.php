@@ -1607,8 +1607,13 @@
                 document.getElementById('edit-boost-id').value = id;
 
                 const form = document.getElementById('boostEditForm');
-                const action = form.getAttribute('action');
-                form.setAttribute('action', action.replace('__ID__', id).replace(/\d+$/, id));
+                let action = form.getAttribute('data-original-action');
+                if (!action) {
+                    action = form.getAttribute('action');
+                    form.setAttribute('data-original-action', action);
+                }
+                form.setAttribute('action', action.replace('__ID__', id));
+
 
                 document.getElementById('edit-boost-seller').value = button.getAttribute('data-seller') || '';
                 document.getElementById('edit-boost-category').value = button.getAttribute('data-category') || '';

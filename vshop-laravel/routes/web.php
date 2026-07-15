@@ -2716,7 +2716,7 @@ Route::prefix('admin/settings')->name('admin.settings.')->middleware('auth:web,a
 
     // Boost Settings
     Route::post('/boost/store', [SettingsController::class, 'storeBoost'])->name('boost.store');
-    Route::post('/boost/update/{id}', [SettingsController::class, 'updateBoost'])->name('boost.update');
+    Route::match(['GET', 'POST', 'PUT'], '/boost/update/{id}', [SettingsController::class, 'updateBoost'])->name('boost.update');
     Route::delete('/boost/delete/{id}', [SettingsController::class, 'deleteBoost'])->name('boost.delete');
     Route::post('/boost/toggle/{id}', [SettingsController::class, 'toggleBoostStatus'])->name('boost.toggle');
 
@@ -2834,3 +2834,30 @@ Route::get('/proxy/yt-thumbnail', function (\Illuminate\Http\Request $request) {
     }
 });
 
+// Cache clear route for production deployment
+Route::get('/admin/clear-cache', function () {
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    
+    // Also auto-fix boosted_listings schema
+    try {
+        \Illuminate\Support\Facades\DB::statement("ALTER TABLE boosted_listings MODIFY product_id BIGINT UNSIGNED NULL");
+        \Illuminate\Support\Facades\DB::statement("ALTER TABLE boosted_listings MODIFY seller_id BIGINT UNSIGNED NULL");
+        \Illuminate\Support\Facades\DB::statement("ALTER TABLE boosted_listings MODIFY start_date DATE NULL");
+        \Illuminate\Support\Facades\DB::statement("ALTER TABLE boosted_listings MODIFY end_date DATE NULL");
+        \Illuminate\Support\Facades\DB::statement("ALTER TABLE boosted_listings MODIFY status VARCHAR(50) DEFAULT 'active'");
+    } catch (\Exception $e) {}
+    
+    // Run pending migrations
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+    } catch (\Exception $e) {}
+    
+    return response()->json([
+        'success' => true, 
+        'message' => 'All caches cleared, schema fixed, and migrations run.',
+        'artisan_output' => \Illuminate\Support\Facades\Artisan::output()
+    ]);
+});

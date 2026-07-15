@@ -62,8 +62,27 @@ class SettingsController extends Controller
    
    
 
+    /**
+     * Auto-fix boosted_listings schema if columns are still NOT NULL or status ENUM is too restrictive.
+     */
+    private function ensureBoostedListingsSchema()
+    {
+        try {
+            DB::statement("ALTER TABLE boosted_listings MODIFY product_id BIGINT UNSIGNED NULL");
+            DB::statement("ALTER TABLE boosted_listings MODIFY seller_id BIGINT UNSIGNED NULL");
+            DB::statement("ALTER TABLE boosted_listings MODIFY start_date DATE NULL");
+            DB::statement("ALTER TABLE boosted_listings MODIFY end_date DATE NULL");
+            DB::statement("ALTER TABLE boosted_listings MODIFY status VARCHAR(50) DEFAULT 'active'");
+        } catch (\Exception $e) {
+            // Already fixed or table doesn't exist yet
+        }
+    }
+
     public function masterControl()
     {
+        // Auto-fix schema on page load (safe idempotent operation)
+        $this->ensureBoostedListingsSchema();
+
         $settingsData = $this->getMasterSettingsData();
 
         // Override boosts with fresh data from DB (compute per_day and days)
@@ -216,16 +235,31 @@ class SettingsController extends Controller
                 }
             }
 
-            \App\Models\BoostedListing::create([
-                'product_id'    => $productId,
-                'category_id'   => $categoryId,
-                'seller_id'     => $sellerId,
-                'per_day'       => $perDay ?? 0,
-                'boost_amount'  => $boostAmount,
-                'start_date'    => $startDate,
-                'end_date'      => $endDate,
-                'status'        => $status ?? 'active',
-            ]);
+            try {
+                \App\Models\BoostedListing::create([
+                    'product_id'    => $productId,
+                    'category_id'   => $categoryId,
+                    'seller_id'     => $sellerId,
+                    'per_day'       => $perDay ?? 0,
+                    'boost_amount'  => $boostAmount,
+                    'start_date'    => $startDate,
+                    'end_date'      => $endDate,
+                    'status'        => $status ?? 'active',
+                ]);
+            } catch (\Exception $e) {
+                // If insert fails (likely schema mismatch), fix schema and retry
+                $this->ensureBoostedListingsSchema();
+                \App\Models\BoostedListing::create([
+                    'product_id'    => $productId,
+                    'category_id'   => $categoryId,
+                    'seller_id'     => $sellerId,
+                    'per_day'       => $perDay ?? 0,
+                    'boost_amount'  => $boostAmount,
+                    'start_date'    => $startDate,
+                    'end_date'      => $endDate,
+                    'status'        => $status ?? 'active',
+                ]);
+            }
         }
 
         return redirect()->back()->with('success', 'Boost(s) created successfully.');
@@ -281,21 +315,41 @@ class SettingsController extends Controller
         $data['seller_id']   = empty($data['seller_id']) ? null : $data['seller_id'];
         $data['category_id'] = empty($data['category_id']) ? null : $data['category_id'];
         $data['product_id']  = empty($data['product_id']) ? null : $data['product_id'];
-        $boost->update([
-            'product_id'    => $data['product_id'],
-            'category_id'   => $data['category_id'],
-            'seller_id'     => $data['seller_id'],
-            'per_day'       => $data['per_day'] ?? 0,
-            'boost_amount'  => $data['boost_amount'],
-            'start_date'    => $data['start_date'],
-            'end_date'      => $data['end_date'],
-            'status'        => $data['status'] ?? 'active',
-            'impressions'   => $data['impressions'] ?? 0,
-            'clicks'        => $data['clicks'] ?? 0,
-            'enquiries'     => $data['enquiries'] ?? 0,
-            'conversions'   => $data['conversions'] ?? 0,
-            'revenue_generated' => $data['revenue_generated'] ?? 0,
-        ]);
+        try {
+            $boost->update([
+                'product_id'    => $data['product_id'],
+                'category_id'   => $data['category_id'],
+                'seller_id'     => $data['seller_id'],
+                'per_day'       => $data['per_day'] ?? 0,
+                'boost_amount'  => $data['boost_amount'],
+                'start_date'    => $data['start_date'],
+                'end_date'      => $data['end_date'],
+                'status'        => $data['status'] ?? 'active',
+                'impressions'   => $data['impressions'] ?? 0,
+                'clicks'        => $data['clicks'] ?? 0,
+                'enquiries'     => $data['enquiries'] ?? 0,
+                'conversions'   => $data['conversions'] ?? 0,
+                'revenue_generated' => $data['revenue_generated'] ?? 0,
+            ]);
+        } catch (\Exception $e) {
+            // If update fails (likely schema mismatch), fix schema and retry
+            $this->ensureBoostedListingsSchema();
+            $boost->update([
+                'product_id'    => $data['product_id'],
+                'category_id'   => $data['category_id'],
+                'seller_id'     => $data['seller_id'],
+                'per_day'       => $data['per_day'] ?? 0,
+                'boost_amount'  => $data['boost_amount'],
+                'start_date'    => $data['start_date'],
+                'end_date'      => $data['end_date'],
+                'status'        => $data['status'] ?? 'active',
+                'impressions'   => $data['impressions'] ?? 0,
+                'clicks'        => $data['clicks'] ?? 0,
+                'enquiries'     => $data['enquiries'] ?? 0,
+                'conversions'   => $data['conversions'] ?? 0,
+                'revenue_generated' => $data['revenue_generated'] ?? 0,
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Boost updated successfully.');
     }

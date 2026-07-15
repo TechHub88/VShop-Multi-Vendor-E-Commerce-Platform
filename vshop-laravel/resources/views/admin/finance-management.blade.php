@@ -10014,6 +10014,11 @@ function showToast(message, type = 'success') {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Append all modals to document.body to prevent overlay stacking context/layer issues
+    document.querySelectorAll('.modal').forEach(modal => {
+        document.body.appendChild(modal);
+    });
+    
     // Load existing tax regions and currencies data if needed
     console.log('Tax & Invoice JS loaded');
 });

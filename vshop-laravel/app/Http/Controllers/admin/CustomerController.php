@@ -325,21 +325,23 @@ class CustomerController extends Controller
     {
         try {
             $customer = Customer::findOrFail($id);
-            $isBlocked = $request->block ? 1 : 0;
             
-            $customer->is_blocked = $isBlocked;
+            if ($request->has('block')) {
+                $isBlocked = $request->block ? 1 : 0;
+                $customer->is_blocked = $isBlocked;
+            }
             
-            // Optional: Also change status if blocked
-            // if ($isBlocked) {
-            //     $customer->status = 'blocked';
-            // }
+            if ($request->has('status')) {
+                $customer->status = $request->status;
+            }
             
             $customer->save();
             
             return response()->json([
                 'success' => true,
-                'message' => 'Customer block status updated successfully.',
-                'is_blocked' => $isBlocked
+                'message' => 'Customer status updated successfully.',
+                'is_blocked' => $customer->is_blocked,
+                'status' => $customer->status
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -348,6 +350,7 @@ class CustomerController extends Controller
             ], 500);
         }
     }
+
 
 
     

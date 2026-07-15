@@ -1932,7 +1932,11 @@ public function sellerAnalytics(Request $request)
 
     // Overall KPI statistics
     $totalSellers = Seller::count();
-    $activeSellersCount = Seller::where('status', 'active')->count();
+    $activeSellersCount = Seller::whereNotIn('status', ['blocked', 'inactive'])
+        ->where(function($query) {
+            $query->where('is_active', '!=', 0)
+                  ->orWhereNull('is_active');
+        })->count();
     $averageSellerRevenue = count($highValueSellers) > 0 ? round($highValueSellers->avg('total_revenue'), 2) : 0;
 
     return view('admin.analytics.seller-analytics', compact(
