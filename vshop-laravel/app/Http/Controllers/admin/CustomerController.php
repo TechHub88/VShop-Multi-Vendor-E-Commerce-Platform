@@ -53,10 +53,10 @@ class CustomerController extends Controller
         
         // KPI data
         $totalCustomers = Customer::count();
-        $activeCustomers = Customer::where('status', 'active')->count();
-        $inactiveCustomers = Customer::where('status', 'inactive')->count();
-        $blockedCustomers = Customer::where('status', 'blocked')->count();
-        $pendingCustomers = Customer::where('status', 'pending')->count();
+        $activeCustomers = Customer::where('is_blocked', 0)->where('status', 'active')->count();
+        $inactiveCustomers = Customer::where('is_blocked', 0)->where('status', 'inactive')->count();
+        $blockedCustomers = Customer::where('is_blocked', 1)->count();
+        $pendingCustomers = Customer::where('is_blocked', 0)->where('status', 'pending')->count();
         $newThisMonth = Customer::whereMonth('created_at', now()->month)
                                ->whereYear('created_at', now()->year)
                                ->count();

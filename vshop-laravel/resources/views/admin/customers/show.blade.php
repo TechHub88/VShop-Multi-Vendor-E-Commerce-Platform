@@ -1,4 +1,4 @@
-@extends('admin.main')
+@extends('layouts.vertical', ['title' => 'Buyer Details'])
 
 @section('content')
 <div class="container-fluid">
