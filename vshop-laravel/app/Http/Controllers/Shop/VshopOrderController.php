@@ -563,6 +563,7 @@ $this->notifySeller(
         $referralConfigs = \Illuminate\Support\Facades\DB::table('referral_configurations')->where('status', 1)->get();
 
         /* ================= ORDER ITEMS ================= */
+        $maxOrderHoldDays = 0;
         
         foreach ($cartItems as $item) {
 
@@ -719,24 +720,24 @@ $this->notifySeller(
 
             /* ================= CANCELLATION POLICY & HOLD LOGIC ================= */
             $cancelPolicy = $product->refund_policy ?? $product->cancel_policy_tour ?? $product->cancel_policy_prof ?? $product->cancel_policy_other ?? '';
-            $holdDays = 7; // default 7 days
+            $itemHoldDays = 0; // Default to 0 days (released immediately on delivery if no number/policy)
             
             if (!empty($cancelPolicy)) {
                 $cleanPolicy = strip_tags($cancelPolicy);
                 if (stripos($cleanPolicy, 'no cancel') !== false || stripos($cleanPolicy, 'non-refundable') !== false || stripos($cleanPolicy, 'no return') !== false) {
-                    $holdDays = 0;
+                    $itemHoldDays = 0;
                 } elseif (preg_match('/(\d+)[-\s]*(day|days|hrs|hours)?/i', $cleanPolicy, $matches)) {
                     $num = (int)$matches[1];
                     $unit = !empty($matches[2]) ? strtolower($matches[2]) : 'days';
                     if (str_starts_with($unit, 'hr') || str_starts_with($unit, 'hour')) {
-                        $holdDays = max(1, ceil($num / 24));
+                        $itemHoldDays = max(1, ceil($num / 24));
                     } else {
-                        $holdDays = $num;
+                        $itemHoldDays = $num;
                     }
                 }
             }
+            $maxOrderHoldDays = max($maxOrderHoldDays, $itemHoldDays);
             
-            $releaseDate = now()->addDays($holdDays)->toDateString();
             $financeStatus = 'hold'; // Always hold until delivery/cron
 
                         /* ================= ORDER ITEM ================= */
@@ -776,7 +777,7 @@ $this->notifySeller(
         $totalSellerEarning = $totalOrderAmount - $totalPlatformAmount - $totalReferralAmount;
         
         // Ensure we have a valid hold days from the loop
-        $finalHoldDays = isset($holdDays) ? $holdDays : 7;
+        $finalHoldDays = isset($maxOrderHoldDays) ? $maxOrderHoldDays : 0;
         $releaseDate = now()->addDays($finalHoldDays)->toDateString();
         $financeStatus = 'hold'; // Always hold until delivery/cron
 

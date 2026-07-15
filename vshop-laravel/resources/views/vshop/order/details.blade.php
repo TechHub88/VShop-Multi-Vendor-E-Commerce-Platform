@@ -142,24 +142,47 @@
             }
         @endphp
 
-        {{-- ===== CANCEL ORDER BUTTON ===== --}}
+        {{-- ===== CANCEL & RETURN ELIGIBILITY ===== --}}
         @php
             $statusLower = strtolower($order->status);
-            $canCancel = in_array($statusLower, ['pending', 'processing', 'approved', 'paid', 'confirmed']);
+            
+            // 1. Check if requests already exist in DB
+            $hasReturnRequest = \Illuminate\Support\Facades\DB::table('order_returns')
+                ->where('order_id', $order->id)
+                ->exists();
+            $hasCancelRequest = \Illuminate\Support\Facades\DB::table('order_cancels')
+                ->where('order_id', $order->id)
+                ->exists();
+            
+            // 2. Check if already refunded / cancelled / payment refunded
+            $isRefunded = in_array($statusLower, ['refunded', 'cancelled']) 
+                || in_array(strtolower($order->payment_status), ['refunded']) 
+                || in_array(strtolower($order->refund_status), ['completed', 'refunded']);
+
+            // 3. Determine if cancellation is allowed
+            $canCancel = in_array($statusLower, ['pending', 'processing', 'approved', 'paid', 'confirmed']) 
+                && !$hasCancelRequest 
+                && !$isRefunded;
+                
             if ($hasNoReturnPolicy) {
                 $canCancel = false;
             }
-            $isOutForDelivery = in_array($statusLower, ['out for delivery', 'out_for_delivery', 'shipped', 'dispatched']);
+            
+            $isOutForDelivery = in_array($statusLower, ['out for delivery', 'out_for_delivery', 'shipped', 'dispatched']) 
+                && !$hasCancelRequest 
+                && !$isRefunded;
+                
             $isDelivered = in_array($statusLower, ['delivered', 'completed']);
             
             // If the order has NO returnable items (i.e. only courses or professional services), 
             // the user requested to always show Cancel button and no return/refund.
-            if (!$hasReturnableItems && $statusLower !== 'cancelled') {
+            if (!$hasReturnableItems && $statusLower !== 'cancelled' && !$hasCancelRequest && !$isRefunded) {
                 $canCancel = true;
                 $isOutForDelivery = false;
             }
         @endphp
 
+        {{-- ===== CANCEL ORDER BUTTON ===== --}}
         @if($canCancel)
         <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold d-inline-flex align-items-center" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#cancelOrderModal">
             <i class="fa-solid fa-ban me-1"></i> Cancel
@@ -170,8 +193,8 @@
         </button>
         @endif
 
-       
-         @if(in_array($order->status, ['delivered', 'shipped']))
+        {{-- ===== RETURN ORDER BUTTON ===== --}}
+         @if(in_array($order->status, ['delivered', 'shipped']) && !$hasReturnRequest && !$isRefunded)
              @if($hasReturnableItems)
              <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-3 fw-bold" style="font-size:12px;" data-bs-toggle="modal" data-bs-target="#returnOrderModal">
                  <i class="fa-solid fa-arrow-rotate-left me-1"></i> Return
