@@ -742,7 +742,7 @@
                                         <select name="assigned_to" class="form-select" required id="select_assigned_agent">
                                             <option value="">Select Agent</option>
                                             @foreach($staffMembers as $staff)
-                                            <option value="{{ $staff->name }}">{{ $staff->name }} ({{ ucfirst($staff->type ?? '') }})</option>
+                                            <option value="{{ trim($staff->first_name . ' ' . $staff->last_name) }}">{{ trim($staff->first_name . ' ' . $staff->last_name) }} ({{ ucfirst($staff->employee_type ?? $staff->role ?? '') }})</option>
                                             @endforeach
                                         </select>
                                         <button type="submit" class="btn btn-primary">Assign</button>
