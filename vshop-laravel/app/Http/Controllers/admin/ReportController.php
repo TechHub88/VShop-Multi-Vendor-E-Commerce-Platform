@@ -1816,9 +1816,15 @@ private function getBestCitiesForProduct($product)
     ->select('shipping_city', DB::raw('COUNT(*) as order_count'))
     ->groupBy('shipping_city')
     ->orderBy('order_count', 'DESC')
-    ->limit(5)
-    ->get()
-    ->pluck('shipping_city')
+    ->toArray();
+    
+    return !empty($cities) ? $cities : ['Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata'];
+}
+
+public function sellerAnalytics(Request $request)
+{
+    $startDate = $request->start_date ? Carbon::parse($request->start_date) : Carbon::now()->subDays(30);
+    $endDate = $request->end_date ? Carbon::parse($request->end_date) : Carbon::now();
 
     // 1. High Value Sellers (top revenue)
     $highValueSellers = Seller::select('sellers.*')
