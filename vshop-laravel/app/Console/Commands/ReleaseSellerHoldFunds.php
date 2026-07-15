@@ -105,6 +105,35 @@ class ReleaseSellerHoldFunds extends Command
                     'updated_at' => now(),
                     'note' => \Illuminate\Support\Facades\DB::raw("REPLACE(note, '(On Hold', '(Released')") // Just a simple string update if it contains (On Hold...)
                 ]);
+                
+            // --- ADMIN ESCROW WALLET PAYOUT ---
+            $escrowWallet = \App\Models\Wallet::firstOrCreate(
+                ['user_type' => 'platform', 'seller_id' => null, 'customer_id' => null],
+                ['balance' => 0]
+            );
+            
+            // Debit seller payout from escrow
+            $escrowWallet->decrement('balance', $netSellerEarning);
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $escrowWallet->id,
+                'user_type' => 'platform',
+                'transaction_type' => 'payout',
+                'credit' => 0,
+                'debit' => $netSellerEarning,
+                'balance_after' => $escrowWallet->balance,
+                'description' => "Auto-release: Payout to Seller #{$earning->seller_id} for Order #{$earning->order_id}",
+                'reference_id' => $earning->reference_no,
+                'status' => 'completed'
+            ]);
+
+            // Update the pending 'hold' transaction for this order
+            \App\Models\WalletTransaction::where('user_type', 'platform')
+                ->where('transaction_type', 'hold')
+                ->where('reference_id', $earning->reference_no)
+                ->update([
+                    'status' => 'completed',
+                    'description' => \Illuminate\Support\Facades\DB::raw("REPLACE(description, 'on HOLD', 'RELEASED')")
+                ]);
 
             $releasedCount++;
             $totalReleased += $netSellerEarning;

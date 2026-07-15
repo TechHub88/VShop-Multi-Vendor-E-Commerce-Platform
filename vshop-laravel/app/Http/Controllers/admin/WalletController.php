@@ -638,7 +638,7 @@ class WalletController extends Controller
             'refund' => 'warning',
             'commission' => 'purple',
             'add_money' => 'teal',
-            'hold' => 'danger',
+            'hold' => 'warning',
             'payment' => 'secondary',
             'manual_credit' => 'success',
             'manual_debit' => 'danger'

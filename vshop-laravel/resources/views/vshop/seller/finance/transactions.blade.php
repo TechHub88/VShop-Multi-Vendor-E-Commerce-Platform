@@ -236,14 +236,45 @@ class="form-control form-control-sm">
 
 </form>
 
+{{-- ================= SUMMARY TOP ROW ================= --}}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card shadow-sm h-100 p-3" style="border-left: 4px solid #004392;">
+                    <div class="text-muted small fw-bold text-uppercase">Total Credit / Earnings</div>
+                    <h4 class="mb-0 text-success mt-1"><span class="money fw-bold" data-amount="{{ isset($summary) ? $summary['credit'] : $transactions->sum('credit') }}"></span></h4>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card shadow-sm h-100 p-3" style="border-left: 4px solid #e74a3b;">
+                    <div class="text-muted small fw-bold text-uppercase">Total Debit / Deductions</div>
+                    <h4 class="mb-0 text-danger mt-1"><span class="money fw-bold" data-amount="{{ isset($summary) ? $summary['debit'] : $transactions->sum('debit') }}"></span></h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm h-100 p-3 d-flex flex-row align-items-center justify-content-between">
+            <div>
+                <h6 class="mb-0 fw-bold">Monthly Summary</h6>
+                <small class="text-muted">Transaction Types</small>
+            </div>
+            <div style="width: 75px; height: 75px; position: relative;">
+                <canvas id="chart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- ================= MAIN ================= --}}
 <div class="row">
 
 {{-- ================= LEFT ================= --}}
-<div class="col-md-8">
+<div class="col-md-12">
 
 {{-- ================= LEDGER ================= --}}
-<div class="card shadow-sm mb-3">
+<div class="card shadow-sm mb-4">
 
     <div class="card-header fw-bold">Transaction Ledger</div>
     
@@ -257,9 +288,7 @@ class="form-control form-control-sm">
                 <th>Type</th>
                 <th>Reference</th>
                 <th>Product</th>
-                <th>Lead Charge</th>
                 <th>Amount</th>
-                <th>Boost Campaign Charge</th>
                 <th>Status</th>
                 <th>Invoice</th>
                 <th>View</th>
@@ -308,15 +337,13 @@ class="form-control form-control-sm">
                     </td>
 
                     <td>
-                        <span class="money text-muted" data-amount="0"></span>
-                    </td>
-
-                    <td>
-                        <span class="money" data-amount="{{ $t->credit ?: $t->debit }}"></span>
-                    </td>
-
-                    <td>
-                        <span class="money text-muted" data-amount="0"></span>
+                        @if($t->credit > 0)
+                            <span class="money text-success fw-bold" data-amount="{{ $t->credit }}"></span> <small class="text-muted">(Cr)</small>
+                        @elseif($t->debit > 0)
+                            <span class="money text-danger fw-bold" data-amount="{{ $t->debit }}"></span> <small class="text-muted">(Dr)</small>
+                        @else
+                            ₹0.00
+                        @endif
                     </td>
 
                     <td>
@@ -345,7 +372,7 @@ class="form-control form-control-sm">
             @empty
 
                 <tr>
-                    <td colspan="10" class="text-center">No data</td>
+                    <td colspan="9" class="text-center py-4 text-muted">No transactions found</td>
                 </tr>
 
             @endforelse
@@ -445,31 +472,7 @@ Track
 
 </div>
 
-{{-- ================= RIGHT ================= --}}
-<div class="col-md-4">
-
-<div class="card p-3 shadow-sm">
-
-<h6>Monthly Summary</h6>
-
-<canvas id="chart"></canvas>
-
-<hr>
-
-<p>
-Total: 
-<span class="money" data-amount="{{ $transactions->sum('credit') }}"></span>
-</p>
-
-<p>
-Payout: 
-<span class="money" data-amount="{{ $transactions->sum('debit') }}"></span>
-</p>
-
 </div>
-
-</div>
-
 </div>
 
 </div>

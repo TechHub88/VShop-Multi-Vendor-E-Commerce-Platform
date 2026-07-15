@@ -961,19 +961,34 @@ $this->notifySeller(
                 'status' => 'completed'
             ]);
 
-            // 2. Debit seller payout from escrow
-            $escrowWallet->decrement('balance', $sellerEarning);
-            \App\Models\WalletTransaction::create([
-                'wallet_id' => $escrowWallet->id,
-                'user_type' => 'platform',
-                'transaction_type' => 'payout',
-                'credit' => 0,
-                'debit' => $sellerEarning,
-                'balance_after' => $escrowWallet->balance,
-                'description' => "Payout to Seller #{$sellerId} for Order #{$order->id}",
-                'reference_id' => 'ORD-' . $order->id,
-                'status' => 'completed'
-            ]);
+            // 2. Debit seller payout from escrow (Hold Logic)
+            if ($holdDays > 0) {
+                // DON'T decrement escrow balance yet
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $escrowWallet->id,
+                    'user_type' => 'platform',
+                    'transaction_type' => 'hold',
+                    'credit' => 0,
+                    'debit' => $sellerEarning,
+                    'balance_after' => $escrowWallet->balance,
+                    'description' => "Seller payout on HOLD for Order #{$order->id} ({$holdDays} days)",
+                    'reference_id' => 'ORD-' . $order->id,
+                    'status' => 'pending'
+                ]);
+            } else {
+                $escrowWallet->decrement('balance', $sellerEarning);
+                \App\Models\WalletTransaction::create([
+                    'wallet_id' => $escrowWallet->id,
+                    'user_type' => 'platform',
+                    'transaction_type' => 'payout',
+                    'credit' => 0,
+                    'debit' => $sellerEarning,
+                    'balance_after' => $escrowWallet->balance,
+                    'description' => "Payout to Seller #{$sellerId} for Order #{$order->id}",
+                    'reference_id' => 'ORD-' . $order->id,
+                    'status' => 'completed'
+                ]);
+            }
 
             // 3. Debit referral payout from escrow (if active)
             if ($referralAmount > 0) {
