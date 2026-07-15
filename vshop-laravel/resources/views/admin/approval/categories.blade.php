@@ -27,6 +27,12 @@
 </style>
 
 <div class="container-fluid">
+    <!-- Premium Blue Background Heading -->
+    <div class="p-3 mb-4 rounded-3 text-white d-flex align-items-center justify-content-between shadow-sm" style="background: linear-gradient(135deg, #0b4da1 0%, #1e3a8a 100%);">
+        <h4 class="fw-bold mb-0 text-white"><i class="fa-solid fa-tags me-2 text-white-50"></i>All Categories</h4>
+        <span class="badge bg-white text-primary fw-bold px-3 py-1.5 rounded-pill fs-12">{{ count($items) }} Active</span>
+    </div>
+    
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">

@@ -1,4 +1,6 @@
 @extends('vshop.seller.main')
+
+@push('styles')
 <style>
     .nav-btn {
         border: 1px solid #004392;
@@ -476,6 +478,7 @@
         cursor: pointer;
     }
 </style>
+@endpush
 
 @section('content')
 
