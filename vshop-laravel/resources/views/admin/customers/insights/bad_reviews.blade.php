@@ -1,4 +1,4 @@
-@extends('layouts.vertical', ['title' => 'Insights: Bad Review Customers'])
+@extends('layouts.vertical', ['title' => 'Insights: Bad Review Buyers'])
 
 @section('content')
 <style>
@@ -27,10 +27,10 @@
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h4 class="fw-bold text-dark mb-0"><i class="fas fa-chart-line me-2"></i> Customer Insights - Bad Review Products</h4>
+        <h4 class="fw-bold text-dark mb-0"><i class="fas fa-chart-line me-2"></i> Buyer Insights - Bad Review Products</h4>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ route('admin.customers.index') }}">Customers</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.customers.index') }}">Buyers</a></li>
                 <li class="breadcrumb-item">Insights</li>
                 <li class="breadcrumb-item active" aria-current="page">Bad Reviews</li>
             </ol>

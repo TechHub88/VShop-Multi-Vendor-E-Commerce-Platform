@@ -261,26 +261,26 @@ class="tp-link {{ request()->routeIs('admin.approval.categories') ? 'active' : '
 </li>
 @endif
 
-<!-- CUSTOMERS -->
+<!-- BUYERS -->
 @if($hasPerm(['customer_control', 'customer_insights', 'customer_validation']))
 <li>
-<a href="#sidebarCustomers" data-bs-toggle="collapse">
+<a href="#sidebarBuyers" data-bs-toggle="collapse">
 <span class="nav-icon"><iconify-icon icon="solar:users-group-rounded-bold-duotone"></iconify-icon></span>
-<span>Customer Management</span>
+<span>Buyer Management</span>
 <span class="menu-arrow"></span>
 </a>
 
-<div class="collapse {{ request()->routeIs('admin.customers.*') ? 'show' : '' }}" id="sidebarCustomers">
+<div class="collapse {{ request()->routeIs('admin.customers.*') ? 'show' : '' }}" id="sidebarBuyers">
 <ul class="nav-second-level">
-    <!-- Customer Control Group -->
+    <!-- Buyer Control Group -->
     <li>
-        <a href="#submenuCustomerControl" data-bs-toggle="collapse" class="tp-link">
-            <span>Customer Control</span>
+        <a href="#submenuBuyerControl" data-bs-toggle="collapse" class="tp-link">
+            <span>Buyer Control</span>
             <span class="menu-arrow"></span>
         </a>
-        <div class="collapse {{ request()->routeIs('admin.customers.index') || request()->routeIs('admin.customers.block-control') || request()->routeIs('admin.customers.merge') ? 'show' : '' }}" id="submenuCustomerControl">
+        <div class="collapse {{ request()->routeIs('admin.customers.index') || request()->routeIs('admin.customers.block-control') || request()->routeIs('admin.customers.merge') ? 'show' : '' }}" id="submenuBuyerControl">
             <ul class="nav-second-level ps-3">
-                <li><a href="{{ route('admin.customers.index') }}" class="tp-link">View All Customers</a></li>
+                <li><a href="{{ route('admin.customers.index') }}" class="tp-link">View All Buyers</a></li>
                 <li><a href="{{ route('admin.customers.block-control') }}" class="tp-link">Block / Unblock</a></li>
                
             </ul>
@@ -295,9 +295,9 @@ class="tp-link {{ request()->routeIs('admin.approval.categories') ? 'active' : '
         </a>
         <div class="collapse {{ request()->routeIs('admin.customers.insights.*') ? 'show' : '' }}" id="submenuInsights">
             <ul class="nav-second-level ps-3">
-                <li><a href="{{ route('admin.customers.insights.high-value') }}" class="tp-link">High-Value Customers</a></li>
-                <li><a href="{{ route('admin.customers.insights.frequent-return') }}" class="tp-link">Frequent Return Users</a></li>
-                <li><a href="{{ route('admin.customers.insights.bad-reviews') }}" class="tp-link">Bad Review Customers</a></li>
+                <li><a href="{{ route('admin.customers.insights.high-value') }}" class="tp-link">High-Value Buyers</a></li>
+                <li><a href="{{ route('admin.customers.insights.frequent-return') }}" class="tp-link">Frequent Return Buyers</a></li>
+                <li><a href="{{ route('admin.customers.insights.bad-reviews') }}" class="tp-link">Bad Review Buyers</a></li>
             </ul>
         </div>
     </li>
@@ -468,7 +468,8 @@ class="tp-link {{ request()->routeIs('admin.approval.categories') ? 'active' : '
 
 <li><a href="{{ route('admin.analytics.sales') }}" class="tp-link"> Sales Analytics</a></li>
 <li><a href="{{ route('admin.analytics.funnel') }}" class="tp-link"> Funnel Analytics</a></li>
-<li><a href="{{ route('admin.analytics.customers') }}" class="tp-link">Customer Analytics</a></li>
+<li><a href="{{ route('admin.analytics.customers') }}" class="tp-link">Buyer Analytics</a></li>
+<li><a href="{{ route('admin.analytics.sellers') }}" class="tp-link">Seller Analytics</a></li>
 <li><a href="{{ route('admin.analytics.promotion') }}" class="tp-link">Promotion Analytics</a></li>
 <li><a href="{{ route('admin.analytics.campaign') }}" class="tp-link"> Campaign ROI</a></li>
 <li><a href="{{ route('admin.analytics.leads') }}" class="tp-link">Lead Analytics</a></li>

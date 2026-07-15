@@ -32,7 +32,13 @@ class CustomerController extends Controller
         }
         
         if ($request->filled('customer_type')) {
-            $query->where('customer_type', $request->customer_type);
+            if ($request->customer_type === 'direct_selling') {
+                $query->whereNull('seller_id');
+            } elseif ($request->customer_type === 'dropshipping') {
+                $query->whereNotNull('seller_id');
+            } else {
+                $query->where('customer_type', $request->customer_type);
+            }
         }
         
         if ($request->filled('search')) {
@@ -883,6 +889,18 @@ public function validationAddress(Request $request)
     $addresses = $query->orderBy('created_at', 'desc')->paginate($perPage);
     
     return view('admin.customers.validation.address', compact('addresses'));
+}
+
+public function show($id)
+{
+    $customer = Customer::with(['seller', 'orders' => function($q) {
+        $q->latest()->take(10);
+    }])->findOrFail($id);
+    
+    $totalSpent = $customer->orders->where('payment_status', 'paid')->sum('total_amount');
+    $totalOrders = $customer->orders->count();
+    
+    return view('admin.customers.show', compact('customer', 'totalSpent', 'totalOrders'));
 }
 
 }

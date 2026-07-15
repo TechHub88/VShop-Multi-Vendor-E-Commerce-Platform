@@ -407,7 +407,7 @@ input:disabled + .toggle-slider {
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center pt-3 pb-3">
-        <h4 class="fw-semibold mb-0">All Customers</h4>
+        <h4 class="fw-semibold mb-0">All Buyers</h4>
     </div>
 
     <!-- KPI CARDS -->
@@ -421,7 +421,7 @@ input:disabled + .toggle-slider {
                     <div>
                         <div class="kpi-label">Total</div>
                         <div class="kpi-value" id="totalCustomers">{{ number_format($totalCustomers) }}</div>
-                        <div class="kpi-sub">All customers</div>
+                        <div class="kpi-sub">All buyers</div>
                     </div>
                 </div>
             </div>
@@ -510,11 +510,11 @@ input:disabled + .toggle-slider {
             </div>
             
             <div class="filter-group">
-                <label><i class="fas fa-tag me-1"></i> Customer Type</label>
+                <label><i class="fas fa-tag me-1"></i> Buyer Type</label>
                 <select id="customerTypeFilter" class="form-select">
                     <option value="">All Types</option>
-                    <option value="direct_selling">Direct Selling</option>
-                    <option value="dropshipping">Dropshipping</option>
+                    <option value="direct_selling">Direct Buyers</option>
+                    <option value="dropshipping">Vshop-Buyers</option>
                 </select>
             </div>
             
@@ -559,10 +559,10 @@ input:disabled + .toggle-slider {
                         <div class="dropdown-title">Select Fields to Export</div>
                         <div class="dropdown-list">
                             <label class="dropdown-item"><input type="checkbox" class="field-checkbox" value="sl" data-label="SL" checked> SL</label>
-                            <label class="dropdown-item"><input type="checkbox" class="field-checkbox" value="customer_id_name" data-label="Customer ID/Name" checked> Customer ID/Name</label>
+                            <label class="dropdown-item"><input type="checkbox" class="field-checkbox" value="customer_id_name" data-label="Buyer ID/Name" checked> Buyer ID/Name</label>
                             <label class="dropdown-item"><input type="checkbox" class="field-checkbox" value="seller_id_name" data-label="Seller ID/Name" checked> Seller ID/Name</label>
                             <label class="dropdown-item"><input type="checkbox" class="field-checkbox" value="email" data-label="Email" checked> Email</label>
-                            <label class="dropdown-item"><input type="checkbox" class="field-checkbox" value="customer_type" data-label="Customer Type" checked> Customer Type</label>
+                            <label class="dropdown-item"><input type="checkbox" class="field-checkbox" value="customer_type" data-label="Buyer Type" checked> Buyer Type</label>
                             <label class="dropdown-item"><input type="checkbox" class="field-checkbox" value="status" data-label="Status" checked> Status</label>
                             <label class="dropdown-item"><input type="checkbox" class="field-checkbox" value="created_at" data-label="Created At" checked> Created At</label>
                         </div>
@@ -589,18 +589,18 @@ input:disabled + .toggle-slider {
                         <tr>
                             <th width="40"><input type="checkbox" id="selectAllCheckbox"></th>
                             <th>SL</th>
-                            <th>Customer ID/Name</th>
+                            <th>Buyer ID/Name</th>
                             <th>Seller ID/Name</th>
                             <th>Email</th>
-                            <th>Customer Type</th>
+                            <th>Buyer Type</th>
                             <th>Status</th>
                             <th>Created</th>
-                            <th width="100" class="text-end">Action</th>
+                            <th width="120" class="text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody id="usersTableBody">
                         @forelse($customers as $customer)
-                        <tr data-customer-id="{{ $customer->id }}" data-customer-status="{{ $customer->status }}" data-customer-type="{{ $customer->customer_type ?? 'direct_selling' }}">
+                        <tr data-customer-id="{{ $customer->id }}" data-customer-status="{{ $customer->status }}" data-customer-type="{{ empty($customer->seller_id) ? 'direct_selling' : 'dropshipping' }}">
                             <td><input type="checkbox" class="row-checkbox" value="{{ $customer->id }}"></td>
                             <td><span class="sl-number">{{ $loop->iteration }}</span></td>
                             <td data-customer-id="{{ $customer->id }}" data-customer-name="{{ $customer->name }}">
@@ -617,10 +617,10 @@ input:disabled + .toggle-slider {
                             </td>
                             <td>{{ $customer->email }}</td>
                             <td>
-                                @if(($customer->customer_type ?? 'direct_selling') == 'direct_selling')
-                                    <span class="badge-status badge-active">Direct Selling</span>
+                                @if(empty($customer->seller_id))
+                                    <span class="badge-status badge-active">Direct Buyers</span>
                                 @else
-                                    <span class="badge-status badge-approved">Dropshipping</span>
+                                    <span class="badge-status badge-approved">Vshop-Buyers</span>
                                 @endif
                             </td>
                             <td class="status-cell">
@@ -636,7 +636,10 @@ input:disabled + .toggle-slider {
                             <td>{{ $customer->created_at->format('d M, Y') }}</td>
                             <td class="text-end">
                                 <div class="action-btns">
-                                    <label class="toggle-switch">
+                                    <a href="{{ route('admin.customers.show', $customer->id) }}" class="btn btn-sm btn-info me-1" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <label class="toggle-switch me-1">
                                         <input type="checkbox" class="status-toggle" data-customer-id="{{ $customer->id }}" 
                                                {{ $customer->status == 'active' ? 'checked' : '' }}
                                                {{ $customer->status == 'blocked' ? 'disabled' : '' }}>

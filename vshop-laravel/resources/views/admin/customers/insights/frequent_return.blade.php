@@ -1,12 +1,12 @@
-@extends('layouts.vertical', ['title' => 'Insights: Frequent Return Users'])
+@extends('layouts.vertical', ['title' => 'Insights: Frequent Return Buyers'])
 
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h4 class="fw-bold text-dark mb-0"> Frequent Return Users</h4>
+        <h4 class="fw-bold text-dark mb-0"> Frequent Return Buyers</h4>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ route('admin.customers.index') }}">Customers</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.customers.index') }}">Buyers</a></li>
                 <li class="breadcrumb-item">Insights</li>
                 <li class="breadcrumb-item active" aria-current="page">Frequent Returns</li>
             </ol>
@@ -14,14 +14,14 @@
     </div>
 
 
-    <!-- Return Users Table -->
+    <!-- Return Buyers Table -->
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light py-3">
                         <tr>
-                            <th class="ps-4">Customer</th>
+                            <th class="ps-4">Buyer</th>
                           
                             <th>Total Orders Placed</th>
                             <th>Returned Orders</th>
@@ -94,7 +94,7 @@
                                 <td colspan="6" class="text-center py-5">
                                     <i class="fas fa-undo-alt fa-3x mb-3 text-muted"></i>
                                     <h5 class="text-dark">No returns analytics recorded</h5>
-                                    <p class="text-muted">Customers who return products will appear here for return risk analysis.</p>
+                                    <p class="text-muted">Buyers who return products will appear here for return risk analysis.</p>
                                 </td>
                             </tr>
                         @endforelse

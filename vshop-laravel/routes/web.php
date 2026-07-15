@@ -2286,6 +2286,9 @@ Route::get('/analytics/funnel', [ReportController::class, 'funnelAnalytics'])->n
 // Customer Analytics
 Route::get('/analytics/customers', [ReportController::class, 'customerAnalytics'])->name('admin.analytics.customers');
 
+// Seller Analytics
+Route::get('/analytics/sellers', [ReportController::class, 'sellerAnalytics'])->name('admin.analytics.sellers');
+
 // Promotion Analytics
 Route::get('/analytics/promotion', [ReportController::class, 'promotionAnalytics'])->name('admin.analytics.promotion');
 

@@ -1,12 +1,12 @@
-@extends('layouts.vertical', ['title' => 'Insights: High-Value Customers'])
+@extends('layouts.vertical', ['title' => 'Insights: High-Value Buyers'])
 
 @section('content')
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h4 class="fw-bold text-dark mb-0">High-Value Customers</h4>
+        <h4 class="fw-bold text-dark mb-0">High-Value Buyers</h4>
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ route('admin.customers.index') }}">Customers</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.customers.index') }}">Buyers</a></li>
                 <li class="breadcrumb-item">Insights</li>
                 <li class="breadcrumb-item active" aria-current="page">High-Value</li>
             </ol>
@@ -15,14 +15,14 @@
 
 
 
-    <!-- High-Value Customers Table -->
+    <!-- High-Value Buyers Table -->
     <div class="card border-0 shadow-sm rounded-4">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light py-3">
                         <tr>
-                            <th class="ps-4">Rank & Customer</th>
+                            <th class="ps-4">Rank & Buyer</th>
                             <th>Completed Orders</th>
                             <th>Average Order Value</th>
                             <th>Total Spent</th>
@@ -76,7 +76,7 @@
                                         </span>
                                     @else
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-20 px-3 py-1.5 fs-11 rounded-3">
-                                            Star Customer
+                                            Star Buyer
                                         </span>
                                     @endif
                                 </td>
@@ -85,8 +85,8 @@
                             <tr>
                                 <td colspan="5" class="text-center py-5">
                                     <i class="fas fa-gem fa-3x mb-3 text-muted"></i>
-                                    <h5 class="text-dark">No high-value customers found</h5>
-                                    <p class="text-muted">High-value segments populate as customers complete orders.</p>
+                                    <h5 class="text-dark">No high-value buyers found</h5>
+                                    <p class="text-muted">High-value segments populate as buyers complete orders.</p>
                                 </td>
                             </tr>
                         @endforelse

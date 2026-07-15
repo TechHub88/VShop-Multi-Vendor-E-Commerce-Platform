@@ -422,7 +422,12 @@ $unreadAdminCount = AdminNotification::where('is_read', false)->count();
                                 if (strtolower($notif->type) === 'enquiry' || str_contains(strtolower($notif->message), 'enquiry')) {
                                     $notifUrl = route('admin.enquiry.index');
                                 }
-                                $iconClass = $notif->type === 'order' ? 'bi-cart' : ($notif->type === 'product' ? 'bi-box-seam' : (strtolower($notif->type) === 'enquiry' ? 'bi-envelope' : 'bi-bell'));
+                                if (strtolower($notif->type) === 'grievance' || str_contains($notifUrl, 'grievance/get')) {
+                                    preg_match('/get\/(\d+)/', $notifUrl, $matches);
+                                    $ticketId = $matches[1] ?? '';
+                                    $notifUrl = url('admin/grievance') . ($ticketId ? '?ticket_id=' . $ticketId : '');
+                                }
+                                $iconClass = $notif->type === 'order' ? 'bi-cart' : ($notif->type === 'product' ? 'bi-box-seam' : (strtolower($notif->type) === 'enquiry' ? 'bi-envelope' : (strtolower($notif->type) === 'grievance' ? 'bi-chat-left-text' : 'bi-bell')));
                             @endphp
                             <a href="{{ $notifUrl }}" class="dropdown-item notify-item border-bottom p-3 {{ !$notif->is_read ? 'bg-light' : '' }}" data-id="{{ $notif->id }}">
                                 <div class="d-flex align-items-center">

@@ -1152,6 +1152,21 @@ $(document).ready(function(){
         const ticketsTab = document.querySelector('[href="#tab_tickets"]');
         if (ticketsTab) bootstrap.Tab.getOrCreateInstance(ticketsTab).show();
     }
+    
+    const ticketId = urlParams.get('ticket_id');
+    if (ticketId) {
+        const ticketsTab = document.querySelector('[href="#tab_tickets"]');
+        if (ticketsTab) {
+            bootstrap.Tab.getOrCreateInstance(ticketsTab).show();
+        }
+        setTimeout(() => {
+            const btn = $('.viewGrievanceBtn[data-id="' + ticketId + '"]').first();
+            if (btn.length) {
+                btn.trigger('click');
+            }
+        }, 300);
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 });
 </script>
 
