@@ -579,7 +579,7 @@ $this->notifySeller(
 
             $product = DB::table('products')
                 ->where('id', $productId)
-                ->select('created_by_id', 'category_id', 'name')
+                ->select('created_by_id', 'category_id', 'name', 'refund_policy', 'cancel_policy_tour', 'cancel_policy_prof', 'cancel_policy_other')
                 ->first();
 
             $sellerId = $product->created_by_id;
