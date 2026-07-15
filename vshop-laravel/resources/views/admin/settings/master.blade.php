@@ -1382,7 +1382,6 @@
                             <select class="form-select" id="edit-boost-status" name="status">
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
-                                <option value="rule">Rule</option>
                             </select>
                         </div>
 

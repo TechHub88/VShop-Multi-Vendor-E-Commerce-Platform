@@ -47,10 +47,12 @@
 </h3>
 
 <div class="mb-4 d-flex gap-2 flex-wrap">
-    <a href="{{ route('discount.products') }}" class="btn btn-{{ request('campaign') ? 'outline-primary' : 'primary' }} rounded-pill px-4 shadow-sm">All Offers</a>
-    <a href="{{ route('discount.products', ['campaign' => 'percentage_20']) }}" class="btn btn-{{ request('campaign') == 'percentage_20' ? 'primary' : 'outline-primary' }} rounded-pill px-4 shadow-sm">20% Offers</a>
-    <a href="{{ route('discount.products', ['campaign' => 'bogo']) }}" class="btn btn-{{ request('campaign') == 'bogo' ? 'primary' : 'outline-primary' }} rounded-pill px-4 shadow-sm">Buy 1 Get 1</a>
-    <a href="{{ route('discount.products', ['campaign' => 'buy2_get1']) }}" class="btn btn-{{ request('campaign') == 'buy2_get1' ? 'primary' : 'outline-primary' }} rounded-pill px-4 shadow-sm">Buy 2 Get 1</a>
+    <a href="{{ route('discount.products') }}" class="btn btn-{{ request('campaign_id') ? 'outline-primary' : 'primary' }} rounded-pill px-4 shadow-sm">All Offers</a>
+    @if(isset($activeCampaigns))
+        @foreach($activeCampaigns as $campaign)
+            <a href="{{ route('discount.products', ['campaign_id' => $campaign->id]) }}" class="btn btn-{{ request('campaign_id') == $campaign->id ? 'primary' : 'outline-primary' }} rounded-pill px-4 shadow-sm">{{ $campaign->title }}</a>
+        @endforeach
+    @endif
 </div>
 
 <div class="row">

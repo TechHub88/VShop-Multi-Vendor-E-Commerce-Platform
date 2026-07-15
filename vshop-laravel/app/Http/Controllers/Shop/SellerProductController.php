@@ -168,6 +168,21 @@ public function submitBoost(Request $request)
         $wallet->balance -= $totalCost;
         $wallet->save();
 
+        if ($totalCost > 0) {
+            \App\Models\WalletTransaction::create([
+                'wallet_id' => $wallet->id,
+                'seller_id' => $sellerId,
+                'user_type' => 'seller',
+                'transaction_type' => 'product_boost',
+                'credit' => 0,
+                'debit' => $totalCost,
+                'balance_after' => $wallet->balance,
+                'description' => "Deduction for boosting " . count($productIds) . " product(s) for {$days} days",
+                'reference_id' => 'BOOST-' . time(),
+                'status' => 'completed'
+            ]);
+        }
+
         // Also update session to keep header consistent for current request
         session(['seller_dummy_wallet' => $wallet->balance]);
 
@@ -286,6 +301,27 @@ if ($sellerData && $sellerData->referred_by && $totalCost > 0) {
             Product::where('created_by_id', $sellerId)
                    ->whereIn('id', $productIds)
                    ->update(['is_boosted' => 1]);
+
+            foreach ($products as $product) {
+                $perDay = $this->calculateBoostPerDay($product, $sellerId, $boostRules);
+                $boostAmount = $perDay * $days;
+
+                \App\Models\BoostedListing::create([
+                    'product_id' => $product->id,
+                    'seller_id' => $sellerId,
+                    'category_id' => $product->category_id,
+                    'per_day' => $perDay,
+                    'boost_amount' => $boostAmount,
+                    'start_date' => \Carbon\Carbon::today()->toDateString(),
+                    'end_date' => \Carbon\Carbon::today()->addDays((int)$days)->toDateString(),
+                    'status' => 'active',
+                    'impressions' => 0,
+                    'clicks' => 0,
+                    'enquiries' => 0,
+                    'conversions' => 0,
+                    'revenue_generated' => 0,
+                ]);
+            }
         }
 
         return response()->json([

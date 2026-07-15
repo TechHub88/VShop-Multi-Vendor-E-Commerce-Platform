@@ -561,6 +561,9 @@ src="{{ $product->thumbnail ? asset($product->thumbnail) : asset('images/no-imag
 
 <h6 class="fw-bold mb-1 text-primary product-title">
 {{ $product->name }}
+@if($product->is_boosted)
+    <span class="badge bg-warning text-dark ms-2"><i class="fas fa-rocket"></i> Boosted</span>
+@endif
 </h6>
 
 <p class="text-muted small mb-2">

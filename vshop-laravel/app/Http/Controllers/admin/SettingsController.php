@@ -219,7 +219,7 @@ class SettingsController extends Controller
             'category_id'  => 'nullable|exists:marketplace_categories,id',
             'per_day'      => 'required|numeric|min:0',
             'days'         => 'nullable|integer|min:1',
-            'status'       => 'in:active,inactive,rule',
+            'status'       => 'in:active,inactive',
             'impressions'  => 'nullable|integer|min:0',
             'clicks'       => 'nullable|integer|min:0',
             'enquiries'    => 'nullable|integer|min:0',

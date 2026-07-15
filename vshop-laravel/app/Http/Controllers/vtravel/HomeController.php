@@ -251,10 +251,15 @@ public function vshophome(Request $request)
         ->whereNotNull('regular_price')
         ->whereColumn('regular_price', '>', 'price');
 
-    if ($request->has('campaign') && $request->campaign != '') {
-        $campaign = $request->campaign;
-        $query->whereHas('campaignParticipations', function($q) use ($campaign) {
-            $q->where('campaign_type', $campaign)
+    // Get active campaigns for the filter buttons
+    $activeCampaigns = \App\Models\Advertisement::where('type', 'campaign')
+        ->where('is_active', 1)
+        ->get();
+
+    if ($request->has('campaign_id') && $request->campaign_id != '') {
+        $campaignId = $request->campaign_id;
+        $query->whereHas('campaignParticipations', function($q) use ($campaignId) {
+            $q->where('advertisement_id', $campaignId)
               ->where('status', 'approved');
         });
     }
@@ -278,7 +283,7 @@ public function vshophome(Request $request)
         ->orderBy('id', 'desc')
         ->get();
 
-    return view('vshop.products.discountproducts', compact('products','banners'));
+    return view('vshop.products.discountproducts', compact('products','banners','activeCampaigns'));
 }
 
     public function updateCurrentLocation(Request $request)
