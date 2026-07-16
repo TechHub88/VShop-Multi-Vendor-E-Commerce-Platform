@@ -3,6 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ReleaseSellerHoldFunds extends Command
 {
@@ -26,10 +28,11 @@ class ReleaseSellerHoldFunds extends Command
     public function handle()
     {
         $this->info('Starting release of held seller funds...');
+        Log::info('[hold:release] Cron started at ' . now()->toDateTimeString());
 
         // We find all seller_finances records that are currently on hold and their release_date is today or earlier.
         // We only fetch 'earning' rows, since 'commission_deduction' rows don't add to the wallet anyway.
-        $heldEarnings = \Illuminate\Support\Facades\DB::table('seller_finances')
+        $heldEarnings = DB::table('seller_finances')
             ->where('status', 'hold')
             ->where('transaction_type', 'earning')
             ->whereDate('release_date', '<=', now()->toDateString())
@@ -37,101 +40,130 @@ class ReleaseSellerHoldFunds extends Command
 
         if ($heldEarnings->isEmpty()) {
             $this->info('No held funds to release today.');
+            Log::info('[hold:release] No held funds to release today. Date checked: ' . now()->toDateString());
             return;
         }
 
+        $this->info("Found {$heldEarnings->count()} held earning(s) to process.");
+        Log::info("[hold:release] Found {$heldEarnings->count()} held earning(s) to process.");
+
+        // Get sellers that are on settlement hold (admin blocked)
+        $holdSellerIds = \App\Models\Seller::where('settlement_hold', true)->pluck('id')->toArray();
+
         $releasedCount = 0;
+        $skippedCount = 0;
         $totalReleased = 0;
 
         foreach ($heldEarnings as $earning) {
-            // Find the associated deductions to calculate net earning
-            $deductions = \Illuminate\Support\Facades\DB::table('seller_finances')
-                ->where('status', 'hold')
-                ->where('order_id', $earning->order_id)
-                ->where('seller_id', $earning->seller_id)
-                ->where('transaction_type', 'commission_deduction')
-                ->get();
-
-            $totalDeduction = $deductions->sum('debit');
-            $netSellerEarning = $earning->credit - $totalDeduction;
-
-            if ($netSellerEarning > 0) {
-                $sellerWallet = \App\Models\Wallet::firstOrCreate(
-                    ['user_type' => 'seller', 'seller_id' => $earning->seller_id, 'customer_id' => null],
-                    ['balance' => 0]
-                );
-
-                $sellerWallet->increment('balance', $netSellerEarning);
-
-                // Re-create the wallet transactions here since we skipped them during checkout
-                // 1. Credit 100% of order sale
-                \App\Models\WalletTransaction::create([
-                    'wallet_id' => $sellerWallet->id,
-                    'seller_id' => $earning->seller_id,
-                    'user_type' => 'seller',
-                    'transaction_type' => 'payout',
-                    'credit' => $earning->credit,
-                    'debit' => 0,
-                    'balance_after' => $sellerWallet->balance + $totalDeduction, // Approximate state
-                    'description' => "Hold released: Order sale earning for Order #{$earning->order_id}",
-                    'reference_id' => $earning->reference_no,
-                    'status' => 'completed'
-                ]);
-
-                // 2. Debit platform & referral fees
-                foreach ($deductions as $deduction) {
-                    \App\Models\WalletTransaction::create([
-                        'wallet_id' => $sellerWallet->id,
-                        'seller_id' => $earning->seller_id,
-                        'user_type' => 'seller',
-                        'transaction_type' => str_contains(strtolower($deduction->note), 'referral') ? 'referral_deduction' : 'commission_deduction',
-                        'credit' => 0,
-                        'debit' => $deduction->debit,
-                        'balance_after' => $sellerWallet->balance, // Approximate state
-                        'description' => "Hold released: {$deduction->note} for Order #{$earning->order_id}",
-                        'reference_id' => $earning->reference_no,
-                        'status' => 'completed'
-                    ]);
-                }
+            // Skip sellers that admin has put on settlement hold
+            if (in_array($earning->seller_id, $holdSellerIds)) {
+                $this->warn("Skipping Seller #{$earning->seller_id} Order #{$earning->order_id} - seller has settlement_hold active.");
+                Log::warning("[hold:release] Skipped Seller #{$earning->seller_id} Order #{$earning->order_id} - settlement_hold is active.");
+                $skippedCount++;
+                continue;
             }
 
-            // Mark all related records for this order/seller as success
-            \Illuminate\Support\Facades\DB::table('seller_finances')
-                ->where('status', 'hold')
-                ->where('order_id', $earning->order_id)
-                ->where('seller_id', $earning->seller_id)
-                ->update([
-                    'status' => 'released',
-                    'updated_at' => now(),
-                    'note' => \Illuminate\Support\Facades\DB::raw("REPLACE(note, '(On Hold', '(Released')") // Just a simple string update if it contains (On Hold...)
+            try {
+                DB::transaction(function () use ($earning, &$releasedCount, &$totalReleased) {
+                    // Find the associated deductions to calculate net earning
+                    $deductions = DB::table('seller_finances')
+                        ->where('status', 'hold')
+                        ->where('order_id', $earning->order_id)
+                        ->where('seller_id', $earning->seller_id)
+                        ->where('transaction_type', 'commission_deduction')
+                        ->get();
+
+                    $totalDeduction = $deductions->sum('debit');
+                    $netSellerEarning = $earning->credit - $totalDeduction;
+
+                    Log::info("[hold:release] Processing Order #{$earning->order_id} Seller #{$earning->seller_id}: credit={$earning->credit}, deductions={$totalDeduction}, net={$netSellerEarning}");
+
+                    if ($netSellerEarning > 0) {
+                        $sellerWallet = \App\Models\Wallet::firstOrCreate(
+                            ['user_type' => 'seller', 'seller_id' => $earning->seller_id, 'customer_id' => null],
+                            ['balance' => 0]
+                        );
+
+                        $sellerWallet->increment('balance', $netSellerEarning);
+
+                        // Re-create the wallet transactions here since we skipped them during checkout
+                        // 1. Credit 100% of order sale
+                        \App\Models\WalletTransaction::create([
+                            'wallet_id' => $sellerWallet->id,
+                            'seller_id' => $earning->seller_id,
+                            'user_type' => 'seller',
+                            'transaction_type' => 'payout',
+                            'credit' => $earning->credit,
+                            'debit' => 0,
+                            'balance_after' => $sellerWallet->balance + $totalDeduction, // Approximate state
+                            'description' => "Hold released: Order sale earning for Order #{$earning->order_id}",
+                            'reference_id' => $earning->reference_no,
+                            'status' => 'completed'
+                        ]);
+
+                        // 2. Debit platform & referral fees
+                        foreach ($deductions as $deduction) {
+                            \App\Models\WalletTransaction::create([
+                                'wallet_id' => $sellerWallet->id,
+                                'seller_id' => $earning->seller_id,
+                                'user_type' => 'seller',
+                                'transaction_type' => str_contains(strtolower($deduction->note), 'referral') ? 'referral_deduction' : 'commission_deduction',
+                                'credit' => 0,
+                                'debit' => $deduction->debit,
+                                'balance_after' => $sellerWallet->balance, // Approximate state
+                                'description' => "Hold released: {$deduction->note} for Order #{$earning->order_id}",
+                                'reference_id' => $earning->reference_no,
+                                'status' => 'completed'
+                            ]);
+                        }
+
+                        // --- ADMIN ESCROW WALLET PAYOUT ---
+                        $escrowWallet = \App\Models\Wallet::firstOrCreate(
+                            ['user_type' => 'platform', 'seller_id' => null, 'customer_id' => null],
+                            ['balance' => 0]
+                        );
+
+                        // Debit seller payout from escrow
+                        $escrowWallet->decrement('balance', $netSellerEarning);
+                        \App\Models\WalletTransaction::create([
+                            'wallet_id' => $escrowWallet->id,
+                            'user_type' => 'platform',
+                            'transaction_type' => 'payout',
+                            'credit' => 0,
+                            'debit' => $netSellerEarning,
+                            'balance_after' => $escrowWallet->balance,
+                            'description' => "Auto-release: Payout to Seller #{$earning->seller_id} for Order #{$earning->order_id}",
+                            'reference_id' => $earning->reference_no,
+                            'status' => 'completed'
+                        ]);
+                    }
+
+                    // Mark all related records for this order/seller as released
+                    DB::table('seller_finances')
+                        ->where('status', 'hold')
+                        ->where('order_id', $earning->order_id)
+                        ->where('seller_id', $earning->seller_id)
+                        ->update([
+                            'status' => 'released',
+                            'updated_at' => now(),
+                            'note' => DB::raw("REPLACE(note, '(On Hold', '(Released')")
+                        ]);
+
+                    $releasedCount++;
+                    $totalReleased += $netSellerEarning;
+
+                    Log::info("[hold:release] ✅ Released Order #{$earning->order_id} Seller #{$earning->seller_id} amount={$netSellerEarning}");
+                });
+            } catch (\Exception $e) {
+                $this->error("Failed to release Order #{$earning->order_id} Seller #{$earning->seller_id}: {$e->getMessage()}");
+                Log::error("[hold:release] ❌ Failed Order #{$earning->order_id} Seller #{$earning->seller_id}: {$e->getMessage()}", [
+                    'trace' => $e->getTraceAsString()
                 ]);
-                
-            // --- ADMIN ESCROW WALLET PAYOUT ---
-            $escrowWallet = \App\Models\Wallet::firstOrCreate(
-                ['user_type' => 'platform', 'seller_id' => null, 'customer_id' => null],
-                ['balance' => 0]
-            );
-            
-            // Debit seller payout from escrow
-            $escrowWallet->decrement('balance', $netSellerEarning);
-            \App\Models\WalletTransaction::create([
-                'wallet_id' => $escrowWallet->id,
-                'user_type' => 'platform',
-                'transaction_type' => 'payout',
-                'credit' => 0,
-                'debit' => $netSellerEarning,
-                'balance_after' => $escrowWallet->balance,
-                'description' => "Auto-release: Payout to Seller #{$earning->seller_id} for Order #{$earning->order_id}",
-                'reference_id' => $earning->reference_no,
-                'status' => 'completed'
-            ]);
-
-
-
-            $releasedCount++;
-            $totalReleased += $netSellerEarning;
+            }
         }
 
-        $this->info("Successfully released {$releasedCount} held transactions totaling {$totalReleased}.");
+        $summary = "Released {$releasedCount} held transactions totaling ₹{$totalReleased}. Skipped {$skippedCount} (settlement hold).";
+        $this->info($summary);
+        Log::info("[hold:release] {$summary}");
     }
 }

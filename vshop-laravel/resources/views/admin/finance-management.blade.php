@@ -6666,7 +6666,7 @@ function showSettlementHoldModal() {
         
         let remainingOrDelayText = '';
         let badgeColor = '';
-        let isPending = row.payout_status.toLowerCase() === 'pending';
+        let isPending = !['released', 'success'].includes(row.payout_status.toLowerCase());
         
         if (isPending) {
             if (today > releaseDate) {
@@ -6723,7 +6723,7 @@ function showSellerDetails(sellerId) {
     const fmtRelease = releaseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
     
     const today = new Date();
-    const isReleased = row.payout_status.toLowerCase() !== 'pending';
+    const isReleased = ['released', 'success'].includes(row.payout_status.toLowerCase());
     const isDelayed = today > releaseDate && !isReleased;
     
     let appText = Array.isArray(row.app) ? row.app.map(p => p.name).join(', ') : row.app;

@@ -2860,3 +2860,46 @@ Route::get('/admin/clear-cache', function () {
         'artisan_output' => \Illuminate\Support\Facades\Artisan::output()
     ]);
 });
+
+// ============================================================
+// CRON TRIGGER ROUTES (for external cron services like cron-job.org)
+// URL: /cron/run?token=vshop_cron_2026_secure
+// This runs Laravel's full scheduler (all scheduled commands)
+// ============================================================
+Route::get('/cron/run', function (\Illuminate\Http\Request $request) {
+    if ($request->query('token') !== 'vshop_cron_2026_secure') {
+        abort(403, 'Unauthorized');
+    }
+    
+    \Illuminate\Support\Facades\Artisan::call('schedule:run');
+    $output = \Illuminate\Support\Facades\Artisan::output();
+    
+    \Illuminate\Support\Facades\Log::info('[cron/run] Scheduler triggered via HTTP', ['output' => $output]);
+    
+    return response()->json([
+        'success' => true,
+        'message' => 'Scheduler executed',
+        'output' => $output,
+        'timestamp' => now()->toDateTimeString()
+    ]);
+});
+
+// Direct hold:release trigger (runs only the seller fund release)
+// URL: /cron/hold-release?token=vshop_cron_2026_secure
+Route::get('/cron/hold-release', function (\Illuminate\Http\Request $request) {
+    if ($request->query('token') !== 'vshop_cron_2026_secure') {
+        abort(403, 'Unauthorized');
+    }
+    
+    \Illuminate\Support\Facades\Artisan::call('hold:release');
+    $output = \Illuminate\Support\Facades\Artisan::output();
+    
+    \Illuminate\Support\Facades\Log::info('[cron/hold-release] Hold release triggered via HTTP', ['output' => $output]);
+    
+    return response()->json([
+        'success' => true,
+        'message' => 'Hold release executed',
+        'output' => $output,
+        'timestamp' => now()->toDateTimeString()
+    ]);
+});
