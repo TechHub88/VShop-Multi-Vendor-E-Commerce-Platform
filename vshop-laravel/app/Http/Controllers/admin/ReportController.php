@@ -1855,16 +1855,40 @@ public function sellerAnalytics(Request $request)
             return $seller;
         });
 
-    // 3. Bad Review Sellers (average rating < 3)
-    $badReviewSellers = Seller::select('sellers.id', 'sellers.name', 'sellers.email', 'sellers.mobile', 'sellers.type', 'sellers.status', 'sellers.created_at', 'sellers.updated_at')
-        ->selectRaw('COALESCE(AVG(product_reviews.rating), 0) as avg_rating')
-        ->selectRaw('COUNT(product_reviews.id) as reviews_count')
-        ->leftJoin('product_reviews', 'product_reviews.seller_id', '=', 'sellers.id')
-        ->groupBy('sellers.id', 'sellers.name', 'sellers.email', 'sellers.mobile', 'sellers.type', 'sellers.status', 'sellers.created_at', 'sellers.updated_at')
-        ->having('avg_rating', '<', 3)
-        ->orderBy('avg_rating', 'asc')
-        ->take(15)
-        ->get();
+    // 3. Bad Review Sellers — handles reviews where seller_id is NULL
+    //    by falling back to products.created_by_id via subquery
+    $badReviewRaw = \Illuminate\Support\Facades\DB::select("
+        SELECT
+            s.id,
+            s.name,
+            s.email,
+            s.mobile,
+            s.type,
+            s.status,
+            COUNT(pr.id)            AS reviews_count,
+            COALESCE(AVG(pr.rating), 0) AS avg_rating
+        FROM sellers s
+        LEFT JOIN product_reviews pr
+            ON (
+                pr.seller_id = s.id
+                OR (
+                    pr.seller_id IS NULL
+                    AND pr.product_id IN (
+                        SELECT id FROM products WHERE created_by_id = s.id
+                    )
+                )
+            )
+        GROUP BY s.id, s.name, s.email, s.mobile, s.type, s.status
+        HAVING reviews_count > 0
+        ORDER BY avg_rating ASC
+        LIMIT 50
+    ");
+
+    // Wrap as a collection so the blade @forelse works as before
+    $badReviewSellers = collect($badReviewRaw)->map(function($row) {
+        return (object) (array) $row;
+    });
+
 
     // 4. Top Sellers by Orders
     $topSellersByOrders = Seller::select('sellers.id', 'sellers.name', 'sellers.email', 'sellers.mobile', 'sellers.type', 'sellers.status', 'sellers.created_at', 'sellers.updated_at')

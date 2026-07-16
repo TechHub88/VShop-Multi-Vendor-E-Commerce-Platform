@@ -1413,6 +1413,7 @@ Route::middleware('auth:customer')->prefix('vshop')->name('vshop.')->group(funct
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('customer.profile.update');
     
     Route::get('/vshop/product/{id}/reviews', [VshopRatingController::class, 'index'])->name('product.reviews');
+    Route::post('/vshop/review/store', [VshopReviewController::class, 'store'])->name('vshop.review.store');
     Route::get('/myaccount', [MyAccountController::class, 'index'])->name('myaccount');
     
     // Enquiry chat (placeholder - adjust to your chat system)

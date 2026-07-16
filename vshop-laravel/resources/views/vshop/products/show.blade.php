@@ -1492,7 +1492,7 @@
                                 </div>
                                 <div id="reviewFormBox" style="display:none; margin-top:20px;" class="mb-4">
                                     @auth('customer')
-                                    <form id="reviewSubmitForm" action="{{ route('vtravel.review.store') }}" method="POST">
+                                    <form id="reviewSubmitForm" action="{{ route('vshop.vshop.review.store') }}" method="POST">
                                         @csrf
                                         <input type="hidden" name="product_id" value="{{ $product->id }}">
                                         <input type="hidden" name="seller_id" value="{{ $product->created_by_id }}">
@@ -1518,7 +1518,7 @@
                                         </div>
                                     </form>
                                     @else
-                                    <div class="alert alert-warning">Please <a href="{{ route('employeelogin') }}">login</a> to write a review.</div>
+                                    <div class="alert alert-warning">Please <a href="{{ route('vshoplogin') }}">login</a> to write a review.</div>
                                     @endauth
                                 </div>
                                 <div class="review-list">

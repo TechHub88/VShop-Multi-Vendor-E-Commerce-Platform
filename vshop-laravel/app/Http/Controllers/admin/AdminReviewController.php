@@ -32,24 +32,21 @@ class AdminReviewController extends Controller
 
 public function index(Request $request)
 {
-    $type = $this->getProductType();
-    
     // Get seller_id from request (from bad reviews page click)
     $sellerId = $request->seller_id;
     
     // Store seller info if filtering by seller
     $filteredSeller = null;
     
-    $query = ProductReview::with(['product', 'product.seller', 'customer'])
-        ->whereHas('product', function($q) use ($type) {
-            $q->where('type', $type);
-        });
+    // Show ALL reviews from product_reviews table regardless of product type
+    $query = ProductReview::with(['product', 'product.seller', 'customer']);
     
     /* ================= FILTER BY SELLER (from bad reviews page) ================= */
     if ($sellerId) {
-        $query->whereHas('product', function($q) use ($sellerId) {
-            $q->where('created_by_id', $sellerId);
-        });
+        $query->where('seller_id', $sellerId)
+              ->orWhereHas('product', function($q) use ($sellerId) {
+                  $q->where('created_by_id', $sellerId);
+              });
         
         // Get seller info for display
         $filteredSeller = \App\Models\Seller::find($sellerId);
@@ -87,26 +84,14 @@ public function index(Request $request)
     $reviews = $query
         ->latest()
         ->paginate(20)
-        ->appends($request->all()); // Preserve all filter parameters
+        ->appends($request->all());
     
-    /* ================= STATS ================= */
-    // Get stats for cards (considering product type)
+    /* ================= STATS (all reviews, no type filter) ================= */
     $stats = [
-        'total_reviews' => ProductReview::whereHas('product', function($q) use ($type) {
-            $q->where('type', $type);
-        })->count(),
-        
-        'approved_reviews' => ProductReview::whereHas('product', function($q) use ($type) {
-            $q->where('type', $type);
-        })->where('is_approved', true)->count(),
-        
-        'pending_reviews' => ProductReview::whereHas('product', function($q) use ($type) {
-            $q->where('type', $type);
-        })->where('is_approved', false)->count(),
-        
-        'average_rating' => round(ProductReview::whereHas('product', function($q) use ($type) {
-            $q->where('type', $type);
-        })->avg('rating'), 1),
+        'total_reviews'    => ProductReview::count(),
+        'approved_reviews' => ProductReview::where('is_approved', true)->count(),
+        'pending_reviews'  => ProductReview::where('is_approved', false)->count(),
+        'average_rating'   => round(ProductReview::avg('rating') ?? 0, 1),
     ];
     
     return view('admin.reviews.index', compact('reviews', 'stats', 'filteredSeller'));
