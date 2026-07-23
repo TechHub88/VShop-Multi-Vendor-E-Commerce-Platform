@@ -7,10 +7,10 @@ vshop_laravel:
   type: ClusterIP
   resources:
     requests:
-      minMemory: "200Mi"
-      minCpu: "200m"
+      minMemory: "256Mi"
+      minCpu: "250m"
     limits:
-      maxMemory: "500Mi"
+      maxMemory: "512Mi"
       maxCpu: "500m"
 
   env:
